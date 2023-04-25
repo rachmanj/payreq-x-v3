@@ -137,9 +137,6 @@ class UserController extends Controller
 
         return datatables()->of($users)
             ->addIndexColumn()
-            ->editColumn('email', function ($user) {
-                return $user->email ? $user->email : 'N/A';
-            })
             ->addColumn('action', 'users.action')
             ->rawColumns(['action'])
             ->toJson();

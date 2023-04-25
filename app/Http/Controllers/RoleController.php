@@ -66,4 +66,21 @@ class RoleController extends Controller
 
         return redirect()->route('roles.index')->with('success', 'Role successfully updated!');
     }
+
+
+    public function destroy($id)
+    {
+        //
+    }
+
+    public function data()
+    {
+        $roles = Role::all();
+
+        return datatables()->of($roles)
+            ->addColumn('action', 'roles.action')
+            ->addIndexColumn()
+            ->rawColumns(['action'])
+            ->toJson();
+    }
 }

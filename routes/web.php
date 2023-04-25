@@ -1,22 +1,29 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\EquipmentController;
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AdvanceCategoryController;
+use App\Http\Controllers\ApprovedController;
+use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\DashboardAccountingController;
+use App\Http\Controllers\DashboardDncController;
+use App\Http\Controllers\DashboardUserController;
+use App\Http\Controllers\EmailController;
+use App\Http\Controllers\GiroController;
+use App\Http\Controllers\GiroDetailController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\MigrationController;
-use App\Http\Controllers\PatternController;
+use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\RabController;
+use App\Http\Controllers\RealizationController;
 use App\Http\Controllers\RegisterController;
-use App\Http\Controllers\RemovalReasonController;
+use App\Http\Controllers\RekapController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\TyreSizeController;
-use App\Http\Controllers\TyreBrandController;
-use App\Http\Controllers\TyreController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VerifyController;
 use Illuminate\Support\Facades\Route;
-
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'index'])->name('login');
@@ -28,7 +35,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/', function () {
-        return redirect()->route('dashboard.index');
+        return view('templates.dashboard');
     });
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -40,66 +47,142 @@ Route::middleware('auth')->group(function () {
         Route::put('deactivate/{id}', [UserController::class, 'deactivate'])->name('deactivate');
         Route::put('roles-update/{id}', [UserController::class, 'roles_user_update'])->name('roles_user_update');
     });
-
     Route::resource('users', UserController::class);
+
+    // ROLES
+    Route::prefix('roles')->name('roles.')->group(function () {
+        Route::get('data', [RoleController::class, 'data'])->name('data');
+    });
     Route::resource('roles', RoleController::class);
+    
+    // PERMISSIONS
+    Route::prefix('permissions')->name('permissions.')->group(function () {
+        Route::get('data', [PermissionController::class, 'data'])->name('data');
+    });
     Route::resource('permissions', PermissionController::class);
 
-    // DASHBOARD
+    // USER DASHBOARD
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
-        Route::get('/', [DashboardController::class, 'index'])->name('index');
+        Route::get('/', [DashboardUserController::class, 'index'])->name('index');
+        Route::get('/{id}', [DashboardUserController::class, 'show'])->name('show');
     });
 
-    // PATTERNS
-    Route::get('patterns/data', [PatternController::class, 'data'])->name('patterns.data');
-    Route::resource('patterns', PatternController::class);
+    //APROVAL
+    Route::prefix('approved')->name('approved.')->group(function () {
+        Route::get('/data', [ApprovedController::class, 'data'])->name('data');
+        Route::get('/all', [ApprovedController::class, 'all'])->name('all');
+        Route::get('/all/data', [ApprovedController::class, 'all_data'])->name('all.data');
+    });
+    Route::resource('approved', ApprovedController::class);
 
-    // REMOVAL REASONS
-    Route::get('removal-reasons/data', [RemovalReasonController::class, 'data'])->name('removal-reasons.data');
-    Route::resource('removal-reasons', RemovalReasonController::class);
-
-    // TYRE SIZE
-    Route::get('tyre-sizes/data', [TyreSizeController::class, 'data'])->name('tyre-sizes.data');
-    Route::resource('tyre-sizes', TyreSizeController::class);
-
-    // TYRE BRAND
-    Route::get('tyre-brands/data', [TyreBrandController::class, 'data'])->name('tyre-brands.data');
-    Route::resource('tyre-brands', TyreBrandController::class);
-
-    // SUPPLIERS / VENDORS
-    Route::get('suppliers/data', [SupplierController::class, 'data'])->name('suppliers.data');
-    Route::resource('suppliers', SupplierController::class);
-
-    // EQUIPMENTS
-    Route::prefix('equipments')->name('equipments.')->group(function () {
-        Route::get('/data', [EquipmentController::class, 'data'])->name('data');
-        Route::get('/', [EquipmentController::class, 'index'])->name('index');
+    // REALIZATION
+    Route::prefix('realization')->name('realization.')->group(function () {
+        Route::get('/data', [RealizationController::class, 'data'])->name('data');
+        Route::get('/', [RealizationController::class, 'index'])->name('index');
+        Route::put('/{id}', [RealizationController::class, 'update'])->name('update');
     });
 
-    // TYRES
-    Route::prefix('tyres')->name('tyres.')->group(function () {
-        Route::get('/data', [TyreController::class, 'data'])->name('data');
-        Route::get('/{id}/data', [TyreController::class, 'histories_data'])->name('histories.data');
-        Route::delete('/histories/{transaction_id}', [TyreController::class, 'transaction_destroy'])->name('transaction.destroy');
+    // OUTGOING
+    Route::prefix('outgoing')->name('outgoing.')->group(function () {
+        Route::get('/data', [OutgoingController::class, 'data'])->name('data');
+        Route::get('/', [OutgoingController::class, 'index'])->name('index');
+        Route::put('/{id}', [OutgoingController::class, 'update'])->name('update');
+        Route::get('/{id}/split', [OutgoingController::class, 'split'])->name('split');
+        Route::put('/{id}/update-split', [OutgoingController::class, 'split_update'])->name('split_update');
+        Route::put('/{id}/auto', [OutgoingController::class, 'auto_update'])->name('auto_update');
     });
-    Route::resource('tyres', TyreController::class);
 
-    // TRANSACTIONS
-    Route::prefix('transactions')->name('transactions.')->group(function () {
-        Route::get('/data', [TransactionController::class, 'data'])->name('data');
+    // VERIFICATION
+    Route::prefix('verify')->name('verify.')->group(function () {
+        Route::get('/data', [VerifyController::class, 'data'])->name('data');
+        Route::get('/', [VerifyController::class, 'index'])->name('index');
+        Route::put('/{id}', [VerifyController::class, 'update'])->name('update');
     });
-    Route::resource('transactions', TransactionController::class);
 
-    // MIGRATIONS
-    Route::prefix('migrations')->name('migrations.')->group(function () {
-        // TYRES
-        Route::get('/tyres', [MigrationController::class, 'tyres'])->name('tyres');
-        Route::get('/tyres/data', [MigrationController::class, 'tyres_data'])->name('tyres.data');
-        Route::get('/tyres/migrate', [MigrationController::class, 'tyres_migrate'])->name('tyres.migrate');
-
-        // TRANSACTIONS
-        Route::get('/transactions', [MigrationController::class, 'transactions'])->name('transactions');
-        Route::get('/transactions/data', [MigrationController::class, 'transactions_data'])->name('transactions.data');
-        Route::get('/transactions/migrate', [MigrationController::class, 'transactions_migrate'])->name('transactions.migrate');
+    // SEARCH
+    Route::prefix('search')->name('search.')->group(function () {
+        Route::get('/', [SearchController::class, 'index'])->name('index');
+        Route::post('/display', [SearchController::class, 'display'])->name('display');
+        Route::get('/{id}/edit', [SearchController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [SearchController::class, 'update'])->name('update');
+        Route::delete('/{id}', [SearchController::class, 'destroy'])->name('destroy');
     });
+
+    //RAB
+    Route::prefix('rabs')->name('rabs.')->group(function () {
+        Route::get('/data', [RabController::class, 'data'])->name('data');
+        Route::get('/{rab_id}/data', [RabController::class, 'payreq_data'])->name('payreq_data');
+    });
+    Route::resource('rabs', RabController::class);
+
+    // TRANSAKSIS
+    Route::get('transaksi/data', [TransaksiController::class, 'data'])->name('transaksi.data');
+    Route::resource('transaksi', TransaksiController::class);
+
+    // ACCOUNT
+    Route::prefix('account')->name('account.')->group(function () {
+        Route::get('/data', [AccountController::class, 'data'])->name('data');
+        Route::post('/transaksi-store', [AccountController::class, 'transaksi_store'])->name('transaksi_store');
+    });
+    Route::resource('account', AccountController::class);
+
+    // REKAPS
+    Route::prefix('rekaps')->name('rekaps.')->group(function () {
+        Route::get('/data', [RekapController::class, 'data'])->name('data');
+        Route::get('/', [RekapController::class, 'index'])->name('index');
+        Route::delete('/{id}', [RekapController::class, 'destroy'])->name('destroy');
+        Route::get('/export', [RekapController::class, 'export'])->name('export');
+    });
+
+    // BUDGET
+    Route::prefix('budget')->name('budget.')->group(function () {
+        Route::get('/', [BudgetController::class, 'index'])->name('index');
+        Route::get('/just_updated', [BudgetController::class, 'just_updated'])->name('just_updated');
+        Route::put('/{id}', [BudgetController::class, 'update'])->name('update');
+        Route::get('/data', [BudgetController::class, 'data'])->name('data');
+        Route::get('/just_updated/data', [BudgetController::class, 'just_updated_data'])->name('just_updated_data');
+    });
+
+    // ADVANCE CATEGORY
+    Route::get('adv-category/data', [AdvanceCategoryController::class, 'data'])->name('adv-category.data');
+    Route::resource('adv-category', AdvanceCategoryController::class);
+
+    // ACC-DASHBOARD
+    Route::prefix('acc-dashboard')->name('acc-dashboard.')->group(function () {
+        Route::get('/', [DashboardAccountingController::class, 'index'])->name('index');
+        Route::get('test', [DashboardAccountingController::class, 'test'])->name('test');
+    });
+
+    // DNC-DASHBOARD
+    Route::prefix('dnc-dashboard')->name('dnc-dashboard.')->group(function () {
+        Route::get('/', [DashboardDncController::class, 'index'])->name('index');
+        Route::get('test', [DashboardDncController::class, 'test'])->name('test');
+    });
+
+    //EMAILS
+    Route::prefix('emails')->name('emails.')->group(function () {
+        Route::get('/data', [EmailController::class, 'data'])->name('data');
+        Route::get('/', [EmailController::class, 'index'])->name('index');
+        Route::get('/push/{id}', [EmailController::class, 'push'])->name('push');
+    });
+
+    //GIROS
+    Route::prefix('giros')->name('giros.')->group(function () {
+        Route::get('/data', [GiroController::class, 'data'])->name('data');
+        Route::get('/{giro_id}/data', [GiroDetailController::class, 'data'])->name('detail.data');
+        Route::get('/{giro_id}', [GiroDetailController::class, 'index'])->name('detail.index');
+        Route::post('/{giro_id}/store', [GiroDetailController::class, 'store'])->name('detail.store');
+        Route::delete('/{giro_detail_id}/destroy', [GiroDetailController::class, 'destroy'])->name('detail.destroy');
+    });
+    Route::resource('giros', GiroController::class);
+
+    // INVOICES
+    Route::prefix('invoices')->name('invoices.')->group(function () {
+        Route::get('/data', [InvoiceController::class, 'data'])->name('data');
+        Route::get('/paid_data', [InvoiceController::class, 'paid_data'])->name('paid_data');
+        Route::put('/{id}/paid', [InvoiceController::class, 'paid'])->name('paid');
+        Route::get('/paid-index', [InvoiceController::class, 'paid_index'])->name('paid.index');
+        Route::post('/multi-paid', [InvoiceController::class, 'multi_paid'])->name('multi_paid');
+    });
+    Route::resource('invoices', InvoiceController::class);
 });

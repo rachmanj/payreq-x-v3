@@ -28,4 +28,35 @@ class PermissionController extends Controller
 
         return redirect()->route('permissions.index')->with('success', 'Permission created successfully');
     }
+
+    public function show($id)
+    {
+        //
+    }
+
+    public function edit($id)
+    {
+        //
+    }
+
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    public function destroy($id)
+    {
+        //
+    }
+
+    public function data()
+    {
+        $permissions = Permission::all();
+
+        return datatables()->of($permissions)
+            ->addIndexColumn()
+            // ->addColumn('action', 'users.action')
+            // ->rawColumns(['action'])
+            ->toJson();
+    }
 }

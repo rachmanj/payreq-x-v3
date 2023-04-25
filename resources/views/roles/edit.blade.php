@@ -17,7 +17,7 @@
           <div class="card">
             <div class="card-header">
               <div class="card-title">Edit Role</div>
-              <a href="{{ route('roles.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-undo"></i> Back</a>
+              <a href="{{ route('roles.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
             </div>
             <div class="card-body">
               <div class="row">
