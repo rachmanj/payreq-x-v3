@@ -14,7 +14,7 @@
         <div class="card card-info">
           <div class="card-header">
             <h3 class="card-title">RAB Detail</h3>
-            <a href="{{ route('rabs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-undo"></i> Back</a>
+            <a href="{{ route('rabs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
           </div>
           <div class="card-body">
             <dl class="row">
@@ -31,7 +31,16 @@
               <dt class="col-sm-4">Budget</dt>
               <dd class="col-sm-8">: Rp.{{ number_format($rab->budget, 2) }}</dd>
               <dt class="col-sm-4">Release to Date</dt>
-              <dd class="col-sm-8">: Rp.{{ number_format($total_release, 2) }} ({{ number_format($total_release / $rab->budget * 100, 2) }}%)</dd>
+              <dd class="col-sm-8">: Rp.{{ number_format($total_release, 2) }}</dd>
+              <dt class="col-sm-4">Progress</dt>
+              <dd class="col-sm-8"><div class="progress">
+                <div class="progress-bar progress-bar-striped {{ $status_color }}" role="progressbar" style="width: {{ $progress }}%" 
+                style="width: {{ $progress }}%"
+                aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($progress, 2) }}%</div>
+              </div>
+            </dd>
+            <dt class="col-sm-4">Status</dt>
+              <dd class="col-sm-8">: {{ ucfirst($rab->status) }}</dd>
             </dl>
           </div>
           <div class="card-body">

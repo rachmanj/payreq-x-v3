@@ -14,8 +14,8 @@
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Edit Data</h3>
-            <a href="{{ route('rabs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-undo"></i> Back</a>
-            <input type="submit" name="" id="" value="Save" form="form-edit" class="btn btn-sm btn-success float-right mx-2">
+            <a href="{{ route('rabs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
+            {{-- <input type="submit" name="" id="" value="Save" form="form-edit" class="btn btn-sm btn-success float-right mx-2"> --}}
           </div>
 
             
@@ -140,8 +140,11 @@
 
               </div>
 
-            </form>
-          </div>          
+            </div>
+            <div class="card-footer">
+              <input type="submit" name="" id="" value="Save" form="form-edit" class="btn btn-sm btn-success btn-block">
+            </div>
+          </form>
            
         </div>
       </div>

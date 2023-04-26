@@ -112,6 +112,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('rabs')->name('rabs.')->group(function () {
         Route::get('/data', [RabController::class, 'data'])->name('data');
         Route::get('/{rab_id}/data', [RabController::class, 'payreq_data'])->name('payreq_data');
+        Route::put('/{id}/status', [RabController::class, 'update_status'])->name('update_status');
+        Route::get('/{id}/test', [RabController::class, 'test'])->name('test');
     });
     Route::resource('rabs', RabController::class);
 

@@ -101,8 +101,20 @@ class RabController extends Controller
         $realizations = Payreq::where('rab_id', $id)->whereNotNull('realization_amount')
             ->sum('realization_amount');
         $total_release = $advances + $realizations;
+        $progress = app(ToolController::class)->progress($id);
+        $status_color = app(ToolController::class)->statusColor($progress);
 
-        return view('rabs.show', compact('rab', 'total_release'));
+        return view('rabs.show', compact('rab', 'total_release', 'progress', 'status_color'));
+    }
+
+    public function update_status(Request $request, $id)
+    {
+        $rab = Rab::find($id);
+
+        $rab->status = $request->status;
+        $rab->save();
+
+        return redirect()->route('rabs.index')->with('success', 'RAB Status updated successfully');
     }
 
     public function destroy($id)
@@ -122,8 +134,20 @@ class RabController extends Controller
         $rabs = Rab::orderBy('date', 'desc')->orderBy('rab_no', 'desc')->get();
 
         return datatables()->of($rabs)
+            ->editColumn('rab_no', function ($rab) {
+                if ($rab->status == 'progress')
+                    $status_badge = 'primary';
+                elseif ($rab->status == 'finish')
+                    $status_badge = 'success';
+                elseif ($rab->status == 'cancel')
+                    $status_badge = 'danger';
+                else
+                    $status_badge = 'warning';
+                
+                return '<a href="' . route('rabs.show', $rab->id) . '">' . $rab->rab_no . '</a> <br> <button class="btn btn-xs btn-' . $status_badge . '" style="pointer-events: none;">' . ucfirst($rab->status) . '</button>';
+            })
             ->editColumn('date', function ($rab) {
-                return date('d-m-Y', strtotime($rab->date));
+                return date('d-M-Y', strtotime($rab->date));
             })
             ->editColumn('project_code', function ($rab) {
                 return $rab->project_code . ' | ' . $rab->department->akronim;
@@ -143,16 +167,30 @@ class RabController extends Controller
                 return number_format($payreq->sum('realization_amount'), 2);
             })
             ->addColumn('progress', function ($rab) {
-                $payreqs = Payreq::where('rab_id', $rab->id)->get();
-                $total_advance = $payreqs->whereNotNull('outgoing_date')->whereNull('realization_date')->sum('payreq_idr');
-                $total_realization = $payreqs->whereNotNull('realization_date')->sum('realization_amount');
-                $total_release = $total_advance + $total_realization;
-                $progress = ($total_release / $rab->budget) * 100;
-                return number_format($progress, 2) . '%';
+                // $payreqs = Payreq::where('rab_id', $rab->id)->get();
+                // $total_advance = $payreqs->whereNotNull('outgoing_date')->whereNull('realization_date')->sum('payreq_idr');
+                // $total_realization = $payreqs->whereNotNull('realization_date')->sum('realization_amount');
+                // $total_release = $total_advance + $total_realization;
+                // $progress = ($total_release / $rab->budget) * 100;
+                $progress = app(ToolController::class)->progress($rab->id);
+
+                $status = '';
+                if ($progress == 100) {
+                    $status = 'success';
+                } elseif ($progress > 0 && $progress < 100) {
+                    $status = 'warning';
+                } else {
+                    $status = 'danger';
+                }
+
+                return '<div class="progress">
+                            <div class="progress-bar progress-bar-striped bg-' . $status . '" role="progressbar" style="width: ' . $progress . '%" aria-valuenow="' . $progress . '" aria-valuemin="0" aria-valuemax="100">' . number_format($progress, 2) . '%</div>
+                        </div>';
+                // return number_format($progress, 2) . '%';
             })
             ->addIndexColumn()
             ->addColumn('action', 'rabs.action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'progress', 'rab_no'])
             ->toJson();
     }
 
@@ -178,5 +216,12 @@ class RabController extends Controller
             })
             ->addIndexColumn()
             ->toJson();
+    }
+
+    public function test($id)
+    {
+        $result = app(ToolController::class)->progress($id);
+        return $result;
+        die;
     }
 }
