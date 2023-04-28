@@ -45,7 +45,12 @@ class RabController extends Controller
         $rab->budget = $request->budget;
         $rab->filename = $filename;
         $rab->status = 'progress';
+        $rab->created_by = auth()->user()->id;
         $rab->save();
+
+        // SAVE ACTIVITY
+        $activityCtrl = app(ActivityController::class);
+        $activityCtrl->store(auth()->user()->id, 'Created RAB', $request->rab_no);
 
         return redirect()->route('rabs.index')->with('success', 'RAB created successfully');
     }
@@ -143,7 +148,7 @@ class RabController extends Controller
                     $status_badge = 'danger';
                 else
                     $status_badge = 'warning';
-                
+
                 return '<a href="' . route('rabs.show', $rab->id) . '">' . $rab->rab_no . '</a> <br> <button class="btn btn-xs btn-' . $status_badge . '" style="pointer-events: none;">' . ucfirst($rab->status) . '</button>';
             })
             ->editColumn('date', function ($rab) {

@@ -37,10 +37,12 @@
                 <div class="progress-bar progress-bar-striped {{ $status_color }}" role="progressbar" style="width: {{ $progress }}%" 
                 style="width: {{ $progress }}%"
                 aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($progress, 2) }}%</div>
-              </div>
-            </dd>
-            <dt class="col-sm-4">Status</dt>
+                </div>
+              </dd>
+              <dt class="col-sm-4">Status</dt>
               <dd class="col-sm-8">: {{ ucfirst($rab->status) }}</dd>
+              <dt class="col-sm-4">Created by</dt>
+              <dd class="col-sm-8">: {{ $rab->created_by ? $rab->employee->name : 'n/a' }}</dd>
             </dl>
           </div>
           <div class="card-body">
