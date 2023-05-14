@@ -137,8 +137,15 @@ class UserController extends Controller
 
         return datatables()->of($users)
             ->addIndexColumn()
+            ->editColumn('is_active', function ($user) {
+                if ($user->is_active == 1) {
+                    return '<span class="badge badge-success">Active</span>';
+                } else {
+                    return '<span class="badge badge-danger">Inactive</span>';
+                }
+            })
             ->addColumn('action', 'users.action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'is_active'])
             ->toJson();
     }
 }

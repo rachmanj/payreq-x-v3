@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Payreq10</title>
+  <title>Payreq-X</title>
 
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -17,7 +17,7 @@
 <body class="hold-transition login-page">
 <div class="login-box">
   <div class="login-logo">
-    <a href="#"><b>Payreq</b> - <small>Support 10</small></a>
+    <a href="#"><b>Payreq</b> - <small>System</small></a>
   </div>
   <!-- /.login-logo -->
   <div class="card">

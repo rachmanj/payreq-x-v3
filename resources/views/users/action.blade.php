@@ -1,6 +1,3 @@
-
-
-
 {{-- <button class="btn btn-xs btn-warning" data-toggle="modal" data-target="#edit-user-{{ $model->id }}">edit</button> --}}
 
 @if ($model->is_active == 1)

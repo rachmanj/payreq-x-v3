@@ -12,7 +12,9 @@ use App\Http\Controllers\GiroController;
 use App\Http\Controllers\GiroDetailController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\OngoingPayreqController;
 use App\Http\Controllers\OutgoingController;
+use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RabController;
 use App\Http\Controllers\RealizationController;
@@ -54,7 +56,7 @@ Route::middleware('auth')->group(function () {
         Route::get('data', [RoleController::class, 'data'])->name('data');
     });
     Route::resource('roles', RoleController::class);
-    
+
     // PERMISSIONS
     Route::prefix('permissions')->name('permissions.')->group(function () {
         Route::get('data', [PermissionController::class, 'data'])->name('data');
@@ -66,6 +68,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [DashboardUserController::class, 'index'])->name('index');
         Route::get('/{id}', [DashboardUserController::class, 'show'])->name('show');
     });
+
+    // ONGOING PAYREQS
+    Route::prefix('ongoings')->name('ongoings.')->group(function () {
+        Route::get('/data', [OngoingPayreqController::class, 'data'])->name('data');
+        Route::get('/create_advance', [OngoingPayreqController::class, 'create_advance'])->name('create_advance');
+        Route::get('/create_other', [OngoingPayreqController::class, 'create_other'])->name('create_other');
+        Route::post('/store_advance', [OngoingPayreqController::class, 'store_advance'])->name('store_advance');
+        Route::post('/store_other', [OngoingPayreqController::class, 'store_other'])->name('store_other');
+    });
+    Route::resource('ongoings', OngoingPayreqController::class);
+
+    // PARAMETERS
+    Route::prefix('parameters')->name('parameters.')->group(function () {
+        Route::get('/data', [ParameterController::class, 'data'])->name('data');
+    });
+    Route::resource('parameters', ParameterController::class);
+
 
     //APROVAL
     Route::prefix('approved')->name('approved.')->group(function () {

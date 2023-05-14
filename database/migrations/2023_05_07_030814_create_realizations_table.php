@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('rabs', function (Blueprint $table) {
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('cascade');
+        Schema::create('realizations', function (Blueprint $table) {
+            $table->id();
+            $table->string('number');
+            $table->foreignId('payreq_id');
+            $table->foreignId('user_id');
+            $table->string('remarks')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -21,9 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('rabs', function (Blueprint $table) {
-            $table->dropForeign(['created_by']);
-            $table->dropColumn('created_by');
-        });
+        Schema::dropIfExists('realizations');
     }
 };

@@ -11,33 +11,18 @@ class Payreq extends Model
 
     protected $guarded = [];
 
-    public function employee()
+    public function outgongs()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->hasMany(Outgoing::class);
     }
 
-    // relationship with department
-    public function department()
+    public function relization()
     {
-        return $this->hasOneThrough(Department::class, User::class, 'id', 'id', 'user_id', 'department_id');
+        return $this->hasOne(Relization::class);
     }
 
     public function rab()
     {
-        return $this->belongsTo(Rab::class, 'rab_id', 'id')->withDefault([
-            'rab_no' => 'n/a',
-        ]);
-    }
-
-    public function splits()
-    {
-        return $this->hasMany(Split::class, 'payreq_id', 'id');
-    }
-
-    public function advance_category()
-    {
-        return $this->belongsTo(AdvanceCategory::class, 'adv_category_id', 'id')->withDefault([
-            'adv_category_code' => 'n/a',
-        ]);
+        return $this->belongsTo(Rab::class);
     }
 }
