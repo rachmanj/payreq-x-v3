@@ -18,7 +18,7 @@
           </li>
 
           @hasanyrole('superadmin|user')
-            @include('templates.partials.menu.payreq')
+            @include('templates.partials.menu.mypayreq')
           @endhasanyrole
 
           @hasanyrole('superadmin|admin|acc_cashier')

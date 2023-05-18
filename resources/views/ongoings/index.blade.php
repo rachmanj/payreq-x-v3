@@ -1,7 +1,7 @@
 @extends('templates.main')
 
 @section('title_page')
-    User PayReqs
+    My Payreqs
 @endsection
 
 @section('breadcrumb_title')
