@@ -11,12 +11,12 @@ class Payreq extends Model
 
     protected $guarded = [];
 
-    public function outgongs()
+    public function approval_plans()
     {
-        return $this->hasMany(Outgoing::class);
+        return $this->hasMany(ApprovalPlan::class);
     }
 
-    public function relization()
+    public function realization()
     {
         return $this->hasOne(Relization::class);
     }

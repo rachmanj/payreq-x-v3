@@ -17,12 +17,10 @@
         <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#new-payreq">
           <i class="fas fa-plus"></i> New Payreq
         </button>
-        {{-- <a href="{{ route('ongoings.create_advance') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Payreq Advance</a>
-        <a href="{{ route('ongoings.create_other') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Payreq Other</a> --}}
       </div>
-      <!-- /.card-header -->
+      
       <div class="card-body">
-        <table id="ongoings" class="table table-bordered table-striped">
+        <table id="mypayreqs" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
@@ -37,6 +35,7 @@
           </thead>
         </table>
       </div>
+
       <!-- /.card-body -->
     </div>
     <!-- /.card -->
@@ -56,8 +55,8 @@
         </button>
       </div>
       <div class="modal-body justify-content-between">
-          <a href="{{ route('ongoings.create_advance') }}" class="btn btn-outline-success btn-lg btn-block">Advance</a>
-          <a href="{{ route('ongoings.create_other') }}" class="btn btn-outline-primary btn-lg btn-block">Other</a>
+          <a href="{{ route('payreq-advance.create') }}" class="btn btn-outline-success btn-lg btn-block">Advance</a>
+          <a href="{{ route('payreq-other.create') }}" class="btn btn-outline-primary btn-lg btn-block">Other</a>
       </div>
     </div> <!-- /.modal-content -->
   </div> <!-- /.modal-dialog -->
@@ -83,10 +82,10 @@
 
 <script>
   $(function () {
-    $("#ongoings").DataTable({
+    $("#mypayreqs").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('ongoings.data') }}',
+      ajax: '{{ route('mypayreqs.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'payreq_no'},

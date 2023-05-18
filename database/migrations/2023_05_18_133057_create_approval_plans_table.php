@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('approvals', function (Blueprint $table) {
+        Schema::create('approval_plans', function (Blueprint $table) {
             $table->id();
             $table->foreignId('payreq_id');
-            $table->foreignId('user_id');
+            $table->foreignId('approver_id');
             $table->string('status')->default('pending'); // pending | approved | rejected | revised
             $table->string('remarks')->nullable();
             $table->timestamps();
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('approvals');
+        Schema::dropIfExists('approval_plans');
     }
 };
