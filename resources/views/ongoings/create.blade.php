@@ -22,13 +22,13 @@
               @csrf
 
               <div class="form-group">
-                <label for="payreq_no">Payreq No</label>
+                <label for="payreq_no">Payreq No <small>(auto generated)</small></label>
                 <input type="text" name="payreq_num" value="{{ $payreq_no }}" class="form-control" disabled>
               </div>
 
               <div class="form-group">
                 <label for="amount">Amount</label>
-                <input type="text" name="amount" id="amount" value="{{ old('amount') }}" class="form-control @error('amount') is-invalid @enderror">
+                <input type="text" name="amount" id="amount" value="{{ old('amount') }}" class="form-control @error('amount') is-invalid @enderror" autofocus>
                 @error('amount')
                 <div class="invalid-feedback">
                   {{ $message }}
@@ -38,11 +38,23 @@
 
               <div class="form-group">
                 <label for="remarks">Purpose</label>
-                <textarea name="remarks" id="remarks" cols="30" rows="2" class="form-control">{{ old('remarks') }}</textarea>
+                <textarea name="remarks" id="remarks" cols="30" rows="2" class="form-control @error('remarks') is-invalid @enderror">{{ old('remarks') }}</textarea>
+                @error('remarks')
+                <div class="invalid-feedback">
+                  {{ $message }}
+                </div>
+                @enderror
               </div>
 
               <div class="card-footer">
-                <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-save"></i> Save</button>
+                <div class="row">
+                  <div class="col-6">
+                    <button type="submit" class="btn btn-primary btn-block" id="btn-draft"><i class="fas fa-save"></i> Save as Draft</button>
+                  </div>
+                  <div class="col-6">
+                    <button type="submit" class="btn btn-warning btn-block" id="btn-submit"><i class="fas fa-paper-plane"></i> Save and Submit</button>
+                  </div>
+                </div>
               </div>
             </form>
 
@@ -68,5 +80,17 @@
       theme: 'bootstrap4'
     })
   }) 
+
+  // btn-save as draft
+  $('#btn-draft').click(function() {
+    // add attribute name="draft" to form
+    $('form').append('<input type="hidden" name="draft" value="1">');
+  });
+
+  // btn-save and submit
+  $('#btn-submit').click(function() {
+    // add attribute name="draft" to form
+    $('form').append('<input type="hidden" name="draft" value="0">');
+  });
 </script>
 @endsection

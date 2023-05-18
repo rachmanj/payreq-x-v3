@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdvanceCategoryController;
+use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\ApprovedController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DashboardAccountingController;
@@ -85,14 +86,11 @@ Route::middleware('auth')->group(function () {
     });
     Route::resource('parameters', ParameterController::class);
 
-
-    //APROVAL
-    Route::prefix('approved')->name('approved.')->group(function () {
-        Route::get('/data', [ApprovedController::class, 'data'])->name('data');
-        Route::get('/all', [ApprovedController::class, 'all'])->name('all');
-        Route::get('/all/data', [ApprovedController::class, 'all_data'])->name('all.data');
+    // APPROVAL STAGES
+    Route::prefix('approval-stages')->name('approval-stages.')->group(function () {
+        Route::get('/data', [ApprovalStageController::class, 'data'])->name('data');
     });
-    Route::resource('approved', ApprovedController::class);
+    Route::resource('approval-stages', ApprovalStageController::class);
 
     // REALIZATION
     Route::prefix('realization')->name('realization.')->group(function () {

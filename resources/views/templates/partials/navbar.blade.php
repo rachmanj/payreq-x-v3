@@ -17,14 +17,21 @@
             <a href="{{ route('dashboard.index') }}" class="nav-link">Dashboard</a>
           </li>
 
+          @hasanyrole('superadmin|user')
+            @include('templates.partials.menu.payreq')
+          @endhasanyrole
+
           @hasanyrole('superadmin|admin|acc_cashier')
-          @include('templates.partials.menu.payreq')
-          @include('templates.partials.menu.accounting')
+            @include('templates.partials.menu.accounting')
           @endhasanyrole
           
           @hasanyrole('superadmin|admin|acc_cashier|dnc_staff')
-          @include('templates.partials.menu.dnc')
+            @include('templates.partials.menu.dnc')
           @endhasanyrole
+
+          @can('akses_approvals')
+            @include('templates.partials.menu.approvals')
+          @endcan
 
           @can('akses_admin')
             @include('templates.partials.menu.admin')

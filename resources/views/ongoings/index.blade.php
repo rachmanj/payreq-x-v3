@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Approved Payment Request
+    User PayReqs
 @endsection
 
 @section('breadcrumb_title')
-    approved
+    payreqs
 @endsection
 
 @section('content')
@@ -95,7 +95,7 @@
         {data: 'created_at'},
         {data: 'amount'},
         // {data: 'days'},
-        // {data: 'action', orderable: false, searchable: false},
+        {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [

@@ -5,5 +5,5 @@
       Dev. by. IT Dept.
     </div>
     <!-- Default to the left -->
-    <strong>Copyright &copy; 2022 <a href="http://www.arka.co.id">ARKA</a>.</strong> All rights reserved.
+    <strong>Copyright &copy; {{ date('Y') }} <a href="http://www.arka.co.id">ARKA</a>.</strong> All rights reserved.
   </footer>

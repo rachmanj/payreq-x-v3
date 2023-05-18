@@ -3,4 +3,4 @@
     <ul aria-labelledby="dropdownPayreq" class="dropdown-menu border-0 shadow">
       <li><a href="{{ route('ongoings.index') }}" class="dropdown-item">Ongoing</a></li>
     </ul>
-  </li>
+</li>
