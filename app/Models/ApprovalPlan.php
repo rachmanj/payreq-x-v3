@@ -11,9 +11,9 @@ class ApprovalPlan extends Model
 
     protected $guarded = [];
 
-    public function approvers()
+    public function approver()
     {
-        return $this->hasMany(Approver::class, 'approval_id', 'id');
+        return $this->belongsTo(User::class, 'approver_id');
     }
 
     public function payreq()

@@ -18,6 +18,8 @@ class PayreqController extends Controller
             $validated = $data->validate([
                 'remarks' => 'required',
                 'amount' => 'required|numeric',
+                'project' => 'required',
+                'department_id' => 'required',
             ]);
 
             $payreq = Payreq::create(array_merge($validated, [
@@ -41,6 +43,8 @@ class PayreqController extends Controller
             $validated = $data->validate([
                 'remarks' => 'required',
                 'amount' => 'required|numeric',
+                'project' => 'required',
+                'department_id' => 'required',
             ]);
 
             $payreq = Payreq::findOrFail($id);
@@ -70,7 +74,7 @@ class PayreqController extends Controller
         $payreq_project_count = Payreq::where('project', auth()->user()->project)
             ->where('status', 'approved')
             ->count();
-        $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($payreq_project_count + 1, 3, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($payreq_project_count + 1, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }

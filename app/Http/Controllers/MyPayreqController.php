@@ -22,6 +22,13 @@ class MyPayreqController extends Controller
         return redirect()->route('mypayreqs.index')->with('success', 'Payment Request updated');
     }
 
+    public function show($id)
+    {
+        $payreq = Payreq::findOrFail($id);
+
+        return view('mypayreqs.show', compact('payreq'));
+    }
+
     public function destroy($id)
     {
         $payreq = Payreq::findOrFail($id);

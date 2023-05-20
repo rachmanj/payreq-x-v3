@@ -16,6 +16,16 @@ class Payreq extends Model
         return $this->hasMany(ApprovalPlan::class);
     }
 
+    public function requestor()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     public function realization()
     {
         return $this->hasOne(Relization::class);

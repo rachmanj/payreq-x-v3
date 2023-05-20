@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdvanceCategoryController;
+use App\Http\Controllers\ApprovalPlanController;
+use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\ApprovedController;
 use App\Http\Controllers\BudgetController;
@@ -87,7 +89,16 @@ Route::middleware('auth')->group(function () {
     // PAYREQ OTHER
     Route::resource('payreq-other', PayreqOtherController::class);
 
-
+    // APPROVALS
+    Route::prefix('approvals')->name('approvals.')->group(function () {
+        Route::prefix('request')->name('request.')->group(function () {
+            Route::get('/data', [ApprovalRequestController::class, 'data'])->name('data');
+            Route::get('/', [ApprovalRequestController::class, 'index'])->name('index');
+        });
+        Route::prefix('plan')->name('plan.')->group(function () {
+            Route::put('/{id}/update', [ApprovalPlanController::class, 'update'])->name('update');
+        });
+    });
 
     // PARAMETERS
     Route::prefix('parameters')->name('parameters.')->group(function () {

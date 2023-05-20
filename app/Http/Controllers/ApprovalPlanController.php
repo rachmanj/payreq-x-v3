@@ -18,6 +18,7 @@ class ApprovalPlanController extends Controller
             ->where('department_id', $user->department_id)
             ->get();
 
+        // if false
         if ($approvers->count() == 0) {
             return false;
         }
@@ -30,9 +31,24 @@ class ApprovalPlanController extends Controller
         }
 
         // if success
+        return $approvers->count();
+    }
 
+    public function update(Request $request, $id)
+    {
+        $approval_plan = ApprovalPlan::findOrFail($id);
+        $approval_plan->update([
+            'status' => $request->status,
+            'remarks' => $request->remarks,
+            'is_read' => 0
+        ]);
 
+        // update payreq status
+        $payreq = Payreq::findOrFail($approval_plan->payreq_id);
+        $payreq->update([
+            'status' => $request->status,
+        ]);
 
-        return true;
+        return redirect()->route('approvals.request.index')->with('success', 'Approval Request updated');
     }
 }

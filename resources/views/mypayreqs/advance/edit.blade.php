@@ -22,11 +22,29 @@
               @csrf @method('PUT')
 
               <input type="hidden" name="form_type" value="advance">
-              <div class="form-group">
-                <label for="payreq_no">Payreq No</label>
-                <input type="text" name="payreq_no" value="{{ $payreq->payreq_no }}" class="form-control" disabled>
-              </div>
 
+              <div class="row">
+                <div class="col-4">
+                  <div class="form-group">
+                    <label for="payreq_no">Payreq No</label>
+                    <input type="text" name="payreq_no" value="{{ $payreq->payreq_no }}" class="form-control" disabled>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="form-group">
+                    <label for="project">Project</label>
+                    <input type="text" name="project" value="{{ $payreq->project }}" class="form-control" readonly>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="form-group">
+                    <label for="department">Department</label>
+                    <input type="hidden" name="department_id" value="{{ $payreq->department_id }}">
+                    <input type="text" name="department" value="{{ $payreq->department->department_name }}" class="form-control" disabled>
+                  </div>
+                </div>
+              </div>
+              
               <div class="form-group">
                 <label for="remarks">Purpose</label>
                 <textarea name="remarks" id="remarks" cols="30" rows="2" class="form-control @error('remarks') is-invalid @enderror" autofocus>{{ old('remarks', $payreq->remarks) }}</textarea>

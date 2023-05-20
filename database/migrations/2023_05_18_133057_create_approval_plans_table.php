@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('approver_id');
             $table->string('status')->default('pending'); // pending | approved | rejected | revised
             $table->string('remarks')->nullable();
+            $table->boolean('is_read')->default(true);
             $table->timestamps();
         });
     }
