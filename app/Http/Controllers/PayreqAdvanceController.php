@@ -21,21 +21,23 @@ class PayreqAdvanceController extends Controller
         if ($response->status == 'draft') {
             return redirect()->route('mypayreqs.index')->with('success', 'Payreq Advance Draft saved');
         } else {
-            $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan(auth()->user()->id, $response->id);
+            $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan($response->id);
 
             if ($approval_plan_response == false) {
                 // update payreq status to draft
                 $payreq = Payreq::findOrFail($response->id);
                 $payreq->update([
                     'status' => 'draft',
+                    'editable' => '1',
+                    'deletable' => '1',
                 ]);
                 return redirect()->route('mypayreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft');
             }
 
-            $payreq = Payreq::findOrFail($response->id);
-            $payreq->update([
-                'approval_plan_count' => $approval_plan_response,
-            ]);
+            // $payreq = Payreq::findOrFail($response->id);
+            // $payreq->update([
+            //     'approval_plan_count' => $approval_plan_response,
+            // ]);
             return redirect()->route('mypayreqs.index')->with('success', 'Payreq Advance submitted');
         }
     }
@@ -54,7 +56,7 @@ class PayreqAdvanceController extends Controller
         if ($response->status == 'draft') {
             return redirect()->route('mypayreqs.index')->with('success', 'Payreq Advance Draft saved');
         } else {
-            $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan(auth()->user()->id, $response->id);
+            $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan($response->id);
 
             if ($approval_plan_response == false) {
                 // update payreq status to draft
@@ -65,10 +67,10 @@ class PayreqAdvanceController extends Controller
                 return redirect()->route('mypayreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft');
             }
 
-            $payreq = Payreq::findOrFail($response->id);
-            $payreq->update([
-                'approval_plan_count' => $approval_plan_response,
-            ]);
+            // $payreq = Payreq::findOrFail($response->id);
+            // $payreq->update([
+            //     'approval_plan_count' => $approval_plan_response,
+            // ]);
 
             return redirect()->route('mypayreqs.index')->with('success', 'Payreq Advance submitted');
         }

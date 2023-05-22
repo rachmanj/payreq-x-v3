@@ -25,6 +25,8 @@ class PayreqController extends Controller
             $payreq = Payreq::create(array_merge($validated, [
                 'project' => auth()->user()->project,
                 'status' => $data->draft == '1' ? 'draft' : 'submitted',
+                'editable' => $data->draft == '1' ? '1' : '0',
+                'deletable' => $data->draft == '1' ? '1' : '0',
                 'payreq_no' => $this->generateDraftNumber(),
                 'type' => 'advance',
                 'user_id' => auth()->user()->id,
@@ -50,6 +52,8 @@ class PayreqController extends Controller
             $payreq = Payreq::findOrFail($id);
             $payreq->update(array_merge($validated, [
                 'status' => $data->draft == '1' ? 'draft' : 'submitted',
+                'editable' => $data->draft == '1' ? '1' : '0',
+                'deletable' => $data->draft == '1' ? '1' : '0',
             ]));
 
             return $payreq;
@@ -69,9 +73,10 @@ class PayreqController extends Controller
         return $nomor;
     }
 
-    public function generatePRNumber()
+    public function generatePRNumber($payreq_id)
     {
-        $payreq_project_count = Payreq::where('project', auth()->user()->project)
+        $payreq = Payreq::findOrFail($payreq_id);
+        $payreq_project_count = Payreq::where('project', $payreq->project)
             ->where('status', 'approved')
             ->count();
         $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($payreq_project_count + 1, 5, '0', STR_PAD_LEFT);

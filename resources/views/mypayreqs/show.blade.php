@@ -22,12 +22,14 @@
                 <dd class="col-sm-8">: {{ $payreq->payreq_no }}</dd>
                 <dt class="col-sm-4">Type</dt> 
                 <dd class="col-sm-8">: {{ ucfirst($payreq->type) }}</dd>
-                <dt class="col-sm-4">Payreq No</dt>
+                <dt class="col-sm-4">Amount</dt>
                 <dd class="col-sm-8">: IDR {{ number_format($payreq->amount, 2) }}</dd>
                 <dt class="col-sm-4">Purpose</dt>
                 <dd class="col-sm-8">: {{ $payreq->remarks }}</dd>
                 <dt class="col-sm-4">Status</dt>
                 <dd class="col-sm-8">: {{ $payreq->status == 'submitted' ? 'Wait approve' : ucfirst($payreq->status) }}</dd>
+                <dt class="col-sm-4">Created at</dt>
+                <dd class="col-sm-8">: {{ $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') }}</dd>
               </div>
             </div>
 
@@ -42,6 +44,7 @@
                     <th>Approver</th>
                     <th>Status</th>
                     <th>Comment</th>
+                    <th>Response at</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -49,8 +52,13 @@
                     <tr>
                       <td>{{ $key+1 }}</td>
                       <td>{{ $item->approver->name }}</td>
-                      <td>{{ ucfirst($item->status) }}</td>
-                      <td>{{ $item->comment }}</td>
+                      @foreach ($approval_plan_status as $key => $value)
+                        @if ($key == $item->status)
+                          <td>{{ $value }}</td>
+                        @endif
+                      @endforeach
+                      <td>{{ $item->remarks }}</td>
+                      <td>{{ $item->updated_at->addHours(8)->format('d-M-Y H:i:s') }}</td>
                     </tr>
                   @endforeach
               </table>

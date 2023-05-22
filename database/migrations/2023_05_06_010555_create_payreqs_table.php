@@ -21,9 +21,12 @@ return new class extends Migration
             $table->date('due_date')->nullable();
             $table->string('project', 20)->nullable();
             $table->foreignId('department_id')->nullable();
-            $table->integer('approval_plan_count')->nullable();
+            // $table->integer('approval_plan_count')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->foreignId('rab_id')->nullable();
+            $table->boolean('editable')->default(true);
+            $table->boolean('deletable')->default(true);
+            $table->boolean('printable')->default(false);
             $table->string('status')->nullable(); // draft / approved / rejected / outgoing / realized / verified
             $table->timestamps();
         });

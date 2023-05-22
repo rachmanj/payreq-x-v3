@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApprovalPlan;
 use App\Models\Payreq;
 use Illuminate\Http\Request;
 
@@ -11,8 +12,6 @@ class MyPayreqController extends Controller
     {
         return view('mypayreqs.index');
     }
-
-
 
     public function update(Request $request, $id)
     {
@@ -26,7 +25,24 @@ class MyPayreqController extends Controller
     {
         $payreq = Payreq::findOrFail($id);
 
-        return view('mypayreqs.show', compact('payreq'));
+        // update is_read to 1
+        ApprovalPlan::where('payreq_id', $payreq->id)
+            ->where('is_read', 0)
+            ->update(['is_read' => 1]);
+
+        $aproval_plans = ApprovalPlan::where('payreq_id', $payreq->id)
+            ->get();
+
+        $approval_plan_status = app(ApprovalPlanController::class)->approvalStatus();
+
+        return view('mypayreqs.show', compact('payreq', 'approval_plan_status'));
+    }
+
+    public function print($id)
+    {
+        $payreq = Payreq::findOrFail($id);
+
+        return view('mypayreqs.print_pdf', compact('payreq'));
     }
 
     public function destroy($id)
@@ -53,14 +69,28 @@ class MyPayreqController extends Controller
         }
 
         return datatables()->of($payreqs)
-            ->editColumn('payreq_no', function ($payreqs) {
-                return '<a href="' . route('mypayreqs.show', $payreqs->id) . '">' . $payreqs->payreq_no . '</a>';
+            ->editColumn('payreq_no', function ($payreq) {
+                $notif_count = ApprovalPlan::where('payreq_id', $payreq->id)
+                    ->where('is_read', 0)
+                    ->count();
+
+                $notif = '';
+                if ($notif_count > 0) {
+                    $notif = '<span class="badge badge-info">' . $notif_count . '</span>';
+                }
+                return '<a href="' . route('mypayreqs.show', $payreq->id) . '">' . $payreq->payreq_no . '</a>' . $notif;
             })
-            ->editColumn('amount', function ($payreqs) {
-                return number_format($payreqs->amount, 2);
+            ->editColumn('type', function ($payreq) {
+                return ucfirst($payreq->type);
             })
-            ->editColumn('created_at', function ($payreqs) {
-                return $payreqs->created_at->addHours(8)->format('d-M-Y H:i:s');
+            ->editColumn('status', function ($payreq) {
+                return ucfirst($payreq->status);
+            })
+            ->editColumn('amount', function ($payreq) {
+                return number_format($payreq->amount, 2);
+            })
+            ->editColumn('created_at', function ($payreq) {
+                return $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita';
             })
             ->addColumn('action', 'mypayreqs.action')
             ->rawColumns(['action', 'payreq_no'])

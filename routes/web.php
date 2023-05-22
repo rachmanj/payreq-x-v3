@@ -81,6 +81,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [MyPayreqController::class, 'index'])->name('index');
         Route::get('/{id}', [MyPayreqController::class, 'show'])->name('show');
         Route::delete('/{id}', [MyPayreqController::class, 'destroy'])->name('destroy');
+        // print pdf
+        Route::get('/{id}/print', [MyPayreqController::class, 'print'])->name('print');
     });
 
     // PAYREQ ADVANCE
