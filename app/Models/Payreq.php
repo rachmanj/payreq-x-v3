@@ -26,6 +26,11 @@ class Payreq extends Model
         return $this->belongsTo(Department::class);
     }
 
+    public function outgoings()
+    {
+        return $this->hasMany(Outgoing::class);
+    }
+
     public function realization()
     {
         return $this->hasOne(Relization::class);

@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('outgoings', function (Blueprint $table) {
+        Schema::create('accounts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cashier_id')->nullable();
-            $table->foreignId('payreq_id')->nullable();
-            $table->foreignId('account_id')->nullable();
-            $table->date('outgoing_date')->nullable();
-            $table->double('amount')->nullable();
+            $table->string('account_number');
+            $table->string('account_name');
             $table->string('description')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('outgoings');
+        Schema::dropIfExists('accounts');
     }
 };

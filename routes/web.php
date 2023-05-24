@@ -114,6 +114,13 @@ Route::middleware('auth')->group(function () {
     });
     Route::resource('approval-stages', ApprovalStageController::class);
 
+    // OUTGOINGs
+    Route::prefix('outgoings')->name('outgoings.')->group(function () {
+        Route::get('/data', [OutgoingController::class, 'data'])->name('data');
+        Route::get('/', [OutgoingController::class, 'index'])->name('index');
+        Route::post('/store', [OutgoingController::class, 'store'])->name('store');
+    });
+
     // REALIZATION
     Route::prefix('realization')->name('realization.')->group(function () {
         Route::get('/data', [RealizationController::class, 'data'])->name('data');
@@ -121,15 +128,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{id}', [RealizationController::class, 'update'])->name('update');
     });
 
-    // OUTGOING
-    Route::prefix('outgoing')->name('outgoing.')->group(function () {
-        Route::get('/data', [OutgoingController::class, 'data'])->name('data');
-        Route::get('/', [OutgoingController::class, 'index'])->name('index');
-        Route::put('/{id}', [OutgoingController::class, 'update'])->name('update');
-        Route::get('/{id}/split', [OutgoingController::class, 'split'])->name('split');
-        Route::put('/{id}/update-split', [OutgoingController::class, 'split_update'])->name('split_update');
-        Route::put('/{id}/auto', [OutgoingController::class, 'auto_update'])->name('auto_update');
-    });
+
 
     // VERIFICATION
     Route::prefix('verify')->name('verify.')->group(function () {

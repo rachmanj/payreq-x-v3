@@ -21,13 +21,12 @@
           <thead>
           <tr>
             <th>#</th>
-            <th>Name</th>
+            <th>Requestor</th>
             <th>Payreq No</th>
             <th>Type</th>
             <th>Apprv Date</th>
-            <th>IDR</th>
-            <th>Days</th>
-            <th>release</th>
+            <th>Amount (IDR)</th>
+            <th>action</th>
           </tr>
           </thead>
         </table>
@@ -62,21 +61,20 @@
     $("#payreqs").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('outgoing.data') }}',
+      ajax: '{{ route('outgoings.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'employee'},
-        {data: 'payreq_num'},
-        {data: 'payreq_type'},
-        {data: 'approve_date'},
-        {data: 'payreq_idr'},
-        {data: 'days'},
+        {data: 'requestor'},
+        {data: 'payreq_no'},
+        {data: 'type'},
+        {data: 'approved_at'},
+        {data: 'amount'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5, 6],
+                "targets": [5],
                 "className": "text-right"
               }
             ]
