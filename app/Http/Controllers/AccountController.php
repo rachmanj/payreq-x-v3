@@ -2,79 +2,85 @@
 
 namespace App\Http\Controllers;
 
+use App\Imports\AccountImport;
 use App\Models\Account;
 use App\Models\Transaksi;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AccountController extends Controller
 {
     public function index()
     {
-        $accounts = Account::orderBy('account_no', 'asc')->get();
-        return view('account.index', compact('accounts'));
+        $accounts = Account::orderBy('account_number', 'asc')->get();
+
+        return view('accounts.index', compact('accounts'));
     }
 
     public function store(Request $request)
     {
-        $this->validate($request, [
-            'name' => 'required|max:50|unique:accounts',
-            'account_no' => 'required|max:50|unique:accounts',
+        $validated = $request->validate([
+            'account_number' => 'required|unique:accounts',
+            'account_name' => 'required',
+            'description' => 'required',
         ]);
 
-        $account = new Account();
-        $account->name = $request->name;
-        $account->account_no = $request->account_no;
-        $account->save();
+        Account::create($validated);
 
-        return redirect()->route('account.index')->with('success', 'Account created successfully');
+        return redirect()->route('accounts.index')->with('success', 'Account created successfully!');
     }
 
     public function update(Request $request, $id)
     {
-        $this->validate($request, [
-            'name' => 'required|max:50|unique:accounts,name,' . $id,
-            'account_no' => 'required|max:50|unique:accounts,account_no,' . $id,
+        $validated = $request->validate([
+            'account_number' => 'required|unique:accounts,account_number,' . $id,
+            'account_name' => 'required',
+            'description' => 'required',
         ]);
 
-        $account = Account::find($id);
-        $account->name = $request->name;
-        $account->account_no = $request->account_no;
-        $account->save();
+        Account::where('id', $id)->update($validated);
 
-        return redirect()->route('account.index')->with('success', 'Account updated successfully');
+        return redirect()->route('accounts.index')->with('success', 'Account updated successfully!');
     }
 
-    public function transaksi_store(Request $request)
+    public function destroy($id)
     {
+        $account = Account::findOrFail($id);
+        $account->delete();
+
+        return redirect()->route('accounts.index')->with('success', 'Account deleted successfully!');
+    }
+
+    public function upload(Request $request)
+    {
+        // VALIDATE
         $this->validate($request, [
-            'account_id' => 'required',
-            'amount' => 'required|numeric',
-            'type' => 'required',
+            'file_upload' => 'required|mimes:xls,xlsx'
         ]);
 
-        Transaksi::create($request->all());
+        // GET FILE
+        $file = $request->file('file_upload');
 
-        $account = Account::find($request->account_id);
-        if ($request->type == 'plus') {
-            $account->balance += $request->amount;
-        } else {
-            $account->balance -= $request->amount;
-        }
-        $account->save();
+        // GET a UNIQUE FILE NAME
+        $nama_file = rand() . $file->getClientOriginalName();
 
-        return redirect()->route('account.index')->with('success', 'Account updated successfully');
+        // UPLOAD FILE TO FOLDER FILE_IMPORT
+        $file->move('file_upload', $nama_file);
+
+        // IMPORT DATA
+        Excel::import(new AccountImport, public_path('/file_upload/' . $nama_file));
+
+        // REDIRECT
+        return redirect()->route('accounts.index')->with('success', 'Account imported successfully!');
     }
 
     public function data()
     {
-        $accounts = Account::orderBy('name', 'asc')->get();
+        $accounts = Account::orderBy('account_number', 'asc')->get();
 
         return datatables()->of($accounts)
-            ->editColumn('balance', function ($account) {
-                return number_format($account->balance, 2);
-            })
             ->addIndexColumn()
-            ->addColumn('action', 'account.action')
+            ->addColumn('action', 'accounts.action')
             ->rawColumns(['action'])
             ->toJson();
     }

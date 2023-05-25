@@ -5,7 +5,6 @@ use App\Http\Controllers\AdvanceCategoryController;
 use App\Http\Controllers\ApprovalPlanController;
 use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\ApprovalStageController;
-use App\Http\Controllers\ApprovedController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DashboardAccountingController;
 use App\Http\Controllers\DashboardDncController;
@@ -16,7 +15,6 @@ use App\Http\Controllers\GiroDetailController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MyPayreqController;
-use App\Http\Controllers\OngoingPayreqController;
 use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqAdvanceController;
@@ -114,12 +112,19 @@ Route::middleware('auth')->group(function () {
     });
     Route::resource('approval-stages', ApprovalStageController::class);
 
-    // OUTGOINGs
+    // OUTGOINGS
     Route::prefix('outgoings')->name('outgoings.')->group(function () {
         Route::get('/data', [OutgoingController::class, 'data'])->name('data');
         Route::get('/', [OutgoingController::class, 'index'])->name('index');
         Route::post('/store', [OutgoingController::class, 'store'])->name('store');
     });
+
+    // ACCOUNTS
+    Route::prefix('accounts')->name('accounts.')->group(function () {
+        Route::get('/data', [AccountController::class, 'data'])->name('data');
+        Route::post('/upload', [AccountController::class, 'upload'])->name('upload');
+    });
+    Route::resource('accounts', AccountController::class);
 
     // REALIZATION
     Route::prefix('realization')->name('realization.')->group(function () {
