@@ -9,12 +9,19 @@ use Illuminate\Http\Request;
 
 class ToolController extends Controller
 {
-    public function getProjects()
+    public function getApiProjects() // api call to arkFleet
     {
         $url = env('URL_PROJECTS');
         $client = new \GuzzleHttp\Client();
         $response = $client->request('GET', $url);
         $projects = json_decode($response->getBody()->getContents(), true)['data'];
+
+        return $projects;
+    }
+
+    public function getLocalProjects()
+    {
+        $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
 
         return $projects;
     }

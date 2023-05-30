@@ -117,6 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/data', [OutgoingController::class, 'data'])->name('data');
         Route::get('/', [OutgoingController::class, 'index'])->name('index');
         Route::post('/store', [OutgoingController::class, 'store'])->name('store');
+        Route::get('/{payreq_id}', [OutgoingController::class, 'quick'])->name('quick');
     });
 
     // ACCOUNTS

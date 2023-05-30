@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('accounts', function (Blueprint $table) {
+        Schema::create('journals', function (Blueprint $table) {
             $table->id();
-            $table->string('account_number');
-            $table->string('account_name');
-            $table->integer('type')->default(4)->nullable(); // 1 = bank, 2 = cash, 3 = revenue, 4 = expense
-            $table->text('description')->nullable();
+            $table->string('journal_number');
+            $table->date('date');
+            $table->string('description')->nullable();
             $table->string('project', 20)->default('000H')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->string('reference');
+            $table->string('attachment');
+            $table->string('created_by');
             $table->timestamps();
         });
     }
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('accounts');
+        Schema::dropIfExists('journals');
     }
 };

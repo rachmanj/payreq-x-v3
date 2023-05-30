@@ -26,6 +26,7 @@
             <th>Type</th>
             <th>Apprv Date</th>
             <th>Amount (IDR)</th>
+            <th>days</th>
             <th>action</th>
           </tr>
           </thead>
@@ -69,12 +70,13 @@
         {data: 'type'},
         {data: 'approved_at'},
         {data: 'amount'},
+        {data: 'days'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5],
+                "targets": [5, 6],
                 "className": "text-right"
               }
             ]

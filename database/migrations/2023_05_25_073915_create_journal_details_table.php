@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('accounts', function (Blueprint $table) {
+        Schema::create('journal_details', function (Blueprint $table) {
             $table->id();
-            $table->string('account_number');
-            $table->string('account_name');
-            $table->integer('type')->default(4)->nullable(); // 1 = bank, 2 = cash, 3 = revenue, 4 = expense
+            $table->foreignId('journal_id');
+            $table->foreignId('account_id');
+            $table->decimal('debit', 18, 2)->default(0);
+            $table->decimal('credit', 18, 2)->default(0);
             $table->text('description')->nullable();
             $table->string('project', 20)->default('000H')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->foreignId('cost_center_id')->nullable();  // department or cost center
             $table->timestamps();
         });
     }
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('accounts');
+        Schema::dropIfExists('journal_details');
     }
 };

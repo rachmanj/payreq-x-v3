@@ -12,9 +12,10 @@ class AccountController extends Controller
 {
     public function index()
     {
-        $accounts = Account::orderBy('account_number', 'asc')->get();
+        $projects = app('App\Http\Controllers\ToolController')->getLocalProjects();
+        $types = $this->accountTypes();
 
-        return view('accounts.index', compact('accounts'));
+        return view('accounts.index', compact('projects', 'types'));
     }
 
     public function store(Request $request)
@@ -76,12 +77,36 @@ class AccountController extends Controller
 
     public function data()
     {
-        $accounts = Account::orderBy('account_number', 'asc')->get();
+        $accounts = Account::orderBy('account_number', 'asc')
+            ->where('is_active', 1)
+            ->get();
 
         return datatables()->of($accounts)
+            ->addColumn('type', function ($account) {
+                $type_name = '';
+                foreach ($this->accountTypes() as $type) {
+                    if ($type['id'] == $account->type) {
+                        $type_name = $type['name'];
+                    }
+                }
+                return $type_name;
+            })
             ->addIndexColumn()
             ->addColumn('action', 'accounts.action')
             ->rawColumns(['action'])
             ->toJson();
+    }
+
+    // ACCOUNT TYPE
+    public function accountTypes()
+    {
+        $account_types = [
+            ['id' => 1, 'name' => 'Bank'],
+            ['id' => 2, 'name' => 'Cash'],
+            ['id' => 3, 'name' => 'Revenue'],
+            ['id' => 4, 'name' => 'Expense'],
+        ];
+
+        return $account_types;
     }
 }

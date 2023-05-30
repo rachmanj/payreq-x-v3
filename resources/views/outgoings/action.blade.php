@@ -1,4 +1,5 @@
 <button type="submit" class="btn btn-xs btn-success" form="outgoings-store" data-toggle="modal" data-target="#outgoing-store-{{ $model->id }}" >Pay</button>
+<a href="{{ route('outgoings.quick', $model->id) }}" class="btn btn-xs btn-success">quick</a>
 
 {{-- MODAL PAYMENT --}}
 <div class="modal fade" id="outgoing-store-{{ $model->id }}">
@@ -20,9 +21,9 @@
             <label for="account_id">Account No <small>(optional)</small></label>
               <select name="account_id" id="account_id" class="form-control">
                 <option value="">-- select account --</option>
-                @foreach (\App\Models\Account::orderBy('account_no', 'asc')->get() as $account)
+                {{-- @foreach (\App\Models\Account::orderBy('account_no', 'asc')->get() as $account)
                   <option value="{{ $account->id }}">{{ $account->account_no }}</option>
-                @endforeach
+                @endforeach --}}
               </select>
           </div>
           <div class="form-group">

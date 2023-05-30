@@ -25,6 +25,8 @@
             <th>#</th>
             <th>Account No</th>
             <th>Account Name</th>
+            <th>Type</th>
+            <th>Project</th>
             <th>Description</th>
             <th></th>
           </tr>
@@ -51,14 +53,50 @@
       <form action="{{ route('accounts.store') }}" method="POST">
         @csrf
         <div class="modal-body">
-          <div class="form-group">
-            <label for="account_number">Account No</label>
-            <input name="account_number" id="account_number" value="{{ old('account_number') }}" class="form-control @error('account_number') is-invalid @enderror" autocomplete="off" autofocus>
-            @error('account_number')
-              <div class="invalid-feedback">
-                {{ $message }}
+          <div class="row">
+            <div class="col-4">
+              <div class="form-group">
+                <label for="account_number">Account No</label>
+                <input name="account_number" id="account_number" value="{{ old('account_number') }}" class="form-control @error('account_number') is-invalid @enderror" autocomplete="off" autofocus>
+                @error('account_number')
+                  <div class="invalid-feedback">
+                    {{ $message }}
+                  </div>
+                @enderror
               </div>
-            @enderror
+            </div>
+            <div class="col-4">
+              <div class="form-group">
+                <label for="type">Type</label>
+                <select name="type" id="type" class="form-control @error('type') is-invalid @enderror">
+                  <option value="">-- Select Type --</option>
+                  @foreach ($types as $type)
+                    <option value="{{ $type['id'] }}">{{ $type['name'] }}</option>
+                  @endforeach
+                </select>
+                @error('type')
+                  <div class="invalid-feedback">
+                    {{ $message }}
+                  </div>
+                @enderror
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="form-group">
+                <label for="project">Project</label>
+                <select name="type" id="type" class="form-control @error('type') is-invalid @enderror">
+                  <option value="" >-- select project --</option>
+                  @foreach ($projects as $project)
+                      <option value="{{ $project }}">{{ $project }}</option>
+                  @endforeach
+                </select>
+                @error('project')
+                  <div class="invalid-feedback">
+                    {{ $message }}
+                  </div>
+                @enderror
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -151,6 +189,8 @@
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'account_number'},
           {data: 'account_name'},
+          {data: 'type'},
+          {data: 'project'},
           {data: 'description'},
           {data: 'action', orderable: false, searchable: false},
         ],

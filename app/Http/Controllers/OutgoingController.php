@@ -5,9 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\Outgoing;
 use App\Models\Payreq;
-use App\Models\Rekap;
-use App\Models\Split;
-use App\Models\Transaksi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -18,7 +15,36 @@ class OutgoingController extends Controller
         return view('outgoings.index');
     }
 
-    public function store($payreq_id)
+    public function create($payreq_id)
+    {
+        $payreq = Payreq::findOrfail($payreq_id);
+        return view('outgoings.create', compact('payreq'));
+    }
+
+    public function quick($payreq_id)
+    {
+        $payreq = Payreq::findOrfail($payreq_id);
+        $account_id = Account::where('account_name', 'petty cash')
+            ->where('project', auth()->user()->project)
+            ->first()->id;
+
+        Outgoing::create([
+            'payreq_id' => $payreq->id,
+            'account_id' => $account_id,
+            'amount' => $payreq->amount,
+            'cashier_id' => auth()->user()->id,
+            'outgoing_date' => now(),
+        ]);
+
+        $payreq->update([
+            'status' => 'paid',
+            'printable' => 0,
+        ]);
+
+        return view('outgoings.index')->with('success', 'Payment Request paid successfully.');
+    }
+
+    public function store(Request $request, $payreq_id)
     {
         $payreq = Payreq::findOrfail($payreq_id);
     }
@@ -26,6 +52,7 @@ class OutgoingController extends Controller
     public function data()
     {
         $payreqs = Payreq::where('status', 'approved')
+            ->orderBy('approved_at', 'desc')
             ->get();
 
         return datatables()->of($payreqs)
@@ -46,6 +73,11 @@ class OutgoingController extends Controller
             })
             ->editColumn('type', function ($payreq) {
                 return ucfirst($payreq->type);
+            })
+            ->addColumn('days', function ($payreq) {
+                $date =  new Carbon($payreq->approved_at);
+                $days = $date->diffInDays(now());
+                return $days;
             })
             ->addIndexColumn()
             ->addColumn('action', 'outgoings.action')
