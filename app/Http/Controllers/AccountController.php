@@ -12,10 +12,7 @@ class AccountController extends Controller
 {
     public function index()
     {
-        $projects = app('App\Http\Controllers\ToolController')->getLocalProjects();
-        $types = $this->accountTypes();
-
-        return view('accounts.index', compact('projects', 'types'));
+        return view('accounts.index');
     }
 
     public function store(Request $request)
@@ -23,6 +20,8 @@ class AccountController extends Controller
         $validated = $request->validate([
             'account_number' => 'required|unique:accounts',
             'account_name' => 'required',
+            'type_id' => 'required',
+            'project' => 'required',
             'description' => 'required',
         ]);
 
@@ -36,6 +35,8 @@ class AccountController extends Controller
         $validated = $request->validate([
             'account_number' => 'required|unique:accounts,account_number,' . $id,
             'account_name' => 'required',
+            'type_id' => 'required',
+            'project' => 'required',
             'description' => 'required',
         ]);
 
@@ -78,18 +79,11 @@ class AccountController extends Controller
     public function data()
     {
         $accounts = Account::orderBy('account_number', 'asc')
-            ->where('is_active', 1)
             ->get();
 
         return datatables()->of($accounts)
             ->addColumn('type', function ($account) {
-                $type_name = '';
-                foreach ($this->accountTypes() as $type) {
-                    if ($type['id'] == $account->type) {
-                        $type_name = $type['name'];
-                    }
-                }
-                return $type_name;
+                return $account->account_type->type_name;
             })
             ->addIndexColumn()
             ->addColumn('action', 'accounts.action')

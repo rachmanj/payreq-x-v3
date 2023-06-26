@@ -58,12 +58,16 @@ class MyPayreqController extends Controller
         // get user's roles
         $userRoles = app(UserController::class)->getUserRoles();
 
+        // payreq with status in array as follows
+        $status_include = ['draft', 'submitted', 'approved'];
+
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
-            $payreqs = Payreq::where('status', '!=', 'close')->orderBy('created_at', 'desc')
+            $payreqs = Payreq::whereIn('status', $status_include)
+                ->orderBy('created_at', 'desc')
                 ->get();
         } else {
             $payreqs = Payreq::where('user_id', auth()->user()->id)
-                ->where('status', '!=', 'close')
+                ->whereIn('status', $status_include)
                 ->orderBy('created_at', 'desc')
                 ->get();
         }

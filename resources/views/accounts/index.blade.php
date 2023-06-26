@@ -67,14 +67,14 @@
             </div>
             <div class="col-4">
               <div class="form-group">
-                <label for="type">Type</label>
-                <select name="type" id="type" class="form-control @error('type') is-invalid @enderror">
+                <label for="type_id">Type</label>
+                <select name="type_id" id="type_id" class="form-control @error('type_id') is-invalid @enderror">
                   <option value="">-- Select Type --</option>
-                  @foreach ($types as $type)
-                    <option value="{{ $type['id'] }}">{{ $type['name'] }}</option>
+                  @foreach (\App\Models\AccountType::all() as $type)
+                    <option value="{{ $type->id }}" {{ $type->id == old('type_id') ? 'selected' : '' }} >{{ $type->type_name }}</option>
                   @endforeach
                 </select>
-                @error('type')
+                @error('type_id')
                   <div class="invalid-feedback">
                     {{ $message }}
                   </div>
@@ -84,10 +84,10 @@
             <div class="col-4">
               <div class="form-group">
                 <label for="project">Project</label>
-                <select name="type" id="type" class="form-control @error('type') is-invalid @enderror">
+                <select name="project" id="project" class="form-control @error('project') is-invalid @enderror">
                   <option value="" >-- select project --</option>
-                  @foreach ($projects as $project)
-                      <option value="{{ $project }}">{{ $project }}</option>
+                  @foreach (\App\Models\Project::all() as $project)
+                      <option value="{{ $project->code }}" {{ $project->code == old('project') ? 'selected' : '' }} >{{ $project->code }}</option>
                   @endforeach
                 </select>
                 @error('project')
@@ -111,8 +111,7 @@
 
           <div class="form-group">
             <label for="description">Description</label>
-            <textarea name="description" id="description" rows="3" class="form-control @error('description') is-invalid @enderror">
-            {{ old('description') }}</textarea>
+            <textarea name="description" id="description" rows="3" class="form-control @error('description') is-invalid @enderror">{{ old('description') }}</textarea>
             @error('description')
               <div class="invalid-feedback">
                 {{ $message }}

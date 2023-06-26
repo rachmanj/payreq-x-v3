@@ -24,7 +24,7 @@ class OutgoingController extends Controller
     public function quick($payreq_id)
     {
         $payreq = Payreq::findOrfail($payreq_id);
-        $account_id = Account::where('account_name', 'petty cash')
+        $account_id = Account::where('type_id', 2)
             ->where('project', auth()->user()->project)
             ->first()->id;
 

@@ -15,6 +15,7 @@ use App\Http\Controllers\GiroDetailController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MyPayreqController;
+use App\Http\Controllers\OngoingController;
 use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqAdvanceController;
@@ -118,6 +119,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [OutgoingController::class, 'index'])->name('index');
         Route::post('/store', [OutgoingController::class, 'store'])->name('store');
         Route::get('/{payreq_id}', [OutgoingController::class, 'quick'])->name('quick');
+    });
+
+    // ONGOINGS
+    Route::prefix('ongoings')->name('ongoings.')->group(function () {
+        Route::get('/data', [OngoingController::class, 'data'])->name('data');
+        Route::get('/', [OngoingController::class, 'index'])->name('index');
     });
 
     // ACCOUNTS

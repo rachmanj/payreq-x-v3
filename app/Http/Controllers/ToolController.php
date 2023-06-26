@@ -19,13 +19,6 @@ class ToolController extends Controller
         return $projects;
     }
 
-    public function getLocalProjects()
-    {
-        $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
-
-        return $projects;
-    }
-
     public function progress($rab_id)
     {
         $rab = Rab::find($rab_id);

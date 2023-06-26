@@ -22,6 +22,7 @@
         @csrf @method('PUT')
 
         <div class="modal-body">
+
           <div class="row">
             <div class="col-4">
               <div class="form-group">
@@ -36,14 +37,13 @@
             </div>
             <div class="col-4">
               <div class="form-group">
-                <label for="type">Type</label>
-                <select name="type" id="type" class="form-control @error('type') is-invalid @enderror">
-                  <option value="">-- Select Type --</option>
-                  @foreach ($types as $type)
-                    <option value="{{ $type['id'] }}">{{ $type['name'] }}</option>
+                <label for="type_id">Type</label>
+                <select name="type_id" id="type_id" class="form-control @error('type_id') is-invalid @enderror">
+                  @foreach (\App\Models\AccountType::all() as $type)
+                    <option value="{{ $type->id }}" {{ old('type_id', $model->type_id) == $type->id  ? 'selected' : '' }} >{{ $type->type_name }}</option>
                   @endforeach
                 </select>
-                @error('type')
+                @error('type_id')
                   <div class="invalid-feedback">
                     {{ $message }}
                   </div>
@@ -53,10 +53,9 @@
             <div class="col-4">
               <div class="form-group">
                 <label for="project">Project</label>
-                <select name="type" id="type" class="form-control @error('type') is-invalid @enderror">
-                  <option value="" >-- select project --</option>
-                  @foreach ($projects as $project)
-                      <option value="{{ $project }}">{{ $project }}</option>
+                <select name="project" id="project" class="form-control @error('project') is-invalid @enderror">
+                  @foreach (\App\Models\Project::all() as $project)
+                      <option value="{{ $project->code }}" {{ old('project', $model->project) == $project->code ? 'selected' : '' }} >{{ $project->code }}</option>
                   @endforeach
                 </select>
                 @error('project')
@@ -67,6 +66,7 @@
               </div>
             </div>
           </div>
+
           <div class="form-group">
             <label for="account_name">Account Name</label>
             <input name="account_name" id="account_name" value="{{ old('account_name', $model->account_name) }}" class="form-control @error('account_name') is-invalid @enderror" autocomplete="off">
