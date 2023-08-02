@@ -5,6 +5,7 @@ use App\Http\Controllers\AdvanceCategoryController;
 use App\Http\Controllers\ApprovalPlanController;
 use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\ApprovalStageController;
+use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DashboardAccountingController;
 use App\Http\Controllers\DashboardDncController;
@@ -14,15 +15,15 @@ use App\Http\Controllers\GiroController;
 use App\Http\Controllers\GiroDetailController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\MyPayreqController;
-use App\Http\Controllers\OngoingController;
+use App\Http\Controllers\UserPayreqController;
+use App\Http\Controllers\UserOngoingController;
 use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqAdvanceController;
 use App\Http\Controllers\PayreqOtherController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RabController;
-use App\Http\Controllers\RealizationController;
+use App\Http\Controllers\UserRealizationController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RekapController;
 use App\Http\Controllers\RoleController;
@@ -41,9 +42,11 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', function () {
-        return view('templates.dashboard');
-    });
+    // Route::get('/', function () {
+    //     return view('templates.dashboard');
+    // });
+    Route::get('/', [DashboardUserController::class, 'index']);
+
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -53,6 +56,8 @@ Route::middleware('auth')->group(function () {
         Route::put('activate/{id}', [UserController::class, 'activate'])->name('activate');
         Route::put('deactivate/{id}', [UserController::class, 'deactivate'])->name('deactivate');
         Route::put('roles-update/{id}', [UserController::class, 'roles_user_update'])->name('roles_user_update');
+        Route::get('change-password/{id}', [UserController::class, 'change_password'])->name('change_password');
+        Route::put('password-update/{id}', [UserController::class, 'password_update'])->name('password_update');
     });
     Route::resource('users', UserController::class);
 
@@ -74,14 +79,39 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}', [DashboardUserController::class, 'show'])->name('show');
     });
 
-    // MY PAYREQS
-    Route::prefix('mypayreqs')->name('mypayreqs.')->group(function () {
-        Route::get('/data', [MyPayreqController::class, 'data'])->name('data');
-        Route::get('/', [MyPayreqController::class, 'index'])->name('index');
-        Route::get('/{id}', [MyPayreqController::class, 'show'])->name('show');
-        Route::delete('/{id}', [MyPayreqController::class, 'destroy'])->name('destroy');
+    // USER PAYREQS
+    Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
+        // ONGOINGS
+        Route::prefix('ongoings')->name('ongoings.')->group(function () {
+            Route::get('/', [UserOngoingController::class, 'index'])->name('index');
+            Route::get('/data', [UserOngoingController::class, 'data'])->name('data');
+        });
+
+        // REALIZATION
+        Route::prefix('realizations')->name('realizations.')->group(function () {
+            Route::get('/data', [UserRealizationController::class, 'data'])->name('data');
+            Route::get('/', [UserRealizationController::class, 'index'])->name('index');
+        });
+        Route::resource('realizations', UserRealizationController::class);
+
+        Route::get('/data', [UserPayreqController::class, 'data'])->name('data');
+        Route::get('/', [UserPayreqController::class, 'index'])->name('index');
+        Route::get('/{id}', [UserPayreqController::class, 'show'])->name('show');
+        Route::delete('/{id}', [UserPayreqController::class, 'destroy'])->name('destroy');
         // print pdf
-        Route::get('/{id}/print', [MyPayreqController::class, 'print'])->name('print');
+        Route::get('/{id}/print', [UserPayreqController::class, 'print'])->name('print');
+    });
+
+    // CASHIER MENU
+    Route::prefix('cashier')->name('cashier.')->group(function () {
+        // APPROVEDS PAYREQS -> ready to pay
+        Route::prefix('approveds')->name('approveds.')->group(function () {
+            Route::get('/data', [CashierApprovedController::class, 'data'])->name('data');
+            Route::get('/', [CashierApprovedController::class, 'index'])->name('index');
+            Route::put('/{id}/auto', [CashierApprovedController::class, 'auto_outgoing'])->name('auto_outgoing');
+            Route::get('/{id}/pay', [CashierApprovedController::class, 'pay'])->name('pay');
+            Route::put('/{id}/pay', [CashierApprovedController::class, 'store_pay'])->name('store_pay');
+        });
     });
 
     // PAYREQ ADVANCE
@@ -113,19 +143,11 @@ Route::middleware('auth')->group(function () {
     });
     Route::resource('approval-stages', ApprovalStageController::class);
 
-    // OUTGOINGS
-    Route::prefix('outgoings')->name('outgoings.')->group(function () {
+    //OUTGOINGS
+    Route::prefix('outgoings')->name('outgoing.')->group(function () {
         Route::get('/data', [OutgoingController::class, 'data'])->name('data');
-        Route::get('/', [OutgoingController::class, 'index'])->name('index');
-        Route::post('/store', [OutgoingController::class, 'store'])->name('store');
-        Route::get('/{payreq_id}', [OutgoingController::class, 'quick'])->name('quick');
     });
-
-    // ONGOINGS
-    Route::prefix('ongoings')->name('ongoings.')->group(function () {
-        Route::get('/data', [OngoingController::class, 'data'])->name('data');
-        Route::get('/', [OngoingController::class, 'index'])->name('index');
-    });
+    Route::resource('outgoings', OutgoingController::class);
 
     // ACCOUNTS
     Route::prefix('accounts')->name('accounts.')->group(function () {
@@ -134,12 +156,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::resource('accounts', AccountController::class);
 
-    // REALIZATION
-    Route::prefix('realization')->name('realization.')->group(function () {
-        Route::get('/data', [RealizationController::class, 'data'])->name('data');
-        Route::get('/', [RealizationController::class, 'index'])->name('index');
-        Route::put('/{id}', [RealizationController::class, 'update'])->name('update');
-    });
+
 
 
 

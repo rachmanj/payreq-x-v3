@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\ApprovalPlan;
+use App\Models\Payreq;
 use Illuminate\Http\Request;
 
 class ApprovalRequestController extends Controller
@@ -14,7 +16,7 @@ class ApprovalRequestController extends Controller
 
     public function data()
     {
-        $stage_plans = ApprovalPlan::where('status', 'pending')
+        $stage_plans = ApprovalPlan::where('status', 0)
             ->where('approver_id', auth()->user()->id)
             ->get();
 

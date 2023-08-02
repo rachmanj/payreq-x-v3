@@ -1,13 +1,13 @@
 
     {{-- button call modal to update --}}
-    <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#approvals-update-{{ $model->id }}">update</button>
+    <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#approvals-update-{{ $model->id }}">detail</button>
     
     {{-- modal update --}}
     <div class="modal fade" id="approvals-update-{{ $model->id }}">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">Approval for Payreq No {{ $model->payreq_no }}</h4>
+                    <h4 class="modal-title">Approval for Payreq No. {{ $model->payreq->payreq_no }}</h4>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
 

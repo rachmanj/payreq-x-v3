@@ -14,30 +14,17 @@
 
     <div class="card">
       <div class="card-header">
-        {{-- @if (Session::has('success'))
-          <div class="alert alert-success alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            {{ Session::get('success') }}
-          </div>
-        @endif
-        @if (Session::has('error'))
-          <div class="alert alert-danger alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            {{ Session::get('error') }}
-          </div>
-        @endif --}}
-        <a href="{{ route('approved.create') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Payreq</a>
       </div>
       <!-- /.card-header -->
       <div class="card-body">
-        <table id="payreqs" class="table table-bordered table-striped">
+        <table id="approveds" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
             <th>Name</th>
             <th>Payreq No</th>
             <th>Type</th>
-            <th>Apprv Date</th>
+            <th>Apprved at</th>
             <th>IDR</th>
             <th>Days</th>
             <th></th>
@@ -78,17 +65,17 @@
 
 <script>
   $(function () {
-    $("#payreqs").DataTable({
+    $("#approveds").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('approved.data') }}',
+      ajax: '{{ route('cashier.approveds.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'employee'},
-        {data: 'payreq_num'},
-        {data: 'payreq_type'},
-        {data: 'approve_date'},
-        {data: 'payreq_idr'},
+        {data: 'requestor'},
+        {data: 'payreq_no'},
+        {data: 'type'},
+        {data: 'approved_at'},
+        {data: 'amount'},
         {data: 'days'},
         {data: 'action', orderable: false, searchable: false},
       ],

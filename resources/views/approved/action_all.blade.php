@@ -1,1 +1,0 @@
-<a href="{{ route('approved.show', $model->id) }}" class="btn btn-xs btn-warning">show</a>

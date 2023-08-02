@@ -8,4 +8,4 @@
       <li><a href="{{ route('approvals.request.index') }}" class="dropdown-item">Approval Request</a></li>
       @endcan
     </ul>
-  </li>
+</li>

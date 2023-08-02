@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalPlan;
 use App\Models\ApprovalStage;
 use App\Models\Payreq;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class ApprovalPlanController extends Controller

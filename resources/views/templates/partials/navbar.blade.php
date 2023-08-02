@@ -3,7 +3,7 @@
     <div class="container">
       <a href="#"class="navbar-brand">
         <img src="{{ asset('adminlte/dist/img/AdminLTELogo.png') }}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-        <span class="brand-text text-white font-weight-light">Payreq - Support</span>
+        <span class="brand-text text-white font-weight-light"><strong>Payreq</strong> System</span>
       </a>
   
       <button class="navbar-toggler order-1" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,15 +17,19 @@
             <a href="{{ route('dashboard.index') }}" class="nav-link">Dashboard</a>
           </li>
 
-          @hasanyrole('superadmin|user')
-            @include('templates.partials.menu.mypayreq')
+          @hasanyrole('user')
+            @include('templates.partials.menu.user-payreq')
           @endhasanyrole
 
-          @hasanyrole('superadmin|admin|acc_cashier')
+          @hasanyrole('superadmin|admin|cashier')
+            @include('templates.partials.menu.cashier')
+          @endhasanyrole
+
+          @hasanyrole('superadmin|admin|cashier')
             @include('templates.partials.menu.accounting')
           @endhasanyrole
           
-          @hasanyrole('superadmin|admin|acc_cashier|dnc_staff')
+          @hasanyrole('superadmin|admin|cashier|dnc_staff')
             @include('templates.partials.menu.dnc')
           @endhasanyrole
 
@@ -51,6 +55,9 @@
         <li class="nav-item dropdown">
           <a id="dropdownPayreq" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">{{ auth()->user()->name }} ({{ auth()->user()->project }})</a>
           <ul aria-labelledby="dropdownPayreq" class="dropdown-menu border-0 shadow">
+            <li>
+              <a href="{{ route('users.change_password', auth()->user()->id) }}" class="dropdown-item">Change Password</a>
+            </li>
             <li>
               <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                 @csrf

@@ -14,39 +14,40 @@
 
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">New Payment Request - Advance</h3>
-            <a href="{{ route('mypayreqs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
+            <h3 class="card-title">Edit Payment Request - Advance</h3>
+            <a href="{{ route('user-payreqs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
           </div>
           <div class="card-body">
-            <form action="{{ route('payreq-advance.store') }}" method="POST">
-              @csrf
+            <form action="{{ route('payreq-advance.update', $payreq->id) }}" method="POST">
+              @csrf @method('PUT')
 
               <input type="hidden" name="form_type" value="advance">
+
               <div class="row">
                 <div class="col-4">
                   <div class="form-group">
-                    <label for="payreq_no">Payreq No <small>(auto generated)</small></label>
-                    <input type="text" name="payreq_no" value="{{ $payreq_no }}" class="form-control" readonly>
+                    <label for="payreq_no">Payreq No</label>
+                    <input type="text" name="payreq_no" value="{{ $payreq->payreq_no }}" class="form-control" disabled>
                   </div>
                 </div>
                 <div class="col-4">
                   <div class="form-group">
                     <label for="project">Project</label>
-                    <input type="text" name="project" value="{{ auth()->user()->project }}" class="form-control" readonly>
+                    <input type="text" name="project" value="{{ $payreq->project }}" class="form-control" readonly>
                   </div>
                 </div>
                 <div class="col-4">
                   <div class="form-group">
                     <label for="department">Department</label>
-                    <input type="hidden" name="department_id" value="{{ auth()->user()->department_id }}">
-                    <input type="text" name="department" value="{{ auth()->user()->department->department_name}}" class="form-control" readonly>
+                    <input type="hidden" name="department_id" value="{{ $payreq->department_id }}">
+                    <input type="text" name="department" value="{{ $payreq->department->department_name }}" class="form-control" disabled>
                   </div>
                 </div>
               </div>
-
+              
               <div class="form-group">
                 <label for="remarks">Purpose</label>
-                <textarea name="remarks" id="remarks" cols="30" rows="2" class="form-control @error('remarks') is-invalid @enderror" autofocus>{{ old('remarks') }}</textarea>
+                <textarea name="remarks" id="remarks" cols="30" rows="2" class="form-control @error('remarks') is-invalid @enderror" autofocus>{{ old('remarks', $payreq->remarks) }}</textarea>
                 @error('remarks')
                 <div class="invalid-feedback">
                   {{ $message }}
@@ -56,7 +57,7 @@
 
               <div class="form-group">
                 <label for="amount">Amount</label>
-                <input type="text" name="amount" id="amount" value="{{ old('amount') }}" class="form-control @error('amount') is-invalid @enderror">
+                <input type="text" name="amount" id="amount" value="{{ old('amount', $payreq->amount) }}" class="form-control @error('amount') is-invalid @enderror">
                 @error('amount')
                 <div class="invalid-feedback">
                   {{ $message }}

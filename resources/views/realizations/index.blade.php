@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
- All Payment Request  
+  Realization Payment Request  
 @endsection
 
 @section('breadcrumb_title')
-    payreqs
+    realization
 @endsection
 
 @section('content')
@@ -15,21 +15,18 @@
     <div class="card">
       <div class="card-header">
       </div>
-      <!-- /.card-header -->
+      <!-- card-header -->
       <div class="card-body">
-        <table id="all-payreqs" class="table table-bordered table-striped">
+        <table id="payreqs" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
             <th>Name</th>
-            <th>PayreqNo</th>
-            <th>ApprvD</th>
+            <th>Payreq No</th>
+            <th>Apprv Date</th>
+            <th>Outgoing Date</th>
             <th>IDR</th>
-            <th>RealzNo</th>
-            <th>RealzD</th>
-            <th>RealzIDR</th>
-            <th>VerifyD</th>
-            {{-- <th>Days</th> --}}
+            <th>Days</th>
             <th></th>
           </tr>
           </thead>
@@ -62,32 +59,25 @@
 
 <script>
   $(function () {
-    $("#all-payreqs").DataTable({
+    $("#payreqs").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('approved.all.data') }}',
+      ajax: '{{ route('realization.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'employee'},
         {data: 'payreq_num'},
         {data: 'approve_date'},
+        {data: 'outgoing_date'},
         {data: 'payreq_idr'},
-        {data: 'realization_num'},
-        {data: 'realization_date'},
-        {data: 'realization_amount'},
-        {data: 'verify_date'},
-        // {data: 'days'},
+        {data: 'days'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [6, 7],
+                "targets": [5, 6],
                 "className": "text-right"
-              },
-              {
-                "targets": [2, 3, 4, 5, 8],
-                "className": "text-center"
               }
             ]
     })

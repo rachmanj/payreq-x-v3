@@ -14,7 +14,7 @@
         <div class="card card-info">
             <div class="card-header">
               <h3 class="card-title">Payment Request Detail</h3>
-              <a href="{{ route('mypayreqs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
+              <a href="{{ route('user-payreqs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
             </div>
             <div class="card-body">
               <div class="row">
@@ -29,7 +29,7 @@
                 <dt class="col-sm-4">Status</dt>
                 <dd class="col-sm-8">: {{ $payreq->status == 'submitted' ? 'Wait approve' : ucfirst($payreq->status) }}</dd>
                 <dt class="col-sm-4">Created at</dt>
-                <dd class="col-sm-8">: {{ $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') }}</dd>
+                <dd class="col-sm-8">: {{ $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}</dd>
               </div>
             </div>
 
@@ -58,13 +58,11 @@
                         @endif
                       @endforeach
                       <td>{{ $item->remarks }}</td>
-                      <td>{{ $item->updated_at->addHours(8)->format('d-M-Y H:i:s') }}</td>
+                      <td>{{ $item->status === 0 ? ' - ' : $item->updated_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}</td>
                     </tr>
                   @endforeach
               </table>
             </div>
-
-           
 
         </div>
     </div>

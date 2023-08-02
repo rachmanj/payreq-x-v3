@@ -15,11 +15,13 @@ class OutgoingController extends Controller
         return view('outgoings.index');
     }
 
-    public function create($payreq_id)
+    public function store($request)
     {
-        $payreq = Payreq::findOrfail($payreq_id);
-        return view('outgoings.create', compact('payreq'));
+        $outgoing = Outgoing::create($request->all());
+
+        return $outgoing;
     }
+
 
     public function quick($payreq_id)
     {
@@ -36,17 +38,7 @@ class OutgoingController extends Controller
             'outgoing_date' => now(),
         ]);
 
-        $payreq->update([
-            'status' => 'paid',
-            'printable' => 0,
-        ]);
-
         return view('outgoings.index')->with('success', 'Payment Request paid successfully.');
-    }
-
-    public function store(Request $request, $payreq_id)
-    {
-        $payreq = Payreq::findOrfail($payreq_id);
     }
 
     public function data()

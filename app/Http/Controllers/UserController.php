@@ -123,6 +123,27 @@ class UserController extends Controller
         //
     }
 
+    public function change_password($id)
+    {
+        $user = User::findOrFail($id);
+        return view('users.change-password', compact(['user']));
+    }
+
+    public function password_update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $this->validate($request, [
+            'password'      => 'required|min:6',
+            'password_confirmation' => 'required_with:password|same:password|min:6'
+        ]);
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return redirect()->route('dashboard.index')->with('success', 'User password updated successfully');
+    }
+
     public function destroy($id)
     {
         $user = User::findOrFail($id);

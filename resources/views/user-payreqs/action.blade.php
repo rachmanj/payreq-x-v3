@@ -1,4 +1,4 @@
-<form action="{{ route('mypayreqs.destroy', $model->id) }}" method="POST">
+<form action="{{ route('user-payreqs.destroy', $model->id) }}" method="POST">
     @csrf @method('DELETE')
     @if ($model->editable)
         @if ($model->type == 'advance')
@@ -11,6 +11,6 @@
         <button class="btn btn-xs btn-danger" onclick="return confirm('Are You sure You want to delete this record?')">delete</button>  
     @endif
     @if($model->printable)
-        <a href="{{ route('mypayreqs.print', $model->id) }}" class="btn btn-xs btn-info" target="_blank">print</a>
+        <a href="{{ route('user-payreqs.print', $model->id) }}" class="btn btn-xs btn-info" target="_blank">print</a>
     @endif
 </form>

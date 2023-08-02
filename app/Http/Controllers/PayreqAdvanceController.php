@@ -11,7 +11,7 @@ class PayreqAdvanceController extends Controller
     {
         $payreq_no = app(PayreqController::class)->generateDraftNumber();
 
-        return view('mypayreqs.advance.create', compact('payreq_no'));
+        return view('user-payreqs.advance.create', compact('payreq_no'));
     }
 
     public function store(Request $request)
@@ -19,7 +19,7 @@ class PayreqAdvanceController extends Controller
         $response = app(PayreqController::class)->store($request);
 
         if ($response->status == 'draft') {
-            return redirect()->route('mypayreqs.index')->with('success', 'Payreq Advance Draft saved');
+            return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance Draft saved');
         } else {
             $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan($response->id);
 
@@ -31,14 +31,14 @@ class PayreqAdvanceController extends Controller
                     'editable' => '1',
                     'deletable' => '1',
                 ]);
-                return redirect()->route('mypayreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft');
+                return redirect()->route('user-payreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft, contact IT Department');
             }
 
             // $payreq = Payreq::findOrFail($response->id);
             // $payreq->update([
             //     'approval_plan_count' => $approval_plan_response,
             // ]);
-            return redirect()->route('mypayreqs.index')->with('success', 'Payreq Advance submitted');
+            return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance submitted');
         }
     }
 
@@ -46,7 +46,7 @@ class PayreqAdvanceController extends Controller
     {
         $payreq = Payreq::findOrFail($id);
 
-        return view('mypayreqs.advance.edit', compact('payreq'));
+        return view('user-payreqs.advance.edit', compact('payreq'));
     }
 
     public function update(Request $request, $id)
@@ -54,7 +54,7 @@ class PayreqAdvanceController extends Controller
         $response = app(PayreqController::class)->update($request, $id);
 
         if ($response->status == 'draft') {
-            return redirect()->route('mypayreqs.index')->with('success', 'Payreq Advance Draft saved');
+            return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance Draft saved');
         } else {
             $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan($response->id);
 
@@ -64,7 +64,7 @@ class PayreqAdvanceController extends Controller
                 $payreq->update([
                     'status' => 'draft',
                 ]);
-                return redirect()->route('mypayreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft');
+                return redirect()->route('user-payreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft, contact IT Department');
             }
 
             // $payreq = Payreq::findOrFail($response->id);
@@ -72,7 +72,7 @@ class PayreqAdvanceController extends Controller
             //     'approval_plan_count' => $approval_plan_response,
             // ]);
 
-            return redirect()->route('mypayreqs.index')->with('success', 'Payreq Advance submitted');
+            return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance submitted');
         }
     }
 }

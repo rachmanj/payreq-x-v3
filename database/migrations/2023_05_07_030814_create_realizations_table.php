@@ -16,7 +16,9 @@ return new class extends Migration
             $table->string('number');
             $table->foreignId('payreq_id');
             $table->foreignId('user_id');
+            $table->string('project', 20)->nullable();
             $table->string('remarks')->nullable();
+            $table->string('status', 20)->nullable(); // draft / approved / rejected / paid / realized / verified
             $table->timestamps();
         });
     }

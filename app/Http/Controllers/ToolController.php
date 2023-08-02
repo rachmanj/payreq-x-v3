@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Payreq;
-use App\Models\Rab;
-use App\Models\Transaction;
-use Illuminate\Http\Request;
+use App\Models\Outgoing;
+use App\Models\Realization;
+use App\Models\User;
+use Carbon\Carbon;
 
 class ToolController extends Controller
 {
@@ -19,72 +19,80 @@ class ToolController extends Controller
         return $projects;
     }
 
-    public function progress($rab_id)
+    function penyebut($nilai)
     {
-        $rab = Rab::find($rab_id);
-        $payreqs = $rab->payreqs;
-        $total_advance = $payreqs->whereNotNull('outgoing_date')->whereNull('realization_date')->sum('payreq_idr');
-        $total_realization = $payreqs->whereNotNull('realization_date')->sum('realization_amount');
-        $total_release = $total_advance + $total_realization;
-        $progress = ($total_release / $rab->budget) * 100;
-
-        return $progress;
+        $nilai = abs($nilai);
+        $huruf = array("", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas");
+        $temp = "";
+        if ($nilai < 12) {
+            $temp = " " . $huruf[$nilai];
+        } else if ($nilai < 20) {
+            $temp = $this->penyebut($nilai - 10) . " belas";
+        } else if ($nilai < 100) {
+            $temp = $this->penyebut($nilai / 10) . " puluh" . $this->penyebut($nilai % 10);
+        } else if ($nilai < 200) {
+            $temp = " seratus" . $this->penyebut($nilai - 100);
+        } else if ($nilai < 1000) {
+            $temp = $this->penyebut($nilai / 100) . " ratus" . $this->penyebut($nilai % 100);
+        } else if ($nilai < 2000) {
+            $temp = " seribu" . $this->penyebut($nilai - 1000);
+        } else if ($nilai < 1000000) {
+            $temp = $this->penyebut($nilai / 1000) . " ribu" . $this->penyebut($nilai % 1000);
+        } else if ($nilai < 1000000000) {
+            $temp = $this->penyebut($nilai / 1000000) . " juta" . $this->penyebut($nilai % 1000000);
+        } else if ($nilai < 1000000000000) {
+            $temp = $this->penyebut($nilai / 1000000000) . " milyar" . $this->penyebut(fmod($nilai, 1000000000));
+        } else if ($nilai < 1000000000000000) {
+            $temp = $this->penyebut($nilai / 1000000000000) . " trilyun" . $this->penyebut(fmod($nilai, 1000000000000));
+        }
+        return $temp;
     }
 
-    public function statusColor($progress)
+    function terbilang($nilai)
     {
-        if ($progress == 100) {
-            return 'bg-success';
-        } elseif ($progress > 0 && $progress < 100) {
-            return 'bg-warning';
+        if ($nilai < 0) {
+            $hasil = "minus " . trim($this->penyebut($nilai));
         } else {
-            return 'bg-danger';
+            $hasil = trim($this->penyebut($nilai));
         }
+        return $hasil . " rupiah";
     }
 
-    public function terbilang($value)
+    public function getUserRoles()
     {
-        $value = number_format($value, 0, ',', '.');
-        $value = str_replace(',', '', $value);
-        $value = str_replace('.', '', $value);
-        $value = str_replace(' ', '', $value);
-        $value = (int) $value;
-        $huruf = [
-            '',
-            'Satu',
-            'Dua',
-            'Tiga',
-            'Empat',
-            'Lima',
-            'Enam',
-            'Tujuh',
-            'Delapan',
-            'Sembilan',
-            'Sepuluh',
-            'Sebelas',
-        ];
-        if ($value < 12) {
-            return ' ' . $huruf[$value];
-        } elseif ($value < 20) {
-            return $this->terbilang($value - 10) . ' Belas';
-        } elseif ($value < 100) {
-            return $this->terbilang($value / 10) . ' Puluh' . $this->terbilang($value % 10);
-        } elseif ($value < 200) {
-            return ' Seratus' . $this->terbilang($value - 100);
-        } elseif ($value < 1000) {
-            return $this->terbilang($value / 100) . ' Ratus' . $this->terbilang($value % 100);
-        } elseif ($value < 2000) {
-            return ' Seribu' . $this->terbilang($value - 1000);
-        } elseif ($value < 1000000) {
-            return $this->terbilang($value / 1000) . ' Ribu' . $this->terbilang($value % 1000);
-        } elseif ($value < 1000000000) {
-            return $this->terbilang($value / 1000000) . ' Juta' . $this->terbilang($value % 1000000);
-        } elseif ($value < 1000000000000) {
-            return $this->terbilang($value / 1000000000) . ' Milyar' . $this->terbilang(fmod($value, 1000000000));
-        } elseif ($value < 1000000000000000) {
-            return $this->terbilang($value) / 1000000000000 . ' Trilyun' . $this->terbilang(fmod($value, 1000000000000));
-        }
+        $roles = User::find(auth()->user()->id)->getRoleNames()->toArray();
+        // $roles = "Ninja";
+        return $roles;
+    }
 
-        return 'Angka terlalu besar';
+    public function getLastOutgoing($payreq_id)
+    {
+        $lastOutgoing = Outgoing::where('payreq_id', $payreq_id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        return $lastOutgoing;
+    }
+
+    public function generateDraftRealizationNumber()
+    {
+        $status_include = ['draft', 'submitted'];
+        $realization_project_count = Realization::where('project', auth()->user()->project)
+            ->whereIn('status', $status_include)
+            ->count();
+        $nomor = 'RQ' . Carbon::now()->addHours(8)->format('y') . auth()->user()->project . str_pad($realization_project_count + 1, 3, '0', STR_PAD_LEFT);
+
+        return $nomor;
+    }
+
+    public function generateRealizationNumber($realization_id)
+    {
+        $realization = Realization::findOrFail($realization_id);
+        $realization_project_count = Realization::where('project', $realization->payreq->project)
+            ->where('status', 'approved')
+            ->count();
+        $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($realization_project_count + 1, 5, '0', STR_PAD_LEFT);
+
+        return $nomor;
     }
 }

@@ -6,11 +6,11 @@ use App\Models\ApprovalPlan;
 use App\Models\Payreq;
 use Illuminate\Http\Request;
 
-class MyPayreqController extends Controller
+class UserPayreqController extends Controller
 {
     public function index()
     {
-        return view('mypayreqs.index');
+        return view('user-payreqs.index');
     }
 
     public function update(Request $request, $id)
@@ -18,7 +18,7 @@ class MyPayreqController extends Controller
         $payreq = Payreq::findOrFail($id);
         $payreq->update($request->all());
 
-        return redirect()->route('mypayreqs.index')->with('success', 'Payment Request updated');
+        return redirect()->route('user-payreqs.index')->with('success', 'Payment Request updated');
     }
 
     public function show($id)
@@ -35,14 +35,16 @@ class MyPayreqController extends Controller
 
         $approval_plan_status = app(ApprovalPlanController::class)->approvalStatus();
 
-        return view('mypayreqs.show', compact('payreq', 'approval_plan_status'));
+        return view('user-payreqs.show', compact('payreq', 'approval_plan_status'));
     }
 
     public function print($id)
     {
         $payreq = Payreq::findOrFail($id);
 
-        return view('mypayreqs.print_pdf', compact('payreq'));
+        $terbilang = app(ToolController::class)->terbilang($payreq->amount);
+
+        return view('user-payreqs.advance.print_pdf', compact('payreq', 'terbilang'));
     }
 
     public function destroy($id)
@@ -50,7 +52,7 @@ class MyPayreqController extends Controller
         $payreq = Payreq::findOrFail($id);
         $payreq->delete();
 
-        return redirect()->route('mypayreqs.index')->with('success', 'Payment Request deleted');
+        return redirect()->route('user-payreqs.index')->with('success', 'Payment Request deleted');
     }
 
     public function data()
@@ -82,13 +84,17 @@ class MyPayreqController extends Controller
                 if ($notif_count > 0) {
                     $notif = '<span class="badge badge-info">' . $notif_count . '</span>';
                 }
-                return '<a href="' . route('mypayreqs.show', $payreq->id) . '">' . $payreq->payreq_no . '</a>' . $notif;
+                return '<a href="' . route('user-payreqs.show', $payreq->id) . '">' . $payreq->payreq_no . '</a>' . $notif;
             })
             ->editColumn('type', function ($payreq) {
                 return ucfirst($payreq->type);
             })
             ->editColumn('status', function ($payreq) {
-                return ucfirst($payreq->status);
+                if ($payreq->status === 'submitted') {
+                    return 'Waiting Approval';
+                } else {
+                    return ucfirst($payreq->status);
+                }
             })
             ->editColumn('amount', function ($payreq) {
                 return number_format($payreq->amount, 2);
@@ -96,7 +102,7 @@ class MyPayreqController extends Controller
             ->editColumn('created_at', function ($payreq) {
                 return $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita';
             })
-            ->addColumn('action', 'mypayreqs.action')
+            ->addColumn('action', 'user-payreqs.action')
             ->rawColumns(['action', 'payreq_no'])
             ->addIndexColumn()
             ->toJson();

@@ -42,24 +42,6 @@
 </div>
 <!-- /.row -->
 
-{{-- MODAL NEW PAYREQ --}}
-<div class="modal fade" id="new-payreq">
-  <div class="modal-dialog modal-md">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Select Payment Request Type</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body justify-content-between">
-          <a href="{{ route('payreq-advance.create') }}" class="btn btn-outline-success btn-lg btn-block">Advance</a>
-          <a href="{{ route('payreq-other.create') }}" class="btn btn-outline-primary btn-lg btn-block">Other</a>
-      </div>
-    </div> <!-- /.modal-content -->
-  </div> <!-- /.modal-dialog -->
-</div> <!-- /.modal -->
-
 @endsection
 
 @section('styles')

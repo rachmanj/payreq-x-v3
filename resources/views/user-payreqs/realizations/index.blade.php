@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-  Realization Payment Request  
+    My Payreqs
 @endsection
 
 @section('breadcrumb_title')
-    realization
+    payreqs
 @endsection
 
 @section('content')
@@ -14,36 +14,27 @@
 
     <div class="card">
       <div class="card-header">
-        {{-- @if (Session::has('success'))
-          <div class="alert alert-success alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            {{ Session::get('success') }}
-          </div>
-        @endif
-        @if (Session::has('error'))
-          <div class="alert alert-danger alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            {{ Session::get('error') }}
-          </div>
-        @endif --}}
+        <h3 class="card-title">Realizations</h3>
+        <a href="{{ route('user-payreqs.realizations.create') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-plus"></i> New Realization</a>
       </div>
-      <!-- card-header -->
+      
       <div class="card-body">
-        <table id="payreqs" class="table table-bordered table-striped">
+        <table id="realizations" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
-            <th>Name</th>
+            <th>No</th>
             <th>Payreq No</th>
-            <th>Apprv Date</th>
-            <th>Outgoing Date</th>
+            <th>Date</th>
+            <th>Status</th>
             <th>IDR</th>
             <th>Days</th>
-            <th></th>
+            {{-- <th></th> --}}
           </tr>
           </thead>
         </table>
       </div>
+
       <!-- /.card-body -->
     </div>
     <!-- /.card -->
@@ -71,28 +62,36 @@
 
 <script>
   $(function () {
-    $("#payreqs").DataTable({
+    $("#realizations").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('realization.data') }}',
+      ajax: '{{ route('user-payreqs.realizations.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'employee'},
-        {data: 'payreq_num'},
-        {data: 'approve_date'},
-        {data: 'outgoing_date'},
-        {data: 'payreq_idr'},
+        {data: 'number'},
+        {data: 'payreq_no'},
+        {data: 'created_at'},
+        {data: 'status'},
+        {data: 'amount'},
         {data: 'days'},
-        {data: 'action', orderable: false, searchable: false},
+        // {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
                 "targets": [5, 6],
                 "className": "text-right"
-              }
+              },
             ]
     })
   });
+</script>
+<script>
+  $(function () {
+    //Initialize Select2 Elements
+    $('.select2bs4').select2({
+      theme: 'bootstrap4'
+    })
+  }) 
 </script>
 @endsection

@@ -67,7 +67,7 @@ class AccountController extends Controller
         $nama_file = rand() . $file->getClientOriginalName();
 
         // UPLOAD FILE TO FOLDER FILE_IMPORT
-        $file->move('file_upload', $nama_file);
+        $file->move('public/file_upload', $nama_file);
 
         // IMPORT DATA
         Excel::import(new AccountImport, public_path('/file_upload/' . $nama_file));

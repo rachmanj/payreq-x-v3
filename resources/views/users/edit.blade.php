@@ -118,7 +118,7 @@
       <div class="col-5">
         <div class="card card-secondary">
           <div class="card-header">
-            <div class="card-title">Assign Rores</div>
+            <div class="card-title">Assign Roles</div>
           </div>
           <div class="card-body">
 
