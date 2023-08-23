@@ -80,7 +80,7 @@ class ToolController extends Controller
         $realization_project_count = Realization::where('project', auth()->user()->project)
             ->whereIn('status', $status_include)
             ->count();
-        $nomor = 'RQ' . Carbon::now()->addHours(8)->format('y') . auth()->user()->project . str_pad($realization_project_count + 1, 3, '0', STR_PAD_LEFT);
+        $nomor = 'RQ' . Carbon::now()->addHours(8)->format('y') . substr(auth()->user()->project, 0, 2) . str_pad($realization_project_count + 1, 3, '0', STR_PAD_LEFT);
 
         return $nomor;
     }
@@ -91,8 +91,25 @@ class ToolController extends Controller
         $realization_project_count = Realization::where('project', $realization->payreq->project)
             ->where('status', 'approved')
             ->count();
-        $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($realization_project_count + 1, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y') . substr(auth()->user()->project, 0, 2)  . str_pad($realization_project_count + 1, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
+    }
+
+    public function getEquipments($project = null)
+    {
+        $url = env('URL_EQUIPMENTS');
+
+        $client = new \GuzzleHttp\Client();
+        $response = $client->request('GET', $url);
+        $equipments = json_decode($response->getBody()->getContents(), true)['data'];
+
+        if ($project) {
+            $equipments = array_filter($equipments, function ($item) use ($project) {
+                return $item['project'] == $project;
+            });
+        }
+
+        return $equipments;
     }
 }

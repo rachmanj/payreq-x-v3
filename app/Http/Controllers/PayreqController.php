@@ -10,10 +10,7 @@ class PayreqController extends Controller
 {
     public function store($data)
     {
-        // return $data;
-        // die;
-
-        // payreq type is advance 
+        // PAYREQ TYPE IS ADVANCE
         if ($data->form_type == 'advance') {
             $validated = $data->validate([
                 'remarks' => 'required',
@@ -34,7 +31,7 @@ class PayreqController extends Controller
 
             return $payreq;
         } else {
-            // payreq type is other
+            // PAYREQ TYPE IS OTHER
         }
     }
 
@@ -79,7 +76,8 @@ class PayreqController extends Controller
         $payreq_project_count = Payreq::where('project', $payreq->project)
             ->where('status', 'approved')
             ->count();
-        $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($payreq_project_count + 1, 5, '0', STR_PAD_LEFT);
+        // $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($payreq_project_count + 1, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($payreq->id, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }

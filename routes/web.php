@@ -91,9 +91,15 @@ Route::middleware('auth')->group(function () {
         Route::prefix('realizations')->name('realizations.')->group(function () {
             Route::get('/data', [UserRealizationController::class, 'data'])->name('data');
             Route::get('/', [UserRealizationController::class, 'index'])->name('index');
+            // add realization detials
+            Route::get('/{realization_id}/add_details', [UserRealizationController::class, 'add_details'])->name('add_details');
+            Route::post('/store_detail', [UserRealizationController::class, 'store_detail'])->name('store_detail');
+            Route::post('/submit', [UserRealizationController::class, 'submit_realization'])->name('submit_realization');
+            Route::delete('/{realization_detail_id}/delete_detail', [UserRealizationController::class, 'delete_detail'])->name('delete_detail');
         });
         Route::resource('realizations', UserRealizationController::class);
 
+        // PAYREQS
         Route::get('/data', [UserPayreqController::class, 'data'])->name('data');
         Route::get('/', [UserPayreqController::class, 'index'])->name('index');
         Route::get('/{id}', [UserPayreqController::class, 'show'])->name('show');
@@ -166,28 +172,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [VerifyController::class, 'index'])->name('index');
         Route::put('/{id}', [VerifyController::class, 'update'])->name('update');
     });
-
-    // SEARCH
-    Route::prefix('search')->name('search.')->group(function () {
-        Route::get('/', [SearchController::class, 'index'])->name('index');
-        Route::post('/display', [SearchController::class, 'display'])->name('display');
-        Route::get('/{id}/edit', [SearchController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [SearchController::class, 'update'])->name('update');
-        Route::delete('/{id}', [SearchController::class, 'destroy'])->name('destroy');
-    });
-
-    //RAB
-    Route::prefix('rabs')->name('rabs.')->group(function () {
-        Route::get('/data', [RabController::class, 'data'])->name('data');
-        Route::get('/{rab_id}/data', [RabController::class, 'payreq_data'])->name('payreq_data');
-        Route::put('/{id}/status', [RabController::class, 'update_status'])->name('update_status');
-        Route::get('/{id}/test', [RabController::class, 'test'])->name('test');
-    });
-    Route::resource('rabs', RabController::class);
-
-    // TRANSAKSIS
-    Route::get('transaksi/data', [TransaksiController::class, 'data'])->name('transaksi.data');
-    Route::resource('transaksi', TransaksiController::class);
 
     // ACCOUNT
     Route::prefix('account')->name('account.')->group(function () {

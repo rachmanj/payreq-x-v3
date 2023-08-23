@@ -67,26 +67,30 @@
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label for="remarks">Purpose</label>
-                <textarea name="remarks" id="remarks" cols="30" rows="2" class="form-control @error('remarks') is-invalid @enderror" autofocus>{{ old('remarks') }}</textarea>
-                @error('remarks')
-                <div class="invalid-feedback">
-                  {{ $message }}
-                </div>
-                @enderror
+              {{-- REALIZATION DETAILS --}}
+              <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  Realization Details
+                </h3>
               </div>
 
-              <div class="form-group">
-                <label for="amount">Amount</label>
-                <input type="text" name="amount" id="amount" value="{{ old('amount') }}" class="form-control @error('amount') is-invalid @enderror">
-                @error('amount')
-                <div class="invalid-feedback">
-                  {{ $message }}
-                </div>
-                @enderror
+              <div class="card-body">
+                <table class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Description</th>
+                      <th>Position</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                    </tr>
+                  </thead>
+                </table>
               </div>
+            </div>
 
               <div class="card-footer">
                 <div class="row">
@@ -100,8 +104,8 @@
               </div>
             </form>
 
-          </div>
-        </div>
+          </div> {{-- card -body --}}
+       
       </div>
     </div>
 @endsection

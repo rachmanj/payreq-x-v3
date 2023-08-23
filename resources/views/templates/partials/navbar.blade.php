@@ -28,10 +28,6 @@
           @hasanyrole('superadmin|admin|cashier')
             @include('templates.partials.menu.accounting')
           @endhasanyrole
-          
-          @hasanyrole('superadmin|admin|cashier|dnc_staff')
-            @include('templates.partials.menu.dnc')
-          @endhasanyrole
 
           @can('akses_approvals')
             @include('templates.partials.menu.approvals')
@@ -39,12 +35,6 @@
 
           @can('akses_admin')
             @include('templates.partials.menu.admin')
-          @endcan
-
-          @can('akses_search')
-          <li class="nav-item">
-            <a href="{{ route('search.index') }}" class="nav-link">Search</a>
-          </li>
           @endcan
           
         </ul>

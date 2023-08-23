@@ -33,7 +33,7 @@ class Payreq extends Model
 
     public function realization()
     {
-        return $this->hasOne(Relization::class);
+        return $this->hasOne(Realization::class);
     }
 
     public function rab()

@@ -34,10 +34,6 @@ class PayreqAdvanceController extends Controller
                 return redirect()->route('user-payreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft, contact IT Department');
             }
 
-            // $payreq = Payreq::findOrFail($response->id);
-            // $payreq->update([
-            //     'approval_plan_count' => $approval_plan_response,
-            // ]);
             return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance submitted');
         }
     }
