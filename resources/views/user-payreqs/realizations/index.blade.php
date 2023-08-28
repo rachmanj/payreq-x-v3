@@ -90,7 +90,7 @@
                   <select name="payreq_id" class="form-control select2bs4 @error('payreq_id') is-invalid @enderror">
                     <option value="">-- select payreq to realization --</option>
                     @foreach ($user_payreqs as $payreq)
-                      <option value="{{ $payreq->id }}">Payreq No.{{ $payreq->payreq_no }} | Amount: IDR {{ $payreq->amount }} </option>
+                      <option value="{{ $payreq->id }}">Payreq No.{{ $payreq->nomor }} | Amount: IDR {{ $payreq->amount }} </option>
                     @endforeach
                   </select>
                   @error('payreq_id')
@@ -144,7 +144,7 @@
       ajax: '{{ route('user-payreqs.realizations.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'number'},
+        {data: 'nomor'},
         {data: 'created_at'},
         {data: 'payreq_no'},
         {data: 'status'},

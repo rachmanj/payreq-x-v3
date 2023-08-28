@@ -2,27 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Account;
 use App\Models\ApprovalPlan;
-use App\Models\Payreq;
 use Illuminate\Http\Request;
 
-class ApprovalRequestController extends Controller
+class PayreqApprovalRequestController extends Controller
 {
     public function index()
     {
-        return view('approvals-request.index');
+        return view('approvals-request.payreqs.index');
     }
 
     public function data()
     {
-        $stage_plans = ApprovalPlan::where('status', 0)
+        $stage_plans = ApprovalPlan::where('is_open', 1)
+            ->where('status', 0)
             ->where('approver_id', auth()->user()->id)
             ->get();
 
         return datatables()->of($stage_plans)
-            ->addColumn('payreq_no', function ($stage_plans) {
-                return $stage_plans->payreq->payreq_no;
+            ->addColumn('nomor', function ($stage_plans) {
+                return $stage_plans->payreq->nomor;
             })
             ->addColumn('created_at', function ($stage_plans) {
                 return $stage_plans->payreq->created_at->addHours(8)->format('d-M-Y H:i:s');
@@ -40,7 +39,7 @@ class ApprovalRequestController extends Controller
                 return $stage_plans->payreq->created_at->diffInDays(now());
             })
             ->addIndexColumn()
-            ->addColumn('action', 'approvals-request.action')
+            ->addColumn('action', 'approvals-request.payreqs.action')
             ->rawColumns(['action'])
             ->toJson();
     }

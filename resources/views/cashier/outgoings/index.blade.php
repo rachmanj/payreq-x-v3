@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    My Payreqs
+    Outgoing Payment Request
 @endsection
 
 @section('breadcrumb_title')
-    payreqs
+    outgoings
 @endsection
 
 @section('content')
@@ -14,34 +14,23 @@
 
     <div class="card">
       <div class="card-header">
-        @if ($enable_payreq)
-        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#new-payreq">
-          <i class="fas fa-plus"></i> New Payreq
-        </button>
-        @else
-        <button type="button" class="btn btn-sm btn-primary" disabled>
-          <i class="fas fa-plus"></i> New Payreq
-        </button>
-        @endif
       </div>
-      
+      <!-- /.card-header -->
       <div class="card-body">
-        <table id="mypayreqs" class="table table-bordered table-striped">
+        <table id="outgoings" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
+            <th>Employee</th>
             <th>Payreq No</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Date</th>
+            <th>Payment Date</th>
             <th>IDR</th>
-            {{-- <th>Days</th> --}}
-            <th></th>
+            <th>Account</th>
+            {{-- <th></th> --}}
           </tr>
           </thead>
         </table>
       </div>
-
       <!-- /.card-body -->
     </div>
     <!-- /.card -->
@@ -49,24 +38,6 @@
   <!-- /.col -->
 </div>
 <!-- /.row -->
-
-{{-- MODAL NEW PAYREQ --}}
-<div class="modal fade" id="new-payreq">
-  <div class="modal-dialog modal-md">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Select Payment Request Type</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body justify-content-between">
-          <a href="{{ route('payreq-advance.create') }}" class="btn btn-outline-success btn-lg btn-block">Advance</a>
-          <a href="{{ route('payreq-other.create') }}" class="btn btn-outline-primary btn-lg btn-block">Reimburse</a>
-      </div>
-    </div> <!-- /.modal-content -->
-  </div> <!-- /.modal-dialog -->
-</div> <!-- /.modal -->
 
 @endsection
 
@@ -76,6 +47,9 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
   <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}"/>
+  <!-- Select2 -->
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
 @endsection
 
 @section('scripts')
@@ -85,29 +59,34 @@
 <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables/datatables.min.js') }}"></script>
+<!-- Select2 -->
+<script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
 
 <script>
   $(function () {
-    $("#mypayreqs").DataTable({
+    $("#outgoings").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('user-payreqs.data') }}',
+      ajax: '{{ route('cashier.outgoings.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'nomor'},
-        {data: 'type'},
-        {data: 'status'},
-        {data: 'submit_at'},
+        {data: 'employee'},
+        {data: 'PayreqNo'},
+        {data: 'outgoing_date'},
         {data: 'amount'},
-        // {data: 'days'},
-        {data: 'action', orderable: false, searchable: false},
+        {data: 'account'},
+        // {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5],
-                "className": "text-right"
+                "targets": [2],
+                "className": "text-center"
               },
+              {
+                "targets": [4],
+                "className": "text-right"
+              }
             ]
     })
   });

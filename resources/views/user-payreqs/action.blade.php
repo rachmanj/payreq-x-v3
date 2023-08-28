@@ -10,7 +10,7 @@
     @if ($model->deletable)
         <button class="btn btn-xs btn-danger" onclick="return confirm('Are You sure You want to delete this record?')">delete</button>  
     @endif
-    @if($model->printable)
+    @if($model->printable && $model->status !== 'split')
         <a href="{{ route('user-payreqs.print', $model->id) }}" class="btn btn-xs btn-info" target="_blank">print</a>
     @endif
 </form>

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Approval;
-use Illuminate\Http\Request;
 
 class ApprovalController extends Controller
 {

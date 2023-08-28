@@ -15,4 +15,14 @@ class Outgoing extends Model
     {
         return $this->belongsTo(Payreq::class);
     }
+
+    public function cashier()
+    {
+        return $this->belongsTo(User::class, 'cashier_id', 'id');
+    }
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
 }

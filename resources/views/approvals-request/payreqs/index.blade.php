@@ -1,7 +1,7 @@
 @extends('templates.main')
 
 @section('title_page')
-    Approvals
+    Approvals Request
 @endsection
 
 @section('breadcrumb_title')
@@ -14,7 +14,7 @@
 
     <div class="card">
       <div class="card-header">
-        <div class="h3 card-title">Approval Request</div>
+        <div class="h3 card-title">Payment Request</div>
       </div>
       
       <div class="card-body">
@@ -24,7 +24,7 @@
             <th>#</th>
             <th>Payreq No</th>
             <th>Requestor</th>
-            <th>Created at</th>
+            <th>Submit at</th>
             <th>Type</th>
             <th>IDR</th>
             <th>Days</th>
@@ -65,10 +65,10 @@
     $("#mypayreqs").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('approvals.request.data') }}',
+      ajax: '{{ route('approvals.request.payreqs.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'payreq_no'},
+        {data: 'nomor'},
         {data: 'requestor'},
         {data: 'created_at'},
         {data: 'type'},

@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('realizations', function (Blueprint $table) {
             $table->id();
-            $table->string('number');
+            $table->string('nomor');
             $table->foreignId('payreq_id');
             $table->foreignId('user_id');
             $table->string('project', 10)->nullable();
             $table->foreignId('department_id')->nullable();
             $table->text('remarks')->nullable();
+            $table->timestamp('submit_at')->nullable();
             $table->string('status', 20)->nullable(); // draft / approved / reject / cancel / pending (wait approve) / verified
             $table->boolean('editable')->default(true);
             $table->boolean('deleteable')->default(true);

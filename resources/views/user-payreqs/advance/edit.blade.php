@@ -27,7 +27,7 @@
                 <div class="col-4">
                   <div class="form-group">
                     <label for="payreq_no">Payreq No</label>
-                    <input type="text" name="payreq_no" value="{{ $payreq->payreq_no }}" class="form-control" disabled>
+                    <input type="text" name="payreq_no" value="{{ $payreq->nomor }}" class="form-control" disabled>
                   </div>
                 </div>
                 <div class="col-4">

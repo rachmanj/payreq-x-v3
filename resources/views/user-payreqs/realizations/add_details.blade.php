@@ -15,7 +15,7 @@
       <div class="col-sm-3 col-6">
         <div class="description-block border-right">
             <h5 class="description-header">Realization No</h5>
-            <span class="description-text">{{ $realization->number }}</span>
+            <span class="description-text">{{ $realization->nomor }}</span>
         </div>
         <!-- /.description-block -->
       </div>
@@ -23,7 +23,7 @@
       <div class="col-sm-3 col-6">
         <div class="description-block border-right">
           <h5 class="description-header">Payreq No</h5>
-          <span class="description-text">{{ $realization->payreq->payreq_no }}</span>
+          <span class="description-text">{{ $realization->payreq->nomor }}</span>
         </div>
         <!-- /.description-block -->
       </div>

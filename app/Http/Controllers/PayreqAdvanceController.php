@@ -21,7 +21,7 @@ class PayreqAdvanceController extends Controller
         if ($response->status == 'draft') {
             return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance Draft saved');
         } else {
-            $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan($response->id);
+            $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $response->id);
 
             if ($approval_plan_response == false) {
                 // update payreq status to draft
@@ -52,7 +52,7 @@ class PayreqAdvanceController extends Controller
         if ($response->status == 'draft') {
             return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance Draft saved');
         } else {
-            $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan($response->id);
+            $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $response->id);
 
             if ($approval_plan_response == false) {
                 // update payreq status to draft

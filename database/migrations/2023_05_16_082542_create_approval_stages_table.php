@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('project');
             $table->string('department_id');
             $table->string('approver_id');
+            $table->string('document_type', 20)->nullable(); // payreq / realization / rab
             $table->timestamps();
         });
     }

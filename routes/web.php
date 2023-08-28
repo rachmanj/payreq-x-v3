@@ -7,6 +7,7 @@ use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\CashierOutgoingController;
 use App\Http\Controllers\DashboardAccountingController;
 use App\Http\Controllers\DashboardDncController;
 use App\Http\Controllers\DashboardUserController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\UserOngoingController;
 use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqAdvanceController;
+use App\Http\Controllers\PayreqApprovalRequestController;
 use App\Http\Controllers\PayreqOtherController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RabController;
@@ -103,6 +105,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/data', [UserPayreqController::class, 'data'])->name('data');
         Route::get('/', [UserPayreqController::class, 'index'])->name('index');
         Route::get('/{id}', [UserPayreqController::class, 'show'])->name('show');
+        Route::post('/cancel', [UserPayreqController::class, 'cancel'])->name('cancel');
         Route::delete('/{id}', [UserPayreqController::class, 'destroy'])->name('destroy');
         // print pdf
         Route::get('/{id}/print', [UserPayreqController::class, 'print'])->name('print');
@@ -118,6 +121,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/pay', [CashierApprovedController::class, 'pay'])->name('pay');
             Route::put('/{id}/pay', [CashierApprovedController::class, 'store_pay'])->name('store_pay');
         });
+
+        Route::prefix('outgoings')->name('outgoings.')->group(function () {
+            Route::get('/data', [CashierOutgoingController::class, 'data'])->name('data');
+            Route::get('/', [CashierOutgoingController::class, 'index'])->name('index');
+        });
     });
 
     // PAYREQ ADVANCE
@@ -129,8 +137,18 @@ Route::middleware('auth')->group(function () {
     // APPROVALS
     Route::prefix('approvals')->name('approvals.')->group(function () {
         Route::prefix('request')->name('request.')->group(function () {
-            Route::get('/data', [ApprovalRequestController::class, 'data'])->name('data');
-            Route::get('/', [ApprovalRequestController::class, 'index'])->name('index');
+            Route::prefix('payreqs')->name('payreqs.')->group(function () {
+                Route::get('/data', [PayreqApprovalRequestController::class, 'data'])->name('data');
+                Route::get('/', [PayreqApprovalRequestController::class, 'index'])->name('index');
+            });
+            Route::prefix('realizations')->name('realizations.')->group(function () {
+                Route::get('/data', [PayreqApprovalRequestController::class, 'data'])->name('data');
+                Route::get('/', [PayreqApprovalRequestController::class, 'index'])->name('index');
+            });
+            Route::prefix('rabs')->name('rabs.')->group(function () {
+                Route::get('/data', [PayreqApprovalRequestController::class, 'data'])->name('data');
+                Route::get('/', [PayreqApprovalRequestController::class, 'index'])->name('index');
+            });
         });
         Route::prefix('plan')->name('plan.')->group(function () {
             Route::put('/{id}/update', [ApprovalPlanController::class, 'update'])->name('update');

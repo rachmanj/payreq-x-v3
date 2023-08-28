@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\Outgoing;
 use App\Models\Payreq;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class CashierApprovedController extends Controller
@@ -41,9 +42,11 @@ class CashierApprovedController extends Controller
 
         // update payreq status
         $payreq->status = 'paid';
+        $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
+        $payreq->printable = 0;
         $payreq->save();
 
-        return redirect()->route('cashier.approveds.index')->with('success', 'Payreq successfully paid with outgoing id: ' . $outgoing->id);
+        return redirect()->route('cashier.approveds.index')->with('success', 'Payreq successfully paid with FULL Payment');
     }
 
     public function pay($id)
@@ -84,13 +87,16 @@ class CashierApprovedController extends Controller
         // update payreq status
         if ($payreq->amount == $outgoings->sum('amount')) {
             $payreq->status = 'paid';
+            $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
+            $payreq->printable = 0;
             $payreq->save();
         } else {
             $payreq->status = 'split';
+            $payreq->printable = 0;
             $payreq->save();
         }
 
-        return redirect()->route('cashier.approveds.pay', $id)->with('success', 'Payreq successfully splitted with outgoing id: ' . $outgoing->id);
+        return redirect()->route('cashier.approveds.pay', $id)->with('success', 'Payreq successfully paid splitted');
     }
 
     public function data()

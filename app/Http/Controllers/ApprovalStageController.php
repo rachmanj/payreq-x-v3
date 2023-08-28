@@ -20,27 +20,37 @@ class ApprovalStageController extends Controller
 
     public function store(Request $request)
     {
+        // return $request->all();
+        // die;
+
         $request->validate([
             'approver_id' => 'required',
             'project' => 'required',
             'departments' => 'required',
+            'documents' => 'required',
         ]);
 
         $departments = Department::whereIn('id', $request->departments)->get();
 
-        foreach ($departments as $department) {
-            ApprovalStage::create([
-                'department_id' => $department->id,
-                'approver_id' => $request->approver_id,
-                'project' => $request->project,
-            ]);
-        }
+        // foreach ($departments as $department) {
+        //     ApprovalStage::create([
+        //         'department_id' => $department->id,
+        //         'approver_id' => $request->approver_id,
+        //         'project' => $request->project,
+        //     ]);
+        // }
 
-        // ApprovalStage::create([
-        //     'department_id' => $request->department,
-        //     'approver_id' => $request->approver_id,
-        //     'project' => $request->project,
-        // ]);
+        // $stage = new ApprovalStage();
+        foreach ($departments as $department) {
+            foreach ($request->documents as $document) {
+                ApprovalStage::create([
+                    'department_id' => $department->id,
+                    'approver_id' => $request->approver_id,
+                    'project' => $request->project,
+                    'document_type' => $document,
+                ]);
+            }
+        }
 
         return redirect()->route('approval-stages.index')->with('success', 'Approval stage created successfully.');
     }
@@ -63,11 +73,23 @@ class ApprovalStageController extends Controller
                 return $approver->name;
             })
             ->addColumn('stages', function ($approver) {
-                $stages = ApprovalStage::where('approver_id', $approver->id)->get();
+                // $stages = ApprovalStage::select('project', 'department_id', 'approver_id')
+                //         ->where('approver_id', $approver->id)
+                //         ->groupBy(['department_id', 'project', 'approver_id'])
+                //         ->get();
+
+                $stages = ApprovalStage::where('approver_id', $approver->id)->orderBy('department_id', 'asc')->get();
                 $html = '<ul class="list-group">';
+
                 foreach ($stages as $stage) {
+                    // $stage_documents = ApprovalStage::where('approver_id', $approver->id)
+                    //     ->where('department_id', $stage->department_id)->get();
+                    // $documents = '';
+                    // foreach ($stage_documents as $stage_document) {
+                    //     $documents .= ucfirst($stage_document->document_type) . ', ';
+                    // }
                     $delete_button = '<button type="button" class="btn btn-danger btn-xs" onclick="deleteApprovalStage(' . $stage->id . ')"><i class="fas fa-trash"></i></button>';
-                    $html .= '<li class="list-group-item d-flex justify-content-between align-items-center">' . $stage->project . ' - ' . $stage->department->department_name . ' ' . $delete_button . '</li>';
+                    $html .= '<li class="list-group-item d-flex justify-content-between align-items-center">' . $stage->project . ' - ' . $stage->department->department_name . ' - ' . ucfirst($stage->document_type === 'payreq' ? 'Payment Request' : $stage->document_type) . $delete_button . '</li>';
                 }
                 $html .= '</ul>';
                 return $html;
@@ -78,37 +100,3 @@ class ApprovalStageController extends Controller
             ->toJson();
     }
 }
-
-// script.js
-// Path: public\js\script.js
-// Compare this snippet from public\js\script.js:
-// function deleteApprovalStage(id) {
-//     Swal.fire({
-//         title: 'Are you sure?',
-//         text: "You won't be able to revert this!",
-//         icon: 'warning',
-//         showCancelButton: true,
-//         confirmButtonColor: '#3085d6',
-//         cancelButtonColor: '#d33',
-//         confirmButtonText: 'Yes, delete it!'
-//     }).then((result) => {
-//         if (result.isConfirmed) {
-//             $.ajax({
-//                 url: '/approval-stages/' + id,
-//                 type: 'DELETE',
-//                 data: {
-//                     _token: $('meta[name="csrf-token"]').attr('content'),
-//                 },
-//                 success: function () {
-//                     Swal.fire(
-//                         'Deleted!',
-//                         'Your file has been deleted.',
-//                         'success'
-//                     ).then((result) => {
-//                         location.reload();
-//                     });
-//                 }
-//             });
-//         }
-//     });
-// }

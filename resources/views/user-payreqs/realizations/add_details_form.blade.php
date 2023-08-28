@@ -8,7 +8,7 @@
                     @csrf
                     @if ($realization_details->count() > 0)
                         <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                    <button type="submit" class="btn btn-sm btn-warning float-right mx-2" onclick="return confirm('Are you sure you want to submit this realization?')">Submit Realization</button>
+                        <button type="submit" class="btn btn-sm btn-warning float-right mx-2" onclick="return confirm('Are you sure you want to submit this realization?')">Submit Realization</button>
                     @endif
                 </form>
             </div>

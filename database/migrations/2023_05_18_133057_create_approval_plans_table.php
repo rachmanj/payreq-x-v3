@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('approval_plans', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('payreq_id');
+            $table->integer('document_id');
+            $table->string('document_type'); // payreq | realization | rab
             $table->foreignId('approver_id');
             $table->integer('status')->default(0); // pending = 0 | approved = 1 | revised = 2 | rejected = 3  | cancelled = 4
             $table->string('remarks')->nullable();
+            $table->boolean('is_open')->default(true); // approval yg disetujui dihitung hanya yg is_open = true
             $table->boolean('is_read')->default(true);
             $table->timestamps();
         });

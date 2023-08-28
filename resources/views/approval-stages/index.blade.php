@@ -102,6 +102,17 @@
               </div>
             </div>
 
+            <div class="form-group">
+              <label>Select Documents</label>
+              <div class="select2-purple">
+                <select name="documents[]" class="select2 form-control" multiple="multiple" data-dropdown-css-class="select2-purple" data-placeholder="Select documents" style="width: 100%;">
+                  <option value="payreq">Payment Request</option>
+                  <option value="realization">Realization</option>
+                  <option value="rab">RAB</option>
+                </select>
+              </div>
+            </div>
+
           </div>
           <div class="modal-footer float-left">
             <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"> Close</button>

@@ -24,7 +24,7 @@ class PayreqController extends Controller
                 'status' => $data->draft == '1' ? 'draft' : 'submitted',
                 'editable' => $data->draft == '1' ? '1' : '0',
                 'deletable' => $data->draft == '1' ? '1' : '0',
-                'payreq_no' => $this->generateDraftNumber(),
+                'nomor' => $this->generateDraftNumber(),
                 'type' => 'advance',
                 'user_id' => auth()->user()->id,
             ]));
@@ -59,13 +59,26 @@ class PayreqController extends Controller
         }
     }
 
+    public function cancel($id)
+    {
+        $payreq = Payreq::findOrFail($id);
+        $payreq->update([
+            'status' => 'canceled',
+            'canceled_at' => Carbon::now(),
+            'printable' => '0',
+        ]);
+
+        return $payreq;
+    }
+
     public function generateDraftNumber()
     {
-        $status_include = ['draft', 'submitted'];
+        $status_include = ['draft', 'submitted', 'revised'];
         $payreq_project_count = Payreq::where('project', auth()->user()->project)
+            ->whereYear('created_at', Carbon::now()->format('Y'))
             ->whereIn('status', $status_include)
             ->count();
-        $nomor = 'FQ' . Carbon::now()->addHours(8)->format('y') . auth()->user()->project . str_pad($payreq_project_count + 1, 3, '0', STR_PAD_LEFT);
+        $nomor = 'FQ' . Carbon::now()->addHours(8)->format('y') . substr(auth()->user()->project, 0, 3) . str_pad($payreq_project_count + 1, 3, '0', STR_PAD_LEFT);
 
         return $nomor;
     }
@@ -73,11 +86,14 @@ class PayreqController extends Controller
     public function generatePRNumber($payreq_id)
     {
         $payreq = Payreq::findOrFail($payreq_id);
+        // $status_included = ['approved', 'split', 'paid', 'cancelled'];
+
         $payreq_project_count = Payreq::where('project', $payreq->project)
-            ->where('status', 'approved')
+            ->whereYear('created_at', Carbon::now()->format('Y'))
+            // ->whereIn('status', $status_included)
             ->count();
-        // $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($payreq_project_count + 1, 5, '0', STR_PAD_LEFT);
-        $nomor = Carbon::now()->format('y') . auth()->user()->project . str_pad($payreq->id, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y') . substr(auth()->user()->project, 0, 3) . str_pad($payreq->id, 5, '0', STR_PAD_LEFT);
+        // $nomor = Carbon::now()->format('y') . substr(auth()->user()->project, 0, 3) . str_pad($payreq_project_count + 1, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }

@@ -10,7 +10,8 @@ class DashboardUserController extends Controller
 {
     public function index()
     {
-        $wait_approve = ApprovalPlan::where('status', 0)
+        $wait_approve = ApprovalPlan::where('is_open', 1)
+            ->where('status', 0)
             ->where('approver_id', auth()->user()->id)
             ->count();
 

@@ -14,6 +14,7 @@
         <div class="card">
           <div class="card-header">
             <h6 class="card-title">Payreq No: {{ $payreq->payreq_no . ' | ' . $payreq->requestor->name . ' | IDR. ' . number_format($payreq->amount, 0)  }}</h3>
+            <a href="{{ route('cashier.approveds.index') }}" class="btn btn-sm btn-success float-right"><i class="fas fa-arrow-left"></i> Back</a>
           </div>
           <div class="card-body">
             <form action="{{ route('cashier.approveds.store_pay', $payreq->id) }}" method="POST" id="split-update">
@@ -38,7 +39,6 @@
             </form>
           </div>
           <div class="card-footer">
-            <a href="{{ route('cashier.approveds.index') }}" class="btn btn-sm btn-success"><i class="fas fa-arrow-left"></i> Back</a>
             <button type="submit" class="btn btn-sm btn-primary" form="split-update"> Save</button>
           </div>
         </div>

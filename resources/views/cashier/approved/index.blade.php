@@ -21,11 +21,11 @@
           <thead>
           <tr>
             <th>#</th>
-            <th>Name</th>
+            <th>Employee</th>
             <th>Payreq No</th>
             <th>Type</th>
             <th>Apprved at</th>
-            <th>IDR</th>
+            <th>IDR Due</th>
             <th>Days</th>
             <th></th>
           </tr>
@@ -72,7 +72,7 @@
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'requestor'},
-        {data: 'payreq_no'},
+        {data: 'nomor'},
         {data: 'type'},
         {data: 'approved_at'},
         {data: 'amount'},

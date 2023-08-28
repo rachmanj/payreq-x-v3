@@ -5,7 +5,9 @@
       <li><a href="{{ route('approval-stages.index') }}" class="dropdown-item">Approval Stages</a></li>
       @endcan
       @can('akses_approval_request')
-      <li><a href="{{ route('approvals.request.index') }}" class="dropdown-item">Approval Request</a></li>
+      <li><a href="{{ route('approvals.request.payreqs.index') }}" class="dropdown-item">Payment Request</a></li>
+      <li><a href="{{ route('approvals.request.realizations.index') }}" class="dropdown-item">Realizations</a></li>
+      <li><a href="{{ route('approvals.request.rabs.index') }}" class="dropdown-item">RAB</a></li>
       @endcan
     </ul>
 </li>

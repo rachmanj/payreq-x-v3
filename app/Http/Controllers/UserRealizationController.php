@@ -36,7 +36,7 @@ class UserRealizationController extends Controller
         $payreq = Payreq::findOrFail($request->payreq_id);
 
         $realization = Realization::create([
-            'number' => $request->realization_no,
+            'nomor' => $request->realization_no,
             'payreq_id' => $request->payreq_id,
             'user_id' => auth()->user()->id,
             'project' => $payreq->project,
@@ -45,6 +45,11 @@ class UserRealizationController extends Controller
         ]);
 
         return redirect()->route('user-payreqs.realizations.add_details', $realization->id);
+    }
+
+    public function submit_realization(Request $request)
+    {
+        // 
     }
 
     public function destroy(Realization $realization)
@@ -124,7 +129,10 @@ class UserRealizationController extends Controller
 
         return datatables()->of($realizations)
             ->addColumn('payreq_no', function ($realization) {
-                return $realization->payreq->payreq_no;
+                // return $realization->payreq->payreq_no;
+                $html = '<a href="" data-toggle="tooltip" data-placement="top" title="';
+                $html .= $realization->payreq->remarks . '">' . $realization->payreq->payreq_no . '</a>';
+                return $html;
             })
             ->addColumn('amount', function ($realization) {
                 return number_format($realization->realizationDetails->sum('amount'), 2, ',', '.');
@@ -143,6 +151,7 @@ class UserRealizationController extends Controller
                 }
             })
             ->addColumn('action', 'user-payreqs.realizations.action')
+            ->rawColumns(['action', 'payreq_no'])
             ->addIndexColumn()
             ->toJson();
     }
