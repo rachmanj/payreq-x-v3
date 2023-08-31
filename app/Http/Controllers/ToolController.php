@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashJournal;
 use App\Models\Outgoing;
 use App\Models\Realization;
 use App\Models\User;
@@ -93,6 +94,15 @@ class ToolController extends Controller
             ->count();
         $nomor = Carbon::now()->format('y') . substr(auth()->user()->project, 0, 3)  . str_pad($realization->id, 5, '0', STR_PAD_LEFT);
         // $nomor = Carbon::now()->format('y') . substr(auth()->user()->project, 0, 3)  . str_pad($realization_project_count + 1, 5, '0', STR_PAD_LEFT);
+
+        return $nomor;
+    }
+
+    public function generateCashJournalNumber($journal_id, $type)
+    {
+
+        $journal_type = $type == 'cash-out' ? 'COJ' : 'CIJ';
+        $nomor = Carbon::now()->format('y') . $journal_type . substr(auth()->user()->project, 0, 3)  . str_pad($journal_id, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }

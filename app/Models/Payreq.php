@@ -40,4 +40,9 @@ class Payreq extends Model
     {
         return $this->belongsTo(Rab::class);
     }
+
+    public function realization_details()
+    {
+        return $this->hasMany(RealizationDetail::class, 'payreq_id', 'id');
+    }
 }

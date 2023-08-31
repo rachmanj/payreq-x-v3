@@ -25,4 +25,9 @@ class Outgoing extends Model
     {
         return $this->belongsTo(Account::class);
     }
+
+    public function cash_journal()
+    {
+        return $this->belongsTo(CashJournal::class);
+    }
 }

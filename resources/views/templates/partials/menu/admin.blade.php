@@ -2,7 +2,7 @@
     <a id="dropdownSubMenu1" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Admin</a>
     <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
       <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Accounts</a></li>
-      <li><a href="{{ route('adv-category.index') }}" class="dropdown-item">Advance Category</a></li>
+      {{-- <li><a href="{{ route('adv-category.index') }}" class="dropdown-item">Advance Category</a></li> --}}
       <li><a href="{{ route('parameters.index') }}" class="dropdown-item">Advance Parameters</a></li>
       @can('akses_user')
       <li><a href="{{ route('users.index') }}" class="dropdown-item">User List</a></li>

@@ -11,16 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('journals', function (Blueprint $table) {
+        Schema::create('cash_journals', function (Blueprint $table) {
             $table->id();
-            $table->string('journal_number');
+            $table->string('journal_no')->nullable();
+            $table->string('type');
+            $table->string('description');
             $table->date('date');
-            $table->string('description')->nullable();
+            $table->string('sap_journal_no', 50)->nullable();
+            $table->date('sap_posting_date')->nullable();
+            $table->double('amount')->nullable();
             $table->string('project', 20)->default('000H')->nullable();
-            $table->string('reference');
-            $table->string('attachment');
-            $table->string('created_by');
-            $table->string('sap_journal_no')->nullable();
+            $table->foreignId('created_by')->nullable();
             $table->timestamps();
         });
     }
@@ -30,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('journals');
+        Schema::dropIfExists('cash_journals');
     }
 };

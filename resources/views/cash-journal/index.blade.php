@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Rekap Transaksi
+    Cash Journals
 @endsection
 
 @section('breadcrumb_title')
-    rekaps
+    journals
 @endsection
 
 @section('content')
@@ -14,26 +14,31 @@
 
     <div class="card">
       <div class="card-header">
-        @if (Session::has('success'))
-          <div class="alert alert-success alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            {{ Session::get('success') }}
-          </div>
+        @if ($outgoings_count > 0)
+        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-primary">Create Cash-Out Journal <span class="badge badge-danger">{{ $outgoings_count }}</span></a>
+        @else
+        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-primary">Create Cash-Out Journal</a>
         @endif
-        <a href="#" class="btn btn-sm btn-success">Export to Excel</a>
+
+        @if ($incomings_count > 0)
+        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal <span class="badge badge-danger">{{ $incomings_count }}</span></a>
+        @else
+        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal</a>
+        @endif
       </div>
       <!-- /.card-header -->
       <div class="card-body">
-        <table id="rekaps" class="table table-bordered table-striped">
+        <table id="cash-journals" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
-            <th>PostingD</th>
-            <th>Employee</th>
-            <th>PayreqNo</th>
-            <th>RelizNo</th>
+            <th>CashJ No</th>
+            <th>Date</th>
+            {{-- <th>Type</th> --}}
+            <th>Status</th> {{-- posted or not --}}
             <th>IDR</th>
-            <th>Remarks</th>
+            <th>SAPJ No</th>
+            {{-- <th>By</th> --}}
             <th></th>
           </tr>
           </thead>
@@ -70,31 +75,31 @@
 <!-- Select2 -->
 <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
 
+ 
 <script>
   $(function () {
-    $("#rekaps").DataTable({
+    $("#cash-journals").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('rekaps.data') }}',
+      ajax: '{{ route('cash-journals.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'posting_date'},
-        {data: 'employee'},
-        {data: 'payreq_no'},
-        {data: 'realization_no'},
+        {data: 'journal_no'},
+        {data: 'date'},
+        {data: 'status'},
         {data: 'amount'},
-        {data: 'remarks'},
+        {data: 'sap_journal_no'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
+              // {
+              //   "targets": [2],
+              //   "className": "text-center"
+              // },
               {
-                "targets": [5],
+                "targets": [4],
                 "className": "text-right"
-              },
-              {
-                "targets": [1, 3, 4],
-                "className": "text-center"
               }
             ]
     })

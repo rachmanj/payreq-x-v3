@@ -19,6 +19,10 @@ return new class extends Migration
             $table->date('outgoing_date')->nullable();
             $table->double('amount')->nullable();
             $table->string('description')->nullable();
+            $table->string('project', 10)->nullable();
+            $table->foreignId('cash_journel_id')->nullable();
+            $table->string('sap_journal_no', 50)->nullable();
+            $table->string('flag', 10)->nullable(); // Cash Journal Temporary (CJT) + user_id
             $table->timestamps();
         });
     }
