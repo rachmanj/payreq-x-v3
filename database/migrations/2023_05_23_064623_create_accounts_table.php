@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('type_id')->nullable(); // 1 = bank, 2 = cash, 3 = revenue, 4 = expense
             $table->text('description')->nullable();
             $table->string('project', 20)->default('000H')->nullable();
+            $table->double('balance', 20, 2)->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

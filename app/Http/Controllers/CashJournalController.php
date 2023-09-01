@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\CashJournal;
+use App\Models\GeneralLedger;
 use App\Models\Outgoing;
 use Illuminate\Http\Request;
 
@@ -82,6 +84,31 @@ class CashJournalController extends Controller
         return view('cash-journal.show', compact(['cash_journal', 'outgoings', 'advance_account', 'pc_account']));
     }
 
+    public function delete_detail($outgoing_id)
+    {
+        $outgoing = Outgoing::find($outgoing_id);
+        $outgoing->cash_journal_id = null;
+        $outgoing->save();
+
+        return redirect()->back();
+    }
+
+    // delete cash journal record & update outgoing record
+    public function destroy($id)
+    {
+        $cash_journal = CashJournal::find($id);
+        $outgoings = Outgoing::where('cash_journal_id', $id)->get();
+
+        foreach ($outgoings as $outgoing) {
+            $outgoing->cash_journal_id = null;
+            $outgoing->save();
+        }
+
+        $cash_journal->delete();
+
+        return redirect()->route('cash-journals.index')->with('success', 'Cash Journal deleted successfully.');
+    }
+
     public function print($id)
     {
         $journal = CashJournal::find($id);
@@ -105,20 +132,54 @@ class CashJournalController extends Controller
         $cash_journal->sap_posting_date = $request->sap_posting_date;
         $cash_journal->save();
 
-        // update outgoings sap journal no
+        // update sap_journal_no in outgoings table
         $outgoings = Outgoing::where('cash_journal_id', $request->cash_journal_id)->get();
         foreach ($outgoings as $outgoing) {
             $outgoing->sap_journal_no = $request->sap_journal_no;
             $outgoing->save();
         }
 
+        // create record in general_ledgers table
+        $account_type_include = [2, 5]; // cash & advance yaitu akun2 yg terpengaruh dgn transaksi ini
+        $accounts = Account::whereIn('type_id', $account_type_include)
+            ->where('project', auth()->user()->project)
+            ->get();
+
+        foreach ($accounts as $account) {
+            app(GeneralLedgerController::class)->store($account, $cash_journal);
+        }
+
         return redirect()->back()->with('success', 'Cash Journal updated successfully.');
+    }
+
+    public function cancel_sap_info(Request $request)
+    {
+        $cash_journal = CashJournal::find($request->cash_journal_id);
+        $cash_journal->sap_journal_no = null;
+        $cash_journal->sap_posting_date = null;
+        $cash_journal->save();
+
+        // update sap_journal_no in outgoings table
+        $outgoings = Outgoing::where('cash_journal_id', $request->cash_journal_id)->get();
+        foreach ($outgoings as $outgoing) {
+            $outgoing->sap_journal_no = null;
+            $outgoing->save();
+        }
+
+        // delete record in general_ledgers table
+        $general_ledgers = GeneralLedger::where('journal_no', $cash_journal->journal_no)->get();
+
+        foreach ($general_ledgers as $general_ledger) {
+            app(GeneralLedgerController::class)->delete($general_ledger);
+        }
+
+        return redirect()->back()->with('success', 'Cash Journal Cancel updated successfully.');
     }
 
     public function add_to_cart(Request $request)
     {
         $outgoing = Outgoing::find($request->outgoing_id);
-        $outgoing->flag = 'CJT' . auth()->user()->id;
+        $outgoing->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
         $outgoing->save();
 
         return redirect()->back();
@@ -141,7 +202,7 @@ class CashJournalController extends Controller
             ->get();
 
         foreach ($outgoings as $outgoing) {
-            $outgoing->flag = 'CJT' . auth()->user()->id;
+            $outgoing->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
             $outgoing->save();
         }
 

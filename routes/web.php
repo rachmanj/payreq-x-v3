@@ -160,7 +160,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/store', [CashJournalController::class, 'store'])->name('store');
         Route::get('/print/{id}', [CashJournalController::class, 'print'])->name('print');
         Route::get('/show/{id}', [CashJournalController::class, 'show'])->name('show');
+        Route::get('/{outgoing_id}/delete_detail', [CashJournalController::class, 'delete_detail'])->name('delete_detail');
         Route::post('/update_sap', [CashJournalController::class, 'update_sap'])->name('update_sap');
+        Route::post('/cancel_sap_info', [CashJournalController::class, 'cancel_sap_info'])->name('cancel_sap_info');
+        Route::delete('/{id}', [CashJournalController::class, 'destroy'])->name('destroy');
     });
 
     // GENERAL JOURNALS

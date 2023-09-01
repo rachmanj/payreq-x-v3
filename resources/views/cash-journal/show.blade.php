@@ -48,7 +48,12 @@
             </div>
             <div class="card-header">
                 <h3 class="card-title">Detail</h3>
-                <button href="#" class="btn btn-sm btn-warning float-right" role="button" data-toggle="modal" data-target="#update-sap" style="color: black; font-weight: bold" {{ $cash_journal->sap_journal_no ? 'disabled' : '' }}>Update SAP</button>
+                <form action="{{ route('cash-journals.cancel_sap_info') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="cash_journal_id" value="{{ $cash_journal->id }}">
+                    <button class="btn btn-sm btn-danger float-right" {{ $cash_journal->sap_journal_no ? '' : 'disabled' }} onclick="return confirm('Are You sure You want to cancel this UPDATE? This action cannot be undone')">Cancel SAP Info</button>
+                </form>
+                <button class="btn btn-sm btn-warning float-right mr-2" data-toggle="modal" data-target="#update-sap" style="color: black; font-weight: bold" {{ $cash_journal->sap_journal_no ? 'disabled' : '' }}>Update SAP Info</button>
             </div>
             <div class="card-body">
                 <table class="table table-bordered table-striped">
@@ -71,7 +76,7 @@
                                 <td>
                                     <ol>
                                         @foreach ($outgoings as $item)
-                                            <li>Payreq No.{{ $item->payreq->nomor }}, {{ $item->payreq->requestor->name }}, {{ $item->payreq->remarks }}, {{ number_format($item->amount, 2) }}</li>
+                                            <li>Payreq No.{{ $item->payreq->nomor }}, {{ $item->payreq->requestor->name }}, {{ $item->payreq->remarks }}, {{ number_format($item->amount, 2) }} {{-- <ahref="route('cash-journals.delete_detail',$item->id)" class="btn btn-xs btn-danger"><i class="fas fa-trash"></i></a> --}}</li>
                                         @endforeach
                                     </ol>
                                 </td>
