@@ -78,8 +78,8 @@ class CashJournalController extends Controller
     {
         $cash_journal = CashJournal::find($id);
         $outgoings = Outgoing::where('cash_journal_id', $id)->get();
-        $advance_account = '122222 - Employee Cash Advance 000H';
-        $pc_account = '11111111 - PC Site 000H';
+        $advance_account = Account::where('type_id', 5)->where('project', auth()->user()->project)->first();
+        $pc_account = Account::where('type_id', 2)->where('project', auth()->user()->project)->first();
 
         return view('cash-journal.show', compact(['cash_journal', 'outgoings', 'advance_account', 'pc_account']));
     }

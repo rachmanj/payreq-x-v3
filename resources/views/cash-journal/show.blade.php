@@ -67,7 +67,7 @@
                     <tbody>
                         <tr>
                             <td>
-                                {{ $advance_account }}
+                                {{ $advance_account->account_number }} - {{ $advance_account->account_name }}
                             </td>
                             <td class="text-right">{{ number_format($outgoings->sum('amount'), 2) }}</td>
                             <td class="text-right">{{ number_format(0, 2) }}</td>
@@ -83,7 +83,7 @@
                             </tr>
                             <tr>
                                 <td>
-                                    {{ $pc_account }}
+                                    {{ $pc_account->account_number }} - {{ $pc_account->account_name }}
                                 </td>
                                 <td class="text-right">{{ number_format(0, 2) }}</td>
                                 <td class="text-right">{{ number_format($outgoings->sum('amount'), 2) }}</td>
