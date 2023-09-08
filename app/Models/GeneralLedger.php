@@ -15,4 +15,14 @@ class GeneralLedger extends Model
     {
         return $this->belongsTo(Account::class);
     }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'cost_center_id', 'id');
+    }
+
+    public function created_by()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
+    }
 }

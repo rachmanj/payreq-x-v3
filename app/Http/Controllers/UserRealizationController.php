@@ -49,7 +49,8 @@ class UserRealizationController extends Controller
 
     public function submit_realization(Request $request)
     {
-        // 
+        return $request;
+        die;
     }
 
     public function destroy(Realization $realization)
@@ -131,7 +132,7 @@ class UserRealizationController extends Controller
             ->addColumn('payreq_no', function ($realization) {
                 // return $realization->payreq->payreq_no;
                 $html = '<a href="" data-toggle="tooltip" data-placement="top" title="';
-                $html .= $realization->payreq->remarks . '">' . $realization->payreq->payreq_no . '</a>';
+                $html .= $realization->payreq->remarks . '">' . $realization->payreq->nomor . '</a>';
                 return $html;
             })
             ->addColumn('amount', function ($realization) {

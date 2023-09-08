@@ -18,8 +18,11 @@ return new class extends Migration
             $table->string('document_type')->nullable();
             $table->string('journal_no');
             $table->string('remarks')->nullable();
+            $table->string('project', 10)->nullable();
+            $table->foreignId('cost_center_id')->nullable(); // department_id
             $table->decimal('debit', 10, 2)->nullable();
             $table->decimal('credit', 10, 2)->nullable();
+            $table->foreignId('created_by')->nullable();
             $table->timestamps();
         });
     }

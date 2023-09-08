@@ -8,6 +8,8 @@ use App\Http\Controllers\CashierOutgoingController;
 use App\Http\Controllers\CashJournalController;
 use App\Http\Controllers\DashboardUserController;
 use App\Http\Controllers\EmailController;
+use App\Http\Controllers\GeneralLedgerController;
+use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserOngoingController;
@@ -166,10 +168,19 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{id}', [CashJournalController::class, 'destroy'])->name('destroy');
     });
 
-    // GENERAL JOURNALS
-    Route::prefix('general-journals')->name('general-journals.')->group(function () {
-        Route::get('/data', [GeneralJournalController::class, 'data'])->name('data');
-        Route::get('/', [GeneralJournalController::class, 'index'])->name('index');
+    // JOURNALS
+    Route::prefix('journals')->name('journals.')->group(function () {
+        Route::get('/data', [JournalController::class, 'data'])->name('data');
+        Route::get('/', [JournalController::class, 'index'])->name('index');
+    });
+
+    // GENERAL LEDGERS
+    Route::prefix('general-ledgers')->name('general-ledgers.')->group(function () {
+        // Route::get('/data', [GeneralLedgerController::class, 'data'])->name('data');
+        Route::get('/{id}/data', [GeneralLedgerController::class, 'data'])->name('data');
+        Route::get('/show/{id}', [GeneralLedgerController::class, 'show'])->name('show');
+        Route::post('/search', [GeneralLedgerController::class, 'search'])->name('search');
+        Route::get('/', [GeneralLedgerController::class, 'index'])->name('index');
     });
 
     // PARAMETERS

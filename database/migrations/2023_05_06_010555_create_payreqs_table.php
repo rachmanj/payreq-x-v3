@@ -27,9 +27,8 @@ return new class extends Migration
             $table->boolean('editable')->default(true);
             $table->boolean('deletable')->default(true);
             $table->boolean('printable')->default(false);
-            $table->string('status', 20)->nullable(); // draft / approved / rejected / paid / realized / verified
+            $table->string('status', 20)->nullable(); // draft / submitted / approved / rejected / paid / realized / verified / canceled
             $table->timestamp('canceled_at')->nullable();
-            // $table->foreignId('realization_id')->nullable();
             $table->timestamps();
         });
     }

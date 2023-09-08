@@ -155,9 +155,9 @@ class UserPayreqController extends Controller
                     $today = new \Carbon\Carbon();
                     $dif_days = $due_date->diffInDays($today);
                     if ($dif_days > 6) {
-                        return '<button class="btn btn-sm btn-outline-info" style="pointer-events: none;"><b>PAID</b></button><button class="btn btn-sm btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                        return '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button><button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
                     }
-                    return '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button> and due date in<b> ' . $dif_days . ' </b> days';
+                    return '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button> and due in<b> ' . $dif_days . ' </b> days';
                 } else {
                     return ucfirst($payreq->status);
                 }
