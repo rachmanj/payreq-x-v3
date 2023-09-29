@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class UserRealizationController extends Controller
@@ -49,8 +50,29 @@ class UserRealizationController extends Controller
 
     public function submit_realization(Request $request)
     {
-        return $request;
-        die;
+        $realization = Realization::findOrFail($request->realization_id);
+
+        // create approval plan
+        $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('realization', $realization->id);
+
+        if ($approval_plan) {
+            $realization->update([
+                'status' => 'submitted',
+            ]);
+
+            return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization submitted');
+        } else {
+            return redirect()->route('user-payreqs.realizations.index')->with('error', 'Realization failed to submit');
+        }
+    }
+
+    public function print($id)
+    {
+        $realization = Realization::findOrFail($id);
+        $realization_details = $realization->realizationDetails;
+        $approved_at = new Carbon($realization->approved_at);
+
+        return view('user-payreqs.realizations.print_pdf', compact(['realization', 'realization_details', 'approved_at']));
     }
 
     public function destroy(Realization $realization)

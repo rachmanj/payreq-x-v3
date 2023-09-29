@@ -22,7 +22,9 @@ return new class extends Migration
             $table->timestamp('submit_at')->nullable();
             $table->string('status', 20)->nullable(); // draft / approved / reject / cancel / pending (wait approve) / verified
             $table->boolean('editable')->default(true);
-            $table->boolean('deleteable')->default(true);
+            $table->boolean('deletable')->default(true);
+            $table->boolean('printable')->default(false);
+            $table->timestamp('approved_at')->nullable();
             $table->timestamps();
         });
     }

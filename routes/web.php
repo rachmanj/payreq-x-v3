@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ApprovalPlanController;
+use App\Http\Controllers\ApprovalRequestPayreqController;
+use App\Http\Controllers\ApprovalRequestRabController;
+use App\Http\Controllers\ApprovalRequestRealizationController;
 use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\CashierOutgoingController;
@@ -16,7 +19,6 @@ use App\Http\Controllers\UserOngoingController;
 use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqAdvanceController;
-use App\Http\Controllers\PayreqApprovalRequestController;
 use App\Http\Controllers\PayreqOtherController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserRealizationController;
@@ -89,6 +91,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/store_detail', [UserRealizationController::class, 'store_detail'])->name('store_detail');
             Route::post('/submit', [UserRealizationController::class, 'submit_realization'])->name('submit_realization');
             Route::delete('/{realization_detail_id}/delete_detail', [UserRealizationController::class, 'delete_detail'])->name('delete_detail');
+            Route::get('/{realization_id}/print', [UserRealizationController::class, 'print'])->name('print');
         });
         Route::resource('realizations', UserRealizationController::class);
 
@@ -129,16 +132,17 @@ Route::middleware('auth')->group(function () {
     Route::prefix('approvals')->name('approvals.')->group(function () {
         Route::prefix('request')->name('request.')->group(function () {
             Route::prefix('payreqs')->name('payreqs.')->group(function () {
-                Route::get('/data', [PayreqApprovalRequestController::class, 'data'])->name('data');
-                Route::get('/', [PayreqApprovalRequestController::class, 'index'])->name('index');
+                Route::get('/data', [ApprovalRequestPayreqController::class, 'data'])->name('data');
+                Route::get('/', [ApprovalRequestPayreqController::class, 'index'])->name('index');
             });
             Route::prefix('realizations')->name('realizations.')->group(function () {
-                Route::get('/data', [PayreqApprovalRequestController::class, 'data'])->name('data');
-                Route::get('/', [PayreqApprovalRequestController::class, 'index'])->name('index');
+                Route::get('/data', [ApprovalRequestRealizationController::class, 'data'])->name('data');
+                Route::get('/', [ApprovalRequestRealizationController::class, 'index'])->name('index');
+                Route::get('/{id}', [ApprovalRequestRealizationController::class, 'show'])->name('show');
             });
             Route::prefix('rabs')->name('rabs.')->group(function () {
-                Route::get('/data', [PayreqApprovalRequestController::class, 'data'])->name('data');
-                Route::get('/', [PayreqApprovalRequestController::class, 'index'])->name('index');
+                Route::get('/data', [ApprovalRequestRabController::class, 'data'])->name('data');
+                Route::get('/', [ApprovalRequestRabController::class, 'index'])->name('index');
             });
         });
         Route::prefix('plan')->name('plan.')->group(function () {

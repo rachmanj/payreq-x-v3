@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApprovalPlan;
 use App\Models\CashJournal;
 use App\Models\Outgoing;
 use App\Models\Realization;
@@ -122,5 +123,34 @@ class ToolController extends Controller
         }
 
         return $equipments;
+    }
+
+    public function approval_documents_count()
+    {
+        $approval_request_for_payreqs = ApprovalPlan::where('is_open', 1)
+            ->where('document_type', 'payreq')
+            ->where('status', 0)
+            ->where('approver_id', auth()->user()->id)
+            ->count();
+
+        $approval_request_for_realizations = ApprovalPlan::where('is_open', 1)
+            ->where('document_type', 'realization')
+            ->where('status', 0)
+            ->where('approver_id', auth()->user()->id)
+            ->count();
+
+        $approval_request_for_rabs = ApprovalPlan::where('is_open', 1)
+            ->where('document_type', 'rab')
+            ->where('status', 0)
+            ->where('approver_id', auth()->user()->id)
+            ->count();
+
+        $approval = [
+            'payreq' => $approval_request_for_payreqs,
+            'realization' => $approval_request_for_realizations,
+            'rab' => $approval_request_for_rabs,
+        ];
+
+        return $approval;
     }
 }

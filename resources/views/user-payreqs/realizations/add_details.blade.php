@@ -9,49 +9,39 @@
 @endsection
 
 @section('content')
-
-
-  <div class="row">
-      <div class="col-sm-3 col-6">
-        <div class="description-block border-right">
-            <h5 class="description-header">Realization No</h5>
-            <span class="description-text">{{ $realization->nomor }}</span>
-        </div>
-        <!-- /.description-block -->
-      </div>
-      <!-- /.col -->
-      <div class="col-sm-3 col-6">
-        <div class="description-block border-right">
-          <h5 class="description-header">Payreq No</h5>
-          <span class="description-text">{{ $realization->payreq->nomor }}</span>
-        </div>
-        <!-- /.description-block -->
-      </div>
-      <!-- /.col -->
-      <div class="col-sm-3 col-6">
-        <div class="description-block border-right">
-          <h5 class="description-header">Payreq Amount</h5>
-          <span class="description-text">{{ number_format($realization->payreq->amount, 2) }}</span>
-        </div>
-        <!-- /.description-block -->
-      </div>
-      <!-- /.col -->
-      <div class="col-sm-3 col-6">
-        <div class="description-block">
-          <h5 class="description-header">Realization Amount</h5>
-          <span class="description-text">{{ $realization_details->count() > 0 ? number_format($realization_details->sum('amount'), 2) : '0' }}</span>
-        </div>
-        <!-- /.description-block -->
-      </div>
+<div class="row">
+  <div class="col-sm-3 col-6">
+    <div class="description-block border-right">
+        <h5 class="description-header">Realization No</h5>
+        <span class="description-text">{{ $realization->nomor }}</span>
+    </div>
   </div>
-  <!-- /.row -->
+  <div class="col-sm-3 col-6">
+    <div class="description-block border-right">
+      <h5 class="description-header">Payreq No</h5>
+      <span class="description-text">{{ $realization->payreq->nomor }}</span>
+    </div>
+  </div>
+  <div class="col-sm-3 col-6">
+    <div class="description-block border-right">
+      <h5 class="description-header">Payreq Amount</h5>
+      <span class="description-text">{{ number_format($realization->payreq->amount, 2) }}</span>
+    </div>
+  </div>
+  <div class="col-sm-3 col-6">
+    <div class="description-block">
+      <h5 class="description-header">Realization Amount</h5>
+      <span class="description-text">{{ $realization_details->count() > 0 ? number_format($realization_details->sum('amount'), 2) : '0' }}</span>
+    </div>
+  </div>
+</div>
+<!-- /.row -->
 
+{{-- DETAILS SECTION --}}
+@include('user-payreqs.realizations.add_details_form')
 
-  {{-- DETAILS SECTION --}}
-  @include('user-payreqs.realizations.add_details_form')
-  
-  @include('user-payreqs.realizations.add_details_table')
-  {{-- END DETAILS SECTION --}}
+@include('user-payreqs.realizations.add_details_table')
+{{-- END DETAILS SECTION --}}
 
 @endsection
 

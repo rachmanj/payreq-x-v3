@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PayReq System | Print Payreq</title>
+  <title>PayReq System | Print Realization Payreq</title>
 
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -32,21 +32,22 @@
       <div class="col-sm-4 invoice-col">
         Pay To
         <address>
-          <strong>{{ $payreq->requestor->name }} / {{ $payreq->requestor->nik }}</strong><br>
-          Project: <b>{{ $payreq->project }}</b><br>
-          Department: <b>{{ $payreq->department->department_name }}</b> <br>
+          <strong>{{ $realization->requestor->name }} / {{ $realization->requestor->nik }}</strong><br>
+          Project: <b>{{ $realization->project }}</b><br>
+          Department: <b>{{ $realization->department->department_name }}</b> <br>
         </address>
       </div>
       <div class="col-sm-4 invoice-col">
         <b>Payment Request</b><br>
-        Document No: <b>{{ $payreq->nomor }}</b><br>
-        Date : <b>{{ $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}</b><br>
-        Type : <b>{{ ucfirst($payreq->type) }}</b><br>
+        Document No: <b>{{ $realization->nomor }}</b><br>
+        Date : <b>{{ $approved_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}</b><br>
+        Payreq No : <b>{{ $realization->payreq->nomor }}</b><br>
       </div>
       <!-- /.col -->
     </div>
     <!-- /.row -->
 
+    {{-- 
     <!-- Table row -->
     <div class="row">
       <div class="col-12 table-responsive">
@@ -79,7 +80,7 @@
         
       </div>
       <!-- /.col -->
-    </div>
+    </div>  --}}
     <!-- /.row -->
 
     <div class="row invoice-info">

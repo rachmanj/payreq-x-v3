@@ -20,4 +20,14 @@ class Realization extends Model
     {
         return $this->hasMany(RealizationDetail::class);
     }
+
+    public function requestor()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
 }

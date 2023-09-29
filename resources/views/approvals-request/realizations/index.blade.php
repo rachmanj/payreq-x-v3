@@ -15,12 +15,12 @@
     <div class="card">
       <div class="card-header">
         <div class="h3 card-title">
-          <b>Payment Request</b> @if ($document_count['payreq'] > 0)
+          <a href="{{ route('approvals.request.payreqs.index') }}">Payment Request @if ($document_count['payreq'] > 0)
           <span class="badge badge-danger">{{ $document_count['payreq'] }}</span>
-          @endif |
-          <a href="{{ route('approvals.request.realizations.index') }}">Realization @if ($document_count['realization'] > 0)
-            <span class="badge badge-danger">{{ $document_count['realization'] }}</span>
-            @endif</a> |
+          @endif</a> |
+          <b>Realizations</b> @if ($document_count['realization'] > 0)
+                <span class="badge badge-danger">{{ $document_count['realization'] }}</span>
+            @endif |
             <a href="{{ route('approvals.request.rabs.index') }}">RABs @if ($document_count['rab'] > 0)
               <span class="badge badge-danger">{{ $document_count['rab'] }}</span>
           @endif</a>
@@ -32,10 +32,10 @@
           <thead>
           <tr>
             <th>#</th>
-            <th>Payreq No</th>
+            <th>RealzNo</th>
+            <th>PayreqNo</th>
             <th>Requestor</th>
             <th>Submit at</th>
-            <th>Type</th>
             <th>IDR</th>
             <th>Days</th>
             <th></th>
@@ -77,13 +77,13 @@
     $("#mypayreqs").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('approvals.request.payreqs.data') }}',
+      ajax: '{{ route('approvals.request.realizations.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'nomor'},
+        {data: 'payreq_no'},
         {data: 'requestor'},
-        {data: 'created_at'},
-        {data: 'type'},
+        {data: 'submit_at'},
         {data: 'amount'},
         {data: 'days'},
         {data: 'action', orderable: false, searchable: false},

@@ -39,6 +39,8 @@ class ApprovalPlanController extends Controller
             }
 
             $document->submit_at = Carbon::now();
+            $document->editable = 0;
+            $document->deletable = 0;
             $document->save();
 
             return $approvers->count();
@@ -124,7 +126,15 @@ class ApprovalPlanController extends Controller
             ]);
         }
 
-        return redirect()->route('approvals.request.payreqs.index')->with('success', 'Approval Request updated');
+        if ($request->document_type === 'payreq') {
+            return redirect()->route('approvals.request.payreqs.index')->with('success', 'Approval Request updated');
+        } elseif ($request->document_type === 'realization') {
+            return redirect()->route('approvals.request.realizations.index')->with('success', 'Approval Request updated');
+        } elseif ($request->document_type === 'rab') {
+            // 
+        } else {
+            return false;
+        }
     }
 
     public function approvalStatus()
