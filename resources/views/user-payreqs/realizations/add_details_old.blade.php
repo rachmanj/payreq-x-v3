@@ -66,51 +66,37 @@ $(function () {
     })
 
     // get equipments list using ajax
-    // let url  = "{{ env('URL_ARKFLEET')}}/equipments"
+    let url  = "{{ env('URL_ARKFLEET')}}/equipments"
 
+    $.get(url, function(data, status){
 
-    $.ajax({
-      url: "{{ env('URL_ARKFLEET')}}/equipments",
-          type: "GET",
-          success: function(data, status) {
-            
-            let equipments = data.data
-            
-            //  get value of project_equipment from controller 
-            let project_equipment = "{{ $project_equipment }}"
+        let equipments = data.data
+        //  get value of project_equipment from controller 
+        let project_equipment = "{{ $project_equipment }}"
         
-            let filtered_equipments = []
-            if (project_equipment == 'all') {
-              filtered_equipments = equipments
-            } else {
-              filtered_equipments = equipments.filter(equipment => equipment.project == project_equipment)
-            }
+        let filtered_equipments = []
+        if (project_equipment == 'all') {
+          filtered_equipments = equipments
+        } else {
+          filtered_equipments = equipments.filter(equipment => equipment.project == project_equipment)
+        }
         
-            let select = document.getElementById('unit_no')
+        let select = document.getElementById('unit_no')
 
-            for (let i = 0; i < filtered_equipments.length; i++) {
-              let equipment = filtered_equipments[i]
-              let option = document.createElement('option')
-              option.value = equipment.unit_code
-              option.text = equipment.unit_code + ' - ' + equipment.plant_group + ' - ' + equipment.model
-              select.add(option)
-            }
+        for (let i = 0; i < filtered_equipments.length; i++) {
+          let equipment = filtered_equipments[i]
+          let option = document.createElement('option')
+          option.value = equipment.unit_code
+          option.text = equipment.unit_code + ' - ' + equipment.plant_group + ' - ' + equipment.model
+          select.add(option)
+        }
 
-            // let selected equipment
-            let unit_no = "{{ old('unit_no') }}"
+        // let selected equipment
+        let unit_no = "{{ old('unit_no') }}"
 
-            if (unit_no) {
-              $('#unit_no').val(unit_no).trigger('change')
-            }
-
-          },
-          error: function(xhr, status, error) {
-            let select = document.getElementById('unit_no')
-            let option = document.createElement('option')
-            option.value = ""
-            option.text = "Server Error"
-            select.add(option)
-          }
+        if (unit_no) {
+        $('#unit_no').val(unit_no).trigger('change')
+        }
     })
 })
 </script>

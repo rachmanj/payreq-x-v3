@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalPlan;
 use App\Models\Outgoing;
 use App\Models\Payreq;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class UserPayreqController extends Controller
@@ -63,12 +64,21 @@ class UserPayreqController extends Controller
             $due_date = '';
         }
 
+        if ($payreq->status == 'paid') {
+            $paid_date = app(ToolController::class)->getPaidDate($payreq->id);
+            $paid_date = new \Carbon\Carbon($paid_date);
+            $paid_date = " at " .  $paid_date->format('d-M-Y');
+        } else {
+            $paid_date = '';
+        }
+
         return view('user-payreqs.show', compact([
             'payreq',
             'approval_plan_status',
             'approval_plans',
             'submit_at',
-            'due_date'
+            'due_date',
+            'paid_date',
         ]));
     }
 
@@ -83,10 +93,14 @@ class UserPayreqController extends Controller
     public function print($id)
     {
         $payreq = Payreq::findOrFail($id);
-
         $terbilang = app(ToolController::class)->terbilang($payreq->amount);
+        $approvers = app(ToolController::class)->getApproversName($id, 'payreq');
 
-        return view('user-payreqs.advance.print_pdf', compact('payreq', 'terbilang'));
+        return view('user-payreqs.advance.print_pdf', compact([
+            'payreq',
+            'terbilang',
+            'approvers'
+        ]));
     }
 
     public function destroy($id)
@@ -168,6 +182,11 @@ class UserPayreqController extends Controller
             ->editColumn('submit_at', function ($payreq) {
                 if ($payreq->status == 'draft') {
                     return "Created at " . $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita';
+                }
+                if ($payreq->status == 'paid') {
+                    $paid_date = App(ToolController::class)->getPaidDate($payreq->id);
+                    $paid_date = new \Carbon\Carbon($paid_date);
+                    return 'Paid at ' . $paid_date->format('d-M-Y');
                 }
                 $submit_date = new \Carbon\Carbon($payreq->submit_at);
                 return 'Submit at ' . $submit_date->addHours(8)->format('d-M-Y H:i:s') . ' wita';

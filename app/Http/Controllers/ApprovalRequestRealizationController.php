@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalPlan;
+use App\Models\Payreq;
+use App\Models\Realization;
 use Illuminate\Http\Request;
 
 class ApprovalRequestRealizationController extends Controller
@@ -18,8 +20,13 @@ class ApprovalRequestRealizationController extends Controller
     {
         $document = ApprovalPlan::find($id);
         $document_details = $document->realization->realizationDetails;
+        $payreq = $document->realization->payreq;
 
-        return view('approvals-request.realizations.show', compact('document', 'document_details'));
+        return view('approvals-request.realizations.show', compact([
+            'document',
+            'document_details',
+            'payreq'
+        ]));
     }
 
     public function data()

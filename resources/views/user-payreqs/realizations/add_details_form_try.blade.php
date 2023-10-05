@@ -31,7 +31,7 @@
                         <div class="col-4">
                             <div class="form-group">
                                 <label for="amount">Amount</label>
-                                <input type="text" name="amount" value="{{ old('amount') }}" id="amount" class="form-control @error('amount') is-invalid @enderror" autocomplete="off">
+                                <input type="text" name="amount" value="{{ old('amount') }}" id="amount" class="form-control @error('amount') is-invalid @enderror">
                                 @error('amount')
                                 <div class="invalid-feedback">
                                 {{ $message }}
@@ -46,6 +46,9 @@
                                 <label for="unit_no">Unit No</label>
                                 <select id="unit_no" name="unit_no" class="form-control select2bs4">
                                     <option value="">-- select unit no --</option>
+                                     @foreach ($equipments as $item)
+                                         <option value="{{ $item->unit_code }}">{{ $item->unit_code }}</option>
+                                     @endforeach
                                 </select>
                             </div> 
                         </div>

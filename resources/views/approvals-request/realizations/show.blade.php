@@ -31,13 +31,13 @@
   <div class="col-sm-3 col-6">
     <div class="description-block border-right">
       <h5 class="description-header">Payreq No</h5>
-      <span class="description-text">{{ $document->payreq->nomor }}</span>
+      <span class="description-text">{{ $document->realization->payreq->nomor }}</span>
     </div>
   </div>
   <div class="col-sm-3 col-6">
     <div class="description-block border-right">
       <h5 class="description-header">Payreq Amount</h5>
-      <span class="description-text">{{ number_format($document->payreq->amount, 2) }}</span>
+      <span class="description-text">{{ number_format($document->realization->payreq->amount, 2) }}</span>
     </div>
   </div>
   <div class="col-sm-3 col-6">

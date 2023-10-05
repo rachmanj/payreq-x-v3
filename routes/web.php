@@ -92,6 +92,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/submit', [UserRealizationController::class, 'submit_realization'])->name('submit_realization');
             Route::delete('/{realization_detail_id}/delete_detail', [UserRealizationController::class, 'delete_detail'])->name('delete_detail');
             Route::get('/{realization_id}/print', [UserRealizationController::class, 'print'])->name('print');
+            Route::put('/{realization_id}/void', [UserRealizationController::class, 'void'])->name('void');
+            Route::put('/cancel', [UserRealizationController::class, 'cancel'])->name('cancel');
         });
         Route::resource('realizations', UserRealizationController::class);
 
@@ -211,11 +213,4 @@ Route::middleware('auth')->group(function () {
         Route::post('/upload', [AccountController::class, 'upload'])->name('upload');
     });
     Route::resource('accounts', AccountController::class);
-
-    //EMAILS
-    Route::prefix('emails')->name('emails.')->group(function () {
-        Route::get('/data', [EmailController::class, 'data'])->name('data');
-        Route::get('/', [EmailController::class, 'index'])->name('index');
-        Route::get('/push/{id}', [EmailController::class, 'push'])->name('push');
-    });
 });

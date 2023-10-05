@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApprovalPlan;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
@@ -28,6 +29,30 @@ class UserRealizationController extends Controller
         // 
     }
 
+    public function show($id)
+    {
+        $realization = Realization::findOrFail($id);
+        $realization_details = $realization->realizationDetails;
+        $approved_at = new Carbon($realization->approved_at);
+
+        $approval_plans = ApprovalPlan::where('document_id', $id)
+            ->where('document_type', 'realization')
+            ->get();
+
+        $submit_at = new Carbon($realization->submit_at);
+
+        $approval_plan_status = app(ApprovalPlanController::class)->approvalStatus();
+
+        return view('user-payreqs.realizations.show', compact([
+            'realization',
+            'realization_details',
+            'approved_at',
+            'approval_plans',
+            'submit_at',
+            'approval_plan_status'
+        ]));
+    }
+
     public function store(Request $request)
     {
         $this->validate($request, [
@@ -43,6 +68,7 @@ class UserRealizationController extends Controller
             'project' => $payreq->project,
             'department_id' => $payreq->department_id,
             'status' => 'draft',
+            // 'status' => 'pre-draft', //pre-draft, utk ber-jaga2 jika pada saat add details gagal terhubung dgn ark-fleet server, maka pre-draft akan dihapus
         ]);
 
         return redirect()->route('user-payreqs.realizations.add_details', $realization->id);
@@ -71,8 +97,16 @@ class UserRealizationController extends Controller
         $realization = Realization::findOrFail($id);
         $realization_details = $realization->realizationDetails;
         $approved_at = new Carbon($realization->approved_at);
+        $terbilang = app(ToolController::class)->terbilang($realization_details->sum('amount'));
+        $approvers = app(ToolController::class)->getApproversName($id, 'realization');
 
-        return view('user-payreqs.realizations.print_pdf', compact(['realization', 'realization_details', 'approved_at']));
+        return view('user-payreqs.realizations.print_pdf', compact([
+            'realization',
+            'realization_details',
+            'approved_at',
+            'terbilang',
+            'approvers'
+        ]));
     }
 
     public function destroy(Realization $realization)
@@ -93,6 +127,9 @@ class UserRealizationController extends Controller
         $realization = Realization::findOrFail($realization_id);
         $realization_details = $realization->realizationDetails;
         $equipments = app(ToolController::class)->getEquipments($realization->project);
+        // return $equipments;
+        // die;
+        // $equipments = [];
 
         $roles = app(ToolController::class)->getUserRoles();
 
@@ -102,7 +139,7 @@ class UserRealizationController extends Controller
             $project_equipment = auth()->user()->project;
         }
 
-        return view('user-payreqs.realizations.add_details', compact('realization', 'realization_details', 'project_equipment'));
+        return view('user-payreqs.realizations.add_details', compact('realization', 'realization_details', 'project_equipment', 'equipments'));
     }
 
     public function store_detail(Request $request)
@@ -151,11 +188,17 @@ class UserRealizationController extends Controller
         }
 
         return datatables()->of($realizations)
+            // ->addColumn('payreq_no', function ($realization) {
+            //     // return $realization->payreq->payreq_no;
+            //     $html = '<a href="" data-toggle="tooltip" data-placement="top" title="';
+            //     $html .= $realization->payreq->remarks . '">' . $realization->payreq->nomor . '</a>';
+            //     return $html;
+            // })
+            ->editColumn('nomor', function ($realization) {
+                return '<a href="' . route('user-payreqs.realizations.show', $realization->id) . '">' . $realization->nomor . '</a>';
+            })
             ->addColumn('payreq_no', function ($realization) {
-                // return $realization->payreq->payreq_no;
-                $html = '<a href="" data-toggle="tooltip" data-placement="top" title="';
-                $html .= $realization->payreq->remarks . '">' . $realization->payreq->nomor . '</a>';
-                return $html;
+                return $realization->payreq->nomor;
             })
             ->addColumn('amount', function ($realization) {
                 return number_format($realization->realizationDetails->sum('amount'), 2, ',', '.');
@@ -163,8 +206,9 @@ class UserRealizationController extends Controller
             ->editColumn('created_at', function ($realization) {
                 return $realization->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita';
             })
-            ->addColumn('days', function () {
-                return '0';
+            ->addColumn('days', function ($realization) {
+                $diff = Carbon::now()->diffInDays(Carbon::parse($realization->created_at));
+                return $diff;
             })
             ->editColumn('status', function ($payreq) {
                 if ($payreq->status === 'submitted') {
@@ -174,7 +218,7 @@ class UserRealizationController extends Controller
                 }
             })
             ->addColumn('action', 'user-payreqs.realizations.action')
-            ->rawColumns(['action', 'payreq_no'])
+            ->rawColumns(['action', 'nomor'])
             ->addIndexColumn()
             ->toJson();
     }

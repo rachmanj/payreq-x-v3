@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalPlan;
 use App\Models\CashJournal;
 use App\Models\Outgoing;
+use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\User;
 use Carbon\Carbon;
@@ -113,7 +114,23 @@ class ToolController extends Controller
         $url = env('URL_EQUIPMENTS');
 
         $client = new \GuzzleHttp\Client();
-        $response = $client->request('GET', $url);
+
+        try {
+            $response = $client->request('GET', $url);
+            if ($response->getStatusCode() >= 500) {
+                //
+                return ['count' => 0, 'data' => [['unit_code' => 'server error']]];
+            }
+        } catch (\GuzzleHttp\Exception\ServerException $e) {
+            // server error
+            return ['count' => 0, 'data' => [['unit_code' => 'server error']]];
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            // client error
+            return ['count' => 0, 'data' => [['unit_code' => 'server error']]];
+        }
+
+        // $response = $client->request('GET', $url);
+
         $equipments = json_decode($response->getBody()->getContents(), true)['data'];
 
         if ($project) {
@@ -152,5 +169,36 @@ class ToolController extends Controller
         ];
 
         return $approval;
+    }
+
+    public function getPaidDate($payreq_id)
+    {
+        $payreq = Payreq::findOrFail($payreq_id);
+        $outgoings = Outgoing::where('payreq_id', $payreq_id)->get();
+
+        // check if payreq amount === sum of outgoings
+        if ($outgoings->sum('amount') < $payreq->amount) {
+            return null;
+        } else {
+            $lastOutgoing = Outgoing::where('payreq_id', $payreq_id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            return $lastOutgoing->outgoing_date;
+        };
+    }
+
+    public function getApproversName($document_id, $document_type)
+    {
+        $approvers = ApprovalPlan::where('document_id', $document_id)
+            ->where('document_type', $document_type)
+            ->get();
+
+        $approvers_name = [];
+        foreach ($approvers as $approver) {
+            $approvers_name[] = $approver->approver->name;
+        }
+
+        return $approvers_name;
     }
 }

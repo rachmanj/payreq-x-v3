@@ -40,7 +40,7 @@
       <div class="col-sm-4 invoice-col">
         <b>Payment Request</b><br>
         Document No: <b>{{ $payreq->nomor }}</b><br>
-        Date : <b>{{ $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}</b><br>
+        Date : <b>{{ $payreq->created_at->format('d-M-Y') }}</b><br>
         Type : <b>{{ ucfirst($payreq->type) }}</b><br>
       </div>
       <!-- /.col -->
@@ -84,12 +84,13 @@
 
     <div class="row invoice-info">
         <div class="col-sm-4 invoice-col">
-            <b>Requestor / Received by</b>
+            <b>Requestor / Received by</b><br>
+            Date: {{ $payreq->created_at->format('d-M-Y') }}<br>
             <br>
             <br>
             <br>
             <br>
-            Arny Ratnasari<br>
+            {{ $payreq->requestor->name }}<br>
         </div>
 
         <div class="col-sm-4 invoice-col">
@@ -98,16 +99,21 @@
             <br>
             <br>
             <br>
-            Rifka Annisa<br>
+            <br>
         </div>
 
-        <div class="col-sm-4 invoice-col">
+        <div class="col-sm-4 invoice-col text-center">
             <b>Approved by</b>
             <br>
             <br>
             <br>
             <br>
-            Rachman Y<br>
+            <br>
+            <div>
+              @foreach ($approvers as $approver)
+              ( {{ $approver }} )
+              @endforeach
+            </div>
         </div>
     </div>
     <!-- /.row -->
@@ -117,7 +123,7 @@
 <!-- ./wrapper -->
 <!-- Page specific script -->
 <script>
-//   window.addEventListener("load", window.print());
+  window.addEventListener("load", window.print());
 </script>
 </body>
 </html>

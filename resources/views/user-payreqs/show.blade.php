@@ -27,7 +27,7 @@
                 <dt class="col-sm-4">Purpose</dt>
                 <dd class="col-sm-8">: {{ $payreq->remarks }}</dd>
                 <dt class="col-sm-4">Status</dt>
-                <dd class="col-sm-8">: {{ $payreq->status == 'submitted' ? 'Wait approve' : ucfirst($payreq->status) }}</dd>
+                <dd class="col-sm-8">: {{ $payreq->status == 'submitted' ? 'Wait approve' : ucfirst($payreq->status) }} {{ $paid_date }}</dd>
                 <dt class="col-sm-4">Submitted at</dt>
                 <dd class="col-sm-8">: {{ $submit_at }}</dd>
                 <dt class="col-sm-4">Due date</dt>
