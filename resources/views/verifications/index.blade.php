@@ -131,18 +131,12 @@
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'realization_no'},
         {data: 'payreq_no'},
-        {data: 'verification_date'},
-        {data: 'status'},
-        {data: 'amount'},
+        // {data: 'verification_date'},
+        // {data: 'status'},
+        // {data: 'amount'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
-      columnDefs: [
-              {
-                "targets": [5],
-                "className": "text-right"
-              },
-            ]
     })
   });
 </script>

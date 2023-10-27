@@ -13,7 +13,7 @@ class VerificationController extends Controller
     {
         $realizations = Realization::where('status', 'approved')
             ->where('project', auth()->user()->project)
-            ->whereDoesntHave('verifications')
+            ->whereDoesntHave('verification')
             ->get();
 
         return view('verifications.index', compact('realizations'));
