@@ -10,7 +10,6 @@ use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\CashierOutgoingController;
 use App\Http\Controllers\CashJournalController;
 use App\Http\Controllers\DashboardUserController;
-use App\Http\Controllers\EmailController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LoginController;
@@ -25,6 +24,7 @@ use App\Http\Controllers\UserRealizationController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VerificationController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -172,6 +172,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/update_sap', [CashJournalController::class, 'update_sap'])->name('update_sap');
         Route::post('/cancel_sap_info', [CashJournalController::class, 'cancel_sap_info'])->name('cancel_sap_info');
         Route::delete('/{id}', [CashJournalController::class, 'destroy'])->name('destroy');
+    });
+
+    // VERIFICATIONS
+    Route::prefix('verifications')->name('verifications.')->group(function () {
+        Route::get('/data', [VerificationController::class, 'data'])->name('data');
+        Route::get('/', [VerificationController::class, 'index'])->name('index');
+        Route::post('/', [VerificationController::class, 'store'])->name('store');
+        Route::get('/{id}', [VerificationController::class, 'show'])->name('show');
+        Route::post('/cancel', [VerificationController::class, 'cancel'])->name('cancel');
+        Route::delete('/{id}', [VerificationController::class, 'destroy'])->name('destroy');
     });
 
     // JOURNALS

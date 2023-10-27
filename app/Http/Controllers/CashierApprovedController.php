@@ -73,11 +73,13 @@ class CashierApprovedController extends Controller
 
         $payreq = Payreq::findOrfail($id);
 
+        // create new outgoing record
         $outgoing = new Outgoing();
         $outgoing->payreq_id = $payreq->id;
         $outgoing->amount = $request->amount;
         $outgoing->cashier_id = auth()->user()->id;
         $outgoing->account_id = $request->account_id;
+        $outgoing->project = auth()->user()->project;
         $outgoing->outgoing_date = $request->date;
 
         $outgoing->save();

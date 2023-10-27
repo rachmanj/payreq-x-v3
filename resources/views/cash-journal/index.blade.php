@@ -15,9 +15,9 @@
     <div class="card">
       <div class="card-header">
         @if ($outgoings_count > 0)
-        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-primary">Create Cash-Out Journal <span class="badge badge-danger">{{ $outgoings_count }}</span></a>
+        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal <span class="badge badge-danger">{{ $outgoings_count }}</span></a>
         @else
-        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-primary">Create Cash-Out Journal</a>
+        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal</a>
         @endif
 
         @if ($incomings_count > 0)
