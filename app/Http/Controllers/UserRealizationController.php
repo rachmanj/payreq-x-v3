@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalPlan;
+use App\Models\Equipment;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
@@ -126,10 +127,8 @@ class UserRealizationController extends Controller
     {
         $realization = Realization::findOrFail($realization_id);
         $realization_details = $realization->realizationDetails;
-        $equipments = app(ToolController::class)->getEquipments($realization->project);
-        // return $equipments;
-        // die;
-        // $equipments = [];
+        // $equipments = app(ToolController::class)->getEquipments($realization->project);
+        $equipments = Equipment::where('project', $realization->project)->get();
 
         $roles = app(ToolController::class)->getUserRoles();
 
