@@ -15,7 +15,7 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Verifications</h3>
-        <button type="button" class="btn btn-sm btn-primary float-right" data-toggle="modal" data-target="#modal-create">
+        <button type="button" class="btn btn-sm btn-primary float-right" data-toggle="modal" data-target="#modal-create-verification">
           <i class="fas fa-plus"></i> New Verification
         </button>
       </div>
@@ -26,7 +26,11 @@
           <tr>
             <th>#</th>
             <th>Realization No</th>
+            <th>Realization Date</th>
             <th>Payreq No</th>
+            <th>Employee</th>
+            <th>Project</th>
+            <th>Status</th>
             <th></th>
           </tr>
           </thead>
@@ -42,7 +46,7 @@
 <!-- /.row -->
 
 {{-- MODAL CREATE --}}
-<div class="modal fade" id="modal-create">
+<div class="modal fade" id="modal-create-verification">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
@@ -63,7 +67,7 @@
                   <select name="realization_id" class="form-control select2bs4 @error('realization_id') is-invalid @enderror">
                     <option value="">-- select realization to verify --</option>
                     @foreach ($realizations as $realization)
-                      <option value="{{ $realization->id }}">Realization No.{{ $realization->nomor }} | Amount: IDR {{ $realization->realizationDetails->sum('amount') }} </option>
+                      <option value="{{ $realization->id }}">{{ $realization->requestor->name }} |Realization No.{{ $realization->nomor }} | IDR {{ $realization->realizationDetails->sum('amount') }} </option>
                     @endforeach
                   </select>
                   @error('realization_id')
@@ -89,8 +93,8 @@
         </div>
 
         <div class="modal-footer justify-content-between">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">Create</button>
+          <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary btn-sm">Create</button>
         </div>
       </form>
     </div> <!-- /.modal-content -->
@@ -130,9 +134,11 @@
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'realization_no'},
+        {data: 'date'},
         {data: 'payreq_no'},
-        // {data: 'verification_date'},
-        // {data: 'status'},
+        {data: 'requestor'},
+        {data: 'project'},
+        {data: 'status'},
         // {data: 'amount'},
         {data: 'action', orderable: false, searchable: false},
       ],

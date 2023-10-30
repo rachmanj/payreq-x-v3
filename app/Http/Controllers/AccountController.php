@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Imports\AccountImport;
 use App\Models\Account;
+use App\Models\Realization;
+use App\Models\RealizationDetail;
 use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -78,7 +80,21 @@ class AccountController extends Controller
 
     public function data()
     {
+        // get user's roles
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
+            $accounts = Account::orderBy('account_number', 'asc')
+                ->get();
+        } else {
+            $accounts = Account::where('project', auth()->user()->project)
+                ->orderBy('account_number', 'asc')
+                ->where('is_hidden', 0)
+                ->get();
+        }
+
         $accounts = Account::orderBy('account_number', 'asc')
+            ->where('project', auth()->user()->project)
             ->get();
 
         return datatables()->of($accounts)
@@ -102,5 +118,26 @@ class AccountController extends Controller
         ];
 
         return $account_types;
+    }
+
+    public function get_account_name(Request $request)
+    {
+        $account = Account::where('project', auth()->user()->project)
+            ->where('account_number', $request->account_number)
+            ->first();
+
+        // $realization_detail = RealizationDetail::findOrFail($request->realization_detail_id);
+
+        if (!$account) {
+            $account_name = 'Account not found!';
+        } else {
+            // $realization_detail->update([
+            //     'account_id' => $account->id,
+            //     'flag' => 'VERTEMP' . auth()->user()->id,   //verification temporary
+            // ]);
+            $account_name = $account->account_name;
+        }
+
+        return response()->json($account_name);
     }
 }

@@ -179,9 +179,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/data', [VerificationController::class, 'data'])->name('data');
         Route::get('/', [VerificationController::class, 'index'])->name('index');
         Route::post('/', [VerificationController::class, 'store'])->name('store');
-        Route::get('/{id}', [VerificationController::class, 'show'])->name('show');
-        Route::post('/cancel', [VerificationController::class, 'cancel'])->name('cancel');
-        Route::delete('/{id}', [VerificationController::class, 'destroy'])->name('destroy');
+        Route::get('/{id}/create', [VerificationController::class, 'create'])->name('create');
+        Route::get('/{id}/edit', [VerificationController::class, 'edit'])->name('edit');
+        Route::post('/save', [VerificationController::class, 'save'])->name('save');
     });
 
     // JOURNALS
@@ -224,3 +224,5 @@ Route::middleware('auth')->group(function () {
     });
     Route::resource('accounts', AccountController::class);
 });
+
+Route::post('/get_account_name', [AccountController::class, 'get_account_name'])->name('get_account_name');

@@ -50,8 +50,12 @@ class ApprovalPlanController extends Controller
         return false;
     }
 
+    /*
+    * update approval decision: 1 = approved, 2 = revise, 3 = reject
+    */
     public function update(Request $request, $id)
     {
+        // update approval plan
         $approval_plan = ApprovalPlan::findOrFail($id);
         $approval_plan->update([
             'status' => $request->status,
@@ -115,6 +119,7 @@ class ApprovalPlanController extends Controller
             $this->cekExistingAndDisableOpen($document_type, $document->id);
         }
 
+        // jika semua approver menyetujui
         if ($approved_count === $approval_plans->count()) {
             $document->update([
                 'status' => 'approved',

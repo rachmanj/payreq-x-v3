@@ -20,4 +20,9 @@ class RealizationDetail extends Model
     {
         return $this->belongsTo(Verification::class);
     }
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
 }

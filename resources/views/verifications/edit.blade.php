@@ -31,13 +31,13 @@
   <div class="col-sm-3 col-6">
     <div class="description-block">
       <h5 class="description-header">Realization Amount</h5>
-      <span class="description-text">{{ $realization->realizationDetails->count() > 0 ? number_format($realization->realizationDetails->sum('amount'), 2) : '0' }}</span>
+      <span class="description-text">{{ $realization_details->count() > 0 ? number_format($realization_details->sum('amount'), 2) : '0' }}</span>
     </div>
   </div>
 </div>
 <!-- /.row -->
 
-@include('verifications.details_table')
+@include('verifications.edit_details_table')
 
 @endsection
 
@@ -57,5 +57,30 @@
       theme: 'bootstrap4'
     })
   })
+</script>
+<script>
+
+// map $reazliation_details
+@foreach ($realization_details as $item)
+  $('#account_number_{{ $item->id }}').on('change', function () {
+    var account_number_{{ $item->id }} = $('#account_number_{{ $item->id }}').val();
+    
+      $.ajax({
+        url: '{{ route('get_account_name') }}',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+          account_number: account_number_{{ $item->id }},
+          realization_detail_id: {{ $item->id }},
+          _token: '{{ csrf_token() }}'
+        },
+        success: function(data) {
+          $('#account_name_{{ $item->id }}').val(data);
+        }
+      });
+  })
+@endforeach
+
+
 </script>
 @endsection

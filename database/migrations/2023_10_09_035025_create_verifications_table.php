@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('realization_id');
             $table->date('date');
             $table->foreignId('user_id');
+            $table->string('project', 20)->nullable();
             $table->string('status', 50)->nullable();
             $table->string('flag', 50)->nullable();
             $table->timestamps();
