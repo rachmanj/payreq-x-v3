@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('realization_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('realization_id');
-            $table->foreignId('payreq_id');
             $table->string('project', 10)->nullable();
             $table->foreignId('department_id')->nullable();
             $table->string('description')->nullable();
