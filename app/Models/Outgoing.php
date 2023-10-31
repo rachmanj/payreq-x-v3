@@ -13,7 +13,9 @@ class Outgoing extends Model
 
     public function payreq()
     {
-        return $this->belongsTo(Payreq::class);
+        return $this->belongsTo(Payreq::class, 'payreq_id', 'id')->withDefault([
+            'nomor' => 'n/a',
+        ]);
     }
 
     public function cashier()

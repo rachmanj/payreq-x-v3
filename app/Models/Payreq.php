@@ -18,7 +18,9 @@ class Payreq extends Model
 
     public function requestor()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->withDefault([
+            'name' => 'n/a',
+        ]);
     }
 
     public function department()

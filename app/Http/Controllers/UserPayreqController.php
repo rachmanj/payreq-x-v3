@@ -117,7 +117,7 @@ class UserPayreqController extends Controller
         $userRoles = app(UserController::class)->getUserRoles();
 
         // payreq with status in array as follows
-        $status_include = ['draft', 'submitted', 'approved', 'revise', 'canceled', 'split', 'paid'];
+        $status_include = ['draft', 'submitted', 'approved', 'revise', 'canceled', 'split', 'paid', 'rejected'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $payreqs = Payreq::whereIn('status', $status_include)
