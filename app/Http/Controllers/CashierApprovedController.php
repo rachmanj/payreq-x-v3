@@ -10,14 +10,6 @@ use Illuminate\Http\Request;
 
 class CashierApprovedController extends Controller
 {
-    // private $roles;
-
-    // public function __construct()
-    // {
-    //     // get roles
-    //     $this->roles = app(ToolController::class)->getUserRoles();
-    // }
-
     public function index()
     {
         return view('cashier.approved.index');
@@ -36,6 +28,7 @@ class CashierApprovedController extends Controller
         $request['amount'] = $payreq->amount;
         $request['cashier_id'] = $cashier->id;
         $request['account_id'] = $account->id;
+        $request['project'] = $cashier->project;
         $request['outgoing_date'] = now();
 
         $outgoing = app(OutgoingController::class)->store($request);
