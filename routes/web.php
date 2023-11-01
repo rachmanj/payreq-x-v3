@@ -25,6 +25,7 @@ use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VerificationController;
+use App\Http\Controllers\VerificationJournalController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -158,8 +159,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/to_cart/data', [CashJournalController::class, 'to_cart_data'])->name('to_cart.data');
         Route::get('/in_cart/data', [CashJournalController::class, 'in_cart_data'])->name('in_cart.data');
         Route::get('/', [CashJournalController::class, 'index'])->name('index');
-        Route::post('/add_to_cart', [CashJournalController::class, 'add_to_cart'])->name('add_to_cart');
         Route::get('/in_cart', [CashJournalController::class, 'in_cart'])->name('in_cart');
+        Route::post('/add_to_cart', [CashJournalController::class, 'add_to_cart'])->name('add_to_cart');
         Route::post('/remove_from_cart', [CashJournalController::class, 'remove_from_cart'])->name('remove_from_cart');
         Route::get('/move_all_tocart', [CashJournalController::class, 'move_all_tocart'])->name('move_all_tocart');
         Route::get('/remove_all_fromcart', [CashJournalController::class, 'remove_all_fromcart'])->name('remove_all_fromcart');
@@ -182,6 +183,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}/create', [VerificationController::class, 'create'])->name('create');
         Route::get('/{id}/edit', [VerificationController::class, 'edit'])->name('edit');
         Route::post('/save', [VerificationController::class, 'save'])->name('save');
+
+        // journal
+        Route::prefix('journal')->name('journal.')->group(function () {
+            Route::get('/', [VerificationJournalController::class, 'index'])->name('index');
+            Route::get('/move_all_tocart', [VerificationJournalController::class, 'move_all_tocart'])->name('move_all_tocart');
+            Route::get('/tocart_data', [VerificationJournalController::class, 'tocart_data'])->name('tocart_data');
+            Route::get('/incart_data', [VerificationJournalController::class, 'incart_data'])->name('incart_data');
+            Route::post('/add_to_cart', [VerificationJournalController::class, 'add_to_cart'])->name('add_to_cart');
+            Route::post('/remove_from_cart', [VerificationJournalController::class, 'remove_from_cart'])->name('remove_from_cart');
+            Route::get('/move_all_tocart', [VerificationJournalController::class, 'move_all_tocart'])->name('move_all_tocart');
+            Route::get('/remove_all_fromcart', [VerificationJournalController::class, 'remove_all_fromcart'])->name('remove_all_fromcart');
+        });
     });
 
     // JOURNALS

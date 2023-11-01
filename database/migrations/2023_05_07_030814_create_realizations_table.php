@@ -25,6 +25,7 @@ return new class extends Migration
             $table->boolean('deletable')->default(true);
             $table->boolean('printable')->default(false);
             $table->timestamp('approved_at')->nullable();
+            $table->foreignId('journal_id')->nullable();
             $table->timestamps();
         });
     }

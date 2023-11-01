@@ -33,9 +33,6 @@ class GeneralLedgerController extends Controller
 
         $selected_account = Account::find($id);
 
-        // return $selected_account;
-        // die;
-
         return view('general-ledgers.show', compact('accounts', 'selected_account'));
     }
 
@@ -96,7 +93,9 @@ class GeneralLedgerController extends Controller
                 ->get();
         }
 
-        $journals = GeneralLedger::where('account_id', $id)->get();
+        $journals = GeneralLedger::where('account_id', $id)
+            ->orderBy('posting_date', 'asc')
+            ->get();
 
         return datatables()->of($journals)
             ->editColumn('posting_date', function ($journal) {

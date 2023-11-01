@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreignId('user_id');
             $table->string('project', 20)->nullable();
             $table->string('status', 50)->nullable();
+            $table->string('sap_journal_no')->nullable()->after('status');
+            $table->date('sap_posting_date')->nullable();
             $table->string('flag', 50)->nullable();
             $table->timestamps();
         });

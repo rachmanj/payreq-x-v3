@@ -35,4 +35,9 @@ class Realization extends Model
     {
         return $this->hasOne(Verification::class);
     }
+
+    public function journal()
+    {
+        return $this->belogsTo(Journal::class);
+    }
 }

@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Cash-Out Journals
+    Verification Journals
 @endsection
 
 @section('breadcrumb_title')
-    journals
+    verifications
 @endsection
 
 @section('content')
@@ -15,17 +15,17 @@
             <div class="card">
                 <div class="card-header">
                     @if ($select_all_button)
-                    <a href="{{ route('cash-journals.move_all_tocart') }}" class="btn btn-sm btn-warning">Select All Documents to Cart</a>
+                    <a href="{{ route('verifications.journal.move_all_tocart') }}" class="btn btn-sm btn-warning">Select All to Cart</a>
                     @endif
-                    <a href="{{ route('cash-journals.index') }}" class="btn btn-sm btn-primary float-right"><i class="fa fa-arrow-left"></i> Back</a>
+                    <a href="{{ route('verifications.index') }}" class="btn btn-sm btn-primary float-right"><i class="fa fa-arrow-left"></i> Back</a>
                 </div>
                 <div class="card-body">
                     <table id="to_cart" class="table table-borderd-table-striped">
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>PayReqNo</th>
-                                <th>OutgoingD</th>
+                                <th>Realization No</th>
+                                <th>Employee</th>
                                 <th>Project</th>
                                 <th>Amount</th>
                                 <th>action</th>
@@ -45,7 +45,7 @@
                     <h3 class="card-title">CART</h3>
                     @if ($remove_all_button)
                     <a href="#" class="btn btn-sm btn-primary float-right" role="button" data-toggle="modal" data-target="#create-journal">Create Journal</a>
-                    <a href="{{ route('cash-journals.remove_all_fromcart') }}" class="btn btn-sm btn-warning float-right mr-2">Remove All From Cart</a>
+                    <a href="{{ route('verifications.journal.remove_all_fromcart') }}" class="btn btn-sm btn-warning float-right mr-2">Remove All From Cart</a>
                     @endif
                 </div>
                 <div class="card-body">
@@ -53,8 +53,8 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>PayReqNo</th>
-                                <th>OutgoingD</th>
+                                <th>Realization No</th>
+                                <th>Employee</th>
                                 <th>Project</th>
                                 <th>Amount</th>
                                 <th>action</th>
@@ -128,21 +128,17 @@
     $("#to_cart").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cash-journals.to_cart.data') }}',
+      ajax: '{{ route('verifications.journal.tocart_data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'payreq_no'},
-        {data: 'outgoing_date'},
+        {data: 'realization_no'},
+        {data: 'employee'},
         {data: 'project'},
         {data: 'amount'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
-              {
-                "targets": [1, 2],
-                "className": "text-center"
-              },
               {
                 "targets": [4],
                 "className": "text-right"
@@ -154,21 +150,17 @@
     $("#in_cart").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cash-journals.in_cart.data') }}',
+      ajax: '{{ route('verifications.journal.incart_data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'payreq_no'},
-        {data: 'outgoing_date'},
+        {data: 'realization_no'},
+        {data: 'employee'},
         {data: 'project'},
         {data: 'amount'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
-        {
-                "targets": [1, 2],
-                "className": "text-center"
-              },
               {
                 "targets": [4],
                 "className": "text-right"

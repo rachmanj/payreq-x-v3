@@ -81,7 +81,7 @@
 
             <div class="card-header">
               <h3 class="card-title">Realization Details</h3>
-              <h3 class="card-title float-right">Payreq Amount: IDR {{ number_format($realization->payreq->amount, 2) }} | Variant: IDR {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}</h3>
+              <h3 class="card-title float-right">Payreq Amount: IDR {{ number_format($realization->payreq->amount, 2) }} | Variance: IDR {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}</h3>
             </div>
             <div class="card-body">
               <table class="table table-bordered table-striped">

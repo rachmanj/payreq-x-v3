@@ -16,11 +16,6 @@ class RealizationDetail extends Model
         return $this->belongsTo(Realization::class);
     }
 
-    public function verification()
-    {
-        return $this->belongsTo(Verification::class);
-    }
-
     public function account()
     {
         return $this->belongsTo(Account::class);

@@ -69,6 +69,14 @@
                 <th class="text-right">{{ number_format($realization_details->sum('amount'), 2) }}</th>
             </tr>
             <tr>
+              <th colspan="2" class="text-right">Advance Payment</th>
+                <th class="text-right">{{ number_format($realization->payreq->amount, 2) }}</th>
+            </tr>
+            <tr>
+              <th colspan="2" class="text-right">Variance</th>
+                <th class="text-right">{{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}</th>
+            </tr>
+            <tr>
                 <th class="text-right">Say</th>
                 <th colspan="2">{{ ucfirst($terbilang) }}</th>
             </tr>
@@ -119,7 +127,7 @@
 <!-- ./wrapper -->
 <!-- Page specific script -->
 <script>
-  window.addEventListener("load", window.print());
+  // window.addEventListener("load", window.print());
 </script>
 </body>
 </html>

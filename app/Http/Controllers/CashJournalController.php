@@ -178,7 +178,7 @@ class CashJournalController extends Controller
 
     public function add_to_cart(Request $request)
     {
-        $outgoing = Outgoing::find($request->outgoing_id);
+        $outgoing = Outgoing::findOrFail($request->outgoing_id);
         $outgoing->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
         $outgoing->save();
 
@@ -187,7 +187,7 @@ class CashJournalController extends Controller
 
     public function remove_from_cart(Request $request)
     {
-        $outgoing = Outgoing::find($request->outgoing_id);
+        $outgoing = Outgoing::findOrFail($request->outgoing_id);
         $outgoing->flag = null;
         $outgoing->save();
 

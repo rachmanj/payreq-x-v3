@@ -22,7 +22,6 @@
                         <tbody>
                             <form action="{{ route('verifications.save') }}" id="save_verification" method="POST">
                                 @csrf
-                            <input type="hidden" name="verification_id" value="{{ $verification->id }}">
                             <input type="hidden" name="realization_id" value="{{ $realization->id }}">
                             @foreach ($realization_details as $key => $item)
                                 <tr>

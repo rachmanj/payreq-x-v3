@@ -16,8 +16,8 @@ class ApprovalRequestPayreqController extends Controller
 
     public function data()
     {
-        $approval_requests = ApprovalPlan::where('is_open', 1)
-            ->where('document_type', 'payreq')
+        $approval_requests = ApprovalPlan::where('document_type', 'payreq')
+            ->where('is_open', 1)
             ->where('status', 0)
             ->where('approver_id', auth()->user()->id)
             ->get();
