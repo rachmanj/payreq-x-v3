@@ -15,15 +15,15 @@
     <div class="card">
       <div class="card-header">
         @if ($outgoings_count > 0)
-        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal <span class="badge badge-danger">{{ $outgoings_count }}</span></a>
+        <a href="{{ route('cash-journals.out.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal <span class="badge badge-danger">{{ $outgoings_count }}</span></a>
         @else
-        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal</a>
+        <a href="{{ route('cash-journals.out.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal</a>
         @endif
 
         @if ($incomings_count > 0)
-        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal <span class="badge badge-danger">{{ $incomings_count }}</span></a>
+        <a href="{{ route('cash-journals.in.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal <span class="badge badge-danger">{{ $incomings_count }}</span></a>
         @else
-        <a href="{{ route('cash-journals.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal</a>
+        <a href="{{ route('cash-journals.in.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal</a>
         @endif
       </div>
       <!-- /.card-header -->
@@ -34,7 +34,7 @@
             <th>#</th>
             <th>CashJ No</th>
             <th>Date</th>
-            {{-- <th>Type</th> --}}
+            <th>Type</th>
             <th>Status</th> {{-- posted or not --}}
             <th>IDR</th>
             <th>SAPJ No</th>
@@ -86,6 +86,7 @@
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'journal_no'},
         {data: 'date'},
+        {data: 'type'},
         {data: 'status'},
         {data: 'amount'},
         {data: 'sap_journal_no'},
@@ -98,7 +99,7 @@
               //   "className": "text-center"
               // },
               {
-                "targets": [4],
+                "targets": [5],
                 "className": "text-right"
               }
             ]

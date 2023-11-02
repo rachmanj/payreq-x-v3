@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\CashJournal;
 use App\Models\GeneralLedger;
+use App\Models\Incoming;
 use App\Models\Outgoing;
 use Illuminate\Http\Request;
 
@@ -16,62 +17,11 @@ class CashJournalController extends Controller
             ->where('project', auth()->user()->project)
             ->count();
 
-        $incomings_count = 2;
-
-        return view('cash-journal.index', compact(['outgoings_count', 'incomings_count']));
-    }
-
-    public function create()
-    {
-        $outgoings = Outgoing::whereNull('cash_journal_id')
-            ->whereNull('flag')
+        $incomings_count = Incoming::whereNull('cash_journal_id')
             ->where('project', auth()->user()->project)
             ->count();
 
-        if ($outgoings > 0) {
-            $select_all_button = true;
-        } else {
-            $select_all_button = false;
-        }
-
-        $outgoings_in_cart = Outgoing::where('flag', 'CJT' . auth()->user()->id)
-            ->get();
-
-        if ($outgoings_in_cart->count() > 0) {
-            $remove_all_button = true;
-        } else {
-            $remove_all_button = false;
-        }
-
-        return view('cash-journal.create', compact(['select_all_button', 'remove_all_button']));
-    }
-
-    public function store(Request $request)
-    {
-        $outgoings = Outgoing::where('flag', 'CJT' . auth()->user()->id)
-            ->get();
-
-        $cash_journal = new CashJournal();
-        $cash_journal->date = $request->date;
-        $cash_journal->type = "cash-out";
-        $cash_journal->amount = $outgoings->sum('amount');
-        $cash_journal->description = $request->description;
-        $cash_journal->project = auth()->user()->project;
-        $cash_journal->created_by = auth()->user()->id;
-        $cash_journal->save();
-
-        // update cash journal number
-        $cash_journal->journal_no = app(ToolController::class)->generateCashJournalNumber($cash_journal->id, 'cash-out');
-        $cash_journal->save();
-
-        // update outgoings cash journal id
-        foreach ($outgoings as $outgoing) {
-            $outgoing->cash_journal_id = $cash_journal->id;
-            $outgoing->flag = null;
-            $outgoing->save();
-        }
-
-        return redirect()->route('cash-journals.index')->with('success', 'Cash Journal created successfully.');
+        return view('cash-journal.index', compact(['outgoings_count', 'incomings_count']));
     }
 
     public function show($id)
@@ -176,52 +126,6 @@ class CashJournalController extends Controller
         return redirect()->back()->with('success', 'Cash Journal Cancel updated successfully.');
     }
 
-    public function add_to_cart(Request $request)
-    {
-        $outgoing = Outgoing::findOrFail($request->outgoing_id);
-        $outgoing->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
-        $outgoing->save();
-
-        return redirect()->back();
-    }
-
-    public function remove_from_cart(Request $request)
-    {
-        $outgoing = Outgoing::findOrFail($request->outgoing_id);
-        $outgoing->flag = null;
-        $outgoing->save();
-
-        return redirect()->back();
-    }
-
-    public function move_all_tocart()
-    {
-        $outgoings = Outgoing::whereNull('cash_journal_id')
-            ->whereNull('flag')
-            ->where('project', auth()->user()->project)
-            ->get();
-
-        foreach ($outgoings as $outgoing) {
-            $outgoing->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
-            $outgoing->save();
-        }
-
-        return redirect()->back();
-    }
-
-    public function remove_all_fromcart()
-    {
-        $outgoings = Outgoing::where('flag', 'CJT' . auth()->user()->id)
-            ->get();
-
-        foreach ($outgoings as $outgoing) {
-            $outgoing->flag = null;
-            $outgoing->save();
-        }
-
-        return redirect()->back();
-    }
-
     public function data()
     {
         $cash_journals = CashJournal::where('project', auth()->user()->project)
@@ -246,50 +150,6 @@ class CashJournalController extends Controller
             ->addIndexColumn()
             ->addColumn('action', 'cash-journal.action')
             ->rawColumns(['status', 'action'])
-            ->toJson();
-    }
-
-    public function to_cart_data()
-    {
-        $outgoings = Outgoing::whereNull('cash_journal_id')
-            ->whereNull('flag')
-            ->where('project', auth()->user()->project)
-            ->get();
-
-        return datatables()->of($outgoings)
-            ->addColumn('payreq_no', function ($outgoing) {
-                return $outgoing->payreq->nomor;
-            })
-            ->addColumn('amount', function ($outgoing) {
-                return number_format($outgoing->amount, 2);
-            })
-            ->editColumn('outgoing_date', function ($outgoing) {
-                $date = new \Carbon\Carbon($outgoing->outgoing_date);
-                return $date->addHours(8)->format('d-M-Y');
-            })
-            ->addIndexColumn()
-            ->addColumn('action', 'cash-journal.to-cart-action')
-            ->toJson();
-    }
-
-    public function in_cart_data()
-    {
-        $outgoings = Outgoing::where('flag', 'CJT' . auth()->user()->id)
-            ->get();
-
-        return datatables()->of($outgoings)
-            ->addColumn('payreq_no', function ($outgoing) {
-                return $outgoing->payreq->nomor;
-            })
-            ->addColumn('amount', function ($outgoing) {
-                return number_format($outgoing->amount, 2);
-            })
-            ->editColumn('outgoing_date', function ($outgoing) {
-                $date = new \Carbon\Carbon($outgoing->outgoing_date);
-                return $date->addHours(8)->format('d-M-Y');
-            })
-            ->addIndexColumn()
-            ->addColumn('action', 'cash-journal.in-cart-action')
             ->toJson();
     }
 }

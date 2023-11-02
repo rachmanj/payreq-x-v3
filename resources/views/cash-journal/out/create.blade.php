@@ -15,7 +15,7 @@
             <div class="card">
                 <div class="card-header">
                     @if ($select_all_button)
-                    <a href="{{ route('cash-journals.move_all_tocart') }}" class="btn btn-sm btn-warning">Select All Documents to Cart</a>
+                    <a href="{{ route('cash-journals.out.move_all_tocart') }}" class="btn btn-sm btn-warning">Select All Documents to Cart</a>
                     @endif
                     <a href="{{ route('cash-journals.index') }}" class="btn btn-sm btn-primary float-right"><i class="fa fa-arrow-left"></i> Back</a>
                 </div>
@@ -45,7 +45,7 @@
                     <h3 class="card-title">CART</h3>
                     @if ($remove_all_button)
                     <a href="#" class="btn btn-sm btn-primary float-right" role="button" data-toggle="modal" data-target="#create-journal">Create Journal</a>
-                    <a href="{{ route('cash-journals.remove_all_fromcart') }}" class="btn btn-sm btn-warning float-right mr-2">Remove All From Cart</a>
+                    <a href="{{ route('cash-journals.out.remove_all_fromcart') }}" class="btn btn-sm btn-warning float-right mr-2">Remove All From Cart</a>
                     @endif
                 </div>
                 <div class="card-body">
@@ -76,7 +76,7 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form action="{{ route('cash-journals.store') }}" method="POST">
+                <form action="{{ route('cash-journals.out.store') }}" method="POST">
                     @csrf
                 <div class="modal-body">
                     <div class="form-group">
@@ -128,7 +128,7 @@
     $("#to_cart").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cash-journals.to_cart.data') }}',
+      ajax: '{{ route('cash-journals.out.to_cart.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'payreq_no'},
@@ -154,7 +154,7 @@
     $("#in_cart").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cash-journals.in_cart.data') }}',
+      ajax: '{{ route('cash-journals.out.in_cart.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'payreq_no'},

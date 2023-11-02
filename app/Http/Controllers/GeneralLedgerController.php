@@ -14,6 +14,7 @@ class GeneralLedgerController extends Controller
             // ->where('account_type_id', '!=', 1)
             ->orderBy('account_number')
             ->get();
+
         return view('general-ledgers.index', compact('accounts'));
     }
 

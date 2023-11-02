@@ -85,7 +85,14 @@
     })
 
     $('#account_id').change(function () {
-      $('#general-ledgers').DataTable().draw(true)
+      $('#general-ledgers').DataTable({
+        columnDefs: [
+              {
+                "targets": [4, 5, 6],
+                "className": "text-right"
+              }
+            ]
+      }).draw(true)
     })
   });
 

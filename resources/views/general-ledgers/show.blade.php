@@ -95,12 +95,12 @@
         // {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
-      // columnDefs: [
-      //         {
-      //           "targets": [5, 6],
-      //           "className": "text-right"
-      //         }
-      //       ]
+      columnDefs: [
+              {
+                "targets": [4, 5, 6],
+                "className": "text-right"
+              }
+            ]
     });
 
     //Initialize Select2 Elements
