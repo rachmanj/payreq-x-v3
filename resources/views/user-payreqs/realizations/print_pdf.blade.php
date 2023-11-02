@@ -78,7 +78,11 @@
             </tr>
             <tr>
                 <th class="text-right">Say</th>
-                <th colspan="2">{{ ucfirst($terbilang) }}</th>
+                <td colspan="2">{{ ucfirst($terbilang) }}</td>
+            </tr>
+            <tr>
+              <th class="text-right">Remarks</th>
+              <td colspan="2">{{ $realization->payreq->remarks }}</td>
             </tr>
           </tfoot>
         </table>
@@ -127,7 +131,7 @@
 <!-- ./wrapper -->
 <!-- Page specific script -->
 <script>
-  // window.addEventListener("load", window.print());
+  window.addEventListener("load", window.print());
 </script>
 </body>
 </html>

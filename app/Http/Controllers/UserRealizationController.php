@@ -110,9 +110,10 @@ class UserRealizationController extends Controller
         ]));
     }
 
-    public function destroy(Realization $realization)
+    public function cancel($realization_id)
     {
-        $realization = Realization::findOrFail($realization->id);
+
+        $realization = Realization::where('id', $realization_id)->first();
 
         // delete realization details
         $realization->realizationDetails()->delete();
@@ -178,21 +179,18 @@ class UserRealizationController extends Controller
     {
         // get user's roles
         $userRoles = app(UserController::class)->getUserRoles();
+        $status_include = ['approved', 'revise', 'verification', 'submitted'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
-            $realizations = Realization::get();
+            $realizations = Realization::whereIn('status', $status_include)
+                ->get();
         } else {
-            $realizations = Realization::where('user_id', auth()->user()->id)
+            $realizations = Realization::whereIn('status', $status_include)
+                ->where('user_id', auth()->user()->id)
                 ->get();
         }
 
         return datatables()->of($realizations)
-            // ->addColumn('payreq_no', function ($realization) {
-            //     // return $realization->payreq->payreq_no;
-            //     $html = '<a href="" data-toggle="tooltip" data-placement="top" title="';
-            //     $html .= $realization->payreq->remarks . '">' . $realization->payreq->nomor . '</a>';
-            //     return $html;
-            // })
             ->editColumn('nomor', function ($realization) {
                 return '<a href="' . route('user-payreqs.realizations.show', $realization->id) . '">' . $realization->nomor . '</a>';
             })
@@ -203,17 +201,17 @@ class UserRealizationController extends Controller
                 return number_format($realization->realizationDetails->sum('amount'), 2, ',', '.');
             })
             ->editColumn('created_at', function ($realization) {
-                return $realization->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita';
+                return $realization->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
             })
             ->addColumn('days', function ($realization) {
                 $diff = Carbon::now()->diffInDays(Carbon::parse($realization->created_at));
                 return $diff;
             })
-            ->editColumn('status', function ($payreq) {
-                if ($payreq->status === 'submitted') {
+            ->editColumn('status', function ($realization) {
+                if ($realization->status === 'submitted') {
                     return 'Waiting Approval';
                 } else {
-                    return ucfirst($payreq->status);
+                    return ucfirst($realization->status);
                 }
             })
             ->addColumn('action', 'user-payreqs.realizations.action')

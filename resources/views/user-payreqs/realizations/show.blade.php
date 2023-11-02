@@ -38,9 +38,9 @@
             <div class="card-header">
               <h3 class="card-title">Approval Status</h3>
               @if ($realization->status === 'approved')
-              <form action="{{ route('user-payreqs.realizations.cancel') }}" method="POST">
-                @csrf
-                <input type="hidden" name="payreq_id" value="{{ $realization->id }}">
+              <form action="{{ route('user-payreqs.realizations.cancel', $realization->id) }}" method="POST">
+                @csrf @method('DELETE')
+                {{-- <input type="hidden" name="realization_id" value="{{ $realization->id }}"> --}}
                 <button type="submit" class="btn btn-sm btn-danger d-inline float-right" onclick="return confirm('Are You sure You want to CANCEL this Payment Request? This transaction cannot be undone')">CANCEL</button>
               </form>
               @endif

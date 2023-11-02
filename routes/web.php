@@ -97,7 +97,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{realization_detail_id}/delete_detail', [UserRealizationController::class, 'delete_detail'])->name('delete_detail');
             Route::get('/{realization_id}/print', [UserRealizationController::class, 'print'])->name('print');
             Route::put('/{realization_id}/void', [UserRealizationController::class, 'void'])->name('void');
-            Route::put('/cancel', [UserRealizationController::class, 'cancel'])->name('cancel');
+            Route::delete('/{realization_id}/cancel', [UserRealizationController::class, 'cancel'])->name('cancel');
         });
         Route::resource('realizations', UserRealizationController::class);
 
