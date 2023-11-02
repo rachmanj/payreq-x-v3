@@ -30,7 +30,7 @@ class CashierOutgoingController extends Controller
             ->addColumn('employee', function ($outgoing) {
                 return $outgoing->payreq->requestor->name;
             })
-            ->addColumn('PayreqNo', function ($outgoing) {
+            ->addColumn('payreq_no', function ($outgoing) {
                 return $outgoing->payreq->nomor;
             })
             ->editColumn('outgoing_date', function ($outgoing) {

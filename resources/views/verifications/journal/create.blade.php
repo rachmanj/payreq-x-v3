@@ -76,7 +76,7 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form action="{{ route('cash-journals.store') }}" method="POST">
+                <form action="{{ route('verifications.journal.store') }}" method="POST">
                     @csrf
                 <div class="modal-body">
                     <div class="form-group">

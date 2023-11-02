@@ -26,6 +26,7 @@ return new class extends Migration
             $table->boolean('printable')->default(false);
             $table->timestamp('approved_at')->nullable();
             $table->foreignId('journal_id')->nullable();
+            $table->string('flag', 50)->nullable();
             $table->timestamps();
         });
     }

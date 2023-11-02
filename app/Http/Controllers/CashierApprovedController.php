@@ -33,11 +33,20 @@ class CashierApprovedController extends Controller
 
         $outgoing = app(OutgoingController::class)->store($request);
 
-        // update payreq status
-        $payreq->status = 'paid';
-        $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
-        $payreq->printable = 0;
-        $payreq->save();
+        if ($payreq->type === 'advance') { // if payreq type is 'advance'
+            // update payreq status
+            $payreq->status = 'paid';
+            $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
+            $payreq->printable = 0;
+            $payreq->save();
+        } elseif ($payreq->type === 'reimburse') { // if payreq type is 'reimburse'
+            //
+        } else { // if payreq type is 'other'
+            // update payreq status
+            $payreq->status = 'close';
+            $payreq->printable = 0;
+            $payreq->save();
+        }
 
         return redirect()->route('cashier.approveds.index')->with('success', 'Payreq successfully paid with FULL Payment');
     }

@@ -221,4 +221,38 @@ class UserRealizationController extends Controller
             ->addIndexColumn()
             ->toJson();
     }
+
+    /*
+    * check if realization amount is different from payreq amount
+    * if realization amount > payreq amount, then create a new payreq
+    * if realization amount < payreq amount, then create a new incomming payreq
+    */
+    public function check_realization_amount($realization_id)
+    {
+        $realization = Realization::findOrFail($realization_id);
+        $realization_amount = $realization->realizationDetails->sum('amount');
+        $payreq_amount = $realization->payreq->amount;
+
+        if ($realization_amount > $payreq_amount) {
+            // create new payreq
+            $new_payreq = app(PayreqAdvanceController::class)->create_new_payreq($realization_id);
+
+            if ($new_payreq) {
+                return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization amount is different from Payreq amount. New Payreq created');
+            } else {
+                return redirect()->route('user-payreqs.realizations.index')->with('error', 'Realization amount is different from Payreq amount. Failed to create new Payreq');
+            }
+        } elseif ($realization_amount < $payreq_amount) {
+            // create new incomming payreq
+            $new_incomming_payreq = app(IncomingController::class)->create_new_incomming_realization($realization_id);
+
+            if ($new_incomming_payreq) {
+                return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization amount is different from Payreq amount. New Incomming Payreq created');
+            } else {
+                return redirect()->route('user-payreqs.realizations.index')->with('error', 'Realization amount is different from Payreq amount. Failed to create new Incomming Payreq');
+            }
+        } else {
+            return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization amount is equal to Payreq amount');
+        }
+    }
 }

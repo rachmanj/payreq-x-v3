@@ -50,7 +50,7 @@ class ApprovalPlanController extends Controller
         return false;
     }
 
-    /*
+    /* this function is to give approval decision to approval plan
     * update approval decision: 1 = approved, 2 = revise, 3 = reject
     */
     public function update(Request $request, $id)
@@ -129,6 +129,9 @@ class ApprovalPlanController extends Controller
                 'nomor' => $nomor,
                 // 'due_date' => Carbon::parse($approval_plan->updated_at)->addDays(7),  // this field updated when payreq is full paid
             ]);
+
+            // check the variance between payreq and realization
+            app(UserRealizationController::class)->check_realization_amount($document->id);
         }
 
         if ($request->document_type === 'payreq') {
@@ -155,7 +158,7 @@ class ApprovalPlanController extends Controller
 
     public function cekExistingAndDisableOpen($document_type, $document_id)
     {
-        // cek if there are approval plans for this document
+        // cek if there are approval plans still open (is_open = 1) for the document
         $approval_plans = ApprovalPlan::where('document_id', $document_id)
             ->where('document_type', $document_type)
             ->where('is_open', 1)

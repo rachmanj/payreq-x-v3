@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('journal_no')->nullable();
             $table->string('type');
-            $table->string('description');
+            $table->string('description')->nullable();
             $table->date('date');
             $table->string('sap_journal_no', 50)->nullable();
             $table->date('sap_posting_date')->nullable();

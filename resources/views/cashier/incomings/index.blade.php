@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Outgoing Payment Request
+    Incoming Payment
 @endsection
 
 @section('breadcrumb_title')
-    outgoings
+  incoming
 @endsection
 
 @section('content')
@@ -17,16 +17,17 @@
       </div>
       <!-- /.card-header -->
       <div class="card-body">
-        <table id="outgoings" class="table table-bordered table-striped">
+        <table id="incomings" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
             <th>Employee</th>
-            <th>Payreq No</th>
-            <th>Payment Date</th>
+            <th>Realization No</th>
+            <th>Created Date</th>
             <th>IDR</th>
             <th>Account</th>
-            {{-- <th></th> --}}
+            <th>Status</th>
+            <th></th>
           </tr>
           </thead>
         </table>
@@ -64,18 +65,19 @@
 
 <script>
   $(function () {
-    $("#outgoings").DataTable({
+    $("#incomings").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cashier.outgoings.data') }}',
+      ajax: '{{ route('cashier.incomings.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'employee'},
-        {data: 'payreq_no'},
-        {data: 'outgoing_date'},
+        {data: 'realization_no'},
+        {data: 'created_date'},
         {data: 'amount'},
         {data: 'account'},
-        // {data: 'action', orderable: false, searchable: false},
+        {data: 'status'},
+        {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [

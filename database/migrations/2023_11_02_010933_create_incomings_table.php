@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('outgoings', function (Blueprint $table) {
+        Schema::create('incomings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('cashier_id')->nullable();
-            $table->foreignId('payreq_id')->nullable();
+            $table->foreignId('realization_id')->nullable();
             $table->foreignId('account_id')->nullable();
-            $table->date('outgoing_date')->nullable();
+            $table->date('receive_date')->nullable();
             $table->double('amount')->nullable();
             $table->string('description')->nullable();
             $table->string('project', 10)->nullable();
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('outgoings');
+        Schema::dropIfExists('incomings');
     }
 };

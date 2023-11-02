@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalPlan;
-use App\Models\Payreq;
-use App\Models\Realization;
 use Illuminate\Http\Request;
 
 class ApprovalRequestRealizationController extends Controller

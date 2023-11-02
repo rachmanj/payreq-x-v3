@@ -16,6 +16,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserOngoingController;
 use App\Http\Controllers\OutgoingController;
+use App\Http\Controllers\CashierIncomingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqAdvanceController;
 use App\Http\Controllers\PayreqOtherController;
@@ -123,6 +124,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/data', [CashierOutgoingController::class, 'data'])->name('data');
             Route::get('/', [CashierOutgoingController::class, 'index'])->name('index');
         });
+
+        Route::prefix('incomings')->name('incomings.')->group(function () {
+            Route::get('/data', [CashierIncomingController::class, 'data'])->name('data');
+            Route::get('/', [CashierIncomingController::class, 'index'])->name('index');
+            Route::post('/receive', [CashierIncomingController::class, 'receive'])->name('receive');
+        });
     });
 
     // PAYREQ ADVANCE
@@ -187,6 +194,8 @@ Route::middleware('auth')->group(function () {
         // journal
         Route::prefix('journal')->name('journal.')->group(function () {
             Route::get('/', [VerificationJournalController::class, 'index'])->name('index');
+            Route::get('/journal_create', [VerificationJournalController::class, 'create'])->name('create');
+            Route::post('/store', [VerificationJournalController::class, 'store'])->name('store');
             Route::get('/move_all_tocart', [VerificationJournalController::class, 'move_all_tocart'])->name('move_all_tocart');
             Route::get('/tocart_data', [VerificationJournalController::class, 'tocart_data'])->name('tocart_data');
             Route::get('/incart_data', [VerificationJournalController::class, 'incart_data'])->name('incart_data');

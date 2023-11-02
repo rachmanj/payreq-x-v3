@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Outgoing Payment Request
+    Verifications
 @endsection
 
 @section('breadcrumb_title')
-    outgoings
+    verifications
 @endsection
 
 @section('content')
@@ -14,23 +14,26 @@
 
     <div class="card">
       <div class="card-header">
+        <h3 class="card-title">Verifications</h3>
+        <a href="{{ route('verifications.journal.index') }}" class="btn btn-sm btn-success float-right mx-2">Create Journal</a>
       </div>
-      <!-- /.card-header -->
       <div class="card-body">
-        <table id="outgoings" class="table table-bordered table-striped">
+        <table id="verifications" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
-            <th>Employee</th>
+            <th>Realization No</th>
+            <th>Realization Date</th>
             <th>Payreq No</th>
-            <th>Payment Date</th>
-            <th>IDR</th>
-            <th>Account</th>
-            {{-- <th></th> --}}
+            <th>Employee</th>
+            <th>Project</th>
+            <th>Accounts</th>
+            <th></th>
           </tr>
           </thead>
         </table>
       </div>
+
       <!-- /.card-body -->
     </div>
     <!-- /.card -->
@@ -38,7 +41,6 @@
   <!-- /.col -->
 </div>
 <!-- /.row -->
-
 @endsection
 
 @section('styles')
@@ -64,30 +66,22 @@
 
 <script>
   $(function () {
-    $("#outgoings").DataTable({
+    $("#verifications").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cashier.outgoings.data') }}',
+      ajax: '{{ route('verifications.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'employee'},
+        {data: 'realization_no'},
+        {data: 'date'},
         {data: 'payreq_no'},
-        {data: 'outgoing_date'},
-        {data: 'amount'},
-        {data: 'account'},
-        // {data: 'action', orderable: false, searchable: false},
+        {data: 'requestor'},
+        {data: 'project'},
+        {data: 'is_complete'},
+        // {data: 'amount'},
+        {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
-      columnDefs: [
-              {
-                "targets": [2],
-                "className": "text-center"
-              },
-              {
-                "targets": [4],
-                "className": "text-right"
-              }
-            ]
     })
   });
 </script>
@@ -97,6 +91,6 @@
     $('.select2bs4').select2({
       theme: 'bootstrap4'
     })
-  }) 
+  })
 </script>
 @endsection
