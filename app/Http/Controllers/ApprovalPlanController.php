@@ -67,7 +67,7 @@ class ApprovalPlanController extends Controller
         $document_type = $approval_plan->document_type;
 
         if ($document_type == 'payreq') {
-            $document = Payreq::findOrFail($approval_plan->document_id);
+            $document = Payreq::where('id', $approval_plan->document_id)->first();
             $nomor = app(PayreqController::class)->generatePRNumber($document->id);
         } elseif ($document_type == 'realization') {
             $document = Realization::findOrFail($approval_plan->document_id);
@@ -129,14 +129,13 @@ class ApprovalPlanController extends Controller
                 'nomor' => $nomor,
                 // 'due_date' => Carbon::parse($approval_plan->updated_at)->addDays(7),  // this field updated when payreq is full paid
             ]);
-
-            // check the variance between payreq and realization
-            app(UserRealizationController::class)->check_realization_amount($document->id);
         }
 
         if ($request->document_type === 'payreq') {
             return redirect()->route('approvals.request.payreqs.index')->with('success', 'Approval Request updated');
         } elseif ($request->document_type === 'realization') {
+            // check the variance between payreq and realization
+            app(UserRealizationController::class)->check_realization_amount($document->id);
             return redirect()->route('approvals.request.realizations.index')->with('success', 'Approval Request updated');
         } elseif ($request->document_type === 'rab') {
             // 

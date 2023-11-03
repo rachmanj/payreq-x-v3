@@ -85,7 +85,7 @@ class PayreqController extends Controller
 
     public function generatePRNumber($payreq_id)
     {
-        $payreq = Payreq::findOrFail($payreq_id);
+        $payreq = Payreq::where('id', $payreq_id)->first();
         // $status_included = ['approved', 'split', 'paid', 'cancelled'];
 
         $payreq_project_count = Payreq::where('project', $payreq->project)
