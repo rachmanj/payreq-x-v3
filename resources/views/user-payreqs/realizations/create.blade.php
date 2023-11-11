@@ -62,7 +62,7 @@
                 </div>
                 <div class="col-3">
                   <div class="form-group">
-                    <label for="variant">Variant</label>
+                    <label for="variant">Variance</label>
                     <input type="text" name="variant" value="" class="form-control" readonly>
                   </div>
                 </div>

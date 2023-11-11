@@ -3,16 +3,16 @@
         <div class="card card-info">
             <div class="card-header">
                 <h4 class="card-title">Form</h4>
-                <a href="{{ route('user-payreqs.realizations.index') }}" class="btn btn-sm btn-info float-right"><i class="fas fa-arrow-left"></i> Back</a>
-                <form action="{{ route('user-payreqs.realizations.submit_realization') }}" method="POST">
+                <a href="{{ route('user-payreqs.index') }}" class="btn btn-sm btn-info float-right"><i class="fas fa-arrow-left"></i> Back</a>
+                <form action="{{ route('user-payreqs.reimburse.submit_payreq') }}" method="POST">
                     @csrf
-                    @if ($realization_details->count() > 0)
+                    @if ($realization->realizationDetails->count() > 0)
                         <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                        <button type="submit" class="btn btn-sm btn-warning float-right mx-2" onclick="return confirm('Are you sure you want to submit this realization?')">Submit Realization</button>
+                        <button type="submit" class="btn btn-sm btn-warning float-right mx-2" onclick="return confirm('Are you sure you want to submit this realization?')"><b>Submit Payreq</b></button>
                     @endif
                 </form>
             </div>
-            <form action="{{ route('user-payreqs.realizations.store_detail') }}" method="POST">
+            <form action="{{ route('user-payreqs.reimburse.store_detail') }}" method="POST">
                 @csrf
                 <input type="hidden" name="realization_id" value="{{ $realization->id }}">
                 <div class="card-body">
@@ -31,7 +31,7 @@
                         <div class="col-4">
                             <div class="form-group">
                                 <label for="amount">Amount</label>
-                                <input type="text" name="amount" value="{{ old('amount') }}" id="amount" class="form-control @error('amount') is-invalid @enderror">
+                                <input type="text" name="amount" value="{{ old('amount') }}" id="amount" class="form-control @error('amount') is-invalid @enderror" autocomplete="off">
                                 @error('amount')
                                 <div class="invalid-feedback">
                                 {{ $message }}
@@ -46,9 +46,9 @@
                                 <label for="unit_no">Unit No</label>
                                 <select id="unit_no" name="unit_no" class="form-control select2bs4">
                                     <option value="">-- select unit no --</option>
-                                     @foreach ($equipments as $item)
-                                         <option value="{{ $item->unit_code }}">{{ $item->unit_code }}</option>
-                                     @endforeach
+                                    @foreach ($equipments as $item)
+                                        <option value="{{ $item->unit_code }}">{{ $item->unit_code }} - {{ $item->plant_group }} - {{ $item->model }}</option>
+                                    @endforeach
                                 </select>
                             </div> 
                         </div>

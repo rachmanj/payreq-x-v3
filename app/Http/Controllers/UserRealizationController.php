@@ -129,17 +129,22 @@ class UserRealizationController extends Controller
         $realization = Realization::findOrFail($realization_id);
         $realization_details = $realization->realizationDetails;
         // $equipments = app(ToolController::class)->getEquipments($realization->project);
-        $equipments = Equipment::where('project', $realization->project)->get();
+        // $equipments = Equipment::where('project', $realization->project)->get();
 
         $roles = app(ToolController::class)->getUserRoles();
 
         if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
-            $project_equipment = 'all';
+            $equipments = Equipment::orderBy('unit_code', 'asc')->get();
         } else {
-            $project_equipment = auth()->user()->project;
+            $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();
         }
 
-        return view('user-payreqs.realizations.add_details', compact('realization', 'realization_details', 'project_equipment', 'equipments'));
+        return view('user-payreqs.realizations.add_details', compact([
+            'realization',
+            'realization_details',
+            // 'project_equipment', 
+            'equipments'
+        ]));
     }
 
     public function store_detail(Request $request)
@@ -179,7 +184,7 @@ class UserRealizationController extends Controller
     {
         // get user's roles
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'revise', 'verification', 'submitted'];
+        $status_include = ['approved', 'revise', 'verification', 'submitted', 'draft'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)

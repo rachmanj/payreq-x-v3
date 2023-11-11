@@ -9,7 +9,7 @@
     @if ($model->type == 'advance')
         <a href="{{ route('payreq-advance.edit', $model->id) }}" class="btn btn-xs btn-warning">edit</a>
     @else 
-        <a href="{{ route('payreq-other.edit', $model->id) }}" class="btn btn-xs btn-warning">edit</a>
+        <a href="{{ route('payreq-reimburse.edit', $model->id) }}" class="btn btn-xs btn-warning">edit</a>
     @endif
 @endif
 @if($model->printable && $model->status !== 'split')

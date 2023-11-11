@@ -153,12 +153,12 @@ class UserPayreqController extends Controller
                     return 'Waiting Approval';
                 } elseif ($payreq->status === 'approved') {
                     $approved_date = new \Carbon\Carbon($payreq->approved_at);
-                    return '<button class="btn btn-xs btn-success" style="pointer-events: none;">APPROVED at ' . $approved_date->addHours(8)->format('d-M-Y H:i:s') . ' wita </button>';
+                    return '<button class="btn btn-xs btn-success" style="pointer-events: none;">APPROVED at ' . $approved_date->addHours(8)->format('d-M-Y H:i') . ' wita </button>';
                 } elseif ($payreq->status === 'revise') {
                     return '<span class="badge badge-warning">REVISED</span>';
                 } elseif ($payreq->status === 'canceled') {
                     $cancel_date = new \Carbon\Carbon($payreq->cancelled_at);
-                    return '<button class="badge badge-danger">CANCELED</button> at ' . $cancel_date->addHours(8)->format('d-M-Y H:i:s') . ' wita';
+                    return '<button class="badge badge-danger">CANCELED</button> at ' . $cancel_date->addHours(8)->format('d-M-Y H:i') . ' wita';
                 } elseif ($payreq->status === 'split') {
                     $amount_paid = Outgoing::where('payreq_id', $payreq->id)->sum('amount');
                     $amount_remain = $payreq->amount - $amount_paid;
@@ -181,7 +181,7 @@ class UserPayreqController extends Controller
             })
             ->editColumn('submit_at', function ($payreq) {
                 if ($payreq->status == 'draft') {
-                    return "Created at " . $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita';
+                    return "Created at " . $payreq->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
                 }
                 if ($payreq->status == 'paid') {
                     $paid_date = App(ToolController::class)->getPaidDate($payreq->id);
@@ -189,7 +189,7 @@ class UserPayreqController extends Controller
                     return 'Paid at ' . $paid_date->format('d-M-Y');
                 }
                 $submit_date = new \Carbon\Carbon($payreq->submit_at);
-                return 'Submit at ' . $submit_date->addHours(8)->format('d-M-Y H:i:s') . ' wita';
+                return 'Submit at ' . $submit_date->addHours(8)->format('d-M-Y H:i') . ' wita';
             })
             ->addColumn('action', 'user-payreqs.action')
             ->rawColumns(['action', 'nomor', 'status'])

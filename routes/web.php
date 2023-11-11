@@ -21,6 +21,7 @@ use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\CashierIncomingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqAdvanceController;
+use App\Http\Controllers\PayreqReimburseController;
 use App\Http\Controllers\PayreqOtherController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserRealizationController;
@@ -109,7 +110,21 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{id}', [UserPayreqController::class, 'destroy'])->name('destroy');
         // print pdf
         Route::get('/{id}/print', [UserPayreqController::class, 'print'])->name('print');
+
+        //REIMBURSE TYPE
+        Route::prefix('reimburse')->name('reimburse.')->group(function () {
+            Route::get('/create', [PayreqReimburseController::class, 'create'])->name('create');
+            Route::post('/submit', [PayreqReimburseController::class, 'submit_payreq'])->name('submit_payreq');
+            Route::post('/store-detail', [PayreqReimburseController::class, 'store_detail'])->name('store_detail');
+            Route::delete('/{realization_detail_id}/delete_detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
+        });
     });
+
+    // PAYREQ ADVANCE
+    Route::resource('payreq-advance', PayreqAdvanceController::class);
+
+    // PAYREQ OTHER
+    Route::resource('payreq-reimburse', PayreqReimburseController::class);
 
     // CASHIER MENU
     Route::prefix('cashier')->name('cashier.')->group(function () {
@@ -133,12 +148,6 @@ Route::middleware('auth')->group(function () {
             Route::post('/receive', [CashierIncomingController::class, 'receive'])->name('receive');
         });
     });
-
-    // PAYREQ ADVANCE
-    Route::resource('payreq-advance', PayreqAdvanceController::class);
-
-    // PAYREQ OTHER
-    Route::resource('payreq-other', PayreqOtherController::class);
 
     // APPROVALS
     Route::prefix('approvals')->name('approvals.')->group(function () {

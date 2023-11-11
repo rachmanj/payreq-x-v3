@@ -54,64 +54,13 @@
 @section('scripts')
 <!-- Select2 -->
 <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
+
 <script>
-
-$(function () {
-    //Initialize Select2 Elements
-    $('.select2').select2()
-
-    //Initialize Select2 Elements
-    $('.select2bs4').select2({
-      theme: 'bootstrap4'
-    })
-
-    // get equipments list using ajax
-    // let url  = "{{ env('URL_ARKFLEET')}}/equipments"
-
-
-    $.ajax({
-      url: "{{ env('URL_ARKFLEET')}}/equipments",
-          type: "GET",
-          success: function(data, status) {
-            
-            let equipments = data.data
-            
-            //  get value of project_equipment from controller 
-            let project_equipment = "{{ $project_equipment }}"
-        
-            let filtered_equipments = []
-            if (project_equipment == 'all') {
-              filtered_equipments = equipments
-            } else {
-              filtered_equipments = equipments.filter(equipment => equipment.project == project_equipment)
-            }
-        
-            let select = document.getElementById('unit_no')
-
-            for (let i = 0; i < filtered_equipments.length; i++) {
-              let equipment = filtered_equipments[i]
-              let option = document.createElement('option')
-              option.value = equipment.unit_code
-              option.text = equipment.unit_code + ' - ' + equipment.plant_group + ' - ' + equipment.model
-              select.add(option)
-            }
-
-            // let selected equipment
-            let unit_no = "{{ old('unit_no') }}"
-
-            if (unit_no) {
-              $('#unit_no').val(unit_no).trigger('change')
-            }
-
-          },
-          error: function(xhr, status, error) {
-            let select = document.getElementById('unit_no')
-            let option = document.createElement('option')
-            option.value = ""
-            option.text = "Server Error"
-            select.add(option)
-          }
-    })
-})
+  $(function () {
+      //Initialize Select2 Elements
+      $('.select2bs4').select2({
+        theme: 'bootstrap4'
+      })
+  })
 </script>
 @endsection
