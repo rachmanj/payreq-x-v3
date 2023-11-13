@@ -38,10 +38,10 @@ class PayreqReimburseController extends Controller
             'department_id' => $payreq->department_id,
             'user_id' => $payreq->user_id,
             'nomor' => app(ToolController::class)->generateDraftRealizationNumber(),
-            'status' => 'draft',
+            'status' => 'draft-reimburse',
         ]);
 
-        return view('user-payreqs.reimburse.create', compact(['payreq', 'equipments']));
+        return view('user-payreqs.reimburse.create', compact(['payreq', 'equipments', 'realization']));
     }
 
     public function edit($id)
@@ -87,18 +87,23 @@ class PayreqReimburseController extends Controller
     public function submit_payreq(Request $request)
     {
         $realization = Realization::findOrFail($request->realization_id);
+        $payreq = Payreq::findOrFail($realization->payreq_id);
 
         // create approval plan
-        $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('payreq', $realization->id);
+        $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('payreq', $payreq->id);
 
         if ($approval_plan) {
-            $realization->update([
+            $payreq->update([
                 'status' => 'submitted',
             ]);
 
-            return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization submitted');
+            $realization->update([
+                'status' => 'reimburse',
+            ]);
+
+            return redirect()->route('user-payreqs.index')->with('success', 'Payreq submitted successfully');
         } else {
-            return redirect()->route('user-payreqs.realizations.index')->with('error', 'Realization failed to submit');
+            return redirect()->route('user-payreqs.index')->with('error', 'Payreq failed to submit');
         }
     }
 

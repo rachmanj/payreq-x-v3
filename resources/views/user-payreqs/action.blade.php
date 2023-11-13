@@ -1,8 +1,13 @@
 <form action="{{ route('user-payreqs.destroy', $model->id) }}" method="POST">
-    @csrf @method('DELETE')
+    @csrf @method('PUT')
     
     @if ($model->deletable)
-        <button class="btn btn-xs btn-danger" onclick="return confirm('Are You sure You want to delete this record?')">delete</button>  
+        @if ($model->type == 'advance')
+            <input type="hidden" name="type" value="advance">
+        @else
+            <input type="hidden" name="type" value="reimburse">
+        @endif
+        <button type class="btn btn-xs btn-danger" onclick="return confirm('Are You sure You want to delete this record?')">delete</button>
     @endif
 </form>
 @if ($model->editable)

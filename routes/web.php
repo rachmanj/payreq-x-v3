@@ -107,7 +107,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [UserPayreqController::class, 'index'])->name('index');
         Route::get('/{id}', [UserPayreqController::class, 'show'])->name('show');
         Route::post('/cancel', [UserPayreqController::class, 'cancel'])->name('cancel');
-        Route::delete('/{id}', [UserPayreqController::class, 'destroy'])->name('destroy');
+        Route::put('/{id}', [UserPayreqController::class, 'destroy'])->name('destroy');
         // print pdf
         Route::get('/{id}/print', [UserPayreqController::class, 'print'])->name('print');
 

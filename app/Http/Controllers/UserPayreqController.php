@@ -103,10 +103,25 @@ class UserPayreqController extends Controller
         ]));
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $payreq = Payreq::findOrFail($id);
-        $payreq->delete();
+        if ($request->type === 'advance') {
+            $payreq = Payreq::findOrFail($id);
+            $payreq->delete();
+        } else {
+            $payreq = Payreq::findOrFail($id);
+            $realization = $payreq->realization;
+            $realization_details = $realization->realizationDetails;
+
+            // delete records
+            if ($realization_details->count() > 0) {
+                foreach ($realization_details as $detail) {
+                    $detail->delete();
+                }
+            }
+            $realization->delete();
+            $payreq->delete();
+        }
 
         return redirect()->route('user-payreqs.index')->with('success', 'Payment Request deleted');
     }
@@ -177,7 +192,11 @@ class UserPayreqController extends Controller
                 }
             })
             ->editColumn('amount', function ($payreq) {
-                return number_format($payreq->amount, 2);
+                if ($payreq->type === 'advance') {
+                    return number_format($payreq->amount, 2);
+                } else {
+                    return number_format($payreq->realization->realizationDetails->sum('amount'), 2);
+                }
             })
             ->editColumn('submit_at', function ($payreq) {
                 if ($payreq->status == 'draft') {
