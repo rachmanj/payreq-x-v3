@@ -23,7 +23,7 @@ class UserPayreqController extends Controller
             $enable_payreq = true;
         }
 
-        return view('user-payreqs.index', compact('enable_payreq'));
+        return view('user-payreqs.index', compact(['enable_payreq', 'over_due_payreq']));
     }
 
     public function update(Request $request, $id)

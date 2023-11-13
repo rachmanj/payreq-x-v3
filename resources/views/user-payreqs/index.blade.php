@@ -22,6 +22,7 @@
         <button type="button" class="btn btn-sm btn-primary" disabled>
           <i class="fas fa-plus"></i> New Payreq
         </button>
+        <p class="text-red">There is/are <b>{{ $over_due_payreq }}</b> payreq(s) overdue. Please make realization first.</p>
         @endif
       </div>
       
