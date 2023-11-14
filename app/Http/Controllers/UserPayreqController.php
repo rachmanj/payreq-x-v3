@@ -195,7 +195,17 @@ class UserPayreqController extends Controller
                 if ($payreq->type === 'advance') {
                     return number_format($payreq->amount, 2);
                 } else {
-                    return number_format($payreq->realization->realizationDetails->sum('amount'), 2);
+                    // if realization has realization_details
+                    if ($payreq->realization) {
+                        if ($payreq->realization->realizationDetails->count() > 0) {
+                            $amount = 0;
+                            foreach ($payreq->realization->realizationDetails as $detail) {
+                                $amount += $detail->amount;
+                            }
+                            return number_format($amount, 2);
+                        }
+                    }
+                    return number_format($payreq->amount, 2);
                 }
             })
             ->editColumn('submit_at', function ($payreq) {

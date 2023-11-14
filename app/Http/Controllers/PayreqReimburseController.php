@@ -38,7 +38,7 @@ class PayreqReimburseController extends Controller
             'department_id' => $payreq->department_id,
             'user_id' => $payreq->user_id,
             'nomor' => app(ToolController::class)->generateDraftRealizationNumber(),
-            'status' => 'draft-reimburse',
+            'status' => 'reimburse-draft',
         ]);
 
         return view('user-payreqs.reimburse.create', compact(['payreq', 'equipments', 'realization']));
@@ -98,7 +98,7 @@ class PayreqReimburseController extends Controller
             ]);
 
             $realization->update([
-                'status' => 'reimburse',
+                'status' => 'reimburse-submitted',
             ]);
 
             return redirect()->route('user-payreqs.index')->with('success', 'Payreq submitted successfully');

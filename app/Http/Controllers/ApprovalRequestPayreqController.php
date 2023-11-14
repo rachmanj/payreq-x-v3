@@ -33,7 +33,14 @@ class ApprovalRequestPayreqController extends Controller
                 return ucfirst($approval_request->payreq->type);
             })
             ->addColumn('amount', function ($approval_request) {
-                return number_format($approval_request->payreq->amount, 2);
+                // if payreq type is advance
+                if ($approval_request->payreq->type == 'advance') {
+                    return number_format($approval_request->payreq->amount, 2);
+                } else {
+                    // $realization_details = $approval_request->payreq->realization->realizationDetails;
+                    // $amount = $realization_details->sum('amount');
+                    return number_format($approval_request->payreq->realization->realizationDetails->sum('amount'), 2);
+                }
             })
             ->addColumn('requestor', function ($approval_request) {
                 return $approval_request->payreq->requestor->name;

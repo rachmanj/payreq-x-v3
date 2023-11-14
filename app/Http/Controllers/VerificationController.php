@@ -52,6 +52,11 @@ class VerificationController extends Controller
         $realization->deletable = 0;
         $realization->save();
 
+        // UPDATE PAYREQ
+        $payreq = $realization->payreq;
+        $payreq->status = 'close';
+        $payreq->save();
+
         return redirect()->route('verifications.index')->with('success', 'Verifikasi berhasil disimpan');
     }
 
