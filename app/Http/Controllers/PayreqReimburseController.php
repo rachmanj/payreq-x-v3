@@ -88,6 +88,12 @@ class PayreqReimburseController extends Controller
             'km_position' => $request->km_position,
         ]);
 
+        // update payreq amount is sum of realization details amount
+        $payreq = Payreq::findOrFail($realization->payreq_id);
+        $payreq->update([
+            'amount' => $realization->realizationDetails()->sum('amount'),
+        ]);
+
         // return redirect()->back();
         return $this->edit($realization->payreq_id);
     }
@@ -121,6 +127,12 @@ class PayreqReimburseController extends Controller
 
         $realization_detail = RealizationDetail::findOrFail($request->realization_detail_id);
         $realization_detail->delete();
+
+        // update payreq amount is sum of realization details amount
+        $payreq = Payreq::findOrFail($realization->payreq_id);
+        $payreq->update([
+            'amount' => $realization->realizationDetails()->sum('amount'),
+        ]);
 
         return $this->edit($realization->payreq_id);
     }

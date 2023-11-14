@@ -25,6 +25,7 @@ use App\Http\Controllers\PayreqReimburseController;
 use App\Http\Controllers\PayreqOtherController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserRealizationController;
+use App\Http\Controllers\UserPayreqHistoriesController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -87,6 +88,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/data', [UserOngoingController::class, 'data'])->name('data');
         });
 
+        // HISTORIES
+        Route::prefix('histories')->name('histories.')->group(function () {
+            Route::get('/data', [UserPayreqHistoriesController::class, 'data'])->name('data');
+            Route::get('/', [UserPayreqHistoriesController::class, 'index'])->name('index');
+            Route::get('/{payreq_id}/show', [UserPayreqHistoriesController::class, 'show'])->name('show');
+        });
+
         // REALIZATION
         Route::prefix('realizations')->name('realizations.')->group(function () {
             Route::get('/data', [UserRealizationController::class, 'data'])->name('data');
@@ -110,6 +118,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/{id}', [UserPayreqController::class, 'destroy'])->name('destroy');
         // print pdf
         Route::get('/{id}/print', [UserPayreqController::class, 'print'])->name('print');
+
+
 
         //REIMBURSE TYPE
         Route::prefix('reimburse')->name('reimburse.')->group(function () {
