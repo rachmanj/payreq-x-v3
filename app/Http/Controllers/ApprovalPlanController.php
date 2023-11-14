@@ -136,7 +136,8 @@ class ApprovalPlanController extends Controller
             if ($document->type === 'reimburse') {
                 $realization = Realization::where('payreq_id', $document->id)->first();
                 $realization->update([
-                    'status' => 'approved-reimburse',
+                    'status' => 'reimburse-approved',
+                    'approved_at' => $approval_plan->updated_at,
                 ]);
             }
             return redirect()->route('approvals.request.payreqs.index')->with('success', 'Approval Request updated');

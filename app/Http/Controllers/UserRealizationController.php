@@ -184,7 +184,7 @@ class UserRealizationController extends Controller
     {
         // get user's roles
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'revise', 'verification', 'submitted', 'draft'];
+        $status_include = ['approved', 'revise', 'submitted', 'draft'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)
