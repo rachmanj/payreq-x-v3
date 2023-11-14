@@ -32,8 +32,10 @@
                                     </td>
                                     <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                     <td>
-                                        <form action="{{ route('user-payreqs.reimburse.delete_detail', $item->id) }}" method="POST">
-                                            @csrf @method('DELETE')
+                                        <form action="{{ route('user-payreqs.reimburse.delete_detail') }}" method="POST">
+                                            @csrf 
+                                            <input type="hidden" name="realization_detail_id" value="{{ $item->id }}">
+                                            <input type="hidden" name="realization_id" value="{{ $realization->id }}">
                                         <button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('Are you sure you want delete this record?')">delete</button></form>
                                         </form>
                                     </td>

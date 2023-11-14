@@ -116,7 +116,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/create', [PayreqReimburseController::class, 'create'])->name('create');
             Route::post('/submit', [PayreqReimburseController::class, 'submit_payreq'])->name('submit_payreq');
             Route::post('/store-detail', [PayreqReimburseController::class, 'store_detail'])->name('store_detail');
-            Route::delete('/{realization_detail_id}/delete_detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
+            Route::post('/delete-detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
+            // Route::delete('/{realization_detail_id}/delete_detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
         });
     });
 

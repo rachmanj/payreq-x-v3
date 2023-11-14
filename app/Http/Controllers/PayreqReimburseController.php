@@ -88,7 +88,8 @@ class PayreqReimburseController extends Controller
             'km_position' => $request->km_position,
         ]);
 
-        return redirect()->back();
+        // return redirect()->back();
+        return $this->edit($realization->payreq_id);
     }
 
     public function submit_payreq(Request $request)
@@ -114,11 +115,13 @@ class PayreqReimburseController extends Controller
         }
     }
 
-    public function delete_detail($realization_detail_id)
+    public function delete_detail(Request $request)
     {
-        $realization_detail = RealizationDetail::findOrFail($realization_detail_id);
+        $realization = Realization::findOrFail($request->realization_id);
+
+        $realization_detail = RealizationDetail::findOrFail($request->realization_detail_id);
         $realization_detail->delete();
 
-        return redirect()->back();
+        return $this->edit($realization->payreq_id);
     }
 }
