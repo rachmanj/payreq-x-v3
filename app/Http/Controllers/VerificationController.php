@@ -74,6 +74,9 @@ class VerificationController extends Controller
                 ->get();
         }
 
+        // return $realizations;
+        // die;
+
         return datatables()->of($realizations)
             ->addColumn('realization_no', function ($realization) {
                 return $realization->nomor;
@@ -82,6 +85,7 @@ class VerificationController extends Controller
                 return $realization->requestor->name;
             })
             ->addColumn('payreq_no', function ($realization) {
+                // return "ninja";
                 return $realization->payreq->nomor;
             })
             ->addColumn('date', function ($realization) {

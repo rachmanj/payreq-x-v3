@@ -40,11 +40,15 @@ class CashierApprovedController extends Controller
             $payreq->printable = 0;
             $payreq->save();
         } elseif ($payreq->type === 'reimburse') { // if payreq type is 'reimburse'
-            //
+            $payreq->status = 'close';
+            $payreq->printable = 0;
+            $payreq->deletable = 0;
+            $payreq->save();
         } else { // if payreq type is 'other'
             // update payreq status
             $payreq->status = 'close';
             $payreq->printable = 0;
+            $payreq->deletable = 0;
             $payreq->save();
         }
 
