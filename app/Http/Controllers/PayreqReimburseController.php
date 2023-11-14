@@ -12,6 +12,13 @@ class PayreqReimburseController extends Controller
 {
     public function create()
     {
+        $payreq_no = app(PayreqController::class)->generateDraftNumber();
+
+        return view('user-payreqs.reimburse.create', compact('payreq_no'));
+    }
+
+    public function store(Request $request)
+    {
         $roles = app(ToolController::class)->getUserRoles();
 
         if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
@@ -25,7 +32,7 @@ class PayreqReimburseController extends Controller
             'nomor' => app(PayreqController::class)->generateDraftNumber(),
             'type' => 'reimburse',
             'status' => 'draft',
-            'type' => 'reimburse',
+            'remarks' => $request->remarks,
             'project' => auth()->user()->project,
             'department_id' => auth()->user()->department_id,
             'user_id' => auth()->user()->id,
@@ -41,7 +48,7 @@ class PayreqReimburseController extends Controller
             'status' => 'reimburse-draft',
         ]);
 
-        return view('user-payreqs.reimburse.create', compact(['payreq', 'equipments', 'realization']));
+        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization']));
     }
 
     public function edit($id)
@@ -57,7 +64,7 @@ class PayreqReimburseController extends Controller
         $payreq = Payreq::findOrFail($id);
         $realization = Realization::where('payreq_id', $payreq->id)->first();
 
-        return view('user-payreqs.reimburse.create', compact(['payreq', 'equipments', 'realization']));
+        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization']));
     }
 
     public function store_detail(Request $request)

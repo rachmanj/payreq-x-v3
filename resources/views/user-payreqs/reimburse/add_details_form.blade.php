@@ -2,8 +2,20 @@
     <div class="col-12">
         <div class="card card-info">
             <div class="card-header">
-                <h4 class="card-title">Form</h4>
+                <h4 class="card-title">Payreq Remarks</h4>
                 <a href="{{ route('user-payreqs.index') }}" class="btn btn-sm btn-info float-right"><i class="fas fa-arrow-left"></i> Back</a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <textarea name="remarks" cols="30" rows="2" class="form-control" readonly>{{ $payreq->remarks }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-header">
+                <h4 class="card-title">Form</h4>
                 <form action="{{ route('user-payreqs.reimburse.submit_payreq') }}" method="POST">
                     @csrf
                     @if ($realization->realizationDetails->count() > 0)
@@ -12,10 +24,12 @@
                     @endif
                 </form>
             </div>
+            
             <form action="{{ route('user-payreqs.reimburse.store_detail') }}" method="POST">
                 @csrf
                 <input type="hidden" name="realization_id" value="{{ $realization->id }}">
                 <div class="card-body">
+                    
                     <div class="row">
                         <div class="col-8">
                             <div class="form-group">
