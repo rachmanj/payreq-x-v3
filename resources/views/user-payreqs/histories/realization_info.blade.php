@@ -4,7 +4,7 @@
     <dt class="col-sm-4">Remarks</dt>
     <dd class="col-sm-8">: {{ $payreq->realization->remarks }}</dd>
     <dt class="col-sm-4">Amount</dt>
-    <dd class="col-sm-8">: IDR {{ number_format($payreq->realization->amount, 2) }}</dd>
+    <dd class="col-sm-8">: IDR {{ number_format($payreq->realization->realizationDetails->sum('amount'), 2) }}</dd>
     <dt class="col-sm-4">Status</dt>
     <dd class="col-sm-8">: {{ ucfirst($payreq->realization->status) }}</dd>
     <dt class="col-sm-4">Created At</dt>

@@ -129,21 +129,28 @@ class ApprovalPlanController extends Controller
                 'nomor' => $nomor,
                 // 'due_date' => Carbon::parse($approval_plan->updated_at)->addDays(7),  // this field updated when payreq is full paid
             ]);
+
+            if ($request->document_type === 'payreq') {
+                // jika payreq jenis reimburse, maka update dulu realization status menjadi approved-reimburse trus redirect ke index payreqs
+                if ($document->type === 'reimburse') {
+                    $realization = Realization::where('payreq_id', $document->id)->first();
+                    $realization->update([
+                        'status' => 'reimburse-approved',
+                        'approved_at' => $approval_plan->updated_at,
+                        'nomor' => app(ToolController::class)->generateRealizationNumber($realization->id),
+                    ]);
+                }
+            }
+
+            if ($request->document_type === 'realization') {
+                // check the variance between payreq and realization
+                app(UserRealizationController::class)->check_realization_amount($document->id);
+            }
         }
 
         if ($request->document_type === 'payreq') {
-            // jika payreq jenis reimburse, maka update dulu realization status menjadi approved-reimburse trus redirect ke index payreqs
-            if ($document->type === 'reimburse') {
-                $realization = Realization::where('payreq_id', $document->id)->first();
-                $realization->update([
-                    'status' => 'reimburse-approved',
-                    'approved_at' => $approval_plan->updated_at,
-                ]);
-            }
             return redirect()->route('approvals.request.payreqs.index')->with('success', 'Approval Request updated');
         } elseif ($request->document_type === 'realization') {
-            // check the variance between payreq and realization
-            app(UserRealizationController::class)->check_realization_amount($document->id);
             return redirect()->route('approvals.request.realizations.index')->with('success', 'Approval Request updated');
         } elseif ($request->document_type === 'rab') {
             // 

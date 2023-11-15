@@ -6,6 +6,7 @@ use App\Models\Equipment;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PayreqReimburseController extends Controller
@@ -43,6 +44,7 @@ class PayreqReimburseController extends Controller
             'payreq_id' => $payreq->id,
             'project' => $payreq->project,
             'department_id' => $payreq->department_id,
+            'remarks' => $request->remarks,
             'user_id' => $payreq->user_id,
             'nomor' => app(ToolController::class)->generateDraftRealizationNumber(),
             'status' => 'reimburse-draft',
@@ -113,6 +115,9 @@ class PayreqReimburseController extends Controller
 
             $realization->update([
                 'status' => 'reimburse-submitted',
+                'submit_at' => Carbon::now(),
+                'editable' => 0,
+                'deletable' => 0,
             ]);
 
             return redirect()->route('user-payreqs.index')->with('success', 'Payreq submitted successfully');

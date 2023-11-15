@@ -39,11 +39,20 @@ class UserPayreqHistoriesController extends Controller
             ->editColumn('type', function ($payreq) {
                 return ucfirst($payreq->type);
             })
+            ->editColumn('status', function ($payreq) {
+                if ($payreq->status === 'canceled') {
+                    $cancel_date = new \Carbon\Carbon($payreq->cancelled_at);
+                    return '<button class="badge badge-danger">CANCELED</button> at ' . $cancel_date->addHours(8)->format('d-M-Y H:i') . ' wita';
+                } else {
+                    $close_date = new \Carbon\Carbon($payreq->updated_at);
+                    return '<button class="badge badge-success">CLOSE</button> at ' . $close_date->addHours(8)->format('d-M-Y H:i') . ' wita';
+                }
+            })
             ->editColumn('created_at', function ($payreq) {
                 return $payreq->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
             })
             ->addColumn('action', 'user-payreqs.histories.action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'status'])
             ->addIndexColumn()
             ->toJson();
     }

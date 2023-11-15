@@ -132,7 +132,7 @@ class UserPayreqController extends Controller
         $userRoles = app(UserController::class)->getUserRoles();
 
         // payreq with status in array as follows
-        $status_include = ['draft', 'submitted', 'approved', 'revise', 'canceled', 'split', 'paid', 'rejected'];
+        $status_include = ['draft', 'submitted', 'approved', 'revise', 'split', 'paid', 'rejected'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $payreqs = Payreq::whereIn('status', $status_include)
@@ -171,9 +171,6 @@ class UserPayreqController extends Controller
                     return '<button class="btn btn-xs btn-success" style="pointer-events: none;">APPROVED at ' . $approved_date->addHours(8)->format('d-M-Y H:i') . ' wita </button>';
                 } elseif ($payreq->status === 'revise') {
                     return '<span class="badge badge-warning">REVISED</span>';
-                } elseif ($payreq->status === 'canceled') {
-                    $cancel_date = new \Carbon\Carbon($payreq->cancelled_at);
-                    return '<button class="badge badge-danger">CANCELED</button> at ' . $cancel_date->addHours(8)->format('d-M-Y H:i') . ' wita';
                 } elseif ($payreq->status === 'split') {
                     $amount_paid = Outgoing::where('payreq_id', $payreq->id)->sum('amount');
                     $amount_remain = $payreq->amount - $amount_paid;

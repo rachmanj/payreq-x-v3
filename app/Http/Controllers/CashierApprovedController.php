@@ -44,6 +44,10 @@ class CashierApprovedController extends Controller
             $payreq->printable = 0;
             $payreq->deletable = 0;
             $payreq->save();
+            // update realiztion status
+            $realization = $payreq->realization;
+            $realization->status = 'reimburse-paid';
+            $realization->save();
         } else { // if payreq type is 'other'
             // update payreq status
             $payreq->status = 'close';

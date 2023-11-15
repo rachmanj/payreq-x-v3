@@ -62,11 +62,22 @@ class PayreqController extends Controller
     public function cancel($id)
     {
         $payreq = Payreq::findOrFail($id);
+
         $payreq->update([
             'status' => 'canceled',
             'canceled_at' => Carbon::now(),
             'printable' => '0',
         ]);
+
+        if ($payreq->type === 'reimburse') {
+
+            if ($payreq->realization->realizationDetails->count() > 0) {
+                foreach ($payreq->realization->realizationDetails as $detail) {
+                    $detail->delete();
+                }
+            }
+            $payreq->realization->delete();
+        }
 
         return $payreq;
     }
