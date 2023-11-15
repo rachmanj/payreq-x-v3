@@ -63,12 +63,15 @@ class VerificationController extends Controller
     public function data()
     {
         $userRoles = app(UserController::class)->getUserRoles();
+        $status_include = ['approved', 'reimburse-approved'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
-            $realizations = Realization::orderBy('created_at', 'desc')
+            $realizations = Realization::whereIn('status', $status_include)
+                ->orderBy('created_at', 'desc')
                 ->get();
         } else {
-            $realizations = Realization::where('project', auth()->user()->project)
+            $realizations = Realization::whereIn('status', $status_include)
+                ->where('project', auth()->user()->project)
                 // ->where('flag', $flag)
                 ->orderBy('created_at', 'desc')
                 ->get();
