@@ -183,7 +183,8 @@ class UserPayreqController extends Controller
                     $due_date = new \Carbon\Carbon($payreq->due_date);
                     $today = new \Carbon\Carbon();
                     $dif_days = $due_date->diffInDays($today);
-                    if ($dif_days > 7) {
+
+                    if ($today > $due_date) {
                         return '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button><button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
                     }
                     return '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button> and due in<b> ' . $dif_days . ' </b> days';

@@ -6,9 +6,9 @@
             <th class="text-right">Amount (IDR)</th>
         </tr>
     </thead>
-    @if ($payreq->realization->realization_details) 
+    @if ($payreq->realization->realizationDetails) 
         <tbody>
-            @foreach ($payreq->realization->realization_details as $item)
+            @foreach ($payreq->realization->realizationDetails as $item)
                 <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $item->description }} 
@@ -28,7 +28,7 @@
         <tfoot>
             <tr>
                 <td colspan="2" class="text-right">Total</td>
-                <td class="text-right"><b>{{ number_format($realization_details->sum('amount'), 2) }}</b></td>
+                <td class="text-right"><b>{{ number_format($payreq->realization->realizationDetails->sum('amount'), 2) }}</b></td>
             </tr>
         </tfoot>
     @else
