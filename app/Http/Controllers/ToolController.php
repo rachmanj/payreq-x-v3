@@ -79,7 +79,7 @@ class ToolController extends Controller
 
     public function generateDraftRealizationNumber()
     {
-        $status_include = ['draft', 'submitted'];
+        $status_include = ['draft', 'submitted', 'rejected'];
         $realization_project_count = Realization::where('project', auth()->user()->project)
             ->whereIn('status', $status_include)
             ->count();

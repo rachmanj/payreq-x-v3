@@ -15,10 +15,26 @@ class UserRealizationController extends Controller
     public function index()
     {
         // get user's payreqs that has no realization
-        $user_payreqs = Payreq::where('user_id', auth()->user()->id)
+        // $user_payreqs = Payreq::where('user_id', auth()->user()->id)
+        //     ->where('status', 'paid')
+        //     ->whereDoesntHave('realization')
+        //     ->get();
+
+        $user_payreqs_no_realization = Payreq::where('user_id', auth()->user()->id)
             ->where('status', 'paid')
             ->whereDoesntHave('realization')
             ->get();
+
+        $payreq_with_realization_rejected = Payreq::where('user_id', auth()->user()->id)
+            ->where('status', 'paid')
+            ->whereHas('realization', function ($query) {
+                $query->where('status', 'rejected');
+            })
+            ->distinct()
+            ->get();
+
+        // $realization_array = [];
+        $user_payreqs = $user_payreqs_no_realization->merge($payreq_with_realization_rejected);
 
         $realization_no = app(ToolController::class)->generateDraftRealizationNumber();
 
@@ -115,13 +131,28 @@ class UserRealizationController extends Controller
 
         $realization = Realization::where('id', $realization_id)->first();
 
-        // delete realization details
-        $realization->realizationDetails()->delete();
-
+        // if realizaiton has details, delete details first
+        if ($realization->realizationDetails->count() > 0) {
+            $realization->realizationDetails()->delete();
+        }
         // delete realization
         $realization->delete();
 
         return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization deleted');
+    }
+
+    public function destroy($id)
+    {
+        $realization = Realization::where('id', $id)->first();
+
+        // if realizaiton has details, delete details first
+        if ($realization->realizationDetails->count() > 0) {
+            $realization->realizationDetails()->delete();
+        }
+
+        $realization->delete();
+
+        return $this->index();
     }
 
     public function add_details($realization_id)
@@ -184,7 +215,7 @@ class UserRealizationController extends Controller
     {
         // get user's roles
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'revise', 'submitted', 'draft'];
+        $status_include = ['approved', 'revise', 'submitted', 'draft', 'rejected'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)
