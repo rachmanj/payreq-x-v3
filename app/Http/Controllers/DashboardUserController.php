@@ -15,7 +15,14 @@ class DashboardUserController extends Controller
             ->where('approver_id', auth()->user()->id)
             ->count();
 
-        return view('dashboard.index', compact('wait_approve'));
+        $user_ongoing_payreqs = app(UserPayreqController::class)->ongoing_payreqs();
+        $user_ongoing_realizations = app(UserRealizationController::class)->ongoing_realizations();
+
+        return view('dashboard.index', compact([
+            'wait_approve',
+            'user_ongoing_payreqs',
+            'user_ongoing_realizations'
+        ]));
     }
 
     public function show($id)

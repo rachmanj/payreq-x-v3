@@ -31,6 +31,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\VerificationJournalController;
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -281,6 +282,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/upload', [AccountController::class, 'upload'])->name('upload');
     });
     Route::resource('accounts', AccountController::class);
+
+    Route::get('/test', [TestController::class, 'index']);
 });
 
 Route::post('/get_account_name', [AccountController::class, 'get_account_name'])->name('get_account_name');

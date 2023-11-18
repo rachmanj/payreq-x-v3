@@ -223,4 +223,32 @@ class UserPayreqController extends Controller
             ->addIndexColumn()
             ->toJson();
     }
+
+    public function ongoing_payreqs()
+    {
+        $status = ['submitted', 'approved', 'paid', 'revise', 'split', 'rejected'];
+
+        foreach ($status as $stat) {
+            $count = Payreq::where('user_id', auth()->user()->id)
+                ->where('status', $stat)
+                ->count();
+
+            $status_cek[] = [
+                'status' => $stat,
+                'count' => $count
+            ];
+        }
+
+        $over_due_payreq = Payreq::where('user_id', auth()->user()->id)
+            ->where('status', 'paid')
+            ->where('due_date', '<', now())
+            ->count();
+
+        $result = [
+            'payreq_status' => $status_cek,
+            'over_due_payreq' => $over_due_payreq
+        ];
+
+        return $result;
+    }
 }

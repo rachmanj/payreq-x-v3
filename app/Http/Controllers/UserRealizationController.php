@@ -258,4 +258,26 @@ class UserRealizationController extends Controller
             return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization amount is equal to Payreq amount');
         }
     }
+
+    public function ongoing_realizations()
+    {
+        $status = ['submitted', 'approved', 'verification', 'revise', 'rejected'];
+
+        foreach ($status as $stat) {
+            $count = Realization::where('user_id', auth()->user()->id)
+                ->where('status', $stat)
+                ->count();
+
+            $status_cek[] = [
+                'status' => $stat,
+                'count' => $count
+            ];
+        }
+
+        $result = [
+            'realization_status' => $status_cek,
+        ];
+
+        return $result;
+    }
 }
