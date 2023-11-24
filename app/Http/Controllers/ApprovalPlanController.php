@@ -127,7 +127,6 @@ class ApprovalPlanController extends Controller
                 'editable' => 0,
                 'approved_at' => $approval_plan->updated_at,
                 'nomor' => $nomor,
-                // 'due_date' => Carbon::parse($approval_plan->updated_at)->addDays(7),  // this field updated when payreq is full paid
             ]);
 
             if ($request->document_type === 'payreq') {

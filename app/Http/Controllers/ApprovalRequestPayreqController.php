@@ -14,6 +14,21 @@ class ApprovalRequestPayreqController extends Controller
         return view('approvals-request.payreqs.index', compact('document_count'));
     }
 
+    public function show($id)
+    {
+        $document = ApprovalPlan::find($id);
+        $payreq = $document->payreq;
+        $realization = $payreq->realization;
+        $realization_details = $realization->realizationDetails;
+
+        return view('approvals-request.payreqs.show', compact([
+            'document',
+            'payreq',
+            'realization',
+            'realization_details',
+        ]));
+    }
+
     public function data()
     {
         $approval_requests = ApprovalPlan::where('document_type', 'payreq')

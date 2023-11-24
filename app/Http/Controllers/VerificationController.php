@@ -63,7 +63,7 @@ class VerificationController extends Controller
     public function data()
     {
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'reimburse-approved'];
+        $status_include = ['approved', 'reimburse-paid', 'verification'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)
@@ -108,7 +108,7 @@ class VerificationController extends Controller
     }
 
     /*
-    *   Check if all realization details have account
+    *   this to Check if all realization details have account
     */
     public function realizationDetailIsComplete($realization)
     {

@@ -1,4 +1,6 @@
-
+@if ($model->payreq->type === 'reimburse')
+    <a href="{{ route('approvals.request.payreqs.show', $model->id) }}" class="btn btn-xs btn-warning">detail</a>
+@else
 {{-- button call modal to update --}}
 <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#approvals-update-{{ $model->id }}">detail</button>
 
@@ -88,4 +90,6 @@
         </div>
     </div>
 </div>
+
+@endif
 
