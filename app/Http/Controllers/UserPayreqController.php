@@ -229,20 +229,28 @@ class UserPayreqController extends Controller
         $status = ['submitted', 'approved', 'paid', 'revise', 'split', 'rejected'];
 
         foreach ($status as $stat) {
-            $count = Payreq::where('user_id', auth()->user()->id)
-                ->where('status', $stat)
-                ->count();
+            $payreq = Payreq::where('user_id', auth()->user()->id)
+                ->where('status', $stat);
+
+            $count = $payreq->count();
+
+            $amount = $payreq->sum('amount');
 
             $status_cek[] = [
                 'status' => $stat,
-                'count' => $count
+                'count' => $count,
+                'amount' => $amount
             ];
         }
 
-        $over_due_payreq = Payreq::where('user_id', auth()->user()->id)
+        $od_payreq = Payreq::where('user_id', auth()->user()->id)
             ->where('status', 'paid')
-            ->where('due_date', '<', now())
-            ->count();
+            ->where('due_date', '<', now());
+
+        $over_due_payreq = [
+            'count' => $od_payreq->count(),
+            'amount' => $od_payreq->sum('amount')
+        ];
 
         $result = [
             'payreq_status' => $status_cek,

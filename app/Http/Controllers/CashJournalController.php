@@ -28,8 +28,8 @@ class CashJournalController extends Controller
     {
         $cash_journal = CashJournal::find($id);
         $outgoings = Outgoing::where('cash_journal_id', $id)->get();
-        $advance_account = Account::where('type_id', 5)->where('project', auth()->user()->project)->first();
-        $pc_account = Account::where('type_id', 2)->where('project', auth()->user()->project)->first();
+        $advance_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+        $pc_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
 
         return view('cash-journal.show', compact(['cash_journal', 'outgoings', 'advance_account', 'pc_account']));
     }
@@ -43,15 +43,25 @@ class CashJournalController extends Controller
         return redirect()->back();
     }
 
-    // delete cash journal record & update outgoing record
+    // delete cash journal record & update outgoing / incoming record
     public function destroy($id)
     {
         $cash_journal = CashJournal::find($id);
-        $outgoings = Outgoing::where('cash_journal_id', $id)->get();
 
-        foreach ($outgoings as $outgoing) {
-            $outgoing->cash_journal_id = null;
-            $outgoing->save();
+        if ($cash_journal->type === 'cash-out') {
+            $outgoings = Outgoing::where('cash_journal_id', $id)->get();
+
+            foreach ($outgoings as $outgoing) {
+                $outgoing->cash_journal_id = null;
+                $outgoing->save();
+            }
+        } else {
+            $incomings = Incoming::where('cash_journal_id', $id)->get();
+
+            foreach ($incomings as $incoming) {
+                $incoming->cash_journal_id = null;
+                $incoming->save();
+            }
         }
 
         $cash_journal->delete();

@@ -55,6 +55,34 @@ class AccountController extends Controller
         return redirect()->route('accounts.index')->with('success', 'Account deleted successfully!');
     }
 
+    public function outgoing($amount)
+    {
+        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+        $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+
+        $account_cash->app_balance = $account_cash->app_balance - $amount;
+        $account_cash->save();
+
+        $account_advance->app_balance = $account_advance->app_balance + $amount;
+        $account_advance->save();
+
+        return true;
+    }
+
+    public function incoming($amount)
+    {
+        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+        $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+
+        $account_cash->app_balance = $account_cash->app_balance + $amount;
+        $account_cash->save();
+
+        $account_advance->app_balance = $account_advance->app_balance - $amount;
+        $account_advance->save();
+
+        return true;
+    }
+
     public function upload(Request $request)
     {
         // VALIDATE

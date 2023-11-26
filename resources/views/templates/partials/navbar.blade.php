@@ -17,17 +17,17 @@
             <a href="{{ route('dashboard.index') }}" class="nav-link">Dashboard</a>
           </li>
 
-          @hasanyrole('user')
+          @can('akses_my_payreqs')
             @include('templates.partials.menu.user-payreq')
-          @endhasanyrole
+          @endcan
 
-          @hasanyrole('superadmin|admin|cashier')
+          @can('akses_cashier_menu')
             @include('templates.partials.menu.cashier')
-          @endhasanyrole
+          @endcan
 
-          @hasanyrole('superadmin|admin|cashier')
+          @can('akses_accounting_menu')
             @include('templates.partials.menu.accounting')
-          @endhasanyrole
+          @endcan
 
           @can('akses_approvals')
             @include('templates.partials.menu.approvals')

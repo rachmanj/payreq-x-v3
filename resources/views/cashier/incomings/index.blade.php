@@ -14,6 +14,8 @@
 
     <div class="card">
       <div class="card-header">
+        <h3 class="card-title">Incomings</h3>
+        <a href="{{ route('cashier.incomings.create') }}" class="btn btn-sm btn-success float-right"> New Incoming Payment</a>
       </div>
       <!-- /.card-header -->
       <div class="card-body">

@@ -20,4 +20,9 @@ class Incoming extends Model
     {
         return $this->belongsTo(Account::class);
     }
+
+    public function cashier()
+    {
+        return $this->belongsTo(User::class, 'cashier_id', 'id');
+    }
 }

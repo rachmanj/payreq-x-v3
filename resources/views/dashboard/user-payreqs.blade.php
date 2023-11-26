@@ -1,5 +1,5 @@
 {{-- PAYREQS --}}
-<div class="col-4">
+<div class="col-6">
     <div class="card card-info">
 
         <div class="card-header border-1">
@@ -9,6 +9,7 @@
         <div class="card-body">
 
             @foreach ($user_ongoing_payreqs['payreq_status'] as $item)
+                @if ($item['count'] > 0)
                 <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                     <p class="d-flex flex-column">
                         <span class="font-weight-bold">
@@ -16,14 +17,15 @@
                         </span>
                     </p>
                     <p class="d-flex flex-column text-right">
-                    <span class="font-weight-bold">
-                        {{ $item['count'] }}
+                    <span>
+                       Rp. {{ number_format($item['amount'], 0) }} | {{ $item['count'] }} payreqs
                     </span>
                     </p>
                 </div>
+                @endif
             @endforeach
             
-            @if ($user_ongoing_payreqs['over_due_payreq'] > 0)
+            @if ($user_ongoing_payreqs['over_due_payreq']['count'] > 0)
             <div class="d-flex justify-content-between align-items-center border-bottom  mb-1">
                 <p class="d-flex flex-column">
                     <span class="font-weight-bold text-red">
@@ -32,7 +34,7 @@
                   </p>
                 <p class="d-flex flex-column text-right">
                   <span class="font-weight-bold text-red">
-                    {{ $user_ongoing_payreqs['over_due_payreq'] }}
+                    {{ $user_ongoing_payreqs['over_due_payreq']['amount'] }} | {{ $user_ongoing_payreqs['over_due_payreq']['count'] }}
                   </span>
                 </p>
             </div>
@@ -43,7 +45,7 @@
 </div>
 
 {{-- REALIZATIONS --}}
-<div class="col-4">
+<div class="col-6">
     <div class="card card-info">
 
         <div class="card-header border-1">
@@ -51,8 +53,9 @@
         </div>
 
         <div class="card-body">
-
             @foreach ($user_ongoing_realizations['realization_status'] as $item)
+
+                @if ($item['count'] > 0)
                 <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                     <p class="d-flex flex-column">
                         <span class="font-weight-bold">
@@ -60,13 +63,14 @@
                         </span>
                     </p>
                     <p class="d-flex flex-column text-right">
-                    <span class="font-weight-bold">
-                        {{ $item['count'] }}
+                    <span>
+                       Rp. {{ number_format($item['amount'], 0) }} | {{ $item['count'] }} realizations
                     </span>
                     </p>
                 </div>
+                @endif
+
             @endforeach
-            
         </div>
 
     </div>

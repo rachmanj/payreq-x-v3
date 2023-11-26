@@ -19,15 +19,12 @@ class CashierApprovedController extends Controller
     {
         $payreq = Payreq::findOrfail($id);
         $cashier = auth()->user();
-        $account = Account::where('type_id', 2)
-            ->where('project', $cashier->project)
-            ->first();
 
         $request = new Request();
         $request['payreq_id'] = $id;
         $request['amount'] = $payreq->amount;
         $request['cashier_id'] = $cashier->id;
-        $request['account_id'] = $account->id;
+        $request['account_id'] = Account::where('type', 'cash')->where('project', $cashier->project)->first()->id;
         $request['project'] = $cashier->project;
         $request['outgoing_date'] = now();
 
@@ -56,6 +53,9 @@ class CashierApprovedController extends Controller
             $payreq->save();
         }
 
+        // update app_balance in account table
+        app(AccountController::class)->outgoing($payreq->amount);
+
         return redirect()->route('cashier.approveds.index')->with('success', 'Payreq successfully paid with FULL Payment');
     }
 
@@ -64,7 +64,7 @@ class CashierApprovedController extends Controller
         $payreq = Payreq::findOrfail($id);
         $outgoings = Outgoing::where('payreq_id', $id)->get();
         $cashier = auth()->user();
-        $accounts = Account::where('type_id', 2)
+        $accounts = Account::where('type', 'cash')
             ->where('project', $cashier->project)
             ->get();
 
@@ -91,7 +91,6 @@ class CashierApprovedController extends Controller
         $outgoing->account_id = $request->account_id;
         $outgoing->project = auth()->user()->project;
         $outgoing->outgoing_date = $request->date;
-
         $outgoing->save();
 
         $outgoings = Outgoing::where('payreq_id', $id)->get();
@@ -107,6 +106,9 @@ class CashierApprovedController extends Controller
             $payreq->printable = 0;
             $payreq->save();
         }
+
+        // update app_balance in account table
+        app(AccountController::class)->outgoing($request->amount);
 
         return redirect()->route('cashier.approveds.pay', $id)->with('success', 'Payreq successfully paid splitted');
     }

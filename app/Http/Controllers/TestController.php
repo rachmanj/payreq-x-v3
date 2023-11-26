@@ -11,9 +11,12 @@ class TestController extends Controller
 {
     public function index()
     {
+        $test = app(CashierDashboardController::class)->dashboard_data();
+        // $test = app(UserPayreqController::class)->ongoing_payreqs();
         // $test = app(UserRealizationController::class)->ongoing_realizations();
+        // $test = Realization::with('realizationDetails')->where('id', 3)->first();
 
-        $test = $this->join_array_test();
+        // $test = $this->join_array_test();
 
         return $test;
     }

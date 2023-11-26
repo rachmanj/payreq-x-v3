@@ -20,7 +20,7 @@
                         <div class="col-12">
                             <div class="form-group">
                                 <label for="amount">Amount</label>
-                                <input type="hidden" name="outgoing_id" value="{{ $model->id }}">
+                                <input type="hidden" name="incoming_id" value="{{ $model->id }}">
                                 <input type="text" name="amount" id="amount" class="form-control" value="IDR {{ number_format($model->amount, 2) }}" readonly>
                             </div>
                             <div class="form-group">

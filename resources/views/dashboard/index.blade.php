@@ -1,7 +1,7 @@
 @extends('templates.main')
 
 @section('title_page')
-    Dashboard
+    User's Dashboard
 @endsection
 
 @section('breadcrumb_title')

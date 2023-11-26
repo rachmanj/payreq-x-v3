@@ -14,12 +14,6 @@ class UserRealizationController extends Controller
 {
     public function index()
     {
-        // get user's payreqs that has no realization
-        // $user_payreqs = Payreq::where('user_id', auth()->user()->id)
-        //     ->where('status', 'paid')
-        //     ->whereDoesntHave('realization')
-        //     ->get();
-
         $user_payreqs_no_realization = Payreq::where('user_id', auth()->user()->id)
             ->where('status', 'paid')
             ->whereDoesntHave('realization')
@@ -33,7 +27,6 @@ class UserRealizationController extends Controller
             ->distinct()
             ->get();
 
-        // $realization_array = [];
         $user_payreqs = $user_payreqs_no_realization->merge($payreq_with_realization_rejected);
 
         $realization_no = app(ToolController::class)->generateDraftRealizationNumber();
@@ -295,13 +288,21 @@ class UserRealizationController extends Controller
         $status = ['submitted', 'approved', 'verification', 'revise', 'rejected'];
 
         foreach ($status as $stat) {
-            $count = Realization::where('user_id', auth()->user()->id)
-                ->where('status', $stat)
-                ->count();
+            $realizations = Realization::where('user_id', auth()->user()->id)
+                ->where('status', $stat);
+
+            $realization_count = $realizations->count();
+            // realization amount is sum of realization details amount
+            $realization_amount = 0;
+            foreach ($realizations->get() as $realization) {
+                $realization_amount += $realization->realizationDetails->sum('amount');
+            }
+
 
             $status_cek[] = [
                 'status' => $stat,
-                'count' => $count
+                'count' => $realization_count,
+                'amount' => $realization_amount,
             ];
         }
 

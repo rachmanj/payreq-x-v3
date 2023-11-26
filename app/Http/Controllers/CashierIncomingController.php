@@ -14,12 +14,38 @@ class CashierIncomingController extends Controller
 
     public function receive(Request $request)
     {
-        $incoming = Incoming::findOrFail($request->outgoing_id);
+        // update incomings table
+        $incoming = Incoming::findOrFail($request->incoming_id);
         $incoming->receive_date = $request->receive_date;
         $incoming->cashier_id = auth()->user()->id;
         $incoming->save();
 
+        // update app_balance in accounts table
+        app(AccountController::class)->incoming($incoming->amount);
+
         return redirect()->back()->with('success', 'Incoming has been received');
+    }
+
+    public function create()
+    {
+        return view('cashier.incomings.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'description' => 'required',
+            'amount' => 'required',
+        ]);
+
+        $incoming = new Incoming();
+        $incoming->cashier_id = auth()->user()->id;
+        $incoming->description = $request->description;
+        $incoming->amount = $request->amount;
+        $incoming->project = auth()->user()->project;
+        $incoming->save();
+
+        return redirect()->route('cashier.incomings.index')->with('success', 'Incoming has been created');
     }
 
     public function data()
@@ -37,10 +63,14 @@ class CashierIncomingController extends Controller
 
         return datatables()->of($incomings)
             ->addColumn('employee', function ($incoming) {
-                return $incoming->realization->requestor->name;
+                if ($incoming->cashier_id == null) {
+                    return $incoming->realization->requestor->name;
+                } else {
+                    return $incoming->cashier->name;
+                }
             })
             ->addColumn('realization_no', function ($incoming) {
-                return $incoming->realization->nomor;
+                return $incoming->realization_id ? $incoming->realization->nomor : '-';
             })
             ->editColumn('created_date', function ($incoming) {
                 $created_date = new \Carbon\Carbon($incoming->created_at);
@@ -53,7 +83,7 @@ class CashierIncomingController extends Controller
                 return $incoming->account_id ? $incoming->account->account_number . ' - ' . $incoming->account->account_name : '-';
             })
             ->addColumn('status', function ($incoming) {
-                if ($incoming->incoming_date == null) {
+                if ($incoming->receive_date == null) {
                     return '<span class="badge badge-danger">NOT RECEIVE</span>';
                 } else {
                     return '<span class="badge badge-success">RECEIVED</span>';

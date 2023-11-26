@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\CashierOutgoingController;
 use App\Http\Controllers\CashierIncomingController;
+use App\Http\Controllers\CashierDashboardController;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
@@ -24,5 +25,11 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/data', [CashierIncomingController::class, 'data'])->name('data');
         Route::get('/', [CashierIncomingController::class, 'index'])->name('index');
         Route::post('/receive', [CashierIncomingController::class, 'receive'])->name('receive');
+        Route::get('/create', [CashierIncomingController::class, 'create'])->name('create');
+        Route::post('/store', [CashierIncomingController::class, 'store'])->name('store');
+    });
+
+    Route::prefix('dashboard')->name('dashboard.')->group(function () {
+        Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
     });
 });

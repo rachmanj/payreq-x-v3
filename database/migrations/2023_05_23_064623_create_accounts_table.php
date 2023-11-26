@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('accounts', function (Blueprint $table) {
             $table->id();
+            $table->string('type')->nullable();
             $table->string('account_number');
             $table->string('account_name');
             $table->integer('type_id')->nullable(); // 1 = bank, 2 = cash, 3 = revenue, 4 = expense

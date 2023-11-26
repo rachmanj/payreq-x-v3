@@ -22,8 +22,7 @@ class OutgoingController extends Controller
         return $outgoing;
     }
 
-
-    public function quick($payreq_id)
+    /* public function quick($payreq_id)
     {
         $payreq = Payreq::findOrfail($payreq_id);
         $account_id = Account::where('type_id', 2)
@@ -39,7 +38,7 @@ class OutgoingController extends Controller
         ]);
 
         return view('outgoings.index')->with('success', 'Payment Request paid successfully.');
-    }
+    } */
 
     public function data()
     {
