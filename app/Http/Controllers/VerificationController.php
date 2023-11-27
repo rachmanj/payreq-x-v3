@@ -48,7 +48,7 @@ class VerificationController extends Controller
 
         //UPDATE REALIZATION
         $realization = Realization::findOrFail($request->realization_id);
-        $realization->status = 'verification';
+        $realization->status = 'close'; // setelah cashier melengkapi nomor account di each realization detail, maka statusnya menjadi close
         $realization->deletable = 0;
         $realization->save();
 
@@ -63,15 +63,17 @@ class VerificationController extends Controller
     public function data()
     {
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'reimburse-paid', 'verification'];
+        $status_include = ['approved', 'reimburse-paid', 'verification', 'close'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)
+                ->whereNull('journal_id')
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
             $realizations = Realization::whereIn('status', $status_include)
                 ->where('project', auth()->user()->project)
+                ->whereNull('journal_id')
                 // ->where('flag', $flag)
                 ->orderBy('created_at', 'desc')
                 ->get();

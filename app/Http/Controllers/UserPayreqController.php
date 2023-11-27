@@ -226,7 +226,7 @@ class UserPayreqController extends Controller
 
     public function ongoing_payreqs()
     {
-        $status = ['submitted', 'approved', 'paid', 'revise', 'split', 'rejected'];
+        $status = ['submitted', 'approved', 'paid', 'revise', 'split', 'rejected', 'realization'];
 
         foreach ($status as $stat) {
             $payreq = Payreq::where('user_id', auth()->user()->id)

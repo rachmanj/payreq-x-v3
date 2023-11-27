@@ -39,7 +39,7 @@
 
             <div class="card-header">
               <h3 class="card-title">Approval Status</h3>
-              @if ($payreq->status === 'approved')
+              @if ($payreq->status === 'approved' && $payreq->type !== 'other')
               <form action="{{ route('user-payreqs.cancel') }}" method="POST">
                 @csrf
                 <input type="hidden" name="payreq_id" value="{{ $payreq->id }}">
