@@ -48,10 +48,10 @@ class CashInJournalController extends Controller
         $cash_journal->save();
 
         // update cash journal number
-        $cash_journal->journal_no = app(ToolController::class)->generateCashJournalNumber($cash_journal->id, 'cash-out');
+        $cash_journal->journal_no = app(ToolController::class)->generateCashJournalNumber($cash_journal->id, 'cash-in');
         $cash_journal->save();
 
-        // update inc$incomings cash journal id
+        // update incomings cash_journal_id
         foreach ($incomings as $incoming) {
             $incoming->cash_journal_id = $cash_journal->id;
             $incoming->flag = null;
@@ -66,6 +66,7 @@ class CashInJournalController extends Controller
         $incomings = Incoming::whereNull('cash_journal_id')
             ->whereNull('flag')
             ->where('project', auth()->user()->project)
+            ->where('realization_id', '<>', null)
             ->get();
 
         foreach ($incomings as $incoming) {
@@ -112,11 +113,16 @@ class CashInJournalController extends Controller
         $incomings = Incoming::whereNull('cash_journal_id')
             ->whereNull('flag')
             ->where('project', auth()->user()->project)
+            ->where('realization_id', '<>', null)
             ->get();
 
         return datatables()->of($incomings)
             ->addColumn('relization_no', function ($incoming) {
-                return $incoming->realization->nomor;
+                if ($incoming->realization_id == null) {
+                    return $incoming->nomor;
+                } else {
+                    return $incoming->realization->nomor;
+                }
             })
             ->addColumn('amount', function ($incoming) {
                 return number_format($incoming->amount, 2);
@@ -137,7 +143,11 @@ class CashInJournalController extends Controller
 
         return datatables()->of($incomings)
             ->addColumn('relization_no', function ($incoming) {
-                return $incoming->realization->nomor;
+                if ($incoming->realization_id == null) {
+                    return $incoming->nomor;
+                } else {
+                    return $incoming->realization->nomor;
+                }
             })
             ->addColumn('amount', function ($incoming) {
                 return number_format($incoming->amount, 2);

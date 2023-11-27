@@ -109,6 +109,13 @@ class ToolController extends Controller
         return $nomor;
     }
 
+    public function generateManualIncomingNumber($incoming_id)
+    {
+        $nomor = Carbon::now()->format('y') . 'MIJ' . substr(auth()->user()->project, 0, 3)  . str_pad($incoming_id, 5, '0', STR_PAD_LEFT);
+
+        return $nomor;
+    }
+
     public function getEquipments($project = null)
     {
         $url = env('URL_EQUIPMENTS');

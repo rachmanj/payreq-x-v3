@@ -1,5 +1,5 @@
 <div class="col-lg-6">
-    <div class="card">
+    <div class="card card-info">
         <div class="card-header">
             <h3 class="card-title">Info</h3>
         </div>
@@ -13,7 +13,7 @@
                 </p>
                 <p class="d-flex flex-column text-right">
                 <span>
-                   Rp. {{ number_format($dashboard_data['pc_balance'], 2) }} 
+                   Rp. {{ number_format($dashboard_data['today_pc_balance'], 2) }} 
                 </span>
                 </p>
             </div>
@@ -21,7 +21,7 @@
             <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                 <p class="d-flex flex-column">
                     <span class="font-weight-bold">
-                    Ready to Pay
+                    Approved
                     </span>
                 </p>
                 <p class="d-flex flex-column text-right">

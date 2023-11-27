@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Incoming;
+use App\Models\Outgoing;
 use App\Models\Payreq;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class CashierDashboardController extends Controller
@@ -31,24 +34,25 @@ class CashierDashboardController extends Controller
         ];
 
         $result['incoming'] = [
-            'amount' => 0,
-            'count' => 0,
+            'amount' => Incoming::where('project', $project)->whereNull('receive_date')->sum('amount'),
+            'count' => Incoming::where('project', $project)->whereNull('receive_date')->count(),
         ];
 
-        $result['pc_balance'] = Account::where('type', 'cash')
-            ->where('project', auth()->user()->project)
-            ->first()
-            ->balance;
+        $today = Carbon::today();
+        $result['today_incoming'] = [
+            'amount' => Incoming::where('project', $project)->where('receive_date', $today)->sum('amount'),
+            'count' => Incoming::where('project', $project)->where('receive_date', $today)->count(),
+        ];
 
         $result['today_outgoing'] = [
-            'amount' => 0,
-            'count' => 0,
+            'amount' => Outgoing::where('project', $project)->where('outgoing_date', $today)->sum('amount'),
+            'count' => Outgoing::where('project', $project)->where('outgoing_date', $today)->count()
         ];
 
-        $result['today_incoming'] = [
-            'amount' => 0,
-            'count' => 0,
-        ];
+        $result['today_pc_balance'] = Account::where('type', 'cash')
+            ->where('project', auth()->user()->project)
+            ->first()
+            ->app_balance;
 
         return $result;
     }

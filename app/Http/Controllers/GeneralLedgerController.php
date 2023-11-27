@@ -41,18 +41,31 @@ class GeneralLedgerController extends Controller
     {
         $general_ledger = new GeneralLedger();
 
-        // update account balance and set debit/credit amount
-        if ($account->account_type->type_name == 'advance') {
-            $debit_amount = $data->amount;
-            $credit_amount = 0;
-            $account->balance = $account->balance + $data->amount;
-        } elseif ($account->account_type->type_name == 'cash') {
-            $debit_amount = 0;
-            $credit_amount = $data->amount;
-            $account->balance = $account->balance - $data->amount;
+        if ($data->type == 'cash-in') {
+            // update account balance and set debit/credit amount
+            if ($account->type == 'cash') {
+                $debit_amount = $data->amount;
+                $credit_amount = 0;
+                $account->sap_balance = $account->sap_balance + $data->amount;
+            } elseif ($account->type == 'advance') {
+                $debit_amount = 0;
+                $credit_amount = $data->amount;
+                $account->sap_balance = $account->sap_balance - $data->amount;
+            }
+            $account->save();
+        } elseif ($data->type == 'cash-out') {
+            // update account balance and set debit/credit amount
+            if ($account->type == 'advance') {
+                $debit_amount = $data->amount;
+                $credit_amount = 0;
+                $account->sap_balance = $account->sap_balance + $data->amount;
+            } elseif ($account->type == 'cash') {
+                $debit_amount = 0;
+                $credit_amount = $data->amount;
+                $account->sap_balance = $account->sap_balance - $data->amount;
+            }
+            $account->save();
         }
-
-        $account->save();
 
         $general_ledger->account_id = $account->id;
         $general_ledger->posting_date = $data->sap_posting_date;
@@ -65,6 +78,8 @@ class GeneralLedgerController extends Controller
         $general_ledger->credit = $credit_amount; // $account->account_type->type_name == 'cash' ? $data->amount : '0';
         $general_ledger->created_by = auth()->user()->id;
         $general_ledger->save();
+
+        return true;
     }
 
     public function delete($gl)

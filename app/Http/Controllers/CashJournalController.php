@@ -19,6 +19,7 @@ class CashJournalController extends Controller
 
         $incomings_count = Incoming::whereNull('cash_journal_id')
             ->where('project', auth()->user()->project)
+            ->where('realization_id', '<>', null)
             ->count();
 
         return view('cash-journal.index', compact(['outgoings_count', 'incomings_count']));
@@ -27,11 +28,16 @@ class CashJournalController extends Controller
     public function show($id)
     {
         $cash_journal = CashJournal::find($id);
-        $outgoings = Outgoing::where('cash_journal_id', $id)->get();
         $advance_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
         $pc_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
 
-        return view('cash-journal.show', compact(['cash_journal', 'outgoings', 'advance_account', 'pc_account']));
+        if ($cash_journal->type === 'cash-out') {
+            $outgoings = Outgoing::where('cash_journal_id', $id)->get();
+            return view('cash-journal.show_cash_out', compact(['cash_journal', 'outgoings', 'advance_account', 'pc_account']));
+        } else {
+            $incomings = Incoming::where('cash_journal_id', $id)->get();
+            return view('cash-journal.show_cash_in', compact(['cash_journal', 'incomings', 'advance_account', 'pc_account']));
+        }
     }
 
     public function delete_detail($outgoing_id)
@@ -92,16 +98,25 @@ class CashJournalController extends Controller
         $cash_journal->sap_posting_date = $request->sap_posting_date;
         $cash_journal->save();
 
-        // update sap_journal_no in outgoings table
-        $outgoings = Outgoing::where('cash_journal_id', $request->cash_journal_id)->get();
-        foreach ($outgoings as $outgoing) {
-            $outgoing->sap_journal_no = $request->sap_journal_no;
-            $outgoing->save();
+        if ($cash_journal->type === 'cash-out') {
+            // update sap_journal_no in outgoings table
+            $outgoings = Outgoing::where('cash_journal_id', $request->cash_journal_id)->get();
+            foreach ($outgoings as $outgoing) {
+                $outgoing->sap_journal_no = $request->sap_journal_no;
+                $outgoing->save();
+            }
+        } else {
+            // update sap_journal_no in incomings table
+            $incomings = Incoming::where('cash_journal_id', $request->cash_journal_id)->get();
+            foreach ($incomings as $incoming) {
+                $incoming->sap_journal_no = $request->sap_journal_no;
+                $incoming->save();
+            }
         }
 
         // create record in general_ledgers table
-        $account_type_include = [2, 5]; // cash & advance yaitu akun2 yg terpengaruh dgn transaksi ini
-        $accounts = Account::whereIn('type_id', $account_type_include)
+        $account_type_include = ['cash', 'advance']; // cash & advance yaitu akun2 yg terpengaruh dgn transaksi ini
+        $accounts = Account::whereIn('type', $account_type_include)
             ->where('project', auth()->user()->project)
             ->get();
 

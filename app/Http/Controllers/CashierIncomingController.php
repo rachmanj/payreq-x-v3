@@ -63,7 +63,7 @@ class CashierIncomingController extends Controller
 
         return datatables()->of($incomings)
             ->addColumn('employee', function ($incoming) {
-                if ($incoming->cashier_id == null) {
+                if ($incoming->realization_id !== null) {
                     return $incoming->realization->requestor->name;
                 } else {
                     return $incoming->cashier->name;

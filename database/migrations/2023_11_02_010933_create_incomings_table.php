@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('incomings', function (Blueprint $table) {
             $table->id();
+            $table->string('nomor', 50)->nullable();
             $table->foreignId('cashier_id')->nullable();
             $table->foreignId('realization_id')->nullable();
             $table->foreignId('account_id')->nullable();
