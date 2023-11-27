@@ -67,7 +67,7 @@
                     <tbody>
                         <tr>
                             <td>
-                                {{ $advance_account->account_number }} - {{ $advance_account->account_name }}
+                                {{ $debet_account->account_number }} - {{ $debet_account->account_name }}
                             </td>
                             <td class="text-right">{{ number_format($outgoings->sum('amount'), 2) }}</td>
                             <td class="text-right">{{ number_format(0, 2) }}</td>
@@ -76,14 +76,14 @@
                                 <td>
                                     <ol>
                                         @foreach ($outgoings as $item)
-                                            <li>Payreq No.{{ $item->payreq->nomor }}, {{ $item->payreq->requestor->name }}, {{ $item->payreq->remarks }}, {{ number_format($item->amount, 2) }} {{-- <ahref="route('cash-journals.delete_detail',$item->id)" class="btn btn-xs btn-danger"><i class="fas fa-trash"></i></a> --}}</li>
+                                            <li>Payreq No.{{ $item->payreq->nomor }}, {{ $item->payreq->requestor->name }}, {{ $item->payreq->remarks }}, {{ number_format($item->amount, 2) }}</li>
                                         @endforeach
                                     </ol>
                                 </td>
                             </tr>
                             <tr>
                                 <td>
-                                    {{ $pc_account->account_number }} - {{ $pc_account->account_name }}
+                                    {{ $credit_account->account_number }} - {{ $credit_account->account_name }}
                                 </td>
                                 <td class="text-right">{{ number_format(0, 2) }}</td>
                                 <td class="text-right">{{ number_format($outgoings->sum('amount'), 2) }}</td>

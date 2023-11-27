@@ -40,14 +40,14 @@
         <table class="table table-bordered table-striped">
           <thead>
             <tr class="bg-black disabled color-palette">
-                <th>Description</th>
+                <th>Account & Description</th>
                 <th class="text-right">Debet (IDR)</th>
                 <th class="text-right">Credit (IDR)</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-                <th>{{ $advance_account }}</th>
+                <th>{{ $debet_account->account_number }} - {{ $debet_account->account_name }}</th>
                 <th class="text-right">{{ number_format($outgoings->sum('amount'), 2) }}</th>
                 <th class="text-right">{{ number_format(0, 2) }}</th>
             </tr>
@@ -61,9 +61,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <th>
-                        {{ $pc_account }}
-                    </th>
+                    <th>{{ $credit_account->account_number }} - {{ $credit_account->account_name }}</th>
                     <th class="text-right ">{{ number_format(0, 2) }}</th>
                     <th class="text-right">{{ number_format($outgoings->sum('amount'), 2) }}</th>
                 </tr>
@@ -85,7 +83,7 @@
 
     <div class="row invoice-info">
         <div class="col-sm-4 invoice-col">
-            <b>Prepared by</b>
+            <b>Prepared by / Cashier</b>
             <br>
             <br>
             <br>
@@ -94,16 +92,16 @@
         </div>
 
         <div class="col-sm-4 invoice-col">
-            <b>Cashier</b>
+            <b>Approved by</b>
             <br>
             <br>
             <br>
             <br>
-            {{ $journal->createdBy->name }}<br>
+            ( .................. )<br>
         </div>
 
         <div class="col-sm-4 invoice-col">
-            <b>Acknowledge by</b>
+            <b>Verify by</b>
             <br>
             <br>
             <br>
@@ -122,3 +120,4 @@
 </script>
 </body>
 </html>
+
