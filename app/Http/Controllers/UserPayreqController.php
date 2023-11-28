@@ -192,6 +192,8 @@ class UserPayreqController extends Controller
             ->editColumn('amount', function ($payreq) {
                 if ($payreq->type === 'advance') {
                     return number_format($payreq->amount, 2);
+                } elseif ($payreq->type === 'other') {
+                    return number_format($payreq->amount, 2);
                 } else {
                     // if realization has realization_details
                     if ($payreq->realization) {

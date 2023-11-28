@@ -5,6 +5,7 @@ use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\CashierOutgoingController;
 use App\Http\Controllers\CashierIncomingController;
 use App\Http\Controllers\CashierDashboardController;
+use App\Http\Controllers\CashierVerificationJournalController;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
@@ -31,5 +32,10 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
         Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('verification-journal')->name('verification-journal.')->group(function () {
+        Route::get('/data', [CashierVerificationJournalController::class, 'data'])->name('data');
+        Route::get('/', [CashierVerificationJournalController::class, 'index'])->name('index');
     });
 });

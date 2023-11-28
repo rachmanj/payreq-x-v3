@@ -8,6 +8,8 @@
       <li><a href="{{ route('cashier.incomings.index') }}" class="dropdown-item">Incoming List</a></li>
       <li class="dropdown-divider">EOD</li>
       <li><a href="{{ route('cash-journals.index') }}" class="dropdown-item">Cash Journal</a></li>
+      @can('akses_verification_journal')
       <li><a href="{{ route('verifications.journal.index') }}" class="dropdown-item">Verification Journal</a></li>
+      @endcan
     </ul>
 </li>

@@ -9,7 +9,7 @@ class VerificationJournalController extends Controller
 {
     public function index()
     {
-        return "ninja";
+        return view('verifications.journal.index');
     }
 
     public function create()
@@ -148,35 +148,7 @@ class VerificationJournalController extends Controller
         return $amounts;
     }
 
-    public function group_and_sum_amount($realizations)
+    public function data()
     {
-        foreach ($realizations as $realization) {
-            foreach ($realization->realizationDetails as $realization_detail) {
-                $realization_details_array[] = [
-                    'department_id' => $realization->department_id,
-                    'account_id' => $realization_detail->account_id,
-                    'amount' => $realization_detail->amount
-                ];
-            }
-        }
-
-        return $realization_details_array;
-    }
-
-    public function sum_amount_by_account_id($realization_details_array, $department_id, $account_id)
-    {
-        $amount = 0;
-
-        foreach ($realization_details_array as $realization_detail) {
-            foreach ($realization_detail as $key => $value) {
-                if ($key == 'department_id' && $value == $department_id) {
-                    if ($key == 'account_id' && $value == $account_id) {
-                        $amount += $realization_detail['amount'];
-                    }
-                }
-            }
-        }
-
-        return $amount;
     }
 }

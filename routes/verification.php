@@ -14,8 +14,9 @@ Route::prefix('verifications')->name('verifications.')->group(function () {
 
     // journal
     Route::prefix('journal')->name('journal.')->group(function () {
+        Route::get('/data', [VerificationJournalController::class, 'data'])->name('data');
         Route::get('/', [VerificationJournalController::class, 'index'])->name('index');
-        Route::get('/journal_create', [VerificationJournalController::class, 'create'])->name('create');
+        Route::get('/create', [VerificationJournalController::class, 'create'])->name('create');
         Route::post('/store', [VerificationJournalController::class, 'store'])->name('store');
         Route::get('/move_all_tocart', [VerificationJournalController::class, 'move_all_tocart'])->name('move_all_tocart');
         Route::get('/tocart_data', [VerificationJournalController::class, 'tocart_data'])->name('tocart_data');

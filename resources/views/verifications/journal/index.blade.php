@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Verifications
+    Verification Journal
 @endsection
 
 @section('breadcrumb_title')
-    verifications
+    verification journal
 @endsection
 
 @section('content')
@@ -14,20 +14,20 @@
 
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">Verifications</h3>
-        <a href="{{ route('verifications.journal.index') }}" class="btn btn-sm btn-success float-right mx-2">Create Journal</a>
+        <h3 class="card-title">Verification Journals</h3>
+        <a href="{{ route('verifications.journal.create') }}" class="btn btn-sm btn-success float-right mx-2">Create Journal</a>
       </div>
       <div class="card-body">
         <table id="verifications" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
-            <th>Realization No</th>
-            <th>Realization Date</th>
-            <th>Payreq No</th>
-            <th>Employee</th>
-            <th>Project</th>
-            <th>Accounts</th>
+            <th>VerificationJ No</th>
+            <th>Date</th>
+            <th>Status</th> {{-- posted or not posted --}}
+            <th>IDR</th>
+            <th>SAPJ No</th>
+            <th>SAPJ Date</th>
             <th></th>
           </tr>
           </thead>

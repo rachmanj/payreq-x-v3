@@ -30,6 +30,9 @@ class CashierApprovedController extends Controller
 
         $outgoing = app(OutgoingController::class)->store($request);
 
+        $this->payreqStatusUpdate($payreq, $outgoing);
+
+        /*
         if ($payreq->type === 'advance') { // if payreq type is 'advance'
             // update payreq status
             $payreq->status = 'paid';
@@ -51,7 +54,7 @@ class CashierApprovedController extends Controller
             $payreq->printable = 0;
             $payreq->deletable = 0;
             $payreq->save();
-        }
+        } */
 
         // update app_balance in account table
         app(AccountController::class)->outgoing($payreq->amount);
@@ -95,12 +98,15 @@ class CashierApprovedController extends Controller
 
         $outgoings = Outgoing::where('payreq_id', $id)->get();
 
+
         // update payreq status
         if ($payreq->amount == $outgoings->sum('amount')) {
+            $this->payreqStatusUpdate($payreq, $outgoing);
+            /*
             $payreq->status = 'paid';
             $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
             $payreq->printable = 0;
-            $payreq->save();
+            $payreq->save(); */
         } else {
             $payreq->status = 'split';
             $payreq->printable = 0;
@@ -155,5 +161,31 @@ class CashierApprovedController extends Controller
             ->addColumn('action', 'cashier.approved.action')
             ->rawColumns(['action', 'amount'])
             ->toJson();
+    }
+
+    public function payreqStatusUpdate($payreq, $outgoing)
+    {
+        if ($payreq->type === 'advance') { // if payreq type is 'advance'
+            // update payreq status
+            $payreq->status = 'paid';
+            $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
+            $payreq->printable = 0;
+            $payreq->save();
+        } elseif ($payreq->type === 'reimburse') { // if payreq type is 'reimburse'
+            $payreq->status = 'close';
+            $payreq->printable = 0;
+            $payreq->deletable = 0;
+            $payreq->save();
+            // update realiztion status
+            $realization = $payreq->realization;
+            $realization->status = 'reimburse-paid';
+            $realization->save();
+        } else { // if payreq type is 'other'
+            // update payreq status
+            $payreq->status = 'close';
+            $payreq->printable = 0;
+            $payreq->deletable = 0;
+            $payreq->save();
+        }
     }
 }
