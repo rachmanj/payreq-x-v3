@@ -58,6 +58,31 @@ class VerificationJournalController extends Controller
         ]));
     }
 
+    public function update_sap_info(Request $request)
+    {
+        $request->validate([
+            'sap_journal_no' => 'required',
+            'sap_posting_date' => 'required',
+        ]);
+
+        $verification_journal = VerificationJournal::findOrFail($request->verification_journal_id);
+        $verification_journal->sap_journal_no = $request->sap_journal_no;
+        $verification_journal->sap_posting_date = $request->sap_posting_date;
+        $verification_journal->save();
+
+        return $this->show($verification_journal->id)->with('success', 'SAP Info updated successfully');
+    }
+
+    public function cancel_sap_info(Request $request)
+    {
+        $verification_journal = VerificationJournal::findOrFail($request->verification_journal_id);
+        $verification_journal->sap_journal_no = null;
+        $verification_journal->sap_posting_date = null;
+        $verification_journal->save();
+
+        return $this->show($verification_journal->id)->with('success', 'SAP Info cancelled successfully');
+    }
+
     public function add_to_cart(Request $request)
     {
         $flag = 'VJTEMP' . auth()->user()->id; // JTEMP = Journal Temporary
@@ -183,6 +208,12 @@ class VerificationJournalController extends Controller
             $realization->save();
         }
 
+        // update realization_details
+        foreach ($realization_details as $realization_detail) {
+            $realization_detail->verification_journal_id = $verification_journal->id;
+            $realization_detail->save();
+        }
+
         return view('verifications.journal.index')->with('success', 'Verification Journal created successfully');
     }
 
@@ -197,15 +228,23 @@ class VerificationJournalController extends Controller
                 $date = new \Carbon\Carbon($journal->date);
                 return $date->addHours(8)->format('d-M-Y');
             })
-            ->addColumn('status', function ($cash_journal) {
-                if ($cash_journal->sap_journal_no == null) {
+            ->addColumn('status', function ($journal) {
+                if ($journal->sap_journal_no == null) {
                     return '<span class="badge badge-danger">Not Posted Yet</span>';
                 } else {
                     return '<span class="badge badge-success">Posted</span>';
                 }
             })
-            ->editColumn('amount', function ($cash_journal) {
-                return number_format($cash_journal->amount, 2);
+            ->editColumn('amount', function ($journal) {
+                return number_format($journal->amount, 2);
+            })
+            ->editColumn('sap_posting_date', function ($journal) {
+                if ($journal->sap_posting_date == null) {
+                    return '-';
+                } else {
+                    $date = new \Carbon\Carbon($journal->sap_posting_date);
+                    return $date->addHours(8)->format('d-M-Y');
+                }
             })
             ->addIndexColumn()
             ->addColumn('action', 'verifications.journal.action')

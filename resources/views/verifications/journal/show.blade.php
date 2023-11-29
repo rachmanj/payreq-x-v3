@@ -100,7 +100,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route('verifications.journal.update_sap_journal') }}" method="POST">
+            <form action="{{ route('verifications.journal.update_sap_info') }}" method="POST">
                 @csrf
                 <input type="hidden" name="verification_journal_id" value="{{ $verification_journal->id }}">
             <div class="modal-body">
