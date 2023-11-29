@@ -85,6 +85,34 @@
           @enderror
         </div>
 
+        <div class="input-group mb-3">
+          <select name="project" class="form-control">
+            <option value="">-- Select Project --</option>
+            @foreach ($projects as $project)
+              <option value="{{ $project->code }}" {{ old('project') == $project->code ? 'selected' : '' }}>{{ $project->code }}</option>
+            @endforeach
+          </select>
+          @error('project')
+            <div class="invalid-feedback">
+              {{ $message }}
+            </div>
+          @enderror
+        </div>
+
+        <div class="input-group mb-3">
+          <select name="department_id" class="form-control">
+            <option value="">-- Select Department --</option>
+            @foreach ($departments as $department)
+              <option value="{{ $department->id }}" {{ old('department_id') == $department->id ? 'selected' : '' }}>{{ $department->department_name }}</option>
+            @endforeach
+          </select>
+          @error('department_id')
+            <div class="invalid-feedback">
+              {{ $message }}
+            </div>
+          @enderror
+        </div>
+
         <div class="row">
           <div class="col-8">
             {{--  --}}

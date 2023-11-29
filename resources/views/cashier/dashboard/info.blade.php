@@ -21,7 +21,7 @@
             <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                 <p class="d-flex flex-column">
                     <span class="font-weight-bold">
-                    Approved
+                    Approved / Ready to Pay
                     </span>
                 </p>
                 <p class="d-flex flex-column text-right">
