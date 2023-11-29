@@ -16,7 +16,7 @@ Route::prefix('verifications')->name('verifications.')->group(function () {
     Route::prefix('journal')->name('journal.')->group(function () {
         Route::get('/data', [VerificationJournalController::class, 'data'])->name('data');
         Route::get('/', [VerificationJournalController::class, 'index'])->name('index');
-        Route::get('/create', [VerificationJournalController::class, 'create'])->name('create');
+        Route::get('/create-journal', [VerificationJournalController::class, 'create'])->name('create');
         Route::post('/store', [VerificationJournalController::class, 'store'])->name('store');
         Route::get('/move_all_tocart', [VerificationJournalController::class, 'move_all_tocart'])->name('move_all_tocart');
         Route::get('/tocart_data', [VerificationJournalController::class, 'tocart_data'])->name('tocart_data');
@@ -25,5 +25,10 @@ Route::prefix('verifications')->name('verifications.')->group(function () {
         Route::post('/remove_from_cart', [VerificationJournalController::class, 'remove_from_cart'])->name('remove_from_cart');
         Route::get('/move_all_tocart', [VerificationJournalController::class, 'move_all_tocart'])->name('move_all_tocart');
         Route::get('/remove_all_fromcart', [VerificationJournalController::class, 'remove_all_fromcart'])->name('remove_all_fromcart');
+        Route::get('/{id}/show', [VerificationJournalController::class, 'show'])->name('show');
+        Route::get('/{id}/print', [VerificationJournalController::class, 'print'])->name('print');
+        Route::delete('/{id}', [VerificationJournalController::class, 'destroy'])->name('destroy');
+        Route::post('/update_sap_info', [VerificationJournalController::class, 'update_sap_info'])->name('update_sap_info');
+        Route::post('/cancel_sap_info', [VerificationJournalController::class, 'cancel_sap_info'])->name('cancel_sap_info');
     });
 });

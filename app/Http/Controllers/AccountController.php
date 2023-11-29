@@ -126,9 +126,9 @@ class AccountController extends Controller
             ->get();
 
         return datatables()->of($accounts)
-            ->addColumn('type', function ($account) {
-                return $account->account_type->type_name;
-            })
+            // ->addColumn('type', function ($account) {
+            //     return $account->account_type->type_name;
+            // })
             ->addIndexColumn()
             ->addColumn('action', 'accounts.action')
             ->rawColumns(['action'])

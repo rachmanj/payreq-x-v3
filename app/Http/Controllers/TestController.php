@@ -16,9 +16,14 @@ class TestController extends Controller
         // $test = Realization::with('realizationDetails')->where('id', 3)->first();
         // $test = app(UserRealizationController::class)->ongoing_realizations();
         // $test = Realization::with('realizationDetails')->where('id', 3)->first();
-        $test = app(CashInJournalController::class)->to_cart_data();
+        // $test = app(CashInJournalController::class)->to_cart_data();
+        $test = app(VerificationJournalController::class)->journal_details(3);
 
-        // $test = $this->join_array_test();
+        // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
+        //     ->get();
+
+        // $realization_details = $realizations->pluck('realizationDetails')->flatten();
+        // $test = $realization_details->sum('amount');
 
         return $test;
     }

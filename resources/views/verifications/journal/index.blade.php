@@ -15,7 +15,7 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Verification Journals</h3>
-        <a href="{{ route('verifications.journal.create') }}" class="btn btn-sm btn-success float-right mx-2">Create Journal</a>
+        <a href="{{ route('verifications.journal.create') }}" class="btn btn-sm btn-success float-right mx-2">Prepare Journal</a>
       </div>
       <div class="card-body">
         <table id="verifications" class="table table-bordered table-striped">
@@ -69,19 +69,25 @@
     $("#verifications").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('verifications.data') }}',
+      ajax: '{{ route('verifications.journal.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'realization_no'},
+        {data: 'nomor'},
         {data: 'date'},
-        {data: 'payreq_no'},
-        {data: 'requestor'},
-        {data: 'project'},
-        {data: 'is_complete'},
+        {data: 'status'},
+        {data: 'amount'},
+        {data: 'sap_journal_no'},
+        {data: 'sap_posting_date'},
         // {data: 'amount'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
+      columnDefs: [
+              {
+                "targets": [4],
+                "className": "text-right"
+              }
+            ]
     })
   });
 </script>

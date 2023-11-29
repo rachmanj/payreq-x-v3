@@ -17,7 +17,7 @@
                     @if ($select_all_button)
                     <a href="{{ route('verifications.journal.move_all_tocart') }}" class="btn btn-sm btn-warning">Select All to Cart</a>
                     @endif
-                    <a href="{{ route('verifications.index') }}" class="btn btn-sm btn-primary float-right"><i class="fa fa-arrow-left"></i> Back</a>
+                    <a href="{{ route('verifications.journal.index') }}" class="btn btn-sm btn-primary float-right"><i class="fa fa-arrow-left"></i> Back</a>
                 </div>
                 <div class="card-body">
                     <table id="to_cart" class="table table-borderd-table-striped">

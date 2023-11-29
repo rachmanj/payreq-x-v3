@@ -11,15 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('verifications', function (Blueprint $table) {
+        Schema::create('verification_journals', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('realization_id');
+            $table->string('nomor')->nullable();
             $table->date('date');
-            $table->foreignId('user_id');
+            $table->string('type', 50)->nullable();
+            $table->foreignId('created_by')->nullable();
             $table->string('project', 20)->nullable();
-            $table->string('status', 50)->nullable();
             $table->string('sap_journal_no')->nullable();
             $table->date('sap_posting_date')->nullable();
+            $table->double('amount')->nullable();
+            $table->string('description')->nullable();
+            $table->string('status', 50)->nullable();
             $table->string('flag', 50)->nullable();
             $table->timestamps();
         });
@@ -30,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('verifications');
+        Schema::dropIfExists('verification_journals');
     }
 };

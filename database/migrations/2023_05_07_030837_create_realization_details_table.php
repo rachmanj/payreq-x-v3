@@ -27,8 +27,7 @@ return new class extends Migration
             $table->string('flag', 10)->nullable();
             $table->boolean('editable')->default(true);
             $table->boolean('deleteable')->default(true);
-            $table->foreignId('verification_id')->nullable();
-            $table->foreignId('journal_id')->nullable();
+            $table->foreignId('verification_journal_id')->nullable();
             $table->timestamps();
         });
     }

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\Realization;
+use App\Models\Verification;
+use App\Models\VerificationJournal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class VerificationJournalController extends Controller
 {
@@ -14,7 +18,7 @@ class VerificationJournalController extends Controller
 
     public function create()
     {
-        $realizations = Realization::whereNull('journal_id')
+        $realizations = Realization::whereNull('verification_journal_id')
             ->whereNull('flag')
             ->where('project', auth()->user()->project)
             ->count();
@@ -25,7 +29,7 @@ class VerificationJournalController extends Controller
             $select_all_button = false;
         }
 
-        $realizations_in_cart = Realization::where('flag', 'JTEMP' . auth()->user()->id)
+        $realizations_in_cart = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
             ->get();
 
         if ($realizations_in_cart->count() > 0) {
@@ -40,9 +44,23 @@ class VerificationJournalController extends Controller
         ]));
     }
 
+    public function show($id)
+    {
+        $verification_journal = VerificationJournal::findOrFail($id);
+        $journal_details = $this->journal_details($id);
+        $debits = $journal_details['debits'];
+        $credit = $journal_details['credit'];
+
+        return view('verifications.journal.show', compact([
+            'verification_journal',
+            'debits',
+            'credit'
+        ]));
+    }
+
     public function add_to_cart(Request $request)
     {
-        $flag = 'JTEMP' . auth()->user()->id; // JTEMP = Journal Temporary
+        $flag = 'VJTEMP' . auth()->user()->id; // JTEMP = Journal Temporary
 
         $realization = Realization::findOrFail($request->realization_id);
         $realization->flag = $flag;
@@ -62,12 +80,12 @@ class VerificationJournalController extends Controller
 
     public function move_all_tocart()
     {
-        $realizations = Realization::whereNull('journal_id')
+        $realizations = Realization::whereNull('verification_journal_id')
             ->whereNull('flag')
             ->where('project', auth()->user()->project)
             ->get();
 
-        $flag = 'JTEMP' . auth()->user()->id; // JTEMP = Journal Temporary
+        $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
 
         foreach ($realizations as $realization) {
             $realization->flag = $flag;
@@ -79,7 +97,7 @@ class VerificationJournalController extends Controller
 
     public function remove_all_fromcart()
     {
-        $flag = 'JTEMP' . auth()->user()->id;
+        $flag = 'VJTEMP' . auth()->user()->id;
         $realizations = Realization::where('flag', $flag)
             ->get();
 
@@ -94,7 +112,7 @@ class VerificationJournalController extends Controller
     public function tocart_data()
     {
         $realizations = Realization::where('project', auth()->user()->project)
-            ->whereNull('journal_id')
+            ->whereNull('verification_journal_id')
             ->whereNull('flag')
             ->get();
 
@@ -115,7 +133,7 @@ class VerificationJournalController extends Controller
 
     public function incart_data()
     {
-        $flag = 'JTEMP' . auth()->user()->id; // JTEMP = Journal Temporary
+        $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
 
         $realizations = Realization::where('project', auth()->user()->project)
             ->where('flag', $flag)
@@ -138,17 +156,95 @@ class VerificationJournalController extends Controller
 
     public function store(Request $request)
     {
-        $realizations = Realization::where('flag', 'JTEMP' . auth()->user()->id)
+        $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
             ->get();
 
-        $realization_details_array = $this->group_and_sum_amount($realizations);
+        $realization_details = $realizations->pluck('realizationDetails')->flatten();
+        $verification_amount = $realization_details->sum('amount');
 
-        $amounts = $this->sum_amount_by_department_id($realization_details_array);
+        $verification_journal = new VerificationJournal();
+        $verification_journal->date = $request->date;
+        $verification_journal->amount = $verification_amount;
+        $verification_journal->description = $request->description;
+        $verification_journal->project = auth()->user()->project;
+        $verification_journal->created_by = auth()->user()->id;
+        $verification_journal->save();
 
-        return $amounts;
+        $nomor = app(ToolController::class)->generateVerificationJournalNumber($verification_journal->id);
+
+        $verification_journal->update([
+            'nomor' => $nomor
+        ]);
+
+        // update realization
+        foreach ($realizations as $realization) {
+            $realization->verification_journal_id = $verification_journal->id;
+            $realization->flag = null;
+            $realization->save();
+        }
+
+        return view('verifications.journal.index')->with('success', 'Verification Journal created successfully');
     }
 
     public function data()
     {
+        $verification_journals = VerificationJournal::where('project', auth()->user()->project)
+            ->orderBy('date', 'desc')
+            ->get();
+
+        return datatables()->of($verification_journals)
+            ->editColumn('date', function ($journal) {
+                $date = new \Carbon\Carbon($journal->date);
+                return $date->addHours(8)->format('d-M-Y');
+            })
+            ->addColumn('status', function ($cash_journal) {
+                if ($cash_journal->sap_journal_no == null) {
+                    return '<span class="badge badge-danger">Not Posted Yet</span>';
+                } else {
+                    return '<span class="badge badge-success">Posted</span>';
+                }
+            })
+            ->editColumn('amount', function ($cash_journal) {
+                return number_format($cash_journal->amount, 2);
+            })
+            ->addIndexColumn()
+            ->addColumn('action', 'verifications.journal.action')
+            ->rawColumns(['status', 'action'])
+            ->toJson();
+    }
+
+    public function journal_details($verification_journal_id)
+    {
+        $realizations = Realization::where('verification_journal_id', $verification_journal_id)
+            ->get();
+
+        $realization_details = $realizations->pluck('realizationDetails')->flatten();
+        $accounts = $realization_details->pluck('account_id')->unique();
+
+        foreach ($accounts as $account) {
+            $array_desc = $realization_details->where('account_id', $account)->pluck('description')->unique();
+            $descriptions = implode(', ', $array_desc->toArray());
+
+            $journals[] = [
+                // 'account_id' => $account,
+                'account_number' => $realization_details->where('account_id', $account)->first()->account->account_number,
+                'account_name' => $realization_details->where('account_id', $account)->first()->account->account_name,
+                'amount' => $realization_details->where('account_id', $account)->sum('amount'),
+                'description' => $descriptions
+            ];
+        }
+
+        $advance_account = Account::select(['account_number', 'account_name'])->where('type', 'advance')->where('project', auth()->user()->project)->first();
+
+        $result = [
+            'debits' => $journals,
+            'credit' => [
+                'account_number' => $advance_account->account_number,
+                'account_name' => $advance_account->account_name,
+                'amount' => $realization_details->sum('amount')
+            ]
+        ];
+
+        return $result;
     }
 }
