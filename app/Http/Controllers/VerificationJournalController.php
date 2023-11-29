@@ -4,16 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Realization;
-use App\Models\Verification;
 use App\Models\VerificationJournal;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class VerificationJournalController extends Controller
 {
     public function index()
     {
-        return view('verifications.journal.index');
+        $realizations_count = Realization::whereNull('verification_journal_id')
+            ->whereNull('flag')
+            ->where('project', auth()->user()->project)
+            ->count();
+
+        return view('verifications.journal.index', compact([
+            'realizations_count'
+        ]));
     }
 
     public function create()
@@ -81,6 +86,20 @@ class VerificationJournalController extends Controller
         $verification_journal->save();
 
         return $this->show($verification_journal->id)->with('success', 'SAP Info cancelled successfully');
+    }
+
+    public function print($id)
+    {
+        $verification_journal = VerificationJournal::findOrFail($id);
+        $journal_details = $this->journal_details($id);
+        $debits = $journal_details['debits'];
+        $credit = $journal_details['credit'];
+
+        return view('verifications.journal.print_journal', compact([
+            'verification_journal',
+            'debits',
+            'credit'
+        ]));
     }
 
     public function add_to_cart(Request $request)
@@ -276,7 +295,10 @@ class VerificationJournalController extends Controller
         $advance_account = Account::select(['account_number', 'account_name'])->where('type', 'advance')->where('project', auth()->user()->project)->first();
 
         $result = [
-            'debits' => $journals,
+            'debits' => [
+                'journals' => $journals,
+                'amount' => $realization_details->sum('amount')
+            ],
             'credit' => [
                 'account_number' => $advance_account->account_number,
                 'account_name' => $advance_account->account_name,

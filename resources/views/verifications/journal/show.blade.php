@@ -64,13 +64,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($debits as $item)
+                        @foreach ($debits['journals'] as $item)
                         <tr>
                             <td>
                                 {{ $item['account_number'] }} - {{ $item['account_name'] }}
                             </td>
                             <td>{{ $item['description'] }}</td>
                             <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
+                            <td class="text-right">-</td>
                         </tr>
                         @endforeach
                         <tr>

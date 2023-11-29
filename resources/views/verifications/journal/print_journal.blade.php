@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PayReq System | Cash Out Journal</title>
+  <title>PayReq System | Verification Journal</title>
 
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -25,10 +25,10 @@
         <h5>Project: {{ auth()->user()->project }}</h5>
       </div>
       <div class="col-6" style="text-align: right">
-        <h4 class="page-header"><strong>{{ $journal->type }} Journal</strong></h4>
+        <h4 class="page-header"><strong>Verification Journal</strong></h4>
        
-        <h5>Document No: <b>{{ $journal->journal_no }}</b> | Date: {{ date('d-M-Y', strtotime($journal->date)) }}</h5>
-        <h5>SAP Document No: <b>{{ $journal->sap_journal_no }}</b> | Date: {{ date('d-M-Y', strtotime($journal->sap_posting_date)) }}</h5>
+        <h5>Document No: <b>{{ $verification_journal->nomor }}</b> | Date: {{ date('d-M-Y', strtotime($verification_journal->date)) }}</h5>
+        <h5>SAP Document No: <b>{{ $verification_journal->sap_journal_no }}</b> | Date: {{ date('d-M-Y', strtotime($verification_journal->sap_posting_date)) }}</h5>
       </div>
       <!-- /.col -->
     </div>
@@ -39,37 +39,39 @@
       <div class="col-12 table-responsive">
         <table class="table table-bordered table-striped">
           <thead>
-            <tr class="bg-black disabled color-palette">
-                <th>Account & Description</th>
-                <th class="text-right">Debet (IDR)</th>
+            <tr>
+                <th>Account</th>
+                <th>Description</th>
+                <th class="text-right">Debit (IDR)</th>
                 <th class="text-right">Credit (IDR)</th>
             </tr>
           </thead>
           <tbody>
+            @foreach ($debits['journals'] as $item)
             <tr>
-                <th>{{ $debet_account->account_number }} - {{ $debet_account->account_name }}</th>
-                <th class="text-right">{{ number_format($incomings->sum('amount'), 2) }}</th>
-                <th class="text-right">{{ number_format(0, 2) }}</th>
+                <td>
+                    {{ $item['account_number'] }} - {{ $item['account_name'] }}
+                </td>
+                <td>{{ $item['description'] }}</td>
+                <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
+                <td class="text-right">-</td>
             </tr>
-                <tr>
-                    <td>
-                        <ol>
-                            @foreach ($incomings as $item)
-                                <li>{{ $item->description }}, {{ $item->realization->requestor->name }}, Rp. {{ number_format($item->amount, 2) }}</li>
-                            @endforeach
-                        </ol>
-                    </td>
-                </tr>
-                <tr>
-                    <th>{{ $credit_account->account_number }} - {{ $credit_account->account_name }}</th>
-                    <th class="text-right ">{{ number_format(0, 2) }}</th>
-                    <th class="text-right">{{ number_format($incomings->sum('amount'), 2) }}</th>
-                </tr>
-                <tr>
-                  <th class="text-right">TOTAL</th>
-                  <th class="text-right ">{{number_format($incomings->sum('amount'), 2) }}</th>
-                  <th class="text-right">{{ number_format($incomings->sum('amount'), 2) }}</th>
-              </tr>
+            @endforeach
+            <tr>
+                <th>
+                    {{ $credit['account_number'] }} - {{ $credit['account_name'] }}
+                </th>
+                <th>
+                    {{ $verification_journal->nomor }}
+                </th>
+                <th class="text-right">-</th>
+                <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
+            </tr>
+            <tr>
+              <th class="text-right" colspan="2">TOTAL</th>
+              <th class="text-right">{{ number_format($debits['amount'], 2) }}</th>
+              <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
+            </tr>
         </tbody>
           <tfoot>
             {{--  --}}
@@ -88,7 +90,7 @@
             <br>
             <br>
             <br>
-            {{ $journal->createdBy->name }}<br>
+            {{ $verification_journal->createdBy->name }}<br>
         </div>
 
         <div class="col-sm-4 invoice-col">
@@ -116,7 +118,7 @@
 <!-- ./wrapper -->
 <!-- Page specific script -->
 <script>
-  window.addEventListener("load", window.print());
+  // window.addEventListener("load", window.print());
 </script>
 </body>
 </html>

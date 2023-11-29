@@ -15,7 +15,11 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Verification Journals</h3>
-        <a href="{{ route('verifications.journal.create') }}" class="btn btn-sm btn-success float-right mx-2">Prepare Journal</a>
+        @if ($realizations_count > 0)
+        <a href="{{ route('verifications.journal.create') }}" class="btn btn-sm btn-success float-right mx-2">Prepare Journal <span class="badge badge-danger">{{ $realizations_count }}</span></a>
+        @else
+        <a href="{{ route('verifications.journal.create') }}" class="btn btn-sm btn-success float-right mx-2 disabled">Prepare Journal</a>
+        @endif
       </div>
       <div class="card-body">
         <table id="verifications" class="table table-bordered table-striped">
