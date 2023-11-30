@@ -134,8 +134,8 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $this->validate($request, [
-            'password'      => 'required|min:6',
-            'password_confirmation' => 'required_with:password|same:password|min:6'
+            'password'      => 'required|min:5',
+            'password_confirmation' => 'required_with:password|same:password|min:5'
         ]);
 
         $user->password = Hash::make($request->password);
