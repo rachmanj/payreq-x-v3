@@ -9,10 +9,10 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PayreqOverdueController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\UserOverdueController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 
@@ -73,9 +73,10 @@ Route::middleware('auth')->group(function () {
     // VERIFICATIONS
 
     // USERS OVERDUE
-    Route::prefix('users-overdue')->name('users-overdue.')->group(function () {
-        Route::get('/data', [UserOverdueController::class, 'data'])->name('data');
-        Route::get('/', [UserOverdueController::class, 'index'])->name('index');
+    Route::prefix('payreq-overdue')->name('payreq-overdue.')->group(function () {
+        Route::get('/data', [PayreqOverdueController::class, 'data'])->name('data');
+        Route::get('/', [PayreqOverdueController::class, 'index'])->name('index');
+        Route::post('/extend', [PayreqOverdueController::class, 'extend'])->name('extend');
     });
 
     // JOURNALS

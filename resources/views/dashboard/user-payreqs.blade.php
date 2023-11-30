@@ -9,7 +9,7 @@
         <div class="card-body">
 
             @foreach ($user_ongoing_payreqs['payreq_status'] as $item)
-                {{-- @if ($item['count'] > 0) --}}
+                @if ($item['count'] > 0)
                 <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                     <p class="d-flex flex-column">
                         <span class="font-weight-bold">
@@ -22,7 +22,7 @@
                     </span>
                     </p>
                 </div>
-                {{-- @endif --}}
+                @endif
             @endforeach
             
             @if ($user_ongoing_payreqs['over_due_payreq']['count'] > 0)
@@ -55,7 +55,7 @@
         <div class="card-body">
             @foreach ($user_ongoing_realizations['realization_status'] as $item)
 
-                {{-- @if ($item['count'] > 0) --}}
+                @if ($item['count'] > 0)
                 <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                     <p class="d-flex flex-column">
                         <span class="font-weight-bold">
@@ -68,7 +68,7 @@
                     </span>
                     </p>
                 </div>
-                {{-- @endif --}}
+                @endif
 
             @endforeach
         </div>
