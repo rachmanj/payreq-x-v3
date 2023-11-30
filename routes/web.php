@@ -125,6 +125,7 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/approvals.php';
     require __DIR__ . '/verification.php';
     require __DIR__ . '/cash_journals.php';
+    require __DIR__ . '/accounting.php';
 });
 
 Route::post('/get_account_name', [AccountController::class, 'get_account_name'])->name('get_account_name');

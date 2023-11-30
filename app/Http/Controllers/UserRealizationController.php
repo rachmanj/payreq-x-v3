@@ -190,6 +190,7 @@ class UserRealizationController extends Controller
             'project' => $realization->project,
             'department_id' => $realization->department_id,
             'unit_no' => $request->unit_no,
+            'nopol' => $request->nopol,
             'type' => $request->type,
             'qty' => $request->qty,
             'uom' => $request->uom,
