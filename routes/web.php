@@ -12,6 +12,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserOverdueController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +71,12 @@ Route::middleware('auth')->group(function () {
     // CASH JOURNALS
 
     // VERIFICATIONS
+
+    // USERS OVERDUE
+    Route::prefix('users-overdue')->name('users-overdue.')->group(function () {
+        Route::get('/data', [UserOverdueController::class, 'data'])->name('data');
+        Route::get('/', [UserOverdueController::class, 'index'])->name('index');
+    });
 
     // JOURNALS
     Route::prefix('journals')->name('journals.')->group(function () {

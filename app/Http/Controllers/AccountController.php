@@ -150,9 +150,18 @@ class AccountController extends Controller
 
     public function get_account_name(Request $request)
     {
-        $account = Account::where('project', auth()->user()->project)
-            ->where('account_number', $request->account_number)
-            ->first();
+        if (auth()->user()->project == '000H') {
+            $account = Account::where('account_number', $request->account_number)
+                ->first();
+        } else {
+            $account = Account::where('project', 'all-site')
+                ->where('account_number', $request->account_number)
+                ->first();
+        }
+
+        // $account = Account::where('project', auth()->user()->project)
+        //     ->where('account_number', $request->account_number)
+        //     ->first();
 
         // $realization_detail = RealizationDetail::findOrFail($request->realization_detail_id);
 
