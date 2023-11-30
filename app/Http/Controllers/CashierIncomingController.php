@@ -53,7 +53,7 @@ class CashierIncomingController extends Controller
         $roles = app(ToolController::class)->getUserRoles();
 
         if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
-            $incomings = Incoming::orderBy('approved_at', 'desc')
+            $incomings = Incoming::orderBy('created_at', 'desc')
                 ->get();
         } else {
             $incomings = Incoming::where('project', auth()->user()->project)
