@@ -86,9 +86,9 @@ class GeneralLedgerController extends Controller
     {
         $account = Account::find($gl->account_id);
 
-        if ($account->account_type->type_name == 'advance') {
+        if ($account->type == 'advance') {
             $account->balance = $account->balance - $gl->debit;
-        } elseif ($account->account_type->type_name == 'cash') {
+        } elseif ($account->type == 'cash') {
             $account->balance = $account->balance + $gl->credit;
         }
         $account->save();
