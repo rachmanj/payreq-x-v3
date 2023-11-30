@@ -70,12 +70,16 @@ class CashierIncomingController extends Controller
                 }
             })
             ->addColumn('realization_no', function ($incoming) {
-                return $incoming->realization_id ? $incoming->realization->nomor : '-';
+                if ($incoming->realization_id !== null) {
+                    return $incoming->realization->nomor;
+                } else {
+                    return $incoming->description;
+                }
             })
-            ->editColumn('created_date', function ($incoming) {
-                $created_date = new \Carbon\Carbon($incoming->created_at);
-                return $created_date->addHours(8)->format('d-M-Y');
+            ->editColumn('receive_date', function ($incoming) {
+                return $incoming->receive_date ? date('d-M-Y', strtotime($incoming->receive_date)) : '-';
             })
+
             ->editColumn('amount', function ($incoming) {
                 return number_format($incoming->amount, 2);
             })

@@ -24,8 +24,8 @@
           <tr>
             <th>#</th>
             <th>Employee</th>
-            <th>Realization No</th>
-            <th>Created Date</th>
+            <th>Realization No / Desc</th>
+            <th>Receive Date</th>
             <th>IDR</th>
             <th>Account</th>
             <th>Status</th>
@@ -75,7 +75,7 @@
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'employee'},
         {data: 'realization_no'},
-        {data: 'created_date'},
+        {data: 'receive_date'},
         {data: 'amount'},
         {data: 'account'},
         {data: 'status'},
@@ -83,10 +83,6 @@
       ],
       fixedHeader: true,
       columnDefs: [
-              {
-                "targets": [2],
-                "className": "text-center"
-              },
               {
                 "targets": [4],
                 "className": "text-right"
