@@ -20,13 +20,13 @@ class PayreqController extends Controller
             ]);
 
             $payreq = Payreq::create(array_merge($validated, [
-                'project' => auth()->user()->project,
+                'project' => $data->project,
                 'status' => $data->draft == '1' ? 'draft' : 'submitted',
                 'editable' => $data->draft == '1' ? '1' : '0',
                 'deletable' => $data->draft == '1' ? '1' : '0',
                 'nomor' => $this->generateDraftNumber(),
                 'type' => 'advance',
-                'user_id' => auth()->user()->id,
+                'user_id' => $data->employee_id,
             ]));
 
             return $payreq;

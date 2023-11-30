@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Payreqs Overdue
+    Ongoing Payreqs
 @endsection
 
 @section('breadcrumb_title')
-    payreqs / overdue
+    payreqs / ongoing
 @endsection
 
 @section('content')
@@ -14,8 +14,14 @@
 
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Ongoing Payreqs</h3>
-        </div>
+            <h3 class="card-title">Ongoing Payreq</h3>
+            {{-- create payreq --}}
+            <div class="card-tools">
+                <a href="{{ route('accounting.payreqs.create') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> New Payreq
+                </a>
+            </div>
+          </div>
 
         <div class="card-body">
             <table id="payreq-overdue" class="table table-bordered table-striped" >
@@ -24,11 +30,11 @@
                         <th>#</th>
                         <th>Employee</th>
                         <th>Project</th>
-                        <th>Payreq No</th>
+                        <th>Nomor</th>
+                        <th>CreatedD</th>
                         <th>Type</th>
                         <th>Status</th>
                         <th>IDR</th>
-                        <th>Days</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -61,22 +67,22 @@
       $("#payreq-overdue").DataTable({
         processing: true,
         serverSide: true,
-        ajax: '{{ route('payreq-overdue.data') }}',
+        ajax: '{{ route('accounting.payreqs.data') }}',
         columns: [
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'employee'},
           {data: 'project'},
           {data: 'nomor'},
+          {data: 'created_at'},
           {data: 'type'},
           {data: 'status'},
           {data: 'amount'},
-          {data: 'days'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [6, 7],
+                  "targets": [7, 8],
                   "className": "text-right"
                 },
               ]
