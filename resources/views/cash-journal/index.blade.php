@@ -14,14 +14,14 @@
 
     <div class="card">
       <div class="card-header">
-        @if ($outgoings_count > 0)
-        <a href="{{ route('cash-journals.out.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal <span class="badge badge-danger">{{ $outgoings_count }}</span></a>
+        @if ($cj_count['outgoings_count'] > 0)
+        <a href="{{ route('cash-journals.out.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal <span class="badge badge-danger">{{ $cj_count['outgoings_count'] }}</span></a>
         @else
         <a href="{{ route('cash-journals.out.create') }}" class="btn btn-sm btn-success">Create Cash-Out Journal</a>
         @endif
 
-        @if ($incomings_count > 0)
-        <a href="{{ route('cash-journals.in.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal <span class="badge badge-danger">{{ $incomings_count }}</span></a>
+        @if ($cj_count['incomings_count'] > 0)
+        <a href="{{ route('cash-journals.in.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal <span class="badge badge-danger">{{ $cj_count['incomings_count'] }}</span></a>
         @else
         <a href="{{ route('cash-journals.in.create') }}" class="btn btn-sm btn-primary">Create Cash-In Journal</a>
         @endif

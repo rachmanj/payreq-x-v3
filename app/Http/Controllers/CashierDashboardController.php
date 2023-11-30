@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\CashJournal;
 use App\Models\Incoming;
 use App\Models\Outgoing;
 use App\Models\Payreq;
@@ -53,6 +54,8 @@ class CashierDashboardController extends Controller
             ->where('project', auth()->user()->project)
             ->first()
             ->app_balance;
+
+        $result['cj_to_create'] = app(CashJournalController::class)->cj_to_create();
 
         return $result;
     }

@@ -13,16 +13,9 @@ class CashJournalController extends Controller
 {
     public function index()
     {
-        $outgoings_count = Outgoing::whereNull('cash_journal_id')
-            ->where('project', auth()->user()->project)
-            ->count();
+        $cj_count = $this->cj_to_create();
 
-        $incomings_count = Incoming::whereNull('cash_journal_id')
-            ->where('project', auth()->user()->project)
-            ->where('realization_id', '<>', null)
-            ->count();
-
-        return view('cash-journal.index', compact(['outgoings_count', 'incomings_count']));
+        return view('cash-journal.index', compact(['cj_count']));
     }
 
     public function show($id)
@@ -186,5 +179,36 @@ class CashJournalController extends Controller
             ->addColumn('action', 'cash-journal.action')
             ->rawColumns(['status', 'action'])
             ->toJson();
+    }
+
+    public function cj_to_create() // cash journal to create
+    {
+        $result['outgoings_count'] = Outgoing::whereNull('cash_journal_id')
+            ->where('project', auth()->user()->project)
+            ->count();
+
+        $result['outgoings_amount'] = Outgoing::whereNull('cash_journal_id')
+            ->where('project', auth()->user()->project)
+            ->sum('amount');
+
+        $result['incomings_count'] = Incoming::whereNull('cash_journal_id')
+            ->where('project', auth()->user()->project)
+            ->where('realization_id', '<>', null)
+            ->count();
+
+        $result['incomings_amount'] = Incoming::whereNull('cash_journal_id')
+            ->where('project', auth()->user()->project)
+            ->where('realization_id', '<>', null)
+            ->sum('amount');
+
+        $result['pending_posting_count'] = CashJournal::where('project', auth()->user()->project)
+            ->where('sap_journal_no', null)
+            ->count();
+
+        $result['pending_posting_amount'] = CashJournal::where('project', auth()->user()->project)
+            ->where('sap_journal_no', null)
+            ->sum('amount');
+
+        return $result;
     }
 }

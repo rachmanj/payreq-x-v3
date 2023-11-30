@@ -11,13 +11,13 @@ class TestController extends Controller
 {
     public function index()
     {
-        // $test = app(CashierDashboardController::class)->dashboard_data();
+        $test = app(CashierDashboardController::class)->dashboard_data();
         // $test = app(UserPayreqController::class)->ongoing_payreqs();
         // $test = Realization::with('realizationDetails')->where('id', 3)->first();
         // $test = app(UserRealizationController::class)->ongoing_realizations();
         // $test = Realization::with('realizationDetails')->where('id', 3)->first();
         // $test = app(CashInJournalController::class)->to_cart_data();
-        $test = app(VerificationJournalController::class)->journal_details(3);
+        // $test = app(VerificationJournalController::class)->journal_details(3);
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
         //     ->get();
