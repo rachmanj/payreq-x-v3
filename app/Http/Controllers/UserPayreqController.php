@@ -96,11 +96,22 @@ class UserPayreqController extends Controller
         $terbilang = app(ToolController::class)->terbilang($payreq->amount);
         $approvers = app(ToolController::class)->getApproversName($id, 'payreq');
 
-        return view('user-payreqs.advance.print_pdf', compact([
-            'payreq',
-            'terbilang',
-            'approvers'
-        ]));
+        if ($payreq->type === 'reimburse') {
+            $realization_details = $payreq->realization->realizationDetails;
+
+            return view('user-payreqs.reimburse.print_pdf', compact([
+                'payreq',
+                'terbilang',
+                'realization_details',
+                'approvers'
+            ]));
+        } else {
+            return view('user-payreqs.advance.print_pdf', compact([
+                'payreq',
+                'terbilang',
+                'approvers'
+            ]));
+        }
     }
 
     public function destroy(Request $request, $id)
