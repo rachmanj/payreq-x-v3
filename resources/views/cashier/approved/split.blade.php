@@ -19,6 +19,12 @@
           <div class="card-body">
             <form action="{{ route('cashier.approveds.store_pay', $payreq->id) }}" method="POST" id="split-update">
               @csrf @method('PUT')
+
+              <div class="form-group">
+                <label>Description</label>
+                <input type="text" class="form-control" value="{{ $payreq->remarks }}" readonly>
+              </div>
+
               <div class="form-group">
                 <label for="account_id">Account No</label>
                 <select name="account_id" id="account_id" class="form-control">
@@ -28,6 +34,7 @@
                   @endforeach
                 </select>
               </div>
+  
               <div class="form-group">
                 <label for="date">Date</label>
                 <input type="date" class="form-control" name="date" value="{{ old('date', date('Y-m-d')) }}">
