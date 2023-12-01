@@ -160,7 +160,7 @@ class UserController extends Controller
 
     public function data()
     {
-        $users = User::all();
+        $users = User::orderBy('created_at', 'desc')->get();
 
         return datatables()->of($users)
             ->addIndexColumn()
