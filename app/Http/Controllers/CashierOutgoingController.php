@@ -17,8 +17,7 @@ class CashierOutgoingController extends Controller
         $roles = app(ToolController::class)->getUserRoles();
 
         if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
-            $outgoings = Outgoing::where('status', 'approved')->orWhere('status', 'split')
-                ->orderBy('approved_at', 'desc')
+            $outgoings = Outgoing::orderBy('approved_at', 'desc')
                 ->get();
         } else {
             $outgoings = Outgoing::where('cashier_id', auth()->user()->id)
