@@ -78,7 +78,7 @@
                 </p>
                 <p class="d-flex flex-column text-right">
                 <span>
-                    Rp. {{ number_format($dashboard_data['cj_to_create']['pending_posting_amount'], 0) }} | {{ $dashboard_data['cj_to_create']['pending_posting_count'] }} payreqs 
+                    Rp. {{ number_format($dashboard_data['cj_to_create']['pending_posting_amount'], 0) }} | {{ $dashboard_data['cj_to_create']['pending_posting_count'] }} journals 
                 </span>
                 </p>
             </div>
