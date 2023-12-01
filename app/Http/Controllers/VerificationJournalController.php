@@ -12,6 +12,7 @@ class VerificationJournalController extends Controller
     public function index()
     {
         $realizations_count = Realization::whereNull('verification_journal_id')
+            ->where('status', 'approved')
             ->whereNull('flag')
             ->where('project', auth()->user()->project)
             ->count();
@@ -156,6 +157,7 @@ class VerificationJournalController extends Controller
     public function tocart_data()
     {
         $realizations = Realization::where('project', auth()->user()->project)
+            ->where('status', 'approved')
             ->whereNull('verification_journal_id')
             ->whereNull('flag')
             ->get();
@@ -179,9 +181,7 @@ class VerificationJournalController extends Controller
     {
         $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
 
-        $realizations = Realization::where('project', auth()->user()->project)
-            ->where('flag', $flag)
-            ->get();
+        $realizations = Realization::where('flag', $flag)->get();
 
         return datatables()->of($realizations)
             ->addColumn('employee', function ($realization) {
@@ -204,6 +204,7 @@ class VerificationJournalController extends Controller
             ->get();
 
         $realization_details = $realizations->pluck('realizationDetails')->flatten();
+
         $verification_amount = $realization_details->sum('amount');
 
         $verification_journal = new VerificationJournal();
@@ -283,7 +284,7 @@ class VerificationJournalController extends Controller
             $array_desc = $realization_details->where('account_id', $account)->pluck('description')->unique();
             $descriptions = implode(', ', $array_desc->toArray());
 
-            $journals[] = [
+            $jurnals[] = [
                 // 'account_id' => $account,
                 'account_number' => $realization_details->where('account_id', $account)->first()->account->account_number,
                 'account_name' => $realization_details->where('account_id', $account)->first()->account->account_name,
@@ -296,7 +297,7 @@ class VerificationJournalController extends Controller
 
         $result = [
             'debits' => [
-                'journals' => $journals,
+                'journals' => $jurnals,
                 'amount' => $realization_details->sum('amount')
             ],
             'credit' => [
