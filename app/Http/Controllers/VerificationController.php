@@ -67,7 +67,7 @@ class VerificationController extends Controller
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)
-                ->whereNull('journal_id')
+                ->whereNull('verification_journal_id')
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
