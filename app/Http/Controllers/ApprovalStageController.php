@@ -12,7 +12,7 @@ class ApprovalStageController extends Controller
     public function index()
     {
         $approvers = User::role('approver')->select('id', 'name')->get();
-        $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
+        $projects = ['000H', '001H', '017C', '021C', '022C', '023C', 'APS'];
         $departments = Department::orderBy('department_name', 'asc')->get();
 
         return view('approval-stages.index', compact('approvers', 'projects', 'departments'));
