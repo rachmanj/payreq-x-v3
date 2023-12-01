@@ -67,9 +67,9 @@ class AccountingPayreqController extends Controller
 
     public function data()
     {
-        $status_include = ['approved', 'paid', 'submitted'];
-        $payreqs = Payreq::whereIn('status', $status_include)
-            ->orderBy('created_at', 'desc')
+        // $status_include = ['approved', 'paid', 'submitted'];
+        // $payreqs = Payreq::whereIn('status', $status_include)
+        $payreqs = Payreq::orderBy('created_at', 'desc')
             ->get();
 
         return datatables()->of($payreqs)
