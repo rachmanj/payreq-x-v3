@@ -57,6 +57,14 @@ class AccountingPayreqController extends Controller
         }
     }
 
+    public function show($payreq_id)
+    {
+        $payreq = Payreq::with(['realization', 'realization.realizationDetails'])->where('id', $payreq_id)->first();
+
+        return view('accounting.payreqs.show', compact('payreq'));
+    }
+
+
     public function data()
     {
         $status_include = ['approved', 'paid', 'submitted'];

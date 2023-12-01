@@ -2,7 +2,9 @@
     <a id="dropdownPayreq" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Accounting</a>
     <ul aria-labelledby="dropdownPayreq" class="dropdown-menu border-0 shadow">
       <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Available Accounts</a></li>
-      <li><a href="{{ route('accounting.payreqs.index') }}" class="dropdown-item">Ongoing Payreqs</a></li>
+      @can('akses_project_payreqs')
+        <li><a href="{{ route('accounting.payreqs.index') }}" class="dropdown-item">Project Payreqs</a></li>
+      @endcan
       <li><a href="{{ route('journals.index') }}" class="dropdown-item">Journals</a></li>
       <li><a href="{{ route('general-ledgers.index') }}" class="dropdown-item">General Ledgers</a></li>
       
