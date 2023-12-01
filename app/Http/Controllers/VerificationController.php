@@ -73,7 +73,7 @@ class VerificationController extends Controller
         } else {
             $realizations = Realization::whereIn('status', $status_include)
                 ->where('project', auth()->user()->project)
-                ->whereNull('journal_id')
+                ->whereNull('verification_journal_id')
                 // ->where('flag', $flag)
                 ->orderBy('created_at', 'desc')
                 ->get();
