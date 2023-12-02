@@ -61,7 +61,9 @@
           <tbody>
             <tr>
                 <td>1</td>
-                <td>{{ $payreq->remarks }}</td>
+                <td>{{ $payreq->remarks }} <br>
+                  {{ $payreq->rab_id ? 'RAB No. ' . $payreq->rab->rab_no . ' | ' . $payreq->rab->project_code . ' | ' . $payreq->rab->description : '' }}
+                </td>
                 <td class="text-right">{{ number_format($payreq->amount, 2) }}</td>
             </tr>
           </tbody>

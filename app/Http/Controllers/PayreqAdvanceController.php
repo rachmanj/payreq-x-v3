@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payreq;
+use App\Models\Rab;
 use App\Models\Realization;
 use Illuminate\Http\Request;
 
@@ -11,8 +12,9 @@ class PayreqAdvanceController extends Controller
     public function create()
     {
         $payreq_no = app(PayreqController::class)->generateDraftNumber();
+        $rabs = Rab::where('status', 'progress')->orderBy('rab_no', 'asc')->get();
 
-        return view('user-payreqs.advance.create', compact('payreq_no'));
+        return view('user-payreqs.advance.create', compact(['payreq_no', 'rabs']));
     }
 
     public function store(Request $request)
@@ -42,8 +44,9 @@ class PayreqAdvanceController extends Controller
     public function edit($id)
     {
         $payreq = Payreq::findOrFail($id);
+        $rabs = Rab::where('status', 'progress')->orderBy('rab_no', 'asc')->get();
 
-        return view('user-payreqs.advance.edit', compact('payreq'));
+        return view('user-payreqs.advance.edit', compact(['payreq', 'rabs']));
     }
 
     public function update(Request $request, $id)

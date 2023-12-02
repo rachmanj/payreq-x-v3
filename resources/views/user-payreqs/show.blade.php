@@ -32,6 +32,8 @@
                 <dd class="col-sm-8">: {{ $submit_at }}</dd>
                 <dt class="col-sm-4">Due date</dt>
                 <dd class="col-sm-8">: {{ $due_date }}</dd>
+                <dt class="col-sm-4">RAB</dt>
+                <dd class="col-sm-8">: {{ $payreq->rab_id ? 'No. ' . $payreq->rab->rab_no . ' | ' . $payreq->rab->project_code . ' | ' . $payreq->rab->description : '' }}</dd>
                 <dt class="col-sm-4">Created at</dt>
                 <dd class="col-sm-8">: {{ $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}</dd>
               </div>

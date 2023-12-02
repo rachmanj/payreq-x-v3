@@ -26,6 +26,7 @@ class PayreqController extends Controller
                 'deletable' => $data->draft == '1' ? '1' : '0',
                 'nomor' => $this->generateDraftNumber(),
                 'type' => 'advance',
+                'rab_id' => $data->rab_id,
                 'user_id' => $data->employee_id,
             ]));
 
@@ -51,6 +52,7 @@ class PayreqController extends Controller
                 'status' => $data->draft == '1' ? 'draft' : 'submitted',
                 'editable' => $data->draft == '1' ? '1' : '0',
                 'deletable' => $data->draft == '1' ? '1' : '0',
+                'rab_id' => $data->rab_id,
             ]));
 
             return $payreq;

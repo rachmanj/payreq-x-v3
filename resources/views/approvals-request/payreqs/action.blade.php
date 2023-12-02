@@ -46,18 +46,15 @@
                             </div>
                         </div>
                     </div>
-                    
-                    {{-- <div class="row">
+                    <div class="row">
                         <div class="col-12">
-                            <dl>
-                                <dt>Requestor | Payreq No | Amount | Created at </dt>
-                                <dd>{{ $model->payreq->requestor->name }} | {{ $model->payreq->payreq_no }} | IDR {{ number_format($model->payreq->amount, 2) }} | {{ $model->payreq->created_at->addHours(8)->format('d-M-Y H:i:s') }} </dd>
-                                <dt>Remarks</dt>
-                                <dd>{{ $model->payreq->remarks }}</dd>
-                            </dl>
+                            <div class="form-group">
+                            <label>RAB</label>
+                            <input type="text" class="form-control" value="{{ $model->payreq->rab_id ? 'No. ' . $model->payreq->rab->rab_no . ' | ' . $model->payreq->rab->project_code . ' | ' . $model->payreq->rab->description : '' }}" readonly>
+                            </div>
                         </div>
-                    </div> --}}
-
+                    </div>
+                    
                     <div class="row">
                         <div class="col-12">
                             <div class="form-group">
