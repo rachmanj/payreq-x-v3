@@ -12,8 +12,8 @@ class RegisterController extends Controller
 {
     public function index()
     {
-        $projects = Project::orderBy('code')->get();
-        $departments = Department::orderBy('department_name')->get();
+        $projects = Project::orderBy('code', 'asc')->get();
+        $departments = Department::orderBy('department_name', 'asc')->get();
 
         return view('register.index', compact(['projects', 'departments']));
     }

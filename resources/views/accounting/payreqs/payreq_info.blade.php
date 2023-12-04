@@ -34,5 +34,5 @@
         <dd class="col-sm-8">: -</dd>
     @endif
     <dt class="col-sm-4">RAB No</dt>
-    <dd class="col-sm-8">: {{ $payreq->rab_id }}</dd>
+    <dd class="col-sm-8">: {{ $payreq->rab->rab_no }}</dd>
 </dl>

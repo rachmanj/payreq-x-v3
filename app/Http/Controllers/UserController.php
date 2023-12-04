@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $projects = ['000H', '001H', '017C', '021C', '022C', '023C', 'APS'];
+        $projects = Project::orderBy('code', 'asc')->get();
         $departments = Department::orderBy('department_name', 'asc')->get();
         return view('users.index', compact(['projects', 'departments']));
     }

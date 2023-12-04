@@ -66,7 +66,7 @@
             <select name="project" class="form-control">
               <option value="">-- Select Project --</option>
               @foreach ($projects as $project)
-                <option value="{{ $project }}">{{ $project }}</option>
+                <option value="{{ $project->code }}">{{ $project->code }}</option>
               @endforeach
             </select>
           </div>
