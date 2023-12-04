@@ -51,7 +51,7 @@ class CashierDashboardController extends Controller
         ];
 
         $result['today_pc_balance'] = Account::where('type', 'cash')
-            ->where('project', auth()->user()->project)
+            ->where('project', $project)
             ->first()
             ->app_balance;
 
