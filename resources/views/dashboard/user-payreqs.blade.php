@@ -34,7 +34,7 @@
                   </p>
                 <p class="d-flex flex-column text-right">
                   <span class="font-weight-bold text-red">
-                    {{ $user_ongoing_payreqs['over_due_payreq']['amount'] }} | {{ $user_ongoing_payreqs['over_due_payreq']['count'] }}
+                    Rp. {{ number_format($user_ongoing_payreqs['over_due_payreq']['amount'], 0) }} | {{ $user_ongoing_payreqs['over_due_payreq']['count'] }} payreqs
                   </span>
                 </p>
             </div>

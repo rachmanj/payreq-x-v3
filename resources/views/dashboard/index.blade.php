@@ -1,7 +1,7 @@
 @extends('templates.main')
 
 @section('title_page')
-    User's Dashboard
+    Your Dashboard
 @endsection
 
 @section('breadcrumb_title')
@@ -11,13 +11,17 @@
 @section('content')
 
     <div class="row">
-        <h3>Welcome to Payreq Sytem, {{ auth()->user()->name }} ... </h3>
+        {{-- <h3>Welcome to Payreq Sytem, {{ auth()->user()->name }} ... </h3> --}}
     </div>
 
     <div class="row">
         @can('akses_approvals')
             @include('dashboard.row1')
         @endcan
+    </div>
+
+    <div class="row">
+        @include('dashboard.row2')
     </div>
 
     <div class="row">
