@@ -24,20 +24,20 @@
 <div class="row">
   <div class="col-sm-4 col-6">
     <div class="description-block border-right">
-        <h5 class="description-header">Payreq No</h5>
-        <span class="description-text">{{ $document->payreq->nomor }}</span>
+        <h5 class="description-header">Realization No</h5>
+        <span class="description-text">{{ $document->realization->nomor }}</span>
     </div>
   </div>
   <div class="col-sm-4 col-6">
     <div class="description-block border-right">
       <h5 class="description-header">Payreq No</h5>
-      <span class="description-text">{{ $document->payreq->nomor }}</span>
+      <span class="description-text">{{ $payreq->nomor }}</span>
     </div>
   </div>
   <div class="col-sm-4 col-6">
     <div class="description-block border-right">
       <h5 class="description-header">Payreq Amount</h5>
-      <span class="description-text">{{ number_format($document->payreq->amount, 2) }}</span>
+      <span class="description-text">{{ number_format($payreq->amount, 2) }}</span>
     </div>
   </div>
 </div>
@@ -50,7 +50,7 @@
   <div class="modal-dialog modal-lg">
       <div class="modal-content">
           <div class="modal-header">
-              <h4 class="modal-title">Approval for Payreq No. {{ $document->payreq->nomor }}</h4>
+              <h4 class="modal-title">Approval for Realization No. {{ $document->realization->nomor }}</h4>
               <button type="button" class="close" data-dismiss="modal">&times;</button>
           </div>
 

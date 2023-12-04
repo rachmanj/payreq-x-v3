@@ -38,6 +38,10 @@
                                 <td colspan="2" class="text-right">Total</td>
                                 <td class="text-right"><b>{{ number_format($document_details->sum('amount'), 2) }}</b></td>
                             </tr>
+                            <tr>
+                                <td colspan="2" class="text-right">Variance</td>
+                                <td class="text-right"><b>{{ number_format($payreq->amount - $document_details->sum('amount'), 2) }}</b></td>
+                            </tr>
                         </tfoot>
                     @else
                         <tbody>
