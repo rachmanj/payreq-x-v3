@@ -1,7 +1,7 @@
 <!-- Navbar -->
 <nav class="main-header navbar navbar-expand-md navbar-light navbar-dark layout-fixed">
     <div class="container">
-      <a href="#"class="navbar-brand">
+      <a href="{{ route('dashboard.index') }}"class="navbar-brand">
         <img src="{{ asset('adminlte/dist/img/AdminLTELogo.png') }}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
         <span class="brand-text text-white font-weight-light"><strong>Payreq</strong> System</span>
       </a>
@@ -14,7 +14,11 @@
         <!-- Left navbar links -->
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a href="{{ route('dashboard.index') }}" class="nav-link">Dashboard</a>
+            @hasanyrole('cashier|superadmin|admin')
+              <a href="{{ route('cashier.dashboard.index') }}" class="nav-link">Dashboard</a>   
+            @else
+              <a href="{{ route('dashboard.index') }}" class="nav-link">Dashboard</a>
+            @endhasanyrole
           </li>
 
           @can('akses_my_payreqs')

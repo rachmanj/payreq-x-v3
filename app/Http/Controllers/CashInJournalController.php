@@ -10,10 +10,7 @@ class CashInJournalController extends Controller
 {
     public function create()
     {
-        $incomings = Incoming::whereNull('cash_journal_id')
-            ->whereNull('flag')
-            ->where('project', auth()->user()->project)
-            ->count();
+        $incomings = $this->incoming_will_post()->count();
 
         if ($incomings > 0) {
             $select_all_button = true;
@@ -63,11 +60,7 @@ class CashInJournalController extends Controller
 
     public function move_all_tocart()
     {
-        $incomings = Incoming::whereNull('cash_journal_id')
-            ->whereNull('flag')
-            ->where('project', auth()->user()->project)
-            ->where('realization_id', '<>', null)
-            ->get();
+        $incomings = $this->incoming_will_post();
 
         foreach ($incomings as $incoming) {
             $incoming->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
@@ -110,11 +103,7 @@ class CashInJournalController extends Controller
 
     public function to_cart_data()
     {
-        $incomings = Incoming::whereNull('cash_journal_id')
-            ->whereNull('flag')
-            ->where('project', auth()->user()->project)
-            ->where('realization_id', '<>', null)
-            ->get();
+        $incomings = $this->incoming_will_post();
 
         return datatables()->of($incomings)
             ->addColumn('relization_no', function ($incoming) {
@@ -159,5 +148,18 @@ class CashInJournalController extends Controller
             ->addIndexColumn()
             ->addColumn('action', 'cash-journal.in.in-cart-action')
             ->toJson();
+    }
+
+    public function incoming_will_post()
+    {
+        $incomings = Incoming::where('project', auth()->user()->project)
+            ->whereNull('flag')
+            ->whereNull('cash_journal_id')
+            ->where('realization_id', '<>', null)
+            ->where('will_post', 1)
+            ->whereNotNull('receive_date')
+            ->get();
+
+        return $incomings;
     }
 }

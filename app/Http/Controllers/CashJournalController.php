@@ -191,15 +191,9 @@ class CashJournalController extends Controller
             ->where('project', auth()->user()->project)
             ->sum('amount');
 
-        $result['incomings_count'] = Incoming::whereNull('cash_journal_id')
-            ->where('project', auth()->user()->project)
-            ->where('realization_id', '<>', null)
-            ->count();
+        $result['incomings_count'] = app(CashInJournalController::class)->incoming_will_post()->count();
 
-        $result['incomings_amount'] = Incoming::whereNull('cash_journal_id')
-            ->where('project', auth()->user()->project)
-            ->where('realization_id', '<>', null)
-            ->sum('amount');
+        $result['incomings_amount'] = app(CashInJournalController::class)->incoming_will_post()->sum('amount');
 
         $result['pending_posting_count'] = CashJournal::where('project', auth()->user()->project)
             ->where('sap_journal_no', null)
