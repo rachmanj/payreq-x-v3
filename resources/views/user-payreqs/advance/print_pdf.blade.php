@@ -37,11 +37,14 @@
           Department: <b>{{ $payreq->department->department_name }}</b> <br>
         </address>
       </div>
+      <div class="col-sm-4"><h3>Payment Request</h3></div>
       <div class="col-sm-4 invoice-col">
-        <b>Payment Request</b><br>
         Document No: <b>{{ $payreq->nomor }}</b><br>
-        Date : <b>{{ $payreq->created_at->format('d-M-Y') }}</b><br>
-        Type : <b>{{ ucfirst($payreq->type) }}</b><br>
+        @if ($payreq->approved_at !== null)
+        Approved Date: <b>{{ \Carbon\Carbon::parse($payreq->approved_at)->addHours(8)->format('d-M-Y') }}</b><br>
+        @endif
+        {{-- Date : <b>{{ $payreq->created_at->format('d-M-Y') }}</b><br> --}}
+        Type : <b>Advance</b><br>
       </div>
       <!-- /.col -->
     </div>
@@ -74,7 +77,10 @@
             </tr>
             <tr>
                 <th class="text-right">Say</th>
-                <th colspan="2">{{ ucfirst($terbilang) }}</th>
+                <td colspan="2">{{ ucfirst($terbilang) }}</td>
+            </tr>
+            <tr>
+              <td colspan="3">Transfer Info (Bank / Acc No / Acc Name) :</td>
             </tr>
           </tfoot>
         </table>
@@ -87,12 +93,28 @@
     <div class="row invoice-info">
         <div class="col-sm-4 invoice-col">
             <b>Requestor / Received by</b><br>
-            Date: {{ $payreq->created_at->format('d-M-Y') }}<br>
+             Date: {{--{{ $payreq->created_at->format('d-M-Y') }} --}}<br> 
             <br>
             <br>
             <br>
             <br>
             {{ $payreq->requestor->name }}<br>
+        </div>
+
+        <div class="col-sm-4 invoice-col text-center">
+          <b>Approved by</b>
+          <br>
+          <br>
+          <br>
+          <br>
+          <br>
+          <br>
+          (....................................................)
+          {{-- <div> 
+             @foreach ($approvers as $approver)
+            ( {{ $approver }} {{ '_____________________' }}) 
+            @endforeach 
+          </div> --}}
         </div>
 
         <div class="col-sm-4 invoice-col">
@@ -102,21 +124,10 @@
             <br>
             <br>
             <br>
+            <br>
+            (....................................................)
         </div>
-
-        <div class="col-sm-4 invoice-col text-center">
-            <b>Approved by</b>
-            <br>
-            <br>
-            <br>
-            <br>
-            <br>
-            <div>
-              @foreach ($approvers as $approver)
-              ( {{ $approver }} )
-              @endforeach
-            </div>
-        </div>
+        
     </div>
     <!-- /.row -->
   </section>
@@ -126,6 +137,6 @@
 <!-- Page specific script -->
 <script>
   window.addEventListener("load", window.print());
-</script>
+</script> 
 </body>
 </html>
