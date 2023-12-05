@@ -39,7 +39,8 @@ class CashierDashboardController extends Controller
             'count' => Incoming::where('project', $project)->whereNull('receive_date')->count(),
         ];
 
-        $today = Carbon::today()->addHours(8);
+        // $today = Carbon::today()->addHours(-8);
+        $today = Carbon::today();
         $result['today_incoming'] = [
             'amount' => Incoming::where('project', $project)->where('receive_date', $today)->sum('amount'),
             'count' => Incoming::where('project', $project)->where('receive_date', $today)->count(),
