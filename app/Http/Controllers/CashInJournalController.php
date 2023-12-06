@@ -155,7 +155,7 @@ class CashInJournalController extends Controller
         $incomings = Incoming::where('project', auth()->user()->project)
             ->whereNull('flag')
             ->whereNull('cash_journal_id')
-            ->where('realization_id', '<>', null)
+            // ->where('realization_id', '<>', null)
             ->where('will_post', 1)
             ->whereNotNull('receive_date')
             ->get();

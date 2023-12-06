@@ -43,6 +43,9 @@ class CashierIncomingController extends Controller
         $incoming->description = $request->description;
         $incoming->amount = $request->amount;
         $incoming->project = auth()->user()->project;
+        if ($request->has('will_post')) {
+            $incoming->will_post = 0;
+        }
         $incoming->save();
 
         return redirect()->route('cashier.incomings.index')->with('success', 'Incoming has been created');

@@ -54,15 +54,32 @@
               @enderror
             </div>
 
-            <div class="form-group">
-              <label for="amount">Amount</label>
-              <input type="text" name="amount" id="amount" value="{{ old('amount') }}" class="form-control @error('amount') is-invalid @enderror">
-              @error('amount')
-              <div class="invalid-feedback">
-                {{ $message }}
+            <div class="row align-items-center">
+              <div class="col-6">
+                <div class="form-group">
+                  <label for="amount">Amount</label>
+                  <input type="text" name="amount" id="amount" value="{{ old('amount') }}" class="form-control @error('amount') is-invalid @enderror">
+                  @error('amount')
+                  <div class="invalid-feedback">
+                    {{ $message }}
+                  </div>
+                  @enderror
+                </div>
               </div>
-              @enderror
+              
+              <input type="hidden" name="test" value="ninja">
+              <div class="col-6">
+                <div class="form-group">
+                  <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="customSwitch1" name="will_post">
+                    <label class="custom-control-label" for="customSwitch1">Don't Show this in Incoming Journal Creation</label>
+                  </div>
+                </div>
+              </div>
             </div>
+            
+
+            
 
             <div class="card-footer">
               <div class="row">

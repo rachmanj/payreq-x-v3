@@ -36,10 +36,10 @@
           Department: <b>{{ $realization->department->department_name }}</b> <br>
         </address>
       </div>
-      <div class="col-sm-4"><h3>Realization Payment Request</h3></div>
+      <div class="col-sm-4"><h3>Realization Advance Payment</h3></div>
       <div class="col-sm-4 invoice-col">
-        Document No: <b>{{ $realization->nomor }}</b><br>
-        Date : <b>{{ $approved_at->format('d-M-Y') }}</b><br>
+        Document No : <b>{{ $realization->nomor }}</b><br>
+        Approved Date : <b>{{ $approved_at->format('d-M-Y') }}</b><br>
         Payreq No : <b>{{ $realization->payreq->nomor }}</b><br>
       </div>
     </div>
