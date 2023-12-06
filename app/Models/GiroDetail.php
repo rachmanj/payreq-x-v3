@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Giro extends Model
+class GiroDetail extends Model
 {
     use HasFactory;
 
     protected $guarded = [];
 
-    public function giro_details()
+    public function giro()
     {
-        return $this->hasMany(GiroDetail::class);
+        return $this->belongsTo(Giro::class);
     }
 }

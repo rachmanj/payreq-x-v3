@@ -70,6 +70,14 @@ class VerificationController extends Controller
                 ->whereNull('verification_journal_id')
                 ->orderBy('created_at', 'desc')
                 ->get();
+        } elseif (in_array('cashier', $userRoles)) {
+            $include_projects = ['000H', 'APS'];
+            $realizations = Realization::whereIn('status', $status_include)
+                ->whereIn('project', $include_projects)
+                ->whereNull('verification_journal_id')
+                // ->where('flag', $flag)
+                ->orderBy('created_at', 'desc')
+                ->get();
         } else {
             $realizations = Realization::whereIn('status', $status_include)
                 ->where('project', auth()->user()->project)

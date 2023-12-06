@@ -6,6 +6,8 @@ use App\Http\Controllers\CashierOutgoingController;
 use App\Http\Controllers\CashierIncomingController;
 use App\Http\Controllers\CashierDashboardController;
 use App\Http\Controllers\CashierVerificationJournalController;
+use App\Http\Controllers\CashierGiroController;
+use App\Http\Controllers\CashierGiroDetailController;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
@@ -38,4 +40,13 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/data', [CashierVerificationJournalController::class, 'data'])->name('data');
         Route::get('/', [CashierVerificationJournalController::class, 'index'])->name('index');
     });
+
+    Route::prefix('giros')->name('giros.')->group(function () {
+        Route::get('/data', [CashierGiroController::class, 'data'])->name('data');
+        Route::get('/{giro_id}/data', [CashierGiroDetailController::class, 'data'])->name('detail.data');
+        Route::get('/{giro_id}', [CashierGiroDetailController::class, 'index'])->name('detail.index');
+        Route::post('/{giro_id}/store', [CashierGiroDetailController::class, 'store'])->name('detail.store');
+        Route::delete('/{giro_detail_id}/destroy', [CashierGiroDetailController::class, 'destroy'])->name('detail.destroy');
+    });
+    Route::resource('giros', CashierGiroController::class);
 });

@@ -13,7 +13,7 @@
   <div class="col-12">
       <div class="card card-info">
           <div class="card-header">
-              <h3 class="card-title">Advance Info</h3>
+              <h3 class="card-title">Payreq Info</h3>
               <a href="{{ route('approvals.request.payreqs.index') }}" class="btn btn-xs btn-primary float-right mx-2"><i class="fas fa-arrow-left"></i> Back</a>
               <button type="button" class="btn btn-xs btn-warning float-right" data-toggle="modal" data-target="#approvals-update"><b>APPROVAL</b></button>
           </div>
@@ -22,24 +22,41 @@
 </div>
 
 <div class="row">
-  <div class="col-sm-4 col-6">
+  <div class="col-sm-3 col-6">
     <div class="description-block border-right">
         <h5 class="description-header">Payreq No</h5>
         <span class="description-text">{{ $payreq->nomor }}</span>
     </div>
   </div>
-  <div class="col-sm-4 col-6">
+  <div class="col-sm-3 col-6">
+    <div class="description-block border-right">
+        <h5 class="description-header">Requestor</h5>
+        <span class="description-text">{{ $payreq->requestor->name }}</span>
+    </div>
+  </div>
+  <div class="col-sm-3 col-6">
     <div class="description-block border-right">
       <h5 class="description-header">Payreq Type</h5>
       <span class="description-text">{{ $payreq->type }}</span>
     </div>
   </div>
-  <div class="col-sm-4 col-6">
+  <div class="col-sm-3 col-6">
     <div class="description-block border-right">
       <h5 class="description-header">Payreq Amount</h5>
       <span class="description-text">{{ number_format($payreq->amount, 2) }}</span>
     </div>
   </div>
+</div>
+
+<hr>
+
+<div class="row">
+    <div class="col-12">
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="" id="" cols="30" rows="2" class="form-control" readonly>{{ $payreq->remarks }}</textarea>
+        </div>
+    </div>
 </div>
 <!-- /.row -->
 

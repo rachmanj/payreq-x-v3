@@ -95,7 +95,8 @@
     <div class="row invoice-info">
         <div class="col-sm-4 invoice-col">
             <b>Realization by</b><br>
-            Date: {{ $approved_at->format('d-M-Y') }}<br>
+            Date: {{-- {{ $approved_at->format('d-M-Y') }} --}}<br>
+            <br>
             <br>
             <br>
             <br>
@@ -103,25 +104,25 @@
         </div>
 
         <div class="col-sm-4 invoice-col">
-            <b>Verified by</b>
-            <br>
-            <br>
-            <br>
-            <br>
+          <b>Approved by</b>
+          <br>
+          <br>
+          <br>
+          <br>
+          <br>
+          <br>
+          (....................................................)
         </div>
 
         <div class="col-sm-4 invoice-col text-center">
-            <b>Approved by</b>
-            <br>
-            <br>
-            <br>
-            <br>
-            <br>
-            <div>
-              @foreach ($approvers as $approver)
-              ( {{ $approver }} )
-              @endforeach
-            </div>
+          <b>Verified by | Cashier</b>
+          <br>
+          <br>
+          <br>
+          <br>
+          <br>
+          <br>
+          (....................................................)
         </div>
     </div>
     <!-- /.row -->
