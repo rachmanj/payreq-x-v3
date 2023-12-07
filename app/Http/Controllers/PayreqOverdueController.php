@@ -24,7 +24,9 @@ class PayreqOverdueController extends Controller
 
     public function data()
     {
+        $status_include = ['paid'];
         $payreqs = Payreq::whereDate('due_date', '<=', now())
+            ->whereIn('status', $status_include)
             ->get();
 
         return datatables()->of($payreqs)
