@@ -32,6 +32,7 @@ class VerificationController extends Controller
 
     public function save(Request $request)
     {
+
         //UPDATE REALIZATION DETAIL
         foreach ($request->realization_details as $item) {
             $realization_detail = RealizationDetail::findOrFail($item['id']);
@@ -47,9 +48,14 @@ class VerificationController extends Controller
         }
 
         //UPDATE REALIZATION
-        $realization = Realization::findOrFail($request->realization_id);
-        $realization->status = 'close'; // setelah cashier melengkapi nomor account di each realization detail, maka statusnya menjadi close
+        $realization = Realization::where('id', $request->realization_id)->first();
+        // return $realization;
+        // die;
         $realization->deletable = 0;
+
+        if ($this->realizationDetailIsComplete($realization)) {
+            $realization->status = 'verification-complete';
+        }
         $realization->save();
 
         // UPDATE PAYREQ
@@ -63,7 +69,7 @@ class VerificationController extends Controller
     public function data()
     {
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'reimburse-paid', 'verification', 'close'];
+        $status_include = ['approved', 'reimburse-paid', 'verification', 'close', 'verification-complete'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Realization;
+use App\Models\RealizationDetail;
 use App\Models\VerificationJournal;
 use Illuminate\Http\Request;
 
@@ -12,10 +13,13 @@ class VerificationJournalController extends Controller
     public function index()
     {
         $realizations_count = Realization::whereNull('verification_journal_id')
-            ->where('status', 'approved')
+            ->where('status', 'verification-complete')
             ->whereNull('flag')
             ->where('project', auth()->user()->project)
             ->count();
+
+        // return $realizations_count;
+        // die;
 
         return view('verifications.journal.index', compact([
             'realizations_count'
@@ -156,11 +160,27 @@ class VerificationJournalController extends Controller
 
     public function tocart_data()
     {
-        $realizations = Realization::where('project', auth()->user()->project)
-            ->where('status', 'approved')
-            ->whereNull('verification_journal_id')
-            ->whereNull('flag')
-            ->get();
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
+            $realizations = Realization::where('status', 'verification-complete')
+                ->whereNull('verification_journal_id')
+                ->whereNull('flag')
+                ->get();
+        } elseif (in_array('cashier', $userRoles)) {
+            $include_projects = ['000H', 'APS'];
+            $realizations = Realization::where('status', 'verification-complete')
+                ->whereIn('project', $include_projects)
+                ->whereNull('verification_journal_id')
+                ->whereNull('flag')
+                ->get();
+        } else {
+            $realizations = Realization::where('project', auth()->user()->project)
+                ->where('status', 'verification-complete')
+                ->whereNull('verification_journal_id')
+                ->whereNull('flag')
+                ->get();
+        }
 
         return datatables()->of($realizations)
             ->addColumn('employee', function ($realization) {
@@ -234,7 +254,32 @@ class VerificationJournalController extends Controller
             $realization_detail->save();
         }
 
-        return view('verifications.journal.index')->with('success', 'Verification Journal created successfully');
+        return $this->index()->with('success', 'Verification Journal created successfully');
+    }
+
+    public function destroy($id)
+    {
+        $verification_journal = VerificationJournal::findOrFail($id);
+
+        $realizations = Realization::where('verification_journal_id', $verification_journal->id)
+            ->get();
+
+        foreach ($realizations as $realization) {
+            $realization->verification_journal_id = null;
+            $realization->save();
+        }
+
+        $realization_details = RealizationDetail::where('verification_journal_id', $verification_journal->id)
+            ->get();
+
+        foreach ($realization_details as $realization_detail) {
+            $realization_detail->verification_journal_id = null;
+            $realization_detail->save();
+        }
+
+        $verification_journal->delete();
+
+        return $this->index()->with('success', 'Verification Journal deleted successfully');
     }
 
     public function data()
