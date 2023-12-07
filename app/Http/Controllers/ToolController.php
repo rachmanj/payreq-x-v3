@@ -94,7 +94,7 @@ class ToolController extends Controller
         $realization_project_count = Realization::where('project', $realization->payreq->project)
             ->where('status', 'approved')
             ->count();
-        $nomor = Carbon::now()->format('y') . substr(auth()->user()->project, 0, 3)  . str_pad($realization->id, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y') . 'R' . substr(auth()->user()->project, 1, 2)  . str_pad($realization->id, 5, '0', STR_PAD_LEFT);
         // $nomor = Carbon::now()->format('y') . substr(auth()->user()->project, 0, 3)  . str_pad($realization_project_count + 1, 5, '0', STR_PAD_LEFT);
 
         return $nomor;

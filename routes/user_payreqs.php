@@ -20,6 +20,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::get('/data', [UserPayreqHistoriesController::class, 'data'])->name('data');
         Route::get('/', [UserPayreqHistoriesController::class, 'index'])->name('index');
         Route::get('/{payreq_id}/show', [UserPayreqHistoriesController::class, 'show'])->name('show');
+        Route::delete('/{payreq_id}', [UserPayreqHistoriesController::class, 'destroy'])->name('destroy');
     });
 
     // REALIZATION

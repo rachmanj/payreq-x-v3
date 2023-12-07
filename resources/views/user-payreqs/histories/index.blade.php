@@ -22,10 +22,11 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Payreq No</th>
+                        <th>Payreq</th>
                         <th>Type</th>
+                        <th>Realization</th>
                         <th>Status</th>
-                        <th>Created At</th>
+                        <th>Days</th>
                         <th>IDR</th>
                         <th></th>
                     </tr>
@@ -64,15 +65,16 @@
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'nomor'},
           {data: 'type'},
+          {data: 'realization_no'},
           {data: 'status'},
-          {data: 'created_at'},
+          {data: 'duration'},
           {data: 'amount'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [5],
+                  "targets": [5, 6],
                   "className": "text-right"
                 },
               ]
