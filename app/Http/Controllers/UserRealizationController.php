@@ -213,7 +213,7 @@ class UserRealizationController extends Controller
     {
         // get user's roles
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'revise', 'submitted', 'draft', 'rejected'];
+        $status_include = ['approved', 'revise', 'submitted', 'draft', 'rejected', 'verification', 'verified-complete'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)
@@ -238,7 +238,12 @@ class UserRealizationController extends Controller
                 return $realization->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
             })
             ->addColumn('days', function ($realization) {
-                $diff = Carbon::now()->diffInDays(Carbon::parse($realization->created_at));
+                if ($realization->approved_at) {
+                    $diff = Carbon::now()->diffInDays(Carbon::parse($realization->approved_at));
+                } else {
+                    $diff = '-';
+                }
+
                 return $diff;
             })
             ->editColumn('status', function ($realization) {
