@@ -130,6 +130,7 @@ class VerificationJournalController extends Controller
     public function move_all_tocart()
     {
         $realizations = Realization::whereNull('verification_journal_id')
+            ->where('status', 'verification-complete')
             ->whereNull('flag')
             ->where('project', auth()->user()->project)
             ->get();
