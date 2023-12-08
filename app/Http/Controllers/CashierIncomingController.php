@@ -74,7 +74,7 @@ class CashierIncomingController extends Controller
             })
             ->addColumn('realization_no', function ($incoming) {
                 if ($incoming->realization_id !== null) {
-                    return $incoming->realization->nomor;
+                    return '<a href="#" style="color: black" title="' . $incoming->realization->payreq->remarks . '">' . $incoming->realization->nomor . '</a>';
                 } else {
                     return $incoming->description;
                 }
@@ -98,7 +98,7 @@ class CashierIncomingController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.incomings.action')
-            ->rawColumns(['action', 'status'])
+            ->rawColumns(['action', 'status', 'realization_no'])
             ->toJson();
     }
 }
