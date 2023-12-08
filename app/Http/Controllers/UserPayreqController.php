@@ -13,6 +13,7 @@ class UserPayreqController extends Controller
     public function index()
     {
         $over_due_payreq = Payreq::where('user_id', auth()->user()->id)
+            ->where('type', 'advance')
             ->where('status', 'paid')
             ->where('due_date', '<', now())
             ->count();
