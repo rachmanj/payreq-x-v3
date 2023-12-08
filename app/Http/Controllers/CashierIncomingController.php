@@ -12,6 +12,11 @@ class CashierIncomingController extends Controller
         return view('cashier.incomings.index');
     }
 
+    public function received_index()
+    {
+        return view('cashier.incomings.received.index');
+    }
+
     public function receive(Request $request)
     {
         // update incomings table
@@ -51,15 +56,74 @@ class CashierIncomingController extends Controller
         return redirect()->route('cashier.incomings.index')->with('success', 'Incoming has been created');
     }
 
+    public function edit_received_date(Request $request, $id)
+    {
+        $incoming = Incoming::findOrFail($id);
+        $incoming->receive_date = $request->receive_date;
+        $incoming->save();
+
+        return $this->received_index()->with('success', 'Receive date has been updated');
+    }
+
+    public function destroy($id)
+    {
+        $incoming = Incoming::findOrFail($id);
+        $incoming->delete();
+
+        return $this->index()->with('success', 'Incoming has been deleted');
+    }
+
     public function data()
     {
         $roles = app(ToolController::class)->getUserRoles();
 
         if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
-            $incomings = Incoming::orderBy('created_at', 'desc')
+            $incomings = Incoming::whereNull('receive_date')
+                ->orderBy('created_at', 'desc')
                 ->get();
         } else {
             $incomings = Incoming::where('project', auth()->user()->project)
+                ->whereNull('receive_date')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        return datatables()->of($incomings)
+            ->addColumn('employee', function ($incoming) {
+                if ($incoming->realization_id !== null) {
+                    return $incoming->realization->requestor->name;
+                } else {
+                    return $incoming->cashier->name;
+                }
+            })
+            ->addColumn('realization_no', function ($incoming) {
+                if ($incoming->realization_id !== null) {
+                    return '<a href="#" style="color: black" title="' . $incoming->realization->payreq->remarks . '">' . $incoming->realization->nomor . '</a>';
+                } else {
+                    return $incoming->description;
+                }
+            })
+            ->editColumn('amount', function ($incoming) {
+                return number_format($incoming->amount, 2);
+            })
+            ->addColumn('account', function ($incoming) {
+                return $incoming->account_id ? $incoming->account->account_number . ' - ' . $incoming->account->account_name : '-';
+            })
+            ->addIndexColumn()
+            ->addColumn('action', 'cashier.incomings.action')
+            ->rawColumns(['action', 'status', 'realization_no'])
+            ->toJson();
+    }
+
+    public function received_data()
+    {
+        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
+            $incomings = Incoming::where('receive_date', '!=', null)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } else {
+            $incomings = Incoming::where('receive_date', '!=', null)
+                ->where('project', auth()->user()->project)
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
@@ -97,7 +161,7 @@ class CashierIncomingController extends Controller
                 }
             })
             ->addIndexColumn()
-            ->addColumn('action', 'cashier.incomings.action')
+            ->addColumn('action', 'cashier.incomings.received.action')
             ->rawColumns(['action', 'status', 'realization_no'])
             ->toJson();
     }

@@ -1,24 +1,17 @@
 {{-- button call modal to update --}}
-
-<form action="{{ route('cashier.incomings.destroy', $model->id) }}" class="d-inline" method="POST">
-    @csrf @method('DELETE')
-    <button type="button" class="btn btn-xs btn-success" data-toggle="modal" data-target="#receive-incoming-{{ $model->id }}">receive</button>
-    @if ($model->realization_id == null)
-    <button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('Are you sure you want delete this record?')">delete</button>
-    @endif
-</form>
+<button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#receive-incoming-{{ $model->id }}">edit</button>
 
 {{-- modal receive --}}
 <div class="modal fade" id="receive-incoming-{{ $model->id }}">
     <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Receive Incoming</h4>
+                <h4 class="modal-title">Edit Receive Date</h4>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
 
-            <form action="{{ route('cashier.incomings.receive') }}" method="POST">
-                @csrf
+            <form action="{{ route('cashier.incomings.received.edit_received_date', $model->id) }}" method="POST">
+                @csrf @method('PUT')
 
                 <div class="modal-body">
                     <div class="row">
@@ -30,7 +23,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="receive_date">Receive Date</label>
-                                <input type="date" name="receive_date" id="receive_date" class="form-control" value="{{ date('Y-m-d') }}">
+                                <input type="date" name="receive_date" id="receive_date" class="form-control" value="{{ $model->receive_date }}">
                             </div>
                         </div>
                     </div>

@@ -14,9 +14,8 @@
 
     <div class="card">
       <div class="card-header">
-        <a href="#" style="color: black">NOT RECEIVE YET</a> | 
-        <a href="{{ route('cashier.incomings.received.index') }}">Has Received</a>
-        <a href="{{ route('cashier.incomings.create') }}" class="btn btn-sm btn-success float-right"> New Incoming Payment</a>
+        <a href="{{ route('cashier.incomings.index') }}" >Not Receive Yet</a> | 
+        <a href="#" style="color: black">HAS RECEIVED</a>
       </div>
       <!-- /.card-header -->
       <div class="card-body">
@@ -26,8 +25,10 @@
             <th>#</th>
             <th>Employee</th>
             <th>Realization No / Desc</th>
+            <th>Receive Date</th>
             <th>IDR</th>
             <th>Account</th>
+            <th>Status</th>
             <th></th>
           </tr>
           </thead>
@@ -69,19 +70,21 @@
     $("#incomings").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cashier.incomings.data') }}',
+      ajax: '{{ route('cashier.incomings.received.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'employee'},
         {data: 'realization_no'},
+        {data: 'receive_date'},
         {data: 'amount'},
         {data: 'account'},
+        {data: 'status'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [3],
+                "targets": [4],
                 "className": "text-right"
               }
             ]

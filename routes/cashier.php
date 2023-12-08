@@ -30,6 +30,14 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/receive', [CashierIncomingController::class, 'receive'])->name('receive');
         Route::get('/create', [CashierIncomingController::class, 'create'])->name('create');
         Route::post('/store', [CashierIncomingController::class, 'store'])->name('store');
+        Route::delete('/{id}/destroy', [CashierIncomingController::class, 'destroy'])->name('destroy');
+
+        // incoming has received
+        Route::prefix('received')->name('received.')->group(function () {
+            Route::get('/data', [CashierIncomingController::class, 'received_data'])->name('data');
+            Route::get('/', [CashierIncomingController::class, 'received_index'])->name('index');
+            Route::put('/{id}/edit_receive_date', [CashierIncomingController::class, 'edit_received_date'])->name('edit_received_date');
+        });
     });
 
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
