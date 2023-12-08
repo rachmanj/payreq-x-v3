@@ -26,6 +26,7 @@ class PayreqOverdueController extends Controller
     {
         $status_include = ['paid'];
         $payreqs = Payreq::whereDate('due_date', '<=', now())
+            ->where('type', 'advance')
             ->whereIn('status', $status_include)
             ->get();
 
