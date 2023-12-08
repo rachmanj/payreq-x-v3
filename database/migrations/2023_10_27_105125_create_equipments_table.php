@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('project', 20)->nullable();
             $table->string('plant_group')->nullable();
             $table->string('model')->nullable();
+            $table->string('nomor_polisi')->nullable();
         });
     }
 

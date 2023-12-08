@@ -161,7 +161,7 @@ class UserRealizationController extends Controller
 
         $roles = app(ToolController::class)->getUserRoles();
 
-        if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
+        if (auth()->user()->project == '000H') {
             $equipments = Equipment::orderBy('unit_code', 'asc')->get();
         } else {
             $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();

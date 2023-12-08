@@ -42,32 +42,32 @@
                     </div>
                     <div class="row">
 
-                        {{-- <div class="col-4"> 
+                        <div class="col-4"> 
                             <div class="form-group">
                                 <label for="unit_no">Unit No</label>
                                 <select id="unit_no" name="unit_no" class="form-control select2bs4">
                                     <option value="">-- select unit no --</option>
                                     @foreach ($equipments as $item)
-                                        <option value="{{ $item->unit_code }}">{{ $item->unit_code }} - {{ $item->plant_group }} - {{ $item->model }}</option>
+                                        <option value="{{ $item->unit_code }}">{{ $item->unit_code }} - {{ $item->project }} - {{ $item->plant_group }} - {{ $item->nomor_polisi }}</option>
                                     @endforeach
                                 </select>
                             </div> 
-                        </div> --}}
+                        </div>
 
-                        <div class="col-4">
+                        <div class="col-2">
                             <div class="form-group">
-                                <label for="nopol">No Plat / No Polisi</label>
+                                <label for="nopol">No Polisi <small>(optional)</small></label>
                                 <input type="text" name="nopol" value="{{ old('nopol') }}" id="nopol" class="form-control">
                             </div>
                         </div>
 
-                        <div class="col-2">
+                        <div class="col-1">
                             <div class="form-group">
                                 <label for="qty">Qty</label>
                                 <input id="qty" name="qty" class="form-control">
                             </div> 
                         </div>
-                        <div class="col-2">
+                        <div class="col-1">
                             <div class="form-group">
                                 <label for="km_position">HM</label>
                                 <input id="km_position" name="km_position" class="form-control">

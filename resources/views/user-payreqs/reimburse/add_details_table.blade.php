@@ -21,10 +21,10 @@
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $item->description }} 
-                                        @if ($item->nopol !== null)
+                                        @if ($item->nopol !== null || $item->unit_no !== null)
                                             <br/>
                                             @if ($item->type === 'fuel')
-                                                <small>Nopol {{ $item->nopol }}, {{ $item->type }} {{ $item->qty }} {{ $item->uom }}. HM: {{ $item->km_position }}</small>
+                                                <small>{{ $item->unit_no }}, {{ $item->nopol }}, {{ $item->type }} {{ $item->qty }} {{ $item->uom }}. HM: {{ $item->km_position }}</small>
                                             @else
                                                 <small>{{ $item->type }}, HM: {{ $item->km_position }}</small>
                                             @endif 
