@@ -44,7 +44,7 @@
         Approved Date: <b>{{ \Carbon\Carbon::parse($payreq->approved_at)->addHours(8)->format('d-M-Y') }}</b><br>
         @endif
         {{-- Date : <b>{{ $payreq->created_at->format('d-M-Y') }}</b><br> --}}
-        Type : <b>Advance</b><br>
+        Type : <b>{{ ucfirst($payreq->type) }}</b><br>
       </div>
       <!-- /.col -->
     </div>
