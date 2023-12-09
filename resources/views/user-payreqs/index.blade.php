@@ -14,12 +14,13 @@
 
     <div class="card">
       <div class="card-header">
+        <h3 class="card-title">Payment Request</h3>
         @if ($enable_payreq)
-        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#new-payreq">
+        <button type="button" class="btn btn-sm btn-primary float-right" data-toggle="modal" data-target="#new-payreq">
           <i class="fas fa-plus"></i> New Payreq
         </button>
         @else
-        <button type="button" class="btn btn-sm btn-primary" disabled>
+        <button type="button" class="btn btn-sm btn-primary float-right" disabled>
           <i class="fas fa-plus"></i> New Payreq
         </button>
         <p class="text-red">There is/are <b>{{ $over_due_payreq }}</b> payreq(s) overdue. Please make realization first.</p>
