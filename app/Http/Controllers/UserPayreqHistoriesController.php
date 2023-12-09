@@ -50,7 +50,12 @@ class UserPayreqHistoriesController extends Controller
                 return ucfirst($payreq->type);
             })
             ->addColumn('realization_no', function ($payreq) {
-                return $payreq->realization->nomor;
+                // if payreq has realization
+                if ($payreq->realization) {
+                    return $payreq->realization->nomor;
+                } else {
+                    return 'n/a';
+                }
             })
             ->editColumn('status', function ($payreq) {
                 if ($payreq->status === 'canceled') {
