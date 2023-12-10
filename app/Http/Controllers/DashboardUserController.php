@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalPlan;
 use App\Models\Outgoing;
 use App\Models\Payreq;
+use App\Models\Realization;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -20,12 +21,14 @@ class DashboardUserController extends Controller
         $user_ongoing_payreqs = app(UserPayreqController::class)->ongoing_payreqs();
         $user_ongoing_realizations = app(UserRealizationController::class)->ongoing_realizations();
         $avg_completion_days = $this->user_completion_days(auth()->user()->id);
+        $monthly_chart = $this->user_monthly_amount();
 
         return view('dashboard.index', compact([
             'wait_approve',
             'user_ongoing_payreqs',
             'user_ongoing_realizations',
-            'avg_completion_days'
+            'avg_completion_days',
+            'monthly_chart'
         ]));
     }
 
@@ -57,5 +60,37 @@ class DashboardUserController extends Controller
         }
 
         return $average_duration;
+    }
+
+    public function user_monthly_amount()
+    {
+        $user_id = auth()->user()->id;
+
+        $year = date('Y'); // Assign the current year to the variable
+        // get months in current year
+        $months = [];
+        for ($i = 1; $i <= 12; $i++) {
+            array_push($months, $i);
+        }
+
+        foreach ($months as $month) {
+            $payreqs = Payreq::where('user_id', $user_id)
+                ->where('status', 'close')
+                ->whereMonth('approved_at', $month)
+                ->whereYear('approved_at', $year)
+                ->get();
+
+            $realization_details = $payreqs->pluck('realization')->flatten()->pluck('realizationDetails')->flatten()->sum('amount');
+
+            $month_name = substr(date('F', mktime(0, 0, 0, $month, 10)), 0, 3);
+
+            $monthly_amount[] = [
+                'month' => $month,
+                'month_name' => $month_name,
+                'amount' => $realization_details
+            ];
+        }
+
+        return $monthly_amount;
     }
 }

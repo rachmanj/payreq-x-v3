@@ -43,6 +43,9 @@ class UserPayreqHistoriesController extends Controller
             ->get();
 
         return datatables()->of($payreqs)
+            ->editColumn('nomor', function ($payreq) {
+                return '<a href="#" style="color: black" title="' . $payreq->remarks . '">' . $payreq->nomor . '</a>';
+            })
             ->editColumn('amount', function ($payreq) {
                 return number_format($payreq->amount, 2);
             })
@@ -82,7 +85,7 @@ class UserPayreqHistoriesController extends Controller
                 return $approved->diffInDays($closed);
             })
             ->addColumn('action', 'user-payreqs.histories.action')
-            ->rawColumns(['action', 'status'])
+            ->rawColumns(['action', 'status', 'nomor'])
             ->addIndexColumn()
             ->toJson();
     }

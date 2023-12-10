@@ -28,9 +28,14 @@
         @include('dashboard.user-payreqs')
     </div>
 
+    <div class="row">
+        @include('dashboard.chart')
+    </div>
+
     
 @endsection
 
 @section('scripts')
 <script src="{{ asset('adminlte/plugins/chart.js/Chart.min.js') }}"></script>
+@include('dashboard.chart-script')
 @endsection

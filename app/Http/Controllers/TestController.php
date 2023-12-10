@@ -18,7 +18,8 @@ class TestController extends Controller
         // $test = Realization::with('realizationDetails')->where('id', 3)->first();
         // $test = app(CashInJournalController::class)->to_cart_data();
         // $test = app(VerificationJournalController::class)->journal_details(6);
-        $test = app(DashboardUserController::class)->user_completion_days(23);
+        $test = app(DashboardUserController::class)->user_monthly_amount();
+
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
         //     ->get();
