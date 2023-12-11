@@ -16,7 +16,7 @@
       <div class="card-header">
 
         @hasanyrole('superadmin|admin|cashier')
-        <button href="#" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Giro</button>
+        <button href="#" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Bilyet</button>
         @endhasanyrole
       </div>  <!-- /.card-header -->
      
@@ -44,7 +44,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title"> New Giro</h4>
+        <h4 class="modal-title"> New Bilyet</h4>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>

@@ -41,7 +41,7 @@
                   <th>#</th>
                   <th>Description</th>
                   <th>Amount</th>
-                  <th>is Cash in?</th>
+                  {{-- <th>is Cash in?</th> --}}
                   <th></th>
                 </tr>
               </thead>
@@ -75,7 +75,8 @@
                 @enderror
             </div>
 
-            <div class="form-group">
+             
+            {{-- <div class="form-group">
               <label for="account_id">Account No.<small>(optional)</small></label>
               <select name="account_id" class="form-control">
                 <option value="">-- select account --</option>
@@ -83,7 +84,7 @@
                     <option value="{{ $account->id }}">{{ $account->name . ' - ' . $account->account_no }}</option>
                 @endforeach
               </select>
-            </div>
+            </div> --}}
 
             <div class="form-group">
                 <label for="amount">Amount</label>
@@ -140,7 +141,7 @@
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'remarks'},
         {data: 'amount'},
-        {data: 'is_cashin'},
+        // {data: 'is_cashin'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,

@@ -14,12 +14,12 @@
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Edit Data</h3>
-            <a href="{{ route('giros.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-undo"></i> Back</a>
+            <a href="{{ route('cashier.giros.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
             <input type="submit" name="" id="" value="Save" form="form-edit" class="btn btn-sm btn-success float-right mx-2">
           </div>
 
           <div class="card-body">
-            <form action="{{ route('giros.update', $giro->id) }}" method="POST" id="form-edit" enctype="multipart/form-data">
+            <form action="{{ route('cashier.giros.update', $giro->id) }}" method="POST" id="form-edit" enctype="multipart/form-data">
               @csrf @method('PUT')
 
               <div class="row">
@@ -63,7 +63,7 @@
                       <label for="account">Account</label>
                       <select name="account" id="account" class="form-control select2bs4">
                         @foreach ($accounts as $account)
-                            <option value="{{ $account }}" {{ $giro->account === $account ? 'selected' : '' }}>{{ $account }}</option>
+                            <option value="{{ $account->account_number }}" {{ $giro->account === $account->account_number ? 'selected' : '' }}>{{ $account->account_number }}</option>
                         @endforeach
                       </select>
                     </div>

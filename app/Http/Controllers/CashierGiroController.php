@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\Giro;
 use App\Models\GiroDetail;
 use Illuminate\Http\Request;
@@ -55,9 +56,9 @@ class CashierGiroController extends Controller
     {
         $giro = Giro::find($id);
         $banks = ['Bank Mandiri'];
-        $accounts = ['1490004194751', '1490007118583'];
+        $accounts = Account::where('type', 'bank')->where('project', auth()->user()->project)->get();
 
-        return view('giros.edit', compact('giro', 'banks', 'accounts'));
+        return view('cashier.giros.edit', compact('giro', 'banks', 'accounts'));
     }
 
     public function update(Request $request, $id)

@@ -15,9 +15,38 @@ class CashierGiroDetailController extends Controller
         $giro = Giro::find($giro_id);
         $giro_details = GiroDetail::where('giro_id', $giro_id)->get();
         $amount = $giro_details->sum('amount');
-        $accounts = ['test', 'test2'];
+        $accounts = Account::where('type', 'bank')->where('project', auth()->user()->project)->get();
 
         return view('cashier.giros.details.index', compact('giro', 'giro_details', 'amount', 'accounts'));
+    }
+
+    public function store(Request $request, $giro_id)
+    {
+        $giro = Giro::find($giro_id);
+
+        $request->validate([
+            'remarks' => 'required',
+            'amount' => 'required',
+        ]);
+
+        // SAVE TO GIRO DETAIL TABLE
+        $giro_detail = new GiroDetail();
+        $giro_detail->giro_id = $giro->id;
+        $giro_detail->remarks = $request->remarks;
+        // $giro_detail->account_id = $request->account_id;
+        $giro_detail->amount = $request->amount;
+        $giro_detail->save();
+
+        return redirect()->route('cashier.giros.detail.index', $giro_id);
+    }
+
+    public function destroy($id)
+    {
+        $giro_detail = GiroDetail::find($id);
+        $giro_id = $giro_detail->giro_id;
+        $giro_detail->delete();
+
+        return redirect()->route('cashier.giros.detail.index', $giro_id)->with('success', 'Data berhasil dihapus');
     }
 
     public function data($giro_id)
