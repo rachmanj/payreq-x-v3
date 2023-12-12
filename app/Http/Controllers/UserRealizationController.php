@@ -132,6 +132,12 @@ class UserRealizationController extends Controller
         if ($realization->realizationDetails->count() > 0) {
             $realization->realizationDetails()->delete();
         }
+
+        // reverse payreq status to 'paid'
+        $realization->payreq->update([
+            'status' => 'paid',
+        ]);
+
         // delete realization
         $realization->delete();
 
@@ -147,6 +153,12 @@ class UserRealizationController extends Controller
             $realization->realizationDetails()->delete();
         }
 
+        // reverse payreq status to 'paid'
+        $realization->payreq->update([
+            'status' => 'paid',
+        ]);
+
+        // delete realization
         $realization->delete();
 
         return $this->index();
