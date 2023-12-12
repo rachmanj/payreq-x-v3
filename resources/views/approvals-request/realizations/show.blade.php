@@ -53,7 +53,7 @@
 
 {{-- modal update --}}
 <div class="modal fade" id="approvals-update-{{ $document->id }}">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-md">
       <div class="modal-content">
           <div class="modal-header">
               <h4 class="modal-title">Approval for Realization No. {{ $document->realization->nomor }} | {{ $payreq->requestor->name }}</h4>
