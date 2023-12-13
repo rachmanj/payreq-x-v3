@@ -14,7 +14,7 @@
         <!-- Left navbar links -->
         <ul class="navbar-nav">
           <li class="nav-item">
-            @hasanyrole('cashier|superadmin|admin')
+            @hasanyrole('cashier|superadmin|admin|cashier_site|cashier_bo')
               <a href="{{ route('cashier.dashboard.index') }}" class="nav-link">Dashboard</a>   
             @else
               <a href="{{ route('dashboard.index') }}" class="nav-link">Dashboard</a>

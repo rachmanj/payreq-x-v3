@@ -124,11 +124,13 @@ class CashierApprovedController extends Controller
         $roles = app(ToolController::class)->getUserRoles();
 
         if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
-            $approveds = Payreq::where('status', 'approved')->orWhere('status', 'split')
+            $status_includes = ['approved', 'split'];
+            $approveds = Payreq::whereIn('status', $status_includes)
                 ->orderBy('approved_at', 'desc')
                 ->get();
         } else {
-            $approveds = Payreq::where('status', 'approved')->orWhere('status', 'split')
+            $status_includes = ['approved', 'split'];
+            $approveds = Payreq::whereIn('status', $status_includes)
                 ->where('project', auth()->user()->project)
                 ->orderBy('approved_at', 'desc')
                 ->get();

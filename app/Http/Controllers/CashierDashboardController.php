@@ -51,10 +51,12 @@ class CashierDashboardController extends Controller
             'count' => Outgoing::where('project', $project)->where('outgoing_date', $today)->count()
         ];
 
-        $result['today_pc_balance'] = Account::where('type', 'cash')
-            ->where('project', $project)
-            ->first()
-            ->app_balance;
+        $account = Account::where('type', 'cash')->where('project', $project)->first();
+        if ($account) {
+            $result['today_pc_balance'] = $account->app_balance;
+        } else {
+            $result['today_pc_balance'] = 0;
+        }
 
         $result['cj_to_create'] = app(CashJournalController::class)->cj_to_create();
 
