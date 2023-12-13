@@ -4,9 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Imports\AccountImport;
 use App\Models\Account;
-use App\Models\Realization;
-use App\Models\RealizationDetail;
-use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -22,7 +19,7 @@ class AccountController extends Controller
         $validated = $request->validate([
             'account_number' => 'required|unique:accounts',
             'account_name' => 'required',
-            'type_id' => 'required',
+            'type' => 'required',
             'project' => 'required',
             'description' => 'required',
         ]);
@@ -37,7 +34,6 @@ class AccountController extends Controller
         $validated = $request->validate([
             'account_number' => 'required|unique:accounts,account_number,' . $id,
             'account_name' => 'required',
-            'type_id' => 'required',
             'project' => 'required',
             'description' => 'required',
         ]);
@@ -108,27 +104,20 @@ class AccountController extends Controller
 
     public function data()
     {
-        // get user's roles
-        $userRoles = app(UserController::class)->getUserRoles();
-
-        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
+        // if user has role superadmin or admin or cashier, get all accounts
+        if (auth()->user()->hasRole('superadmin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('cashier')) {
             $accounts = Account::orderBy('account_number', 'asc')
                 ->get();
         } else {
-            $accounts = Account::where('project', auth()->user()->project)
+            $projects_include = ['all-site', auth()->user()->project];
+
+            $accounts = Account::whereIn('project', $projects_include)
                 ->orderBy('account_number', 'asc')
                 ->where('is_hidden', 0)
                 ->get();
         }
 
-        $accounts = Account::orderBy('account_number', 'asc')
-            ->where('project', auth()->user()->project)
-            ->get();
-
         return datatables()->of($accounts)
-            // ->addColumn('type', function ($account) {
-            //     return $account->account_type->type_name;
-            // })
             ->addIndexColumn()
             ->addColumn('action', 'accounts.action')
             ->rawColumns(['action'])
@@ -154,24 +143,15 @@ class AccountController extends Controller
             $account = Account::where('account_number', $request->account_number)
                 ->first();
         } else {
-            $account = Account::where('project', 'all-site')
+            $project_includes = ['all-site', auth()->user()->project];
+            $account = Account::whereIn('project', $project_includes)
                 ->where('account_number', $request->account_number)
                 ->first();
         }
 
-        // $account = Account::where('project', auth()->user()->project)
-        //     ->where('account_number', $request->account_number)
-        //     ->first();
-
-        // $realization_detail = RealizationDetail::findOrFail($request->realization_detail_id);
-
         if (!$account) {
             $account_name = 'Account not found!';
         } else {
-            // $realization_detail->update([
-            //     'account_id' => $account->id,
-            //     'flag' => 'VERTEMP' . auth()->user()->id,   //verification temporary
-            // ]);
             $account_name = $account->account_name;
         }
 

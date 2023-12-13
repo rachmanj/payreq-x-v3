@@ -37,13 +37,13 @@
             </div>
             <div class="col-4">
               <div class="form-group">
-                <label for="type_id">Type</label>
-                <select name="type_id" id="type_id" class="form-control @error('type_id') is-invalid @enderror">
+                <label for="type">Type</label>
+                <select name="type" class="form-control @error('type') is-invalid @enderror">
                   @foreach (\App\Models\AccountType::all() as $type)
-                    <option value="{{ $type->id }}" {{ old('type_id', $model->type_id) == $type->id  ? 'selected' : '' }} >{{ $type->type_name }}</option>
+                    <option value="{{ $type->type_name }}" {{ old('type', $model->type) == $type->type_name  ? 'selected' : '' }} >{{ ucfirst($type->type_name) }}</option>
                   @endforeach
                 </select>
-                @error('type_id')
+                @error('type')
                   <div class="invalid-feedback">
                     {{ $message }}
                   </div>
@@ -57,6 +57,7 @@
                   @foreach (\App\Models\Project::all() as $project)
                       <option value="{{ $project->code }}" {{ old('project', $model->project) == $project->code ? 'selected' : '' }} >{{ $project->code }}</option>
                   @endforeach
+                    <option value="all-site" {{ old('project', $model->project) == 'all-site' ? 'selected' : '' }} >All Site</option>
                 </select>
                 @error('project')
                   <div class="invalid-feedback">

@@ -44,11 +44,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
     });
 
-    Route::prefix('verification-journal')->name('verification-journal.')->group(function () {
-        Route::get('/data', [CashierVerificationJournalController::class, 'data'])->name('data');
-        Route::get('/', [CashierVerificationJournalController::class, 'index'])->name('index');
-    });
-
     Route::prefix('giros')->name('giros.')->group(function () {
         Route::get('/data', [CashierGiroController::class, 'data'])->name('data');
         Route::get('/{giro_id}/data', [CashierGiroDetailController::class, 'data'])->name('detail.data');

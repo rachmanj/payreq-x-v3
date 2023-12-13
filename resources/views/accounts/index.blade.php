@@ -14,8 +14,10 @@
 
     <div class="card">
       <div class="card-header">
+        @hasrole('superadmin')
         <button href="#" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Account</button>
         <button href="#" class="btn btn-sm btn-success" data-toggle="modal" data-target="#accounts-upload"> Upload</button>
+        @endhasanyrole
       </div>  <!-- /.card-header -->
      
       <div class="card-body">
@@ -67,14 +69,14 @@
             </div>
             <div class="col-4">
               <div class="form-group">
-                <label for="type_id">Type</label>
-                <select name="type_id" id="type_id" class="form-control @error('type_id') is-invalid @enderror">
+                <label for="type">Type</label>
+                <select name="type" class="form-control @error('type') is-invalid @enderror">
                   <option value="">-- Select Type --</option>
                   @foreach (\App\Models\AccountType::all() as $type)
-                    <option value="{{ $type->id }}" {{ $type->id == old('type_id') ? 'selected' : '' }} >{{ $type->type_name }}</option>
+                    <option value="{{ $type->type_name }}" {{ $type->type_name == old('type') ? 'selected' : '' }} >{{ ucfirst($type->type_name) }}</option>
                   @endforeach
                 </select>
-                @error('type_id')
+                @error('type')
                   <div class="invalid-feedback">
                     {{ $message }}
                   </div>
@@ -89,6 +91,7 @@
                   @foreach (\App\Models\Project::all() as $project)
                       <option value="{{ $project->code }}" {{ $project->code == old('project') ? 'selected' : '' }} >{{ $project->code }}</option>
                   @endforeach
+                  <option value="all-site" {{ old('project') == 'all-site' ? 'selected' : '' }} >All Site</option>
                 </select>
                 @error('project')
                   <div class="invalid-feedback">
