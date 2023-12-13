@@ -48,7 +48,7 @@
       <div class="col-12 table-responsive">
         <table class="table table-bordered">
           <thead>
-            <tr class="text-white bg-secondary">
+            <tr>
                 <th class="text-right">No</th>
                 <th>Description</th>
                 <th class="text-right">Amount (IDR)</th>
