@@ -15,6 +15,13 @@
                             <th>Desc</td>
                             <th>Current Account</td>
                             <th>New Account</th>
+                            <td></td>
+
+                            @hasanyrole('superadmin|admin|cashier')
+                            <th>Project</th>
+                            <th>Dept</th>
+                            @endhasanyrole
+
                             <th class="text-right">Amount (IDR)</th>
                         </tr>
                     </thead>
@@ -37,13 +44,31 @@
                                         @endif
                                     </td>
                                     <td>{{ $item->account_id ? $item->account->account_number : '-' }}</td>
-                                    <td>
+                                    <td colspan="2">
                                         <div class="form-group">
                                             <input type="hidden" value="{{ $item->id }}" name="realization_details[{{ $key }}][id]">
                                             <input type="text" id="account_number_{{ $item->id }}" name="realization_details[{{ $key }}][account_number]">
                                             <input type="text" id="account_name_{{ $item->id }}" style="border: none" disabled>
                                         </div> 
                                     </td>
+
+                                    @hasanyrole('superadmin|admin|cashier')
+                                    <td>
+                                        <select name="realization_details[{{ $key }}][project]" class="form-control">
+                                            @foreach ($projects as $project)
+                                                <option value="{{ $project->code }}" {{ $project->code == $item->project ? 'selected' : '' }}>{{ $project->code }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="realization_details[{{ $key }}][department_id]" class="form-control">
+                                            @foreach ($departments as $department)
+                                                <option value="{{ $department->id }}" {{ $department->id == $item->department_id ? 'selected' : '' }}>{{ $department->akronim }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    @endhasanyrole
+
                                     <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                 </tr>
                             @endforeach

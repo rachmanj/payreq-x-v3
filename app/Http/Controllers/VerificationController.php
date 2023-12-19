@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Department;
+use App\Models\Project;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use Illuminate\Http\Request;
@@ -23,15 +25,21 @@ class VerificationController extends Controller
     {
         $realization = Realization::findOrFail($id);
         $realization_details = $realization->realizationDetails;
+        $projects = Project::orderBy('code', 'asc')->get();
+        $departments = Department::orderBy('akronim', 'asc')->get();
 
         return view('verifications.edit', compact([
             'realization',
             'realization_details',
+            'projects',
+            'departments',
         ]));
     }
 
     public function save(Request $request)
     {
+        // return $request;
+        // die;
 
         //UPDATE REALIZATION DETAIL
         foreach ($request->realization_details as $item) {
@@ -43,14 +51,14 @@ class VerificationController extends Controller
             }
             $realization_detail->editable = 0;
             $realization_detail->deleteable = 0;
+            $realization_detail->project = $item['project'];
+            $realization_detail->department_id = $item['department_id'];
 
             $realization_detail->save();
         }
 
         //UPDATE REALIZATION
         $realization = Realization::where('id', $request->realization_id)->first();
-        // return $realization;
-        // die;
         $realization->deletable = 0;
 
         if ($this->realizationDetailIsComplete($realization)) {
