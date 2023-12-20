@@ -13,7 +13,7 @@
       <div class="col-7">
         <div class="card">
           <div class="card-header">
-            <h6 class="card-title">Payreq No: {{ $payreq->payreq_no . ' | ' . $payreq->requestor->name . ' | IDR. ' . number_format($payreq->amount, 0)  }}</h3>
+            <h6 class="card-title">Payreq No: {{ $payreq->nomor . ' | ' . $payreq->requestor->name . ' | IDR. ' . number_format($payreq->amount, 0)  }}</h3>
             <a href="{{ route('cashier.approveds.index') }}" class="btn btn-sm btn-success float-right"><i class="fas fa-arrow-left"></i> Back</a>
           </div>
           <div class="card-body">
