@@ -75,9 +75,7 @@ class CashierIncomingController extends Controller
 
     public function data()
     {
-        $roles = app(ToolController::class)->getUserRoles();
-
-        if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
+        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
             $incomings = Incoming::whereNull('receive_date')
                 ->orderBy('created_at', 'desc')
                 ->get();
