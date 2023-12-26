@@ -89,7 +89,7 @@ class PayreqController extends Controller
         $status_include = ['draft', 'submitted', 'revised', 'approved'];
         $payreq_project_count = Payreq::where('project', auth()->user()->project)
             ->whereYear('created_at', Carbon::now()->format('Y'))
-            ->whereIn('status', $status_include)
+            // ->whereIn('status', $status_include)
             ->count();
         $nomor = 'FQ' . Carbon::now()->addHours(8)->format('y') . substr(auth()->user()->project, 0, 3) . str_pad($payreq_project_count + 1, 3, '0', STR_PAD_LEFT);
 
