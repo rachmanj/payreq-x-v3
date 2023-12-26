@@ -42,6 +42,7 @@
             <tr>
                 <th>Account</th>
                 <th>Description</th>
+                <th>Project</th>
                 <th class="text-right">Debit (IDR)</th>
                 <th class="text-right">Credit (IDR)</th>
             </tr>
@@ -53,6 +54,7 @@
                     {{ $item['account_number'] }} - {{ $item['account_name'] }}
                 </td>
                 <td>{{ $item['description'] }}</td>
+                <td>{{ $item['project'] }}</td>
                 <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
                 <td class="text-right">-</td>
             </tr>
@@ -64,11 +66,14 @@
                 <th>
                     {{ $verification_journal->nomor }}
                 </th>
+                <th>
+                  {{ $credit['project'] }}
+              </th>
                 <th class="text-right">-</th>
                 <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
             </tr>
             <tr>
-              <th class="text-right" colspan="2">TOTAL</th>
+              <th class="text-right" colspan="3">TOTAL</th>
               <th class="text-right">{{ number_format($debits['amount'], 2) }}</th>
               <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
             </tr>
@@ -118,7 +123,7 @@
 <!-- ./wrapper -->
 <!-- Page specific script -->
 <script>
-  // window.addEventListener("load", window.print());
+  window.addEventListener("load", window.print());
 </script>
 </body>
 </html>
