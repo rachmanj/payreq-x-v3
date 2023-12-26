@@ -76,7 +76,9 @@
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="4" class="text-right">TOTAL</td>
+                                <td colspan="5" class="text-right"></td>
+                                <td style="width: 10%;"></td>
+                                <td class="text-right" style="width: 10%;">TOTAL</td>
                                 <td class="text-right"><b>{{ number_format($realization_details->sum('amount'), 2) }}</b></td>
                             </tr>
                         </tfoot>

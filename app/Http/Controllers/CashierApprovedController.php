@@ -148,6 +148,9 @@ class CashierApprovedController extends Controller
             ->editColumn('type', function ($approved) {
                 return ucfirst($approved->type);
             })
+            ->editColumn('nomor', function ($approved) {
+                return '<a href="#" style="color: black" title="' . $approved->remarks . '">' . $approved->nomor . '</a>';
+            })
             ->editColumn('approved_at', function ($approved) {
                 $approved_date = new \Carbon\Carbon($approved->approved_at);
                 return $approved_date->addHours(8)->format('d-M-Y H:i:s');
@@ -166,7 +169,7 @@ class CashierApprovedController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.approved.action')
-            ->rawColumns(['action', 'amount'])
+            ->rawColumns(['action', 'amount', 'nomor'])
             ->toJson();
     }
 

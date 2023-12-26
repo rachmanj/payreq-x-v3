@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ApprovalPlan;
 use App\Models\Equipment;
+use App\Models\Incoming;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
@@ -127,9 +128,28 @@ class UserRealizationController extends Controller
     {
 
         $realization = Realization::where('id', $realization_id)->first();
+        $payreq_amount = $realization->payreq->amount;
 
-        // if realizaiton has details, delete details first
+        // if realization has details
         if ($realization->realizationDetails->count() > 0) {
+            // check if realization amount is different from payreq amount
+            $realization_amount = $realization->realizationDetails->sum('amount');
+
+            // if realization amount > advance amount, then delete payreq
+            if ($realization_amount > $payreq_amount) {
+                // delete payreq
+                $payreq = Payreq::where('remarks', 'LIKE', '%' . $realization->nomor . '%')->first();
+                $payreq->delete();
+            }
+
+            // if realization amount < advance amount, then delete incomming payreq
+            if ($realization_amount < $payreq_amount) {
+                // delete incomming payreq
+                $incomming = Incoming::where('realization_id', $realization_id)->first();
+                $incomming->delete();
+            }
+
+            // delete realization details
             $realization->realizationDetails()->delete();
         }
 
