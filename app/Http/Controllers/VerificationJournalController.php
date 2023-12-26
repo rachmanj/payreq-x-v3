@@ -324,22 +324,35 @@ class VerificationJournalController extends Controller
             ->get();
 
         $realization_details = $realizations->pluck('realizationDetails')->flatten();
+        $projects = $realization_details->pluck('project')->unique();
+        $departments = $realization_details->pluck('department')->unique();
         $accounts = $realization_details->pluck('account_id')->unique();
 
-        foreach ($accounts as $account) {
-            $array_desc = $realization_details->where('account_id', $account)->pluck('description')->unique();
-            $descriptions = implode(', ', $array_desc->toArray());
+        // FOR EACH PROJECT
+        foreach ($projects as $project) {
+            // THEN FOR EACH DEPARTMENT
+            // foreach ($departments as $department) {     --this will be used when department is added to realization
+            // THEN FOR EACH ACCOUNT
+            foreach ($accounts as $account) {
+                $array_desc = $realization_details->where('project', $project)->where('account_id', $account)->pluck('description')->unique();
+                // $array_desc = $realization_details->where('project', $project)->where('department_id', $department->id)->where('account_id', $account)->pluck('description')->unique();
+                $descriptions = implode(', ', $array_desc->toArray());
 
-            $jurnals[] = [
-                // 'account_id' => $account,
-                'account_number' => $realization_details->where('account_id', $account)->first()->account->account_number,
-                'account_name' => $realization_details->where('account_id', $account)->first()->account->account_name,
-                'amount' => $realization_details->where('account_id', $account)->sum('amount'),
-                'description' => $descriptions
-            ];
+                $jurnals[] = [
+                    // 'account_id' => $account,
+                    'account_number' => $realization_details->where('account_id', $account)->first()->account->account_number,
+                    'account_name' => $realization_details->where('account_id', $account)->first()->account->account_name,
+                    'amount' => $realization_details->where('project', $project)->where('account_id', $account)->sum('amount'),
+                    // 'amount' => $realization_details->where('project', $project)->where('department_id', $department->id)->where('account_id', $account)->sum('amount'),
+                    'description' => $descriptions,
+                    'project' => $project,
+                    // 'department' => $department->akronim
+                ];
+            }
+            // }
         }
 
-        $advance_account = Account::select(['account_number', 'account_name'])->where('type', 'advance')->where('project', auth()->user()->project)->first();
+        $advance_account = Account::select(['account_number', 'account_name', 'project'])->where('type', 'advance')->where('project', auth()->user()->project)->first();
 
         $result = [
             'debits' => [
@@ -349,7 +362,9 @@ class VerificationJournalController extends Controller
             'credit' => [
                 'account_number' => $advance_account->account_number,
                 'account_name' => $advance_account->account_name,
-                'amount' => $realization_details->sum('amount')
+                'amount' => $realization_details->sum('amount'),
+                'project' => $advance_account->project,
+                // 'department' => auth()->user()->department->akronim
             ]
         ];
 

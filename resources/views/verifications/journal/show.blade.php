@@ -59,6 +59,8 @@
                         <tr>
                             <th>Account</th>
                             <th>Description</th>
+                            <th>Project</th>
+                            {{-- <th>Dept</th> --}}
                             <th class="text-right">Debit (IDR)</th>
                             <th class="text-right">Credit (IDR)</th>
                         </tr>
@@ -70,6 +72,8 @@
                                 {{ $item['account_number'] }} - {{ $item['account_name'] }}
                             </td>
                             <td>{{ $item['description'] }}</td>
+                            <td>{{ $item['project'] }}</td>
+                            {{-- <td>{{ $item['department'] }}</td> --}}
                             <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
                             <td class="text-right">-</td>
                         </tr>
@@ -81,6 +85,8 @@
                             <th>
                                 {{ $verification_journal->nomor }}
                             </th>
+                            <th>{{ $credit['project'] }}</th>
+                            {{-- <th>{{ $credit['department'] }}</th> --}}
                             <th class="text-right">-</th>
                             <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
                         </tr>
