@@ -5,9 +5,9 @@ use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\CashierOutgoingController;
 use App\Http\Controllers\CashierIncomingController;
 use App\Http\Controllers\CashierDashboardController;
-use App\Http\Controllers\CashierVerificationJournalController;
 use App\Http\Controllers\CashierGiroController;
 use App\Http\Controllers\CashierGiroDetailController;
+use App\Http\Controllers\CashOpnameController;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
@@ -52,4 +52,10 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::delete('/{giro_detail_id}/destroy', [CashierGiroDetailController::class, 'destroy'])->name('detail.destroy');
     });
     Route::resource('giros', CashierGiroController::class);
+
+    Route::prefix('pcbc')->name('pcbc.')->group(function () {
+        Route::get('/data', [CashOpnameController::class, 'data'])->name('data');
+        Route::get('/{id}/print', [CashOpnameController::class, 'print'])->name('print');
+    });
+    Route::resource('pcbc', CashOpnameController::class);
 });
