@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\DashboardUserController;
+use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LoginController;
@@ -118,6 +119,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/upload', [AccountController::class, 'upload'])->name('upload');
     });
     Route::resource('accounts', AccountController::class);
+
+    // DOCUMENT NUMBERING
+    Route::prefix('document-number')->name('document-number.')->group(function () {
+        Route::get('/data', [DocumentNumberController::class, 'data'])->name('data');
+        Route::post('/auto-generate', [DocumentNumberController::class, 'auto_generate'])->name('auto_generate');
+    });
+    Route::resource('document-number', DocumentNumberController::class);
 
     Route::get('/test', [TestController::class, 'index']);
 
