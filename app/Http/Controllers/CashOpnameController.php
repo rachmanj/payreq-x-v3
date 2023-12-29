@@ -17,7 +17,7 @@ class CashOpnameController extends Controller
     {
         $app_balance = Account::where('project', auth()->user()->project)->where('type', 'cash')->first()->app_balance;
         $pcbc = CashOpname::create([
-            'nomor' => "TESTPCBC1",
+            'nomor' => app(DocumentNumberController::class)->generate_document_number('pcbc', auth()->user()->project),
             'project' => auth()->user()->project,
             'date' => date('Y-m-d'),
             'app_balance' => $app_balance,
