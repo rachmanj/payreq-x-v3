@@ -13,12 +13,7 @@ class VerificationController extends Controller
 {
     public function index()
     {
-        $realizations = Realization::where('status', 'approved')
-            ->where('project', auth()->user()->project)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('verifications.index', compact('realizations'));
+        return view('verifications.index');
     }
 
     public function edit($id)

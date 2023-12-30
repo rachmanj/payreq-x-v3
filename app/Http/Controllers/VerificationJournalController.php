@@ -12,14 +12,27 @@ class VerificationJournalController extends Controller
 {
     public function index()
     {
-        $realizations_count = Realization::whereNull('verification_journal_id')
-            ->where('status', 'verification-complete')
-            ->whereNull('flag')
-            ->where('project', auth()->user()->project)
-            ->count();
-
-        // return $realizations_count;
-        // die;
+        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
+            $realizations_count = Realization::whereNull('verification_journal_id')
+                ->where('status', 'verification-complete')
+                // ->whereNull('flag')
+                ->count();
+        } else if (auth()->user()->hasRole(['cashier'])) {
+            $projects = ['000H', 'APS'];
+            // $flags = [NULL, 'VJTEMP' . auth()->user()->id];
+            $realizations_count = Realization::whereNull('verification_journal_id')
+                ->where('status', 'verification-complete')
+                ->whereNull('flag')
+                ->whereIn('project', $projects)
+                ->count();
+        } else {
+            // $flags = [null, 'VJTEMP' . auth()->user()->id];
+            $realizations_count = Realization::whereNull('verification_journal_id')
+                ->where('status', 'verification-complete')
+                ->whereNull('flag')
+                ->where('project', auth()->user()->project)
+                ->count();
+        }
 
         return view('verifications.journal.index', compact([
             'realizations_count'
@@ -285,9 +298,19 @@ class VerificationJournalController extends Controller
 
     public function data()
     {
-        $verification_journals = VerificationJournal::where('project', auth()->user()->project)
-            ->orderBy('date', 'desc')
-            ->get();
+        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
+            $verification_journals = VerificationJournal::orderBy('date', 'desc')
+                ->get();
+        } else if (auth()->user()->hasRole(['cashier'])) {
+            $projects = ['000H', 'APS'];
+            $verification_journals = VerificationJournal::whereIn('project', $projects)
+                ->orderBy('date', 'desc')
+                ->get();
+        } else {
+            $verification_journals = VerificationJournal::where('project', auth()->user()->project)
+                ->orderBy('date', 'desc')
+                ->get();
+        }
 
         return datatables()->of($verification_journals)
             ->editColumn('date', function ($journal) {
