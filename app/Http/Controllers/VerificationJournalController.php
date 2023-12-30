@@ -13,26 +13,33 @@ class VerificationJournalController extends Controller
     public function index()
     {
         if (auth()->user()->hasRole(['superadmin', 'admin'])) {
-            $realizations_count = Realization::whereNull('verification_journal_id')
+            $realizations_count1 = Realization::whereNull('verification_journal_id')
                 ->where('status', 'verification-complete')
-                // ->whereNull('flag')
                 ->count();
+
+            $realizations_count2 = 0;
         } else if (auth()->user()->hasRole(['cashier'])) {
             $projects = ['000H', 'APS'];
-            // $flags = [NULL, 'VJTEMP' . auth()->user()->id];
-            $realizations_count = Realization::whereNull('verification_journal_id')
+            $realizations_count1 = Realization::whereNull('verification_journal_id')
                 ->where('status', 'verification-complete')
                 ->whereNull('flag')
                 ->whereIn('project', $projects)
                 ->count();
+
+            $realizations_count2 = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
+                ->count();
         } else {
-            // $flags = [null, 'VJTEMP' . auth()->user()->id];
-            $realizations_count = Realization::whereNull('verification_journal_id')
+            $realizations_count1 = Realization::whereNull('verification_journal_id')
                 ->where('status', 'verification-complete')
                 ->whereNull('flag')
                 ->where('project', auth()->user()->project)
                 ->count();
+
+            $realizations_count2 = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
+                ->count();
         }
+
+        $realizations_count = $realizations_count1 + $realizations_count2;
 
         return view('verifications.journal.index', compact([
             'realizations_count'
