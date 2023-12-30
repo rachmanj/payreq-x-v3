@@ -33,8 +33,8 @@
                         </div>
                         <div class="col-4">
                             <div class="form-group">
-                                <label for="created_at">Created at</label>
-                                <input type="text" name="created_at" id="created_at" class="form-control" value="{{ $model->payreq->created_at->addHours(8)->format('d-M-Y H:i:s') }}" readonly>
+                                <label for="submit_at">Submit at</label>
+                                <input type="text" name="submit_at" id="submit_at" class="form-control" value="{{ Carbon\Carbon::parse($model->payreq->submit_at)->addHours(8)->format('d-M-Y H:i:s') }}" readonly>
                             </div>
                         </div>
                     </div>
