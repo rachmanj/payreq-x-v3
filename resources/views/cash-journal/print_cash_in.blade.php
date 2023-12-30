@@ -55,7 +55,11 @@
                     <td>
                         <ol>
                             @foreach ($incomings as $item)
-                                <li>{{ $item->description }}, {{ $item->realization->requestor->name }}, Rp. {{ number_format($item->amount, 2) }}</li>
+                              @if ($item->realization_id)
+                              <li>{{ $item->description }}, {{ $item->realization->requestor->name }}, Rp. {{ number_format($item->amount, 2) }}</li>
+                              @else
+                              <li>{{ $item->description }}, {{ $item->cashier->name }}, Rp. {{ number_format($item->amount, 2) }}</li>
+                              @endif
                             @endforeach
                         </ol>
                     </td>
