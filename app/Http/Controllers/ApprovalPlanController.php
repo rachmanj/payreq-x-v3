@@ -68,10 +68,12 @@ class ApprovalPlanController extends Controller
 
         if ($document_type == 'payreq') {
             $document = Payreq::where('id', $approval_plan->document_id)->first();
-            $nomor = app(PayreqController::class)->generatePRNumber($document->id);
+            // $nomor = app(PayreqController::class)->generatePRNumber($document->id);
+            $nomor = app(DocumentNumberController::class)->generate_document_number('payreq', auth()->user()->project);
         } elseif ($document_type == 'realization') {
             $document = Realization::findOrFail($approval_plan->document_id);
-            $nomor = app(ToolController::class)->generateRealizationNumber($document->id);
+            // $nomor = app(ToolController::class)->generateRealizationNumber($document->id);
+            $nomor = app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project);
         } elseif ($document_type == 'rab') {
             // 
         } else {

@@ -13,6 +13,7 @@ class PayreqReimburseController extends Controller
 {
     public function create()
     {
+        // $payreq_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
         $payreq_no = app(PayreqController::class)->generateDraftNumber();
 
         return view('user-payreqs.reimburse.create', compact('payreq_no'));
@@ -20,9 +21,15 @@ class PayreqReimburseController extends Controller
 
     public function store(Request $request)
     {
-        $roles = app(ToolController::class)->getUserRoles();
+        // $roles = app(ToolController::class)->getUserRoles();
 
-        if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
+        // if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
+        //     $equipments = Equipment::orderBy('unit_code', 'asc')->get();
+        // } else {
+        //     $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();
+        // }
+
+        if (auth()->user()->project == '000H' || auth()->user()->project == 'APS' || auth()->user()->project == '001H') {
             $equipments = Equipment::orderBy('unit_code', 'asc')->get();
         } else {
             $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();
@@ -30,7 +37,8 @@ class PayreqReimburseController extends Controller
 
         // Create new Payreq with type 'reimburse'
         $payreq = Payreq::create([
-            'nomor' => app(PayreqController::class)->generateDraftNumber(),
+            // 'nomor' => app(PayreqController::class)->generateDraftNumber(),
+            'nomor' => app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project),
             'type' => 'reimburse',
             'status' => 'draft',
             'remarks' => $request->remarks,

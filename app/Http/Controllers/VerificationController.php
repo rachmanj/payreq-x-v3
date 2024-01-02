@@ -33,9 +33,6 @@ class VerificationController extends Controller
 
     public function save(Request $request)
     {
-        // return $request;
-        // die;
-
         //UPDATE REALIZATION DETAIL
         foreach ($request->realization_details as $item) {
             $realization_detail = RealizationDetail::findOrFail($item['id']);
@@ -84,20 +81,15 @@ class VerificationController extends Controller
             $realizations = Realization::whereIn('status', $status_include)
                 ->whereIn('project', $include_projects)
                 ->whereNull('verification_journal_id')
-                // ->where('flag', $flag)
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
             $realizations = Realization::whereIn('status', $status_include)
                 ->where('project', auth()->user()->project)
                 ->whereNull('verification_journal_id')
-                // ->where('flag', $flag)
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
-
-        // return $realizations;
-        // die;
 
         return datatables()->of($realizations)
             ->addColumn('realization_no', function ($realization) {

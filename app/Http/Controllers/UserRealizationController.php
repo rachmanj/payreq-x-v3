@@ -30,7 +30,8 @@ class UserRealizationController extends Controller
 
         $user_payreqs = $user_payreqs_no_realization->merge($payreq_with_realization_rejected);
 
-        $realization_no = app(ToolController::class)->generateDraftRealizationNumber();
+        // $realization_no = app(ToolController::class)->generateDraftRealizationNumber();
+        $realization_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
 
         return view('user-payreqs.realizations.index', compact('user_payreqs', 'realization_no'));
     }
@@ -193,7 +194,7 @@ class UserRealizationController extends Controller
 
         $roles = app(ToolController::class)->getUserRoles();
 
-        if (auth()->user()->project == '000H') {
+        if (auth()->user()->project == '000H' || auth()->user()->project == 'APS' || auth()->user()->project == '001H') {
             $equipments = Equipment::orderBy('unit_code', 'asc')->get();
         } else {
             $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();
