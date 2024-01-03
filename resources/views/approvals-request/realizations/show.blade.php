@@ -14,7 +14,7 @@
       <div class="card card-info">
           <div class="card-header">
               <h3 class="card-title">Advance Info</h3>
-              <a href="{{ route('approvals.request.payreqs.index') }}" class="btn btn-xs btn-primary float-right mx-2"><i class="fas fa-arrow-left"></i> Back</a>
+              <a href="{{ route('approvals.request.realizations.index') }}" class="btn btn-xs btn-primary float-right mx-2"><i class="fas fa-arrow-left"></i> Back</a>
               <button type="button" class="btn btn-xs btn-warning float-right" data-toggle="modal" data-target="#approvals-update-{{ $document->id }}"><b>APPROVAL</b></button>
           </div>
       </div>
