@@ -20,9 +20,6 @@ class ApprovalStageController extends Controller
 
     public function store(Request $request)
     {
-        // return $request->all();
-        // die;
-
         $request->validate([
             'approver_id' => 'required',
             'project' => 'required',
@@ -32,17 +29,21 @@ class ApprovalStageController extends Controller
 
         $departments = Department::whereIn('id', $request->departments)->get();
 
-        // foreach ($departments as $department) {
-        //     ApprovalStage::create([
-        //         'department_id' => $department->id,
-        //         'approver_id' => $request->approver_id,
-        //         'project' => $request->project,
-        //     ]);
-        // }
-
         // $stage = new ApprovalStage();
         foreach ($departments as $department) {
             foreach ($request->documents as $document) {
+
+                // check for duplication
+                $check = ApprovalStage::where('department_id', $department->id)
+                    ->where('approver_id', $request->approver_id)
+                    ->where('project', $request->project)
+                    ->where('document_type', $document)
+                    ->first();
+
+                if ($check) {
+                    continue;
+                }
+
                 ApprovalStage::create([
                     'department_id' => $department->id,
                     'approver_id' => $request->approver_id,
@@ -53,6 +54,42 @@ class ApprovalStageController extends Controller
         }
 
         return redirect()->route('approval-stages.index')->with('success', 'Approval stage created successfully.');
+    }
+
+    public function auto_generate(Request $request)
+    {
+        $request->validate([
+            'approver_id' => 'required',
+            'project' => 'required',
+        ]);
+
+        $departments = Department::all();
+        $documents = ['payreq', 'realization'];
+
+        foreach ($departments as $department) {
+            foreach ($documents as $document) {
+
+                // check for duplication
+                $check = ApprovalStage::where('department_id', $department->id)
+                    ->where('approver_id', $request->approver_id)
+                    ->where('project', $request->project)
+                    ->where('document_type', $document)
+                    ->first();
+
+                if ($check) {
+                    continue;
+                }
+
+                ApprovalStage::create([
+                    'department_id' => $department->id,
+                    'approver_id' => $request->approver_id,
+                    'project' => $request->project,
+                    'document_type' => $document,
+                ]);
+            }
+        }
+
+        return redirect()->route('approval-stages.index')->with('success', 'Approval stages created successfully for approver: ' . User::find($request->approver_id)->name . ' and on Project: ' . $request->project);
     }
 
     public function destroy($id)

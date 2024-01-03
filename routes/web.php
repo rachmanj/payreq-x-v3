@@ -104,6 +104,7 @@ Route::middleware('auth')->group(function () {
     // APPROVAL STAGES
     Route::prefix('approval-stages')->name('approval-stages.')->group(function () {
         Route::get('/data', [ApprovalStageController::class, 'data'])->name('data');
+        Route::post('/auto-generate', [ApprovalStageController::class, 'auto_generate'])->name('auto_generate');
     });
     Route::resource('approval-stages', ApprovalStageController::class);
 

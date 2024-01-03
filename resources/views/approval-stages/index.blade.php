@@ -14,6 +14,7 @@
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Approval Stages</h3>
+            <button type="button" class="btn btn-sm btn-warning float-right mx-2" data-toggle="modal" data-target="#modal-auto-create"> Auto Generate</button>
             <button type="button" class="btn btn-sm btn-primary float-right" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Stage</button>
           </div>
           <div class="card-body">
@@ -76,21 +77,6 @@
               @enderror
             </div>
 
-            {{-- <div class="form-group">
-              <label for="department_id">Department</label>
-              <select name="department_id" class="form-control select2bs4 @error('department_id') is-invalid @enderror">
-                  <option value="">-- select Department --</option>
-                  @foreach ($departments as $department)
-                  <option value="{{ $department->id }}" {{ $department->id == old('department_id') ? "selected" : "" }}>{{ $department->department_name }}</option>
-                  @endforeach
-              </select>
-              @error('department_id')
-              <div class="invalid-feedback">
-                  {{ $message }}
-              </div>
-              @enderror
-            </div> --}}
-
             <div class="form-group">
               <label>Select Departments</label>
               <div class="select2-purple">
@@ -117,6 +103,60 @@
           <div class="modal-footer float-left">
             <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"> Close</button>
             <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+          </div>
+        </form>
+        </div>
+        <!-- /.modal-content -->
+      </div>
+      <!-- /.modal-dialog -->
+    </div> 
+
+    {{-- MODAL AUTO-CREATE --}}
+    <div class="modal fade" id="modal-auto-create">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title"> Approval Stage Auto Generation</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ route('approval-stages.auto_generate') }}" method="POST">
+            @csrf
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="approver_id">Approver Name</label>
+              <select name="approver_id" class="form-control select2bs4 @error('approver_id') is-invalid @enderror">
+                  <option value="">-- select Approver --</option>
+                  @foreach ($approvers as $approver)
+                  <option value="{{ $approver->id }}" {{ $approver->id == old('approver_id') ? "selected" : "" }}>{{ $approver->name }}</option>
+                  @endforeach
+              </select>
+              @error('approver_id')
+              <div class="invalid-feedback">
+                  {{ $message }}
+              </div>
+              @enderror
+            </div> 
+            <div class="form-group">
+              <label for="project">Project</label>
+              <select name="project" class="form-control select2bs4 @error('project') is-invalid @enderror">
+                  <option value="">-- select Project --</option>
+                  @foreach ($projects as $project)
+                  <option value="{{ $project }}" {{ $project == old('project') ? "selected" : "" }}>{{ $project }}</option>
+                  @endforeach
+              </select>
+              @error('project')
+                <div class="invalid-feedback">
+                    {{ $message }}
+                </div>
+              @enderror
+            </div>
+
+          </div>
+          <div class="modal-footer float-left">
+            <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"> Close</button>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Generate</button>
           </div>
         </form>
         </div>
