@@ -47,7 +47,15 @@
     </div>
   </div>
 </div>
-<!-- /.row -->
+{{-- <hr> --}}
+<div class="row">
+  <div class="col-12">
+    <div class="form-group">
+      <label>Remarks</label>
+      <textarea name="" cols="30" rows="2" class="form-control">{{ $payreq->remarks }}</textarea>
+    </div>
+  </div>
+</div>
 
 @include('approvals-request.realizations.details_table')
 
