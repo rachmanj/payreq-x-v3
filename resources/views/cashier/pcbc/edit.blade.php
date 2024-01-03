@@ -82,7 +82,7 @@
             var app_balance = document.getElementById('app_balance').value.replace(/\,/g, '');
             var fisik_total = document.getElementById('fisik_total').value.replace(/\,/g, '');
             var variance = app_balance - fisik_total;
-            document.getElementById('variance').value = variance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('variance_fisik').value = variance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         function calculateVarianceAplikasi() {
@@ -91,6 +91,20 @@
             var variance_aplikasi = app_balance - sap_balance;
             document.getElementById('variance_aplikasi').value = variance_aplikasi.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
+
+        // calculate variance fisik
+        function calculateVarianceFisik() {
+            var app_balance = document.getElementById('app_balance').value.replace(/\,/g, '');
+            var fisik_total = document.getElementById('fisik_total').value.replace(/\,/g, '');
+            var variance_fisik = app_balance - fisik_total;
+            document.getElementById('variance_fisik').value = variance_fisik.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function updateAppBalanceRow2(){
+            var appBalance = document.getElementById("app_balance").value;
+            document.getElementById("app_balance_row2").value = appBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
 
         window.onload = function() {
             calculateAmount(document.querySelector('[name="seratus_ribu"]'), 'seratus_ribu_amount', 100000);

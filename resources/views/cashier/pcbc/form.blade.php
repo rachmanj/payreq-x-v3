@@ -35,7 +35,7 @@
                     <div class="col-4">
                         <div class="form-group text-center">
                             <label for="app_balance">Saldo PC sesuai Aplikasi</label>
-                            <input type="text" class="form-control text-center" id="app_balance" value="{{ number_format($pcbc->app_balance, 2) }}" disabled>
+                            <input type="text" class="form-control text-center" id="app_balance" value="{{ number_format($pcbc->app_balance, 2) }}" onchange="calculateVarianceFisik(); updateAppBalanceRow2()">
                         </div>
                     </div>
 
@@ -49,7 +49,7 @@
                     <div class="col-4">
                         <div class="form-group text-center">
                             <label for="app_balance">Variance Fisik</label>
-                            <input type="text" class="form-control text-center" id="variance" disabled>
+                            <input type="text" class="form-control text-center" id="variance_fisik" disabled>
                         </div>
                     </div>
                 </div>
@@ -64,7 +64,7 @@
                     <div class="col-4">
                         <div class="form-group text-center">
                             <label for="app_balance">Saldo PC sesuai Aplikasi</label>
-                            <input type="text" class="form-control text-center" id="app_balance" value="{{ number_format($pcbc->app_balance, 2) }}" disabled>
+                            <input type="text" class="form-control text-center" id="app_balance_row2" value="{{ number_format($pcbc->app_balance, 2) }}" disabled>
                         </div>
                     </div>
 
