@@ -54,7 +54,8 @@ class PayreqReimburseController extends Controller
             'department_id' => $payreq->department_id,
             'remarks' => $request->remarks,
             'user_id' => $payreq->user_id,
-            'nomor' => app(ToolController::class)->generateDraftRealizationNumber(),
+            // 'nomor' => app(ToolController::class)->generateDraftRealizationNumber(),
+            'nomor' => app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project),
             'status' => 'reimburse-draft',
         ]);
 
@@ -105,7 +106,6 @@ class PayreqReimburseController extends Controller
             'amount' => $realization->realizationDetails()->sum('amount'),
         ]);
 
-        // return redirect()->back();
         return $this->edit($realization->payreq_id);
     }
 

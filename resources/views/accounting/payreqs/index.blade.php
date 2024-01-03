@@ -24,13 +24,14 @@
           </div>
 
         <div class="card-body">
-            <table id="payreq-overdue" class="table table-bordered table-striped" >
+            <table id="all-payreqs" class="table table-bordered table-striped" >
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Employee</th>
                         <th>Project</th>
-                        <th>Nomor</th>
+                        <th>PayreqNo</th>
+                        <th>RealzNo</th>
                         <th>CreatedD</th>
                         <th>Type</th>
                         <th>Status</th>
@@ -64,7 +65,7 @@
 
 <script>
     $(function () {
-      $("#payreq-overdue").DataTable({
+      $("#all-payreqs").DataTable({
         processing: true,
         serverSide: true,
         ajax: '{{ route('accounting.payreqs.data') }}',
@@ -73,6 +74,7 @@
           {data: 'employee'},
           {data: 'project'},
           {data: 'nomor'},
+          {data: 'realization_no'},
           {data: 'created_at'},
           {data: 'type'},
           {data: 'status'},
@@ -82,7 +84,11 @@
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [7, 8],
+                  "targets": [2,3,4],
+                  "className": "text-center"
+                },
+                {
+                  "targets": [8],
                   "className": "text-right"
                 },
               ]

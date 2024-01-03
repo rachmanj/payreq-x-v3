@@ -68,12 +68,10 @@ class ApprovalPlanController extends Controller
 
         if ($document_type == 'payreq') {
             $document = Payreq::where('id', $approval_plan->document_id)->first();
-            // $nomor = app(PayreqController::class)->generatePRNumber($document->id);
-            $nomor = app(DocumentNumberController::class)->generate_document_number('payreq', auth()->user()->project);
+            // $nomor = app(DocumentNumberController::class)->generate_document_number('payreq', auth()->user()->project);
         } elseif ($document_type == 'realization') {
             $document = Realization::findOrFail($approval_plan->document_id);
-            // $nomor = app(ToolController::class)->generateRealizationNumber($document->id);
-            $nomor = app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project);
+            // $nomor = app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project);
         } elseif ($document_type == 'rab') {
             // 
         } else {
@@ -128,7 +126,7 @@ class ApprovalPlanController extends Controller
                 'printable' => 1,
                 'editable' => 0,
                 'approved_at' => $approval_plan->updated_at,
-                'nomor' => $nomor,
+                'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
             ]);
 
             if ($request->document_type === 'payreq') {
@@ -138,7 +136,8 @@ class ApprovalPlanController extends Controller
                     $realization->update([
                         'status' => 'reimburse-approved',
                         'approved_at' => $approval_plan->updated_at,
-                        'nomor' => app(ToolController::class)->generateRealizationNumber($realization->id),
+                        // 'nomor' => app(ToolController::class)->generateRealizationNumber($realization->id),
+                        'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
                     ]);
                 }
             }

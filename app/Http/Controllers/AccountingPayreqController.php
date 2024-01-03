@@ -67,10 +67,19 @@ class AccountingPayreqController extends Controller
 
     public function data()
     {
-        // $status_include = ['approved', 'paid', 'submitted'];
-        // $payreqs = Payreq::whereIn('status', $status_include)
-        $payreqs = Payreq::orderBy('created_at', 'desc')
-            ->get();
+        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
+            $payreqs = Payreq::orderBy('created_at', 'desc')
+                ->get();
+        } elseif (auth()->user()->hasRole(['cashier'])) {
+            $projects_include = ['000H', 'APS'];
+            $payreqs = Payreq::whereIn('project', $projects_include)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } else {
+            $payreqs = Payreq::where('project', auth()->user()->project)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
 
         return datatables()->of($payreqs)
             ->addColumn(('employee'), function ($payreq) {
@@ -81,6 +90,13 @@ class AccountingPayreqController extends Controller
             })
             ->editColumn(('created_at'), function ($payreq) {
                 return Carbon::parse($payreq->created_at)->format('d-M-Y');
+            })
+            ->addColumn('realization_no', function ($payreq) {
+                if ($payreq->realization) {
+                    return $payreq->realization->nomor;
+                } else {
+                    return 'n/a';
+                }
             })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.payreqs.action')
