@@ -39,6 +39,7 @@
                 </p>
             </div>
             @endif
+
         </div>
 
     </div>
@@ -71,6 +72,22 @@
                 @endif
 
             @endforeach
+
+            @if ($user_ongoing_realizations['overdue_realization']['count'] > 0)
+            <div class="d-flex justify-content-between align-items-center border-bottom  mb-1">
+                <p class="d-flex flex-column">
+                    <span class="font-weight-bold text-red">
+                      OVERDUE
+                    </span>
+                  </p>
+                <p class="d-flex flex-column text-right">
+                  <span class="font-weight-bold text-red">
+                    Rp. {{ number_format($user_ongoing_realizations['overdue_realization']['amount'], 0) }} | {{ $user_ongoing_realizations['overdue_realization']['count'] }} realizations
+                  </span>
+                </p>
+            </div>
+            @endif
+
         </div>
 
     </div>

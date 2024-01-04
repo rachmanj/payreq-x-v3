@@ -358,8 +358,22 @@ class UserRealizationController extends Controller
             ];
         }
 
+        // overdue realization
+        $od_realization = Realization::with('realizationDetails')->where('user_id', auth()->user()->id)
+            ->where('status', 'approved')
+            ->where('due_date', '<', Carbon::now())
+            ->get();
+
+        $overdue_realization = [
+            'count' => $od_realization->count(),
+            'amount' => $od_realization->sum(function ($realization) {
+                return $realization->realizationDetails->sum('amount');
+            })
+        ];
+
         $result = [
             'realization_status' => $status_cek,
+            'overdue_realization' => $overdue_realization
         ];
 
         return $result;
