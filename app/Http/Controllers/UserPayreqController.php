@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalPlan;
 use App\Models\Outgoing;
 use App\Models\Payreq;
+use App\Models\Realization;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -12,19 +13,31 @@ class UserPayreqController extends Controller
 {
     public function index()
     {
-        $over_due_payreq = Payreq::where('user_id', auth()->user()->id)
+        $overdue_payreqs = Payreq::where('user_id', auth()->user()->id)
             ->where('type', 'advance')
             ->where('status', 'paid')
             ->where('due_date', '<', now())
             ->count();
 
-        if ($over_due_payreq > 0) {
+        $overdue_realizations = Realization::where('user_id', auth()->user()->id)
+            ->where('status', 'approved')
+            ->where('due_date', '<', now())
+            ->count();
+
+        $overdue_document_count = $overdue_payreqs + $overdue_realizations;
+
+        if ($overdue_document_count > 0) {
             $enable_payreq = false;
         } else {
             $enable_payreq = true;
         }
 
-        return view('user-payreqs.index', compact(['enable_payreq', 'over_due_payreq']));
+        return view('user-payreqs.index', compact([
+            'enable_payreq',
+            'overdue_document_count',
+            'overdue_payreqs',
+            'overdue_realizations'
+        ]));
     }
 
     public function update(Request $request, $id)

@@ -283,11 +283,20 @@ class UserRealizationController extends Controller
                 if ($realization->status === 'submitted') {
                     return 'Waiting Approval';
                 } else {
-                    return ucfirst($realization->status);
+                    if ($realization->due_date == null) {
+                        return ucfirst($realization->status);
+                    }
+
+                    $due_date = new \Carbon\Carbon($realization->due_date);
+                    $today = new \Carbon\Carbon();
+                    $dif_days = $due_date->diffInDays($today);
+                    if ($today > $due_date && $realization->status == 'approved') {
+                        return ucfirst($realization->status) . '<button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                    }
                 }
             })
             ->addColumn('action', 'user-payreqs.realizations.action')
-            ->rawColumns(['action', 'nomor'])
+            ->rawColumns(['action', 'nomor', 'status'])
             ->addIndexColumn()
             ->toJson();
     }

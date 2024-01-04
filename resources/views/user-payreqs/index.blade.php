@@ -23,7 +23,13 @@
         <button type="button" class="btn btn-sm btn-primary float-right" disabled>
           <i class="fas fa-plus"></i> New Payreq
         </button>
-        <p class="text-red">There is/are <b>{{ $over_due_payreq }}</b> payreq(s) overdue. Please make realization first.</p>
+        @endif
+        <br>
+        @if ($overdue_payreqs > 0)
+        <p class="text-red">Terdapat <b>{{ $overdue_payreqs }}</b> Payreq Advance yang Overdue. Silahkan buat Realization terlebih dahulu..</p>
+        @endif
+        @if ($overdue_realizations > 0)
+        <p class="text-red">Terdapat <b>{{ $overdue_realizations }}</b> dokumen Realization yang belum diserahkan ke Accounting. Silahkan segera diselesaikan ..</p>
         @endif
       </div>
       
