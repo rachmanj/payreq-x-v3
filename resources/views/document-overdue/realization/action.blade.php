@@ -12,22 +12,22 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route('payreq-overdue.extend') }}" method="POST">
+            <form action="{{ route('document-overdue.realization.extend') }}" method="POST">
             @csrf
             <div class="modal-body">
                 
-                <input type="hidden" name="payreq_id" value="{{ $model->id }}">
+                <input type="hidden" name="realization_id" value="{{ $model->id }}">
 
                 <div class="form-group">
-                    <label for="realization_num">Purpose</label>
-                    <input type="text" value="{{ $model->remarks }}" class="form-control" readonly>
+                    <label>Remarks</label>
+                    <input type="text" value="{{ $model->payreq->remarks }}" class="form-control" readonly>
                 </div>
                 <div class="form-group">
-                    <label for="realization_date">Current Due Date</label>
+                    <label>Current Due Date</label>
                     <input type="date" value="{{ $model->due_date }}" class="form-control" readonly>
                 </div>
                 <div class="form-group">
-                    <label for="realization_date">New Due Date</label>
+                    <label>New Due Date</label>
                     <input type="date" name="new_due_date" class="form-control" value="{{ $model->due_date }}" >
                 </div>
 

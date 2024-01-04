@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Payreqs Overdue
+    Document Overdue
 @endsection
 
 @section('breadcrumb_title')
-    payreqs / overdue
+    realization / overdue
 @endsection
 
 @section('content')
@@ -14,18 +14,18 @@
 
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Ongoing Payreqs</h3>
+          <a href="{{ route('document-overdue.payreq.index') }}">Payrment Request</a> | 
+          <a href="#" class="text-bold" style="color: black;" >REALIZATIONS</a>
         </div>
 
         <div class="card-body">
-            <table id="payreq-overdue" class="table table-bordered table-striped" >
+            <table id="realization-overdue" class="table table-bordered table-striped" >
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Employee</th>
                         <th>Project</th>
-                        <th>Payreq No</th>
-                        <th>Type</th>
+                        <th>Realization No</th>
                         <th>Status</th>
                         <th>IDR</th>
                         <th>Days</th>
@@ -58,16 +58,15 @@
 
 <script>
     $(function () {
-      $("#payreq-overdue").DataTable({
+      $("#realization-overdue").DataTable({
         processing: true,
         serverSide: true,
-        ajax: '{{ route('payreq-overdue.data') }}',
+        ajax: '{{ route('document-overdue.realization.data') }}',
         columns: [
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'employee'},
           {data: 'project'},
           {data: 'nomor'},
-          {data: 'type'},
           {data: 'status'},
           {data: 'amount'},
           {data: 'days'},
@@ -76,7 +75,7 @@
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [6, 7],
+                  "targets": [5, 6],
                   "className": "text-right"
                 },
               ]

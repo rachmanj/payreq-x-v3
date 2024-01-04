@@ -3,7 +3,7 @@
     <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
       <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Accounts</a></li>
       {{-- <li><a href="{{ route('adv-category.index') }}" class="dropdown-item">Advance Category</a></li> --}}
-      <li><a href="{{ route('payreq-overdue.index') }}" class="dropdown-item">Users with overdue</a></li>
+      <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
       <li><a href="{{ route('document-number.index') }}" class="dropdown-item">Document Numbering</a></li>
       <li><a href="{{ route('parameters.index') }}" class="dropdown-item">Advance Parameters</a></li>
       @can('akses_user')

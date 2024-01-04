@@ -11,6 +11,7 @@ use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PayreqOverdueController;
+use App\Http\Controllers\RealizationOverdueController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -74,10 +75,20 @@ Route::middleware('auth')->group(function () {
     // VERIFICATIONS
 
     // USERS OVERDUE
-    Route::prefix('payreq-overdue')->name('payreq-overdue.')->group(function () {
-        Route::get('/data', [PayreqOverdueController::class, 'data'])->name('data');
-        Route::get('/', [PayreqOverdueController::class, 'index'])->name('index');
-        Route::post('/extend', [PayreqOverdueController::class, 'extend'])->name('extend');
+    Route::prefix('document-overdue')->name('document-overdue.')->group(function () {
+        // payreq
+        Route::prefix('payreq')->name('payreq.')->group(function () {
+            Route::get('/data', [PayreqOverdueController::class, 'data'])->name('data');
+            Route::get('/', [PayreqOverdueController::class, 'index'])->name('index');
+            Route::post('/extend', [PayreqOverdueController::class, 'extend'])->name('extend');
+        });
+
+        // realizations
+        Route::prefix('realization')->name('realization.')->group(function () {
+            Route::get('/data', [RealizationOverdueController::class, 'data'])->name('data');
+            Route::get('/', [RealizationOverdueController::class, 'index'])->name('index');
+            Route::post('/extend', [RealizationOverdueController::class, 'extend'])->name('extend');
+        });
     });
 
     // JOURNALS

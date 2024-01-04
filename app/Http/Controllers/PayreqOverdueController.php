@@ -10,7 +10,7 @@ class PayreqOverdueController extends Controller
 {
     public function index()
     {
-        return view('payreq-overdue.index');
+        return view('document-overdue.payreq.index');
     }
 
     public function extend(Request $request)
@@ -19,7 +19,7 @@ class PayreqOverdueController extends Controller
         $payreq->due_date = $request->new_due_date;
         $payreq->save();
 
-        return redirect()->route('payreq-overdue.index')->with('success', 'Payreq extended successfully.');
+        return redirect()->route('document-overdue.payreq.index')->with('success', 'Payreq extended successfully.');
     }
 
     public function data()
@@ -41,7 +41,7 @@ class PayreqOverdueController extends Controller
                 return number_format($payreq->amount, 2);
             })
             ->addIndexColumn()
-            ->addColumn('action', 'payreq-overdue.action')
+            ->addColumn('action', 'document-overdue.payreq.action')
             ->rawColumns(['action'])
             ->toJson();
     }
