@@ -123,6 +123,7 @@ class ApprovalPlanController extends Controller
         if ($approved_count === $approval_plans->count()) {
             $document->update([
                 'status' => 'approved',
+                'draft_no' => $document->nomor,
                 'printable' => 1,
                 'editable' => 0,
                 'approved_at' => $approval_plan->updated_at,
@@ -143,6 +144,11 @@ class ApprovalPlanController extends Controller
             }
 
             if ($request->document_type === 'realization') {
+                // update field due_date of realization
+                $realization = Realization::findOrFail($document->id);
+                $realization->update([
+                    'due_date' => Carbon::now()->addDays(3),
+                ]);
                 // check the variance between payreq and realization
                 app(UserRealizationController::class)->check_realization_amount($document->id);
             }
