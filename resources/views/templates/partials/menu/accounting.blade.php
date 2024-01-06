@@ -14,6 +14,9 @@
       <li><a href="{{ route('general-ledgers.index') }}" class="dropdown-item">General Ledgers</a></li>
       @endhasanyrole
       
+      @can('akses_reports')
+      <li><a href="{{ route('reports.index') }}" class="dropdown-item">Reports</a></li>
+      @endcan
       {{-- <li><a href="{{ route('acc-dashboard.index') }}" class="dropdown-item">Dashboard</a></li> --}}
       {{-- <li><a href="{{ route('invoices.index') }}" class="dropdown-item">Invoices</a></li>
       <li><a href="{{ route('giros.index') }}" class="dropdown-item">Giro</a></li>
