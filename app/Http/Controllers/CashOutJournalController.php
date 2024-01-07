@@ -109,9 +109,17 @@ class CashOutJournalController extends Controller
 
     public function to_cart_data()
     {
+        if (auth()->user()->hasRole(['superadmin', 'admin', 'cashier'])) {
+            $project_include = ['000H', 'APS'];
+        } else {
+            $project_include = explode(',', auth()->user()->project);
+        }
+
         $outgoings = Outgoing::whereNull('cash_journal_id')
             ->whereNull('flag')
-            ->where('project', auth()->user()->project)
+            ->whereIn('project', $project_include)
+            ->where('will_post', 1)
+            ->whereNotNull('outgoing_date')
             ->get();
 
         return datatables()->of($outgoings)

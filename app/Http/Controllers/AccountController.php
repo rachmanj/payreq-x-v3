@@ -65,6 +65,20 @@ class AccountController extends Controller
         return true;
     }
 
+    public function outgoing_manual($amount)
+    {
+        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+        // $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+
+        $account_cash->app_balance = $account_cash->app_balance - $amount;
+        $account_cash->save();
+
+        // $account_advance->app_balance = $account_advance->app_balance + $amount;
+        // $account_advance->save();
+
+        return true;
+    }
+
     public function incoming($amount)
     {
         $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();

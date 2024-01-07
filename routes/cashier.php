@@ -22,6 +22,10 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::prefix('outgoings')->name('outgoings.')->group(function () {
         Route::get('/data', [CashierOutgoingController::class, 'data'])->name('data');
         Route::get('/', [CashierOutgoingController::class, 'index'])->name('index');
+        Route::get('/create', [CashierOutgoingController::class, 'create'])->name('create');
+        Route::post('/store', [CashierOutgoingController::class, 'store'])->name('store');
+        Route::delete('/{id}/destroy', [CashierOutgoingController::class, 'destroy'])->name('destroy');
+        Route::post('/payment', [CashierOutgoingController::class, 'payment'])->name('payment');
     });
 
     Route::prefix('incomings')->name('incomings.')->group(function () {

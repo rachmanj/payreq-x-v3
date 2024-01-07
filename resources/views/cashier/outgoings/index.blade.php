@@ -14,6 +14,9 @@
 
     <div class="card">
       <div class="card-header">
+        @can('create_outgoing')
+        <a href="{{ route('cashier.outgoings.create') }}" class="btn btn-sm btn-primary float-right"> New Outgoing</a>
+        @endcan
       </div>
       <!-- /.card-header -->
       <div class="card-body">
@@ -26,7 +29,7 @@
             <th>Payment Date</th>
             <th>IDR</th>
             <th>Account</th>
-            {{-- <th></th> --}}
+            <th></th>
           </tr>
           </thead>
         </table>
@@ -75,7 +78,7 @@
         {data: 'outgoing_date'},
         {data: 'amount'},
         {data: 'account'},
-        // {data: 'action', orderable: false, searchable: false},
+        {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
