@@ -66,7 +66,7 @@ class PayreqReimburseController extends Controller
     {
         $roles = app(ToolController::class)->getUserRoles();
 
-        if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
+        if (auth()->user()->project == '000H' || auth()->user()->project == 'APS' || auth()->user()->project == '001H') {
             $equipments = Equipment::orderBy('unit_code', 'asc')->get();
         } else {
             $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();

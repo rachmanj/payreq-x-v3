@@ -14,13 +14,14 @@ class TestController extends Controller
         // $test = app(CashierDashboardController::class)->dashboard_data();
         // $test = app(UserPayreqController::class)->ongoing_payreqs();
         // $test = Realization::with('realizationDetails')->where('id', 3)->first();
-        $test = app(UserRealizationController::class)->ongoing_realizations();
+        // $test = app(UserRealizationController::class)->ongoing_realizations();
         // $test = Realization::with('realizationDetails')->where('id', 3)->first();
         // $test = app(CashInJournalController::class)->to_cart_data();
         // $test = app(VerificationJournalController::class)->journal_details(30);
         // $test = app(DashboardUserController::class)->user_monthly_amount();
         // $test = app(DocumentNumberController::class)->generate_document_number('pcbc', '000H');
         // $test = app(DocumentNumberController::class)->generate_draft_document_number('000H');
+        $test = app(Reports\EquipmentController::class)->detail('VA 045');
 
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)

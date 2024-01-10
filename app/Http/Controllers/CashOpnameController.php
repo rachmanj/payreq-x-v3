@@ -59,6 +59,13 @@ class CashOpnameController extends Controller
         return redirect()->route('cashier.pcbc.index');
     }
 
+    public function print($id)
+    {
+        $pcbc = CashOpname::findOrFail($id);
+
+        return view('cashier.pcbc.print', compact(['pcbc']));
+    }
+
     public function data()
     {
         if (auth()->user()->hasRole(['superadmin', 'admin'])) {

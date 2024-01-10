@@ -7,7 +7,8 @@
             <div class="card-header">
                 <h3 class="card-title">PCBC No.{{ $pcbc->nomor }}</h3>
                 <a href="{{ route('cashier.pcbc.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
-                <button type="submit" class="btn btn-sm btn-warning float-right mx-2" style="width: 100px;"><i class="fas fa-save"></i> Save</button>
+                <a href="{{ route('cashier.pcbc.print', $pcbc->id) }}" class="btn btn-sm btn-success float-right mr-2"><i class="fas fa-print"></i> Print</a>
+                <button type="submit" class="btn btn-sm btn-warning float-right mr-2" style="width: 100px;"><i class="fas fa-save"></i> Save</button>
             </div>
             <div class="card-body">
                 <div class="row">

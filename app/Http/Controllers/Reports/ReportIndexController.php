@@ -33,11 +33,11 @@ class ReportIndexController extends Controller
                 ],
             ],
             [
-                'name' => 'Report 2',
+                'name' => 'Equipment Related',
                 'subMenu' => [
                     [
-                        'name' => 'Report 2.1',
-                        'url' => 'report2.1',
+                        'name' => 'Sum Expense by Equipment',
+                        'url' => route('reports.equipment.index'),
                     ],
                     [
                         'name' => 'Report 2.2',

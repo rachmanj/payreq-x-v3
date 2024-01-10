@@ -5,7 +5,7 @@ Reports
 @endsection
 
 @section('breadcrumb_title')
-ongoings
+reports / equipements
 @endsection
 
 @section('content')
@@ -14,25 +14,19 @@ ongoings
 
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">Ongoing Payreqs of <b>{{ implode(', ', $project_include) }}</b> | Total IDR <b>{{ number_format($total_amount, 2) }}</b></h3>
+        <h3 class="card-title">Expense by Equipment</h3>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
         <br>
-        @hasanyrole('superadmin|admin|cashier')
-        <b>000H</b> | <a href="{{ route('reports.ongoing.project', 1) }}">017C</a> | <a href="">021C</a>
-        @endhasanyrole
       </div>
       <!-- /.card-header -->
       <div class="card-body">
-        <table id="ongoings" class="table table-bordered table-striped">
+        <table id="equipments" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
-            <th>Employee</th>
-            <th>Payreq No</th>
-            <th>Status</th>
-            <th>PaidD</th>
-            <th>IDR</th>
-            <th>Days</th>
+            <th>Unit No</th>
+            <th>Last KM</th>
+            <th>Expense</th>
             {{-- <th></th> --}}
           </tr>
           </thead>
@@ -78,28 +72,21 @@ ongoings
 
 <script>
   $(function () {
-    $("#ongoings").DataTable({
+    $("#equipments").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('reports.ongoing.data') }}',
+      ajax: '{{ route('reports.equipment.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'employee'},
-        {data: 'nomor'},
-        {data: 'status'},
-        {data: 'outgoing_date'},
-        {data: 'amount'},
-        {data: 'days'},
+        {data: 'unit_no'},
+        {data: 'last_km'},
+        {data: 'total_amount'},
         // {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [4],
-                "className": "text-center"
-              },
-              {
-                "targets": [5, 6],
+                "targets": [2, 3],
                 "className": "text-right"
               }
             ]
