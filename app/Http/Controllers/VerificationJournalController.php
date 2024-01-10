@@ -364,20 +364,22 @@ class VerificationJournalController extends Controller
             // foreach ($departments as $department) {     --this will be used when department is added to realization
             // THEN FOR EACH ACCOUNT
             foreach ($accounts as $account) {
-                $array_desc = $realization_details->where('project', $project)->where('account_id', $account)->pluck('description')->unique();
-                // $array_desc = $realization_details->where('project', $project)->where('department_id', $department->id)->where('account_id', $account)->pluck('description')->unique();
-                $descriptions = implode(', ', $array_desc->toArray());
+                if ($realization_details->where('project', $project)->where('account_id', $account)->sum('amount')) {
+                    $array_desc = $realization_details->where('project', $project)->where('account_id', $account)->pluck('description')->unique();
+                    // $array_desc = $realization_details->where('project', $project)->where('department_id', $department->id)->where('account_id', $account)->pluck('description')->unique();
+                    $descriptions = implode(', ', $array_desc->toArray());
 
-                $jurnals[] = [
-                    // 'account_id' => $account,
-                    'account_number' => $realization_details->where('account_id', $account)->first()->account->account_number,
-                    'account_name' => $realization_details->where('account_id', $account)->first()->account->account_name,
-                    'amount' => $realization_details->where('project', $project)->where('account_id', $account)->sum('amount'),
-                    // 'amount' => $realization_details->where('project', $project)->where('department_id', $department->id)->where('account_id', $account)->sum('amount'),
-                    'description' => $descriptions,
-                    'project' => $project,
-                    // 'department' => $department->akronim
-                ];
+                    $jurnals[] = [
+                        // 'account_id' => $account,
+                        'account_number' => $realization_details->where('account_id', $account)->first()->account->account_number,
+                        'account_name' => $realization_details->where('account_id', $account)->first()->account->account_name,
+                        'amount' => $realization_details->where('project', $project)->where('account_id', $account)->sum('amount'),
+                        // 'amount' => $realization_details->where('project', $project)->where('department_id', $department->id)->where('account_id', $account)->sum('amount'),
+                        'description' => $descriptions,
+                        'project' => $project,
+                        // 'department' => $department->akronim
+                    ];
+                }
             }
             // }
         }
