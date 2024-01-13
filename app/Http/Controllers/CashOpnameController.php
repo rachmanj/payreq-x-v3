@@ -63,7 +63,11 @@ class CashOpnameController extends Controller
     {
         $pcbc = CashOpname::findOrFail($id);
 
-        return view('cashier.pcbc.print', compact(['pcbc']));
+        return view('cashier.pcbc.print', ([
+            'pcbc' => $pcbc,
+            'uang_kertas_total' => $this->uang_kertas_total($id),
+            'uang_logam_total' => $this->uang_logam_total($id),
+        ]));
     }
 
     public function data()
@@ -85,5 +89,21 @@ class CashOpnameController extends Controller
             ->addIndexColumn()
             ->rawColumns(['action'])
             ->toJson();
+    }
+
+    public function uang_kertas_total($pcbc_id)
+    {
+        $pcbc = CashOpname::findOrFail($pcbc_id);
+        $uang_kertas_total = $pcbc->seratus_ribu * 100000 + $pcbc->lima_puluh_ribu * 50000 + $pcbc->dua_puluh_ribu * 20000 + $pcbc->sepuluh_ribu * 10000 + $pcbc->lima_ribu * 5000 + $pcbc->dua_ribu * 2000 + $pcbc->seribu * 1000;
+
+        return $uang_kertas_total;
+    }
+
+    public function uang_logam_total($pcbc_id)
+    {
+        $pcbc = CashOpname::findOrFail($pcbc_id);
+        $uang_logam_total = $pcbc->coin_seribu * 1000 + $pcbc->coin_lima_ratus * 500 + $pcbc->coin_dua_ratus * 200 + $pcbc->coin_seratus * 100 + $pcbc->coin_lima_puluh * 50 + $pcbc->coin_dua_puluh_lima * 25;
+
+        return $uang_logam_total;
     }
 }
