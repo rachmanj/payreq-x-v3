@@ -144,8 +144,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix('/sync')->name('sync.')->group(function () {
             Route::get('/', [BucSyncController::class, 'index'])->name('index');
             Route::get('/rabs', [BucSyncController::class, 'sync_rabs'])->name('sync_rabs');
-            // Route::get('/payreq-sync', [BucSyncController::class, 'upload_payreqs'])->name('upload_payreqs');
-            // Route::get('/get-payreqs', [BucSyncController::class, 'get_payreqs'])->name('get_payreqs');
+            Route::get('/update-rabid', [BucSyncController::class, 'update_rab'])->name('update_rab');
         });
     });
 

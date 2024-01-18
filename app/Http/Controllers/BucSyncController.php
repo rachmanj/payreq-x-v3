@@ -146,7 +146,7 @@ class BucSyncController extends Controller
             }
         }
 
-        return $realization_details;
+        return $this->index()->with('success', 'RAB ID berhasil diupdate');
     }
 
     /**
