@@ -21,7 +21,9 @@ class TestController extends Controller
         // $test = app(DashboardUserController::class)->user_monthly_amount();
         // $test = app(DocumentNumberController::class)->generate_document_number('pcbc', '000H');
         // $test = app(DocumentNumberController::class)->generate_draft_document_number('000H');
-        $test = app(Reports\EquipmentController::class)->detail('VA 045');
+        // $test = app(Reports\EquipmentController::class)->detail('VA 045');
+        $test = app(BucSyncController::class)->get_buc_payreqs();
+        // $test = app(BucSyncController::class)->cek_rab_id();
 
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)

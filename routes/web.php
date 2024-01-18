@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ApprovalStageController;
+use App\Http\Controllers\BucSyncController;
 use App\Http\Controllers\DashboardUserController;
 use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\GeneralLedgerController;
@@ -138,6 +139,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/auto-generate', [DocumentNumberController::class, 'auto_generate'])->name('auto_generate');
     });
     Route::resource('document-number', DocumentNumberController::class);
+
+    Route::prefix('rabs')->name('rabs.')->group(function () {
+        Route::prefix('/sync')->name('sync.')->group(function () {
+            Route::get('/', [BucSyncController::class, 'index'])->name('index');
+            Route::get('/rabs', [BucSyncController::class, 'sync_rabs'])->name('sync_rabs');
+            // Route::get('/payreq-sync', [BucSyncController::class, 'upload_payreqs'])->name('upload_payreqs');
+            // Route::get('/get-payreqs', [BucSyncController::class, 'get_payreqs'])->name('get_payreqs');
+        });
+    });
 
     Route::get('/test', [TestController::class, 'index']);
 

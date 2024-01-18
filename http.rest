@@ -1,0 +1,4 @@
+GET http://localhost/pay-support/api/rabs
+
+###
+GET http://localhost/payreq-x/api/rabs/get-payreqs

@@ -6,6 +6,9 @@
       <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
       <li><a href="{{ route('document-number.index') }}" class="dropdown-item">Document Numbering</a></li>
       <li><a href="{{ route('parameters.index') }}" class="dropdown-item">Advance Parameters</a></li>
+      @can('akses_sync_buc')
+      <li><a href="{{ route('rabs.sync.index') }}" class="dropdown-item">Sync BUCs</a></li>
+      @endcan
       @can('akses_user')
       <li><a href="{{ route('users.index') }}" class="dropdown-item">User List</a></li>
       @endcan

@@ -217,6 +217,15 @@ class UserRealizationController extends Controller
 
         $realization = Realization::findOrFail($request->realization_id);
 
+        $payreq = Payreq::findOrFail($realization->payreq_id);
+
+        // if payreq of rab_id is not null than realization_detail rab_id = payreq rab_id
+        if ($payreq->rab_id != null) {
+            $rab_id = $payreq->rab_id;
+        } else {
+            $rab_id = null;
+        }
+
         $realization->realizationDetails()->create([
             'description' => $request->description,
             'amount' => $request->amount,
@@ -228,6 +237,7 @@ class UserRealizationController extends Controller
             'qty' => $request->qty,
             'uom' => $request->uom,
             'km_position' => $request->km_position,
+            'rab_id' => $rab_id,
         ]);
 
         return redirect()->route('user-payreqs.realizations.add_details', $realization->id);
