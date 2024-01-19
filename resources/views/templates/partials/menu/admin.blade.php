@@ -9,6 +9,9 @@
       @can('akses_sync_buc')
       <li><a href="{{ route('rabs.sync.index') }}" class="dropdown-item">Sync BUCs</a></li>
       @endcan
+      @can('akses_sync_equipments')
+      <li><a href="{{ route('equipments.sync.index') }}" class="dropdown-item">Sync Equipments</a></li>
+      @endcan
       @can('akses_user')
       <li><a href="{{ route('users.index') }}" class="dropdown-item">User List</a></li>
       @endcan

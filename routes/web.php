@@ -1,10 +1,10 @@
 <?php
 
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\BucSyncController;
 use App\Http\Controllers\DashboardUserController;
 use App\Http\Controllers\DocumentNumberController;
+use App\Http\Controllers\EquipmentSyncController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LoginController;
@@ -113,13 +113,6 @@ Route::middleware('auth')->group(function () {
     });
     Route::resource('parameters', ParameterController::class);
 
-    // APPROVAL STAGES
-    Route::prefix('approval-stages')->name('approval-stages.')->group(function () {
-        Route::get('/data', [ApprovalStageController::class, 'data'])->name('data');
-        Route::post('/auto-generate', [ApprovalStageController::class, 'auto_generate'])->name('auto_generate');
-    });
-    Route::resource('approval-stages', ApprovalStageController::class);
-
     //OUTGOINGS
     Route::prefix('outgoings')->name('outgoing.')->group(function () {
         Route::get('/data', [OutgoingController::class, 'data'])->name('data');
@@ -145,6 +138,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [BucSyncController::class, 'index'])->name('index');
             Route::get('/rabs', [BucSyncController::class, 'sync_rabs'])->name('sync_rabs');
             Route::get('/update-rabid', [BucSyncController::class, 'update_rab'])->name('update_rab');
+        });
+    });
+
+    // EQUIPMENTS SYNCHRONIZER
+    Route::prefix('equipments')->name('equipments.')->group(function () {
+        Route::prefix('sync')->name('sync.')->group(function () {
+            Route::get('/', [EquipmentSyncController::class, 'index'])->name('index');
+            Route::get('/equipments', [EquipmentSyncController::class, 'sync_equipments'])->name('sync_equipments');
         });
     });
 

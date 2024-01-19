@@ -2,8 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApprovalPlanController;
-use App\Http\Controllers\ApprovalRequestPayreqController;
+use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\ApprovalRequestRabController;
+use App\Http\Controllers\ApprovalRequestPayreqController;
 use App\Http\Controllers\ApprovalRequestRealizationController;
 
 
@@ -28,3 +29,10 @@ Route::prefix('approvals')->name('approvals.')->group(function () {
         Route::put('/{id}/update', [ApprovalPlanController::class, 'update'])->name('update');
     });
 });
+
+// APPROVAL STAGES
+Route::prefix('approval-stages')->name('approval-stages.')->group(function () {
+    Route::get('/data', [ApprovalStageController::class, 'data'])->name('data');
+    Route::post('/auto-generate', [ApprovalStageController::class, 'auto_generate'])->name('auto_generate');
+});
+Route::resource('approval-stages', ApprovalStageController::class);
