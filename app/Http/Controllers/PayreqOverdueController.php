@@ -34,6 +34,9 @@ class PayreqOverdueController extends Controller
             ->addColumn(('employee'), function ($payreq) {
                 return $payreq->requestor->name;
             })
+            ->editColumn('nomor', function ($approved) {
+                return '<a href="#" style="color: black" title="' . $approved->remarks . '">' . $approved->nomor . '</a>';
+            })
             ->addColumn('days', function ($payreq) {
                 return Carbon::parse($payreq->due_date)->diffInDays(now());
             })
@@ -42,7 +45,7 @@ class PayreqOverdueController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'document-overdue.payreq.action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'nomor'])
             ->toJson();
     }
 }
