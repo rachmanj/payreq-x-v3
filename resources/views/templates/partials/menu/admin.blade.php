@@ -4,8 +4,6 @@
       <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Accounts</a></li>
       {{-- <li><a href="{{ route('adv-category.index') }}" class="dropdown-item">Advance Category</a></li> --}}
       <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
-      <li><a href="{{ route('document-number.index') }}" class="dropdown-item">Document Numbering</a></li>
-      <li><a href="{{ route('parameters.index') }}" class="dropdown-item">Advance Parameters</a></li>
       @can('akses_sync_buc')
       <li><a href="{{ route('rabs.sync.index') }}" class="dropdown-item">Sync BUCs</a></li>
       @endcan
@@ -20,6 +18,8 @@
       @endcan
       @can('akses_permission')
       <li><a href="{{ route('permissions.index') }}" class="dropdown-item">Permissions</a></li>
+      <li><a href="{{ route('document-number.index') }}" class="dropdown-item">Document Numbering</a></li>
+      <li><a href="{{ route('parameters.index') }}" class="dropdown-item">Advance Parameters</a></li>
       @endcan
     </ul>
   </li>
