@@ -19,15 +19,21 @@
                 <input type="hidden" name="payreq_id" value="{{ $model->id }}">
 
                 <div class="form-group">
-                    <label for="realization_num">Purpose</label>
+                    <label for="purpose">Purpose</label>
                     <input type="text" value="{{ $model->remarks }}" class="form-control" readonly>
                 </div>
-                <div class="form-group">
-                    <label for="realization_date">Current Due Date</label>
-                    <input type="date" value="{{ $model->due_date }}" class="form-control" readonly>
+                <div class="row">
+                    <div class="form-group col-6">
+                        <label for="current_date">Current Due Date</label>
+                        <input type="text" value="{{ date('d-M-Y', strtotime($model->due_date)) }}" class="form-control" readonly>
+                    </div>
+                    <div class="form-group col-6">
+                        <label for="paid_date">Paid Date</label>
+                        <input type="text" value="{{ date('d-M-Y', strtotime($model->last_outgoing_date())) }}" class="form-control" readonly>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="realization_date">New Due Date</label>
+                    <label for="new_due_date">New Due Date</label>
                     <input type="date" name="new_due_date" class="form-control" value="{{ $model->due_date }}" >
                 </div>
 

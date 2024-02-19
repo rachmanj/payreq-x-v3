@@ -22,9 +22,15 @@
                     <label>Remarks</label>
                     <input type="text" value="{{ $model->payreq->remarks }}" class="form-control" readonly>
                 </div>
-                <div class="form-group">
-                    <label>Current Due Date</label>
-                    <input type="date" value="{{ $model->due_date }}" class="form-control" readonly>
+                <div class="row">
+                    <div class="form-group col-6">
+                        <label>Current Due Date</label>
+                        <input type="text" value="{{ date('d-M-Y', strtotime($model->due_date)) }}" class="form-control" readonly>
+                    </div>
+                    <div class="form-group col-6">
+                        <label>Approved Date</label>
+                        <input type="text" value="{{ date('d-M-Y', strtotime($model->approved_at)) }}" class="form-control" readonly>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>New Due Date</label>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Outgoing;
 
 class Payreq extends Model
 {
@@ -48,5 +49,19 @@ class Payreq extends Model
     public function realization_details()
     {
         return $this->hasMany(RealizationDetail::class, 'payreq_id', 'id');
+    }
+
+    public function last_outgoing_date()
+    {
+        $outgoings = $this->outgoings;
+
+        // check if payreq amount === sum of outgoings
+        if ($outgoings->sum('amount') < $this->amount) {
+            return null;
+        } else {
+            $lastOutgoing = $outgoings->sortByDesc('created_at')->first();
+
+            return $lastOutgoing->outgoing_date;
+        }
     }
 }
