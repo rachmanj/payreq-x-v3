@@ -81,6 +81,7 @@
     </div>
     <!-- /.row -->
 
+    {{-- 
     <div class="row invoice-info">
         <div class="col-sm-4 invoice-col">
             <b>Prepared by / Cashier</b>
@@ -109,6 +110,7 @@
             ( .................. )<br>
         </div>
     </div>
+     --}}
     <!-- /.row -->
   </section>
   <!-- /.content -->
