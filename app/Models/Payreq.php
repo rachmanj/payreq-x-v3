@@ -51,7 +51,7 @@ class Payreq extends Model
         return $this->hasMany(RealizationDetail::class, 'payreq_id', 'id');
     }
 
-    public function last_outgoing_date()
+    public function last_outgoing()
     {
         $outgoings = $this->outgoings;
 
@@ -59,9 +59,10 @@ class Payreq extends Model
         if ($outgoings->sum('amount') < $this->amount) {
             return null;
         } else {
-            $lastOutgoing = $outgoings->sortByDesc('created_at')->first();
+            $lastOutgoing = $outgoings->sortByDesc('outgoing_date')->first();
 
-            return $lastOutgoing->outgoing_date;
+            // return $lastOutgoing->outgoing_date;
+            return $lastOutgoing;
         }
     }
 }

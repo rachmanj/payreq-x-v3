@@ -80,8 +80,9 @@ class UserPayreqController extends Controller
 
         if ($payreq->status == 'paid') {
             $paid_date = app(ToolController::class)->getPaidDate($payreq->id);
-            $paid_date = new \Carbon\Carbon($paid_date);
-            $paid_date = " at " .  $paid_date->format('d-M-Y');
+            $cashier = $payreq->last_outgoing()->cashier->name;
+            $paid_date_conv = new \Carbon\Carbon($paid_date);
+            $paid_date = " on " .  $paid_date_conv->format('d-M-Y') . " by " . $cashier;
         } else {
             $paid_date = '';
         }

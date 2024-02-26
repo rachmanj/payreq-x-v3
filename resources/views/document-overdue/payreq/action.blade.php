@@ -29,7 +29,7 @@
                     </div>
                     <div class="form-group col-6">
                         <label for="paid_date">Paid Date</label>
-                        <input type="text" value="{{ date('d-M-Y', strtotime($model->last_outgoing_date())) }}" class="form-control" readonly>
+                        <input type="text" value="{{ date('d-M-Y', strtotime($model->last_outgoing()->outgoing_date)) }}" class="form-control" readonly>
                     </div>
                 </div>
                 <div class="form-group">
