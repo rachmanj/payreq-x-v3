@@ -45,6 +45,19 @@ class ReportIndexController extends Controller
                     ],
                 ],
             ],
+            [
+                'name' => 'Loan Related',
+                'subMenu' => [
+                    [
+                        'name' => 'BG Jatuh Tempo dalam waktu dekat',
+                        'url' => route('reports.loan.index'),
+                    ],
+                    [
+                        'name' => 'Report 3.2',
+                        'url' => 'report3.2',
+                    ],
+                ],
+            ],
         ];
 
         return $menuList;

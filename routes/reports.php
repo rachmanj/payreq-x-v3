@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Reports\EquipmentController;
+use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Reports\ReportIndexController;
@@ -19,5 +20,11 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/data', [EquipmentController::class, 'data'])->name('data');
         // add route with query of unit_no
         Route::get('/unit_no', [EquipmentController::class, 'detail'])->name('detail');
+    });
+
+    Route::prefix('loan')->name('loan.')->group(function () {
+        Route::get('/', [LoanController::class, 'index'])->name('index');
+        Route::get('/data', [LoanController::class, 'data'])->name('data');
+        Route::post('/update', [LoanController::class, 'update'])->name('update');
     });
 });
