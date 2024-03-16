@@ -14,13 +14,13 @@ reports / loans
 
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">BG Jatuh Tempo Dalam Waktu Dekat</h3>
+        <h3 class="card-title">BG Jatuh Tempo Bulan Ini</h3>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
         <br>
       </div>
       <!-- /.card-header -->
       <div class="card-body">
-        <table id="equipments" class="table table-bordered table-striped">
+        <table id="unpaid-table" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
@@ -39,6 +39,36 @@ reports / loans
       <!-- /.card-body -->
     </div>
     <!-- /.card -->
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+
+          <div class="card-header">
+            <h3 class="card-title">Paid Installment this month</h3>
+          </div>
+
+          <div class="card-body">
+            <table id="paid-table" class="table table-bordered table-striped">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Paid Date</th>
+                <th>Creditor</th>
+                <th>Desc</th>
+                <th>Angs ke</th>
+                <th>Bilyet No</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+              </thead>
+             
+            </table>
+          </div>
+          <!-- /.card-body -->
+        </div>
+      </div>
+    </div>
   </div>
   <!-- /.col -->
 </div>
@@ -69,13 +99,40 @@ reports / loans
 
 <script>
   $(function () {
-    $("#equipments").DataTable({
+    $("#unpaid-table").DataTable({
       processing: true,
       serverSide: true,
       ajax: '{{ route('reports.loan.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'due_date'},
+        {data: 'creditor'},
+        {data: 'loan.description'},
+        {data: 'angsuran_ke'},
+        {data: 'bilyet_no'},
+        {data: 'bilyet_amount'},
+        {data: 'action', orderable: false, searchable: false},
+      ],
+      fixedHeader: true,
+      columnDefs: [
+              {
+                "targets": [4, 6],
+                "className": "text-right"
+              },
+              {
+                "targets": [5],
+                "className": "text-center"
+              }
+            ]
+    })
+
+    $("#paid-table").DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: '{{ route('reports.loan.paid_data') }}',
+      columns: [
+        {data: 'DT_RowIndex', orderable: false, searchable: false},
+        {data: 'paid_date'},
         {data: 'creditor'},
         {data: 'loan.description'},
         {data: 'angsuran_ke'},

@@ -28,7 +28,7 @@ class LoanController extends Controller
     {
         $installments = Installment::with('loan')
             ->where('account_id', 142)
-            ->where('due_date', '<=', date('Y-m-d'))
+            ->where('due_date', '<=', date('Y-m-d', strtotime('last day of this month')))
             ->whereNull('paid_date')
             ->orderBy('due_date', 'asc')
             ->get();
@@ -38,6 +38,30 @@ class LoanController extends Controller
                 return $installment->loan->creditor->name;
             })
             ->editColumn('due_date', function ($installment) {
+                return date('d-M-Y', strtotime($installment->due_date));
+            })
+            ->editColumn('bilyet_amount', function ($installment) {
+                return number_format($installment->bilyet_amount, 2, ',', '.');
+            })
+            ->addIndexColumn()
+            ->addColumn('action', 'reports.loan.action')
+            ->toJson();
+    }
+
+    public function paid_data()
+    {
+        $installments = Installment::with('loan')
+            ->where('account_id', 142)
+            ->whereMonth('paid_date', date('m'))
+            ->whereNotNull('paid_date')
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        return datatables()->of($installments)
+            ->addColumn('creditor', function ($installment) {
+                return $installment->loan->creditor->name;
+            })
+            ->editColumn('paid_date', function ($installment) {
                 return date('d-M-Y', strtotime($installment->due_date));
             })
             ->editColumn('bilyet_amount', function ($installment) {
