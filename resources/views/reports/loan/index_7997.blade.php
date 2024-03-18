@@ -15,8 +15,8 @@ reports / loans
     <div class="card">
       <div class="card-header">
         <h3 class="card-title mr-5">BG Jatuh Tempo Bulan Ini</h3>
-        <a href="#" class="bg-yellow"><b>1490004194751</b></a> | 
-        <a href="{{ route('reports.loan.index_7997') }}">1270077977997</a>
+        <a href="{{ route('reports.loan.index') }}">1490004194751</a> | 
+        <a href="#" class="bg-yellow"><b>1270077977997</b></a>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
         <br>
       </div>
@@ -104,7 +104,7 @@ reports / loans
     $("#unpaid-table").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('reports.loan.data') . "?akun_no=1490004194751" }}',
+      ajax: '{{ route('reports.loan.data') . "?akun_no=1270077977997"}}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'due_date'},
@@ -131,7 +131,7 @@ reports / loans
     $("#paid-table").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('reports.loan.paid_data') . "?akun_no=1490004194751" }}',
+      ajax: '{{ route('reports.loan.paid_data') . "?akun_no=1270077977997" }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'paid_date'},

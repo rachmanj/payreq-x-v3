@@ -30,7 +30,28 @@
               </div>
             </div>
 
-            
+            <div class="row">
+              <div class="col-12">
+                <div class="form-group">
+                  <label for="bilyet_no">Bilyet No</label>
+                  <input type="text" name="bilyet_no" id="bilyet_no" value="{{ $model->bilyet_no }}" class="form-control">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-12">
+                <div class="form-group">
+                  <label for="bilyet_no">Account No</label>
+                  <select name="account_id" class="form-control">
+                    <option value="">Select Account</option>
+                    @foreach (\App\Models\Account::where('type', 'bank')->get() as $account)
+                      <option value="{{ $account->id }}" {{ $account->id == $model->account_id ? 'selected' : '' }}>{{ $account->account_number }}</option>
+                    @endforeach
+                  </select>
+                </div>
+              </div>
+            </div>
   
           </div> <!-- /.modal-body -->
   
@@ -43,4 +64,4 @@
       
       </div> <!-- /.modal-content -->
     </div> <!-- /.modal-dialog -->
-  </div>
+</div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Models\Account;
 use App\Models\Installment;
 use Illuminate\Http\Request;
 
@@ -13,21 +14,38 @@ class LoanController extends Controller
         return view('reports.loan.index');
     }
 
+    public function index_7997()
+    {
+        return view('reports.loan.index_7997');
+    }
+
     public function update(Request $request)
     {
         $installment = Installment::find($request->installment_id);
 
+        $status = $request->paid_date ? 'paid' : null;
+
         $installment->paid_date = $request->paid_date;
-        $installment->status = 'paid';
+        $installment->status = $status;
+        $installment->bilyet_no = $request->bilyet_no;
+        $installment->account_id = $request->account_id;
         $installment->save();
 
         return redirect()->route('reports.loan.index');
     }
 
-    public function data()
+    public function data(Request $request)
     {
+        $akun = Account::where('account_number', $request->akun_no)->first();
+
+        if ($akun) {
+            $akun_id = $akun->id;
+        } else {
+            $akun_id = "";
+        }
+
         $installments = Installment::with('loan')
-            ->where('account_id', 142)
+            ->where('account_id', $akun_id)
             ->where('due_date', '<=', date('Y-m-d', strtotime('last day of this month')))
             ->whereNull('paid_date')
             ->orderBy('due_date', 'asc')
@@ -48,10 +66,18 @@ class LoanController extends Controller
             ->toJson();
     }
 
-    public function paid_data()
+    public function paid_data(Request $request)
     {
+        $akun = Account::where('account_number', $request->akun_no)->first();
+
+        if ($akun) {
+            $akun_id = $akun->id;
+        } else {
+            $akun_id = "";
+        }
+
         $installments = Installment::with('loan')
-            ->where('account_id', 142)
+            ->where('account_id', $akun_id)
             ->whereMonth('paid_date', date('m'))
             ->whereNotNull('paid_date')
             ->orderBy('due_date', 'asc')
