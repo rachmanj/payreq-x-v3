@@ -19,6 +19,11 @@ class LoanController extends Controller
         return view('reports.loan.index_7997');
     }
 
+    public function index_all()
+    {
+        return view('reports.loan.index_all');
+    }
+
     public function update(Request $request)
     {
         $installment = Installment::find($request->installment_id);
@@ -36,20 +41,28 @@ class LoanController extends Controller
 
     public function data(Request $request)
     {
-        $akun = Account::where('account_number', $request->akun_no)->first();
-
-        if ($akun) {
-            $akun_id = $akun->id;
+        if ($request->akun_no === 'all') {
+            $installments = Installment::with('loan')
+                ->where('due_date', '<=', date('Y-m-d', strtotime('last day of this month')))
+                ->whereNull('paid_date')
+                ->orderBy('due_date', 'asc')
+                ->get();
         } else {
-            $akun_id = "";
-        }
+            $akun = Account::where('account_number', $request->akun_no)->first();
 
-        $installments = Installment::with('loan')
-            ->where('account_id', $akun_id)
-            ->where('due_date', '<=', date('Y-m-d', strtotime('last day of this month')))
-            ->whereNull('paid_date')
-            ->orderBy('due_date', 'asc')
-            ->get();
+            if ($akun) {
+                $akun_id = $akun->id;
+            } else {
+                $akun_id = "";
+            }
+
+            $installments = Installment::with('loan')
+                ->where('account_id', $akun_id)
+                ->where('due_date', '<=', date('Y-m-d', strtotime('last day of this month')))
+                ->whereNull('paid_date')
+                ->orderBy('due_date', 'asc')
+                ->get();
+        }
 
         return datatables()->of($installments)
             ->addColumn('creditor', function ($installment) {
@@ -68,20 +81,28 @@ class LoanController extends Controller
 
     public function paid_data(Request $request)
     {
-        $akun = Account::where('account_number', $request->akun_no)->first();
-
-        if ($akun) {
-            $akun_id = $akun->id;
+        if ($request->akun_no === 'all') {
+            $installments = Installment::with('loan')
+                ->whereMonth('paid_date', date('m'))
+                ->whereNotNull('paid_date')
+                ->orderBy('due_date', 'asc')
+                ->get();
         } else {
-            $akun_id = "";
-        }
+            $akun = Account::where('account_number', $request->akun_no)->first();
 
-        $installments = Installment::with('loan')
-            ->where('account_id', $akun_id)
-            ->whereMonth('paid_date', date('m'))
-            ->whereNotNull('paid_date')
-            ->orderBy('due_date', 'asc')
-            ->get();
+            if ($akun) {
+                $akun_id = $akun->id;
+            } else {
+                $akun_id = "";
+            }
+
+            $installments = Installment::with('loan')
+                ->where('account_id', $akun_id)
+                ->whereMonth('paid_date', date('m'))
+                ->whereNotNull('paid_date')
+                ->orderBy('due_date', 'asc')
+                ->get();
+        }
 
         return datatables()->of($installments)
             ->addColumn('creditor', function ($installment) {

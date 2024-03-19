@@ -16,7 +16,8 @@ reports / loans
       <div class="card-header">
         <h3 class="card-title mr-5">BG Jatuh Tempo Bulan Ini</h3>
         <a href="{{ route('reports.loan.index') }}">1490004194751</a> | 
-        <a href="#" class="bg-yellow"><b>1270077977997</b></a>
+        <a href="#" class="bg-yellow"><b>1270077977997</b></a> | 
+        <a href="{{ route('reports.loan.index_all') }}">All</a>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
         <br>
       </div>
