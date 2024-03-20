@@ -13,7 +13,7 @@ class TestController extends Controller
     {
         // $test = app(CashierDashboardController::class)->dashboard_data();
         // $test = app(UserPayreqController::class)->ongoing_payreqs();
-        $test = Realization::with('realizationDetails')->where('id', 483)->first();
+        // $test = Realization::with('realizationDetails')->where('id', 483)->first();
         // $test = app(UserRealizationController::class)->ongoing_realizations();
         // $test = Realization::with('realizationDetails')->where('id', 3)->first();
         // $test = app(CashInJournalController::class)->to_cart_data();
@@ -24,6 +24,7 @@ class TestController extends Controller
         // $test = app(Reports\EquipmentController::class)->detail('VA 045');
         // $test = app(BucSyncController::class)->get_buc_payreqs();
         // $test = app(BucSyncController::class)->cek_rab_id();
+        $test = app(Reports\LoanController::class)->dashboard_data();
 
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)

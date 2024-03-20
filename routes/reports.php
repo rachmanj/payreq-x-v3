@@ -29,5 +29,6 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/data', [LoanController::class, 'data'])->name('data');
         Route::get('/paid-data', [LoanController::class, 'paid_data'])->name('paid_data');
         Route::post('/update', [LoanController::class, 'update'])->name('update');
+        Route::get('/dashboard', [LoanController::class, 'dashboard'])->name('dashboard');
     });
 });

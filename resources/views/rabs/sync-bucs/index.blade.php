@@ -11,7 +11,7 @@
 @section('content')
 <div class="row">
   <div class="col-12">
-    <div class="card racd-info">
+    <div class="card card-info">
       <div class="card-header">
         <h3 class="card-title">RABs BUC Sync</h3>
       </div>
@@ -41,7 +41,7 @@
 
 <div class="row">
   <div class="col-12">
-    <div class="card racd-info">
+    <div class="card card-info">
       <div class="card-header">
         <h3 class="card-title">Sync RAB ID on Realization Details</h3>
       </div>

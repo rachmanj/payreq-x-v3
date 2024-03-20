@@ -53,8 +53,8 @@ class ReportIndexController extends Controller
                         'url' => route('reports.loan.index'),
                     ],
                     [
-                        'name' => 'Report 3.2',
-                        'url' => 'report3.2',
+                        'name' => 'Loan Dashboard',
+                        'url' => route('reports.loan.dashboard'),
                     ],
                 ],
             ],
