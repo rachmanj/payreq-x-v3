@@ -29,6 +29,7 @@
   </div>
 </div>
 
+{{-- 
 <div class="row">
   <div class="col-12">
     <div class="card card-info">
@@ -97,6 +98,63 @@
   </div>
 </div>
 
+ --}}
 
+{{-- acordion --}}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Loans by Creditor</h3>
+      </div>
+
+      <div class="card-body">
+
+        <div id="accordion">
+
+          @foreach ($dashboard_data['outstanding_installment_amount_by_creditors_detail'] as $creditor)
+          <div class="card">
+            <div class="card-header">
+              <h4 class="card-title w-100">
+                <a class="d-block w-100" data-toggle="collapse" href="#collapse{{ $creditor->index }}">
+                  {{ $creditor->index }}. {{ $creditor->creditor_name }} <span class="float-right">IDR {{ number_format($creditor->total, 2) }}</span>
+                </a>
+              </h4>
+            </div>
+            <div id="collapse{{ $creditor->index }}" class="collapse" data-parent="#accordion">
+              <div class="card-body">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Agreement</th>
+                      <th>Desc</th>
+                      <th class="text-right">Installment Left</th>
+                      <th class="text-right">Outstanding Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach ($creditor['installments'] as $index => $loan)
+                      <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $loan->loan_code }}</td>
+                        <td>{{ $loan->description }}</td>
+                        <td class="text-right">{{ $loan->number_of_installments_left }}</td>
+                        <td class="text-right">IDR {{ number_format($loan->total, 2) }}</td>
+                      </tr>
+                    @endforeach
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          @endforeach
+
+        </div> {{-- accordion --}}
+      </div>
+
+    </div> {{-- card --}}
+  </div>
+</div>
 
 @endsection

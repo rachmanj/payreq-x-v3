@@ -134,8 +134,9 @@ class LoanController extends Controller
             'outstanding_installment_amount_this_month' => $this->outstanding_installment_amount_this_month(),
             'outstanding_installment_amount' => $this->outstanding_installment_amount(),
             'paid_this_month' => $this->paid_this_month(),
-            'outstanding_installment_amount_by_creditors' => $this->outstanding_installment_amount_by_creditors(),
-            'outstanding_installment_amount_by_loan_code' => $this->outstanding_installment_amount_by_loan_code(),
+            // 'outstanding_installment_amount_by_creditors' => $this->outstanding_installment_amount_by_creditors(),
+            // 'outstanding_installment_amount_by_loan_code' => $this->outstanding_installment_amount_by_loan_code(),
+            'outstanding_installment_amount_by_creditors_detail' => $this->outstanding_installment_amount_by_creditors_detail(),
         ];
 
         return $dashboard_data;
@@ -185,10 +186,42 @@ class LoanController extends Controller
         $installments = Installment::whereNull('paid_date')
             ->join('loans', 'installments.loan_id', '=', 'loans.id')
             ->join('creditors', 'loans.creditor_id', '=', 'creditors.id')
-            ->groupBy('creditors.name')
-            ->selectRaw('sum(installments.bilyet_amount) as total, creditors.name as creditor_name, count(distinct loans.id) as number_of_loans')
+            ->groupBy('creditors.name', 'creditors.id')
+            ->selectRaw('sum(installments.bilyet_amount) as total, creditors.name as creditor_name, creditors.id as creditor_id, count(distinct loans.id) as number_of_loans')
             ->get();
 
+        // Add index to the collection
+        $installments = $installments->map(function ($item, $index) {
+            $item->index = $index + 1;
+            return $item;
+        });
+
         return $installments;
+    }
+
+    public function outstanding_installment_amount_by_creditors_detail()
+    {
+        $creditors = $this->outstanding_installment_amount_by_creditors();
+
+        $creditors_detail = [];
+
+        foreach ($creditors as $creditor) {
+            $installments = Installment::whereNull('paid_date')
+                ->join('loans', 'installments.loan_id', '=', 'loans.id')
+                ->where('loans.creditor_id', $creditor->creditor_id)
+                ->groupBy('loans.loan_code', 'loans.description')
+                ->selectRaw('sum(installments.bilyet_amount) as total, count(installments.id) as number_of_installments_left, loans.loan_code, loans.description')
+                ->get();
+
+            // Add index to the collection
+            $installments = $installments->map(function ($item, $index) {
+                $item->index = $index + 1;
+                return $item;
+            });
+
+            $creditor->installments = $installments;
+        }
+
+        return $creditors;
     }
 }
