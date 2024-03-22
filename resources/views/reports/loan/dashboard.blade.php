@@ -14,6 +14,7 @@
     <div class="card card-info">
       <div class="card-header">
         <h3 class="card-title">Rekaps</h3>
+        <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
       </div>
       <div class="card-body">
         <dl class="row">
@@ -103,7 +104,7 @@
 {{-- acordion --}}
 <div class="row">
   <div class="col-12">
-    <div class="card">
+    <div class="card card-info">
       <div class="card-header">
         <h3 class="card-title">Loans by Creditor</h3>
       </div>
