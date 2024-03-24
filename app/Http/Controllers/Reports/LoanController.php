@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Reports;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Installment;
+use App\Models\Parameter;
 use Illuminate\Http\Request;
 
 class LoanController extends Controller
 {
     public function index()
     {
-        return view('reports.loan.index');
+        $saldo = Parameter::where('name1', 'account_balance')->where('name2', '1490004194751')->first();
+
+        return view('reports.loan.index', compact('saldo'));
     }
 
     public function index_7997()

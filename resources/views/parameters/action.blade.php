@@ -14,7 +14,7 @@
         <div class="modal-body">
           <div class="form-group">
             <label for="name1">Param1</label>
-            <input type="text" name='name1' value={{ old('name1', $model->name1) }} class="form-control @error('name1') is-invalid @enderror" autofocus>
+            <input type="text" name='name1' value={{ old('name1', $model->name1) }} class="form-control @error('name1') is-invalid @enderror">
             @error('name1')
               <div class="invalid-feedback">
                 {{ $message }}
@@ -23,21 +23,11 @@
           </div>    
           <div class="form-group">
             <label for="name2">Param2</label>
-            <input type="text" name='name2' value={{ old('name2', $model->name2) }} class="form-control @error('name2') is-invalid @enderror">
-            @error('name2')
-              <div class="invalid-feedback">
-                {{ $message }}
-              </div>
-            @enderror
+            <input type="text" name='name2' value={{ old('name2', $model->name2) }} class="form-control">
           </div>       
           <div class="form-group">
             <label for="param_value">Value</label>
-            <input type="text" name='param_value' value={{ old('param_value', $model->param_value) }} class="form-control @error('param_value') is-invalid @enderror">
-            @error('param_value')
-              <div class="invalid-feedback">
-                {{ $message }}
-              </div>
-            @enderror
+            <input type="text" name='param_value' value={{ old('param_value', $model->param_value) }} class="form-control">
           </div>
         </div>
         <div class="modal-footer float-left">

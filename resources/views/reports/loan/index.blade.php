@@ -15,11 +15,12 @@ reports / loans
     <div class="card">
       <div class="card-header">
         <h3 class="card-title mr-5">BG Jatuh Tempo Bulan Ini</h3>
-        <a href="#" class="bg-yellow"><b>1490004194751</b></a> | 
+        <a href="#" class="bg-yellow"><b>1490004194751</b></a>  | 
         <a href="{{ route('reports.loan.index_7997') }}">1270077977997</a> | 
         <a href="{{ route('reports.loan.index_all') }}">All</a>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
         <br>
+        Saldo: {{ number_format((float)$saldo->param_value, 2) }} | last updated at: {{ \Carbon\Carbon::parse($saldo->updated_at)->addHours(8)->format('d-M-y H:i') }}
       </div>
       <!-- /.card-header -->
       <div class="card-body">
