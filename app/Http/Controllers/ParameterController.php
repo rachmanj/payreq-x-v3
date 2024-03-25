@@ -43,6 +43,9 @@ class ParameterController extends Controller
         $parameters = Parameter::orderBy('name1', 'asc')->get();
 
         return datatables()->of($parameters)
+            ->editColumn('updated_at', function ($parameter) {
+                return $parameter->updated_at->addHour()->format('d-M-Y H:i:s');
+            })
             ->addIndexColumn()
             ->addColumn('action', 'parameters.action')
             ->rawColumns(['action'])

@@ -23,6 +23,7 @@
                   <th>Param1</th>
                   <th>Param2</th>
                   <th>Value</th>
+                  <th>Last Updated</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -111,6 +112,7 @@
         {data: 'name1'},
         {data: 'name2'},
         {data: 'param_value'},
+        {data: 'updated_at'},
         {data: 'action'},
       ],
       fixedHeader: true,

@@ -20,7 +20,7 @@ reports / loans
         <a href="{{ route('reports.loan.index_all') }}">All</a>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
         <br>
-        Saldo: {{ number_format((float)$saldo->param_value, 2) }} | last updated at: {{ \Carbon\Carbon::parse($saldo->updated_at)->addHours(8)->format('d-M-y H:i') }}
+        Saldo: {{ number_format((float)$saldo->param_value, 2) }} | at: {{ \Carbon\Carbon::parse($saldo->updated_at)->addHour()->format('d-M-y H:i') . ' wita' }}
       </div>
       <!-- /.card-header -->
       <div class="card-body">
