@@ -44,7 +44,7 @@ class ParameterController extends Controller
 
         return datatables()->of($parameters)
             ->editColumn('updated_at', function ($parameter) {
-                return $parameter->updated_at->addHour()->format('d-M-Y H:i:s');
+                return $parameter->updated_at->addHours(8)->format('d-M-Y H:i:s');
             })
             ->addIndexColumn()
             ->addColumn('action', 'parameters.action')
