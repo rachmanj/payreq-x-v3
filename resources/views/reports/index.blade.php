@@ -24,12 +24,23 @@
         <div class="card-body">
           <ol>
             @foreach ($menuList as $item)
+                @if ($item['protector'] && $item['protector'] === 'akses_loan_report')
+                  @can('akses_loan_report')
+                  <li>{{ $item['name'] }}</li>
+                    <ol>
+                      @foreach ($item['subMenu'] as $subItem)
+                        <li><a href="{{ $subItem['url'] }}">{{ $subItem['name'] }}</a></li>
+                      @endforeach
+                    </ol>
+                  @endcan
+                @else
                 <li>{{ $item['name'] }}</li>
                   <ol>
                     @foreach ($item['subMenu'] as $subItem)
                       <li><a href="{{ $subItem['url'] }}">{{ $subItem['name'] }}</a></li>
                     @endforeach
                   </ol>
+                @endif
             @endforeach
           </ol>
         </div>

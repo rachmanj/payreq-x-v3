@@ -21,6 +21,7 @@ class ReportIndexController extends Controller
         $menuList = [
             [
                 'name' => 'Payment Request',
+                'protector' => null,
                 'subMenu' => [
                     [
                         'name' => 'Ongoing Payment Request',
@@ -34,6 +35,7 @@ class ReportIndexController extends Controller
             ],
             [
                 'name' => 'Equipment Related',
+                'protector' => null,
                 'subMenu' => [
                     [
                         'name' => 'Sum Expense by Equipment',
@@ -47,6 +49,7 @@ class ReportIndexController extends Controller
             ],
             [
                 'name' => 'Loan Related',
+                'protector' => 'akses_loan_report',
                 'subMenu' => [
                     [
                         'name' => 'BG Jatuh Tempo dalam waktu dekat',
