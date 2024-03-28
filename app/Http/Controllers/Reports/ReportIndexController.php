@@ -23,13 +23,19 @@ class ReportIndexController extends Controller
                 'name' => 'Payment Request',
                 'protector' => null,
                 'subMenu' => [
+                    // [
+                    //     'name' => 'Ongoing Payment Request',
+                    //     'url' => route('reports.ongoing.index'),
+                    // ],
                     [
-                        'name' => 'Ongoing Payment Request',
-                        'url' => route('reports.ongoing.index'),
+                        'name' => 'Dashboard 000H',
+                        'url' => route('reports.ongoing.dashboard', ['project' => '000H']),
+                        'protector' => 'akses_ongoing_dashboard_HO'
                     ],
                     [
-                        'name' => 'Report 1.2',
-                        'url' => 'report1.2',
+                        'name' => 'Dashboard 017C',
+                        'url' => route('reports.ongoing.dashboard', ['project' => '017C']),
+                        'protector' => 'akses_ongoing_dashboard_017'
                     ],
                 ],
             ],

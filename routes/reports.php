@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingController;
@@ -13,6 +14,8 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [OngoingController::class, 'index'])->name('index');
         Route::get('/data', [OngoingController::class, 'data'])->name('data');
         Route::get('/{int}/project', [OngoingController::class, 'project_index'])->name('project');
+
+        Route::get('/dashboard', [OngoingDashboardController::class, 'dashboard'])->name('dashboard');
     });
 
     Route::prefix('equipment')->name('equipment.')->group(function () {

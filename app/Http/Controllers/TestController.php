@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payreq;
-use App\Models\Realization;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class TestController extends Controller
@@ -24,7 +22,10 @@ class TestController extends Controller
         // $test = app(Reports\EquipmentController::class)->detail('VA 045');
         // $test = app(BucSyncController::class)->get_buc_payreqs();
         // $test = app(BucSyncController::class)->cek_rab_id();
-        $test = app(Reports\LoanController::class)->dashboard_data();
+        // $test = app(Reports\LoanController::class)->dashboard_data();
+        // $test = app(Reports\OngoingDashboardController::class)->dashboard_data('000H');
+        // $test = app(Reports\OngoingDashboardController::class)->ongoing_documents_by_user('000H');
+        $test = app(Reports\OngoingDashboardController::class)->ongoing_documents_by_user('000H');
 
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
