@@ -30,33 +30,41 @@
         <table class="table table-striped">
           <tbody>
             <tr>
-              <td>Saldo PC Payreq System</td>
-              <td class="text-right">Rp. {{ $dashboard_data['saldo_pc_payreq_system'] }}</td>
+              <td>A. Saldo PC Payreq System</td>
+              <td></td>
+                <td class="text-right"><strong>Rp. {{ $dashboard_data['saldo_pc_payreq_system'] }}</strong></td>
               <td></td>
             </tr>
             <tr>
-              <td>Payreq belum realisasi</td>
+              <td>B. Payreq belum realisasi</td>
               <td class="text-right">Rp. {{ $dashboard_data['payreq_belum_realisasi_amount'] }}</td>
               <td></td>
             </tr>
             <tr>
-              <td>Payreq belum verifikasi</td>
+              <td>C. Payreq belum verifikasi</td>
               <td class="text-right">Rp. {{ $dashboard_data['payreq_belum_verifikasi_amount'] }}</td>
               <td></td>
             </tr>
             <tr>
-              <td>Variance Realisasi belum incoming</td>
+              <td>D. Variance Realisasi belum incoming</td>
               <td class="text-right">Rp. {{ $dashboard_data['variance_realisasi_belum_incoming_amount'] }}</td>
               <td></td>
             </tr>
             <tr>
-              <td>Variance Realisasi belum outgoing</td>
+              <td>E .Variance Realisasi belum outgoing</td>
                 <td class="text-right" style="color: red;">(Rp. {{ $dashboard_data['variance_realisasi_belum_outgoing_amount'] }})</td>
               <td></td>
             </tr>
             <tr>
-              <td>Cek balance PC SAP</td>
-              <td class="text-right">Rp. {{ $dashboard_data['cek_balance_pc_sap'] }}</td>
+              <td>F. Total Advance Employee (B + C + D - E)</td>
+              <td></td>
+                <td class="text-right"><strong>Rp. {{ $dashboard_data['total_advance_employee'] }}</strong></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>G. Cek balance PC SAP (A + F)</td>
+              <td></td>
+                <td class="text-right"><strong>Rp. {{ $dashboard_data['cek_balance_pc_sap'] }}</strong></td>
               <td></td>
             </tr>
           </tbody>
@@ -84,7 +92,7 @@
             <div class="card-header">
               <h4 class="card-title w-100">
                 <a class="d-block w-100" data-toggle="collapse" href="#collapse{{ $user->index }}">
-                  {{ $user->index }}. {{ $user->name }} <span class="float-right">IDR {{ $user->dana_belum_diselesaikan }}</span>
+                  {{ $user->name }} <span class="float-right">IDR {{ $user->dana_belum_diselesaikan }}</span>
                 </a>
               </h4>
             </div>
@@ -92,34 +100,34 @@
               <div class="card-body">
                 <ol>
                   @if ($user['payreq_belum_realisasi_amount'] !== 0 )
-                  <li class="col-sm-12">Payreq belum realisasi amount = Rp. {{ $user['payreq_belum_realisasi_amount'] }}</li>
+                    <li class="col-sm-12"><strong>Payreq belum realisasi total = Rp. {{ $user['payreq_belum_realisasi_amount'] }}</strong></li>
                   <ol>
                     @foreach ($user['payreq_belum_realisasi_list'] as $item)
-                      <li class="col-sm-12">Payreq No.{{ $item->payreq_nomor }} = Rp. {{ $item->total_amount }}</li>  
+                        <li class="col-sm-12">Payreq No.{{ $item->payreq_nomor }} | Paid {{ date('d-M-Y', strtotime($item->paid_date)) }} = Rp. {{ number_format($item->total_amount, 2) }}</li>  
                     @endforeach
                   </ol>
                   @endif
                   @if ($user['realisasi_belum_verifikasi_amount'] !== 0 )
-                  <li class="col-sm-12">Realisasi belum verifikasi amount = Rp. {{ $user['realisasi_belum_verifikasi_amount'] }}</li>
+                    <li class="col-sm-12"><strong>Realisasi belum verifikasi total = Rp. {{ $user['realisasi_belum_verifikasi_amount'] }}</strong></li>
                   <ol>
                     @foreach ($user['realisasi_belum_verifikasi_list'] as $item)
-                      <li class="col-sm-12">Realisasi No.{{ $item->realization_nomor }} = Rp. {{ $item->total_amount }}</li>  
+                      <li class="col-sm-12">Realisasi No.{{ $item->realization_nomor }} = Rp. {{ number_format($item->total_amount, 2) }}</li>  
                     @endforeach
                   </ol>
                   @endif
                   @if ($user['variance_realisasi_belum_incoming_amount'] !== 0 )
-                  <li class="col-sm-12">Variance Realisasi belum incoming amount = Rp. {{ $user['variance_realisasi_belum_incoming_amount'] }}</li>
+                    <li class="col-sm-12"><strong>Variance Realisasi belum incoming total = Rp. {{ $user['variance_realisasi_belum_incoming_amount'] }}</strong></li>
                   <ol>
                     @foreach ($user['variance_realisasi_belum_incoming_list'] as $item)
-                      <li class="col-sm-12">Realisasi No.{{ $item->realization_nomor }} = Rp. {{ $item->amount }}</li>  
+                      <li class="col-sm-12">Realisasi No.{{ $item->realization_nomor }} = Rp. {{ number_format($item->amount, 2) }}</li>  
                     @endforeach
                   </ol>
                   @endif
                   @if ($user['variance_realisasi_belum_outgoing_amount'] !== 0 )
-                  <li class="col-sm-12">Variance Realisasi belum outgoing amount = Rp. {{ $user['variance_realisasi_belum_outgoing_amount'] }}</li>
+                    <li class="col-sm-12"><strong>Variance Realisasi belum outgoing total = Rp. {{ $user['variance_realisasi_belum_outgoing_amount'] }}</strong></li>
                   <ol>
                     @foreach ($user['variance_realisasi_belum_outgoing_list'] as $item)
-                      <li class="col-sm-12">Realisasi No.{{ $item->nomor }} = Rp. {{ $item->amount }}</li>  
+                      <li class="col-sm-12">Realisasi No.{{ $item->nomor }} = Rp. {{ number_format($item->amount, 2) }}</li>  
                     @endforeach
                   </ol>
                   @endif

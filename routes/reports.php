@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\EquipmentController;
-use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Reports\PayreqAgingController;
 use App\Http\Controllers\Reports\ReportIndexController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/', [ReportIndexController::class, 'index'])->name('index');
@@ -16,6 +17,11 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/{int}/project', [OngoingController::class, 'project_index'])->name('project');
 
         Route::get('/dashboard', [OngoingDashboardController::class, 'dashboard'])->name('dashboard');
+
+        Route::prefix('payreq-aging')->name('payreq-aging.')->group(function () {
+            Route::get('/', [PayreqAgingController::class, 'index'])->name('index');
+            Route::get('/data', [PayreqAgingController::class, 'data'])->name('data');
+        });
     });
 
     Route::prefix('equipment')->name('equipment.')->group(function () {

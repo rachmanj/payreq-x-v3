@@ -24,8 +24,8 @@
         <div class="card-body">
           <ol>
             @foreach ($menuList as $item)
-                @if ($item['protector'] && $item['protector'] === 'akses_loan_report')
-                  @can('akses_loan_report')
+                @if ($item['protector'] !== null)
+                  @can($item['protector'])
                   <li>{{ $item['name'] }}</li>
                     <ol>
                       @foreach ($item['subMenu'] as $subItem)
@@ -37,7 +37,13 @@
                 <li>{{ $item['name'] }}</li>
                   <ol>
                     @foreach ($item['subMenu'] as $subItem)
-                      <li><a href="{{ $subItem['url'] }}">{{ $subItem['name'] }}</a></li>
+                      @if ($subItem['protector'] !== null)
+                          @can($subItem['protector'])
+                            <li><a href="{{ $subItem['url'] }}">{{ $subItem['name'] }}</a></li>
+                          @endcan
+                        @else
+                          <li><a href="{{ $subItem['url'] }}">{{ $subItem['name'] }}</a></li>
+                        @endif
                     @endforeach
                   </ol>
                 @endif

@@ -30,13 +30,33 @@ class ReportIndexController extends Controller
                     [
                         'name' => 'Dashboard 000H',
                         'url' => route('reports.ongoing.dashboard', ['project' => '000H']),
-                        'protector' => 'akses_ongoing_dashboard_HO'
+                        'protector' => 'akses_dashboard_000H',
                     ],
                     [
                         'name' => 'Dashboard 017C',
                         'url' => route('reports.ongoing.dashboard', ['project' => '017C']),
-                        'protector' => 'akses_ongoing_dashboard_017'
+                        'protector' => 'akses_dashboard_017C',
                     ],
+                    [
+                        'name' => 'Dashboard 021C',
+                        'url' => route('reports.ongoing.dashboard', ['project' => '021C']),
+                        'protector' => 'akses_dashboard_021C',
+                    ],
+                    [
+                        'name' => 'Dashboard 022C',
+                        'url' => route('reports.ongoing.dashboard', ['project' => '022C']),
+                        'protector' => 'akses_dashboard_022C',
+                    ],
+                    [
+                        'name' => 'Dashboard 023C',
+                        'url' => route('reports.ongoing.dashboard', ['project' => '023C']),
+                        'protector' => 'akses_dashboard_023C',
+                    ],
+                    [
+                        'name' => 'Payreq Aging',
+                        'url' => route('reports.ongoing.payreq-aging.index'),
+                        'protector' => 'akses_payreq_aging',
+                    ]
                 ],
             ],
             [
@@ -46,10 +66,12 @@ class ReportIndexController extends Controller
                     [
                         'name' => 'Sum Expense by Equipment',
                         'url' => route('reports.equipment.index'),
+                        'protector' => null,
                     ],
                     [
                         'name' => 'Report 2.2',
                         'url' => 'report2.2',
+                        'protector' => null,
                     ],
                 ],
             ],
@@ -60,10 +82,12 @@ class ReportIndexController extends Controller
                     [
                         'name' => 'BG Jatuh Tempo dalam waktu dekat',
                         'url' => route('reports.loan.index'),
+                        'protector' => null,
                     ],
                     [
                         'name' => 'Loan Dashboard',
                         'url' => route('reports.loan.dashboard'),
+                        'protector' => null,
                     ],
                 ],
             ],

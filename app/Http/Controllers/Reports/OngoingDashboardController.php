@@ -31,6 +31,7 @@ class OngoingDashboardController extends Controller
         $payreq_belum_verifikasi_amount = $this->payreq_belum_verifikasi_amount($project);
         $variance_realisasi_belum_outgoing_amount = $this->variance_realisasi_belum_outgoing_amount($project);
         $variance_realisasi_belum_incoming_amount = $this->variance_realisasi_belum_incoming_amount($project);
+        $total_advance_employee = $this->payreq_belum_realisasi_amount($project) + $this->payreq_belum_verifikasi_amount($project) + $this->variance_realisasi_belum_outgoing_amount($project) - $this->variance_realisasi_belum_incoming_amount($project);
         $cek_balance_pc_sap = $saldo_pc_payreq_system + $payreq_belum_realisasi_amount + $payreq_belum_verifikasi_amount + $variance_realisasi_belum_incoming_amount - $variance_realisasi_belum_outgoing_amount;
 
         $dashboard_data = [
@@ -39,6 +40,7 @@ class OngoingDashboardController extends Controller
             'payreq_belum_verifikasi_amount' => number_format($payreq_belum_verifikasi_amount, 2),
             'variance_realisasi_belum_incoming_amount' => number_format($variance_realisasi_belum_incoming_amount, 2),
             'variance_realisasi_belum_outgoing_amount' => number_format($variance_realisasi_belum_outgoing_amount, 2),
+            'total_advance_employee' => number_format($total_advance_employee, 2),
             'cek_balance_pc_sap' => number_format($cek_balance_pc_sap, 2),
             'ongoing_documents_by_user' => $this->ongoing_documents_by_user($project),
         ];
@@ -209,8 +211,8 @@ class OngoingDashboardController extends Controller
 
         return Outgoing::whereIn('outgoings.payreq_id', $payreqIds)
             ->join('payreqs', 'payreqs.id', '=', 'outgoings.payreq_id')
-            ->select('payreqs.nomor as payreq_nomor', DB::raw('SUM(outgoings.amount) as total_amount'))
-            ->groupBy('payreqs.nomor')
+            ->select('payreqs.nomor as payreq_nomor', 'outgoings.outgoing_date as paid_date', DB::raw('SUM(outgoings.amount) as total_amount'))
+            ->groupBy('payreqs.nomor', 'outgoings.outgoing_date')
             ->get();
     }
 
