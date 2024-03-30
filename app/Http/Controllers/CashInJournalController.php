@@ -152,7 +152,12 @@ class CashInJournalController extends Controller
 
     public function incoming_will_post()
     {
-        $incomings = Incoming::where('project', auth()->user()->project)
+        if (auth()->user()->project === '000H') {
+            $project_include = ['000H', 'APS'];
+        } else {
+            $project_include = [auth()->user()->project];
+        }
+        $incomings = Incoming::whereIn('project', $project_include)
             ->whereNull('flag')
             ->whereNull('cash_journal_id')
             // ->where('realization_id', '<>', null)
