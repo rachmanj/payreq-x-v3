@@ -75,8 +75,9 @@ class CashierIncomingController extends Controller
 
     public function data()
     {
-        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
+        if (auth()->user()->hasRole(['superadmin', 'admin', 'cashier'])) {
             $incomings = Incoming::whereNull('receive_date')
+                ->whereIn('project', ['000H', 'APS'])
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
