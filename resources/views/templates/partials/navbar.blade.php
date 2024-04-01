@@ -14,11 +14,13 @@
         <!-- Left navbar links -->
         <ul class="navbar-nav">
           <li class="nav-item">
-            @hasanyrole('cashier|superadmin|admin|cashier_site|cashier_bo|cashier_017')
+            {{-- @hasanyrole('cashier|superadmin|admin|cashier_site|cashier_bo|cashier_017') --}}
+            @can('cashier_dashboard')
               <a href="{{ route('cashier.dashboard.index') }}" class="nav-link">Dashboard</a>   
             @else
               <a href="{{ route('dashboard.index') }}" class="nav-link">Dashboard</a>
-            @endhasanyrole
+            @endcan
+            {{-- @endhasanyrole --}}
           </li>
 
           @can('akses_my_payreqs')
