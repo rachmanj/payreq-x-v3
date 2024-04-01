@@ -17,7 +17,7 @@
                             <th>New Account</th>
                             <td></td>
 
-                            @hasanyrole('superadmin|admin|cashier')
+                            @hasanyrole('superadmin|admin|cashier|cashier_017')
                             <th>Project</th>
                             <th>Dept</th>
                             @endhasanyrole
@@ -52,7 +52,7 @@
                                         </div> 
                                     </td>
 
-                                    @hasanyrole('superadmin|admin|cashier')
+                                    @hasanyrole('superadmin|admin|cashier|cashier_017')
                                     <td>
                                         <select name="realization_details[{{ $key }}][project]" class="form-control">
                                             @foreach ($projects as $project)
