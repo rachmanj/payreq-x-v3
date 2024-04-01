@@ -51,7 +51,7 @@ class PermissionController extends Controller
 
     public function data()
     {
-        $permissions = Permission::all();
+        $permissions = Permission::orderBy('name', 'asc')->get();
 
         return datatables()->of($permissions)
             ->addIndexColumn()

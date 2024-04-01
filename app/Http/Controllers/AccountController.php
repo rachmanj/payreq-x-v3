@@ -21,10 +21,17 @@ class AccountController extends Controller
             'account_name' => 'required',
             'type' => 'required',
             'project' => 'required',
-            'description' => 'required',
         ]);
 
-        Account::create($validated);
+        // check if account number is exsist
+        $account = Account::where('account_number', $validated['account_number'])
+            ->first();
+
+        if ($account) {
+            return redirect()->route('accounts.index')->with('error', 'Account number already exists!');
+        }
+
+        Account::create(array_merge($validated, $request->description ? ['description' => $request->description] : []));
 
         return redirect()->route('accounts.index')->with('success', 'Account created successfully!');
     }
@@ -35,10 +42,18 @@ class AccountController extends Controller
             'account_number' => 'required|unique:accounts,account_number,' . $id,
             'account_name' => 'required',
             'project' => 'required',
-            'description' => 'required',
         ]);
 
-        Account::where('id', $id)->update($validated);
+        // check if account number is exsist
+        $account = Account::where('account_number', $validated['account_number'])
+            ->where('id', '!=', $id)
+            ->first();
+
+        if ($account) {
+            return redirect()->route('accounts.index')->with('error', 'Account number already exists!');
+        }
+
+        Account::where('id', $id)->update(array_merge($validated, $request->description ? ['description' => $request->description] : []));
 
         return redirect()->route('accounts.index')->with('success', 'Account updated successfully!');
     }
@@ -55,6 +70,11 @@ class AccountController extends Controller
     {
         $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
         $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+
+        // if account is not found
+        if (!$account_cash || !$account_advance) {
+            return false;
+        }
 
         $account_cash->app_balance = $account_cash->app_balance - $amount;
         $account_cash->save();
@@ -83,6 +103,11 @@ class AccountController extends Controller
     {
         $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
         $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+
+        // if account is not found
+        if (!$account_cash || !$account_advance) {
+            return false;
+        }
 
         $account_cash->app_balance = $account_cash->app_balance + $amount;
         $account_cash->save();

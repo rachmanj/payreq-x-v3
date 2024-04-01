@@ -33,6 +33,11 @@ class ReportIndexController extends Controller
                         'protector' => 'akses_dashboard_000H',
                     ],
                     [
+                        'name' => 'Dashboard 001H',
+                        'url' => route('reports.ongoing.dashboard', ['project' => '001H']),
+                        'protector' => 'akses_dashboard_001H',
+                    ],
+                    [
                         'name' => 'Dashboard 017C',
                         'url' => route('reports.ongoing.dashboard', ['project' => '017C']),
                         'protector' => 'akses_dashboard_017C',
