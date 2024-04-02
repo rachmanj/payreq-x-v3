@@ -101,22 +101,30 @@ class CashierApprovedController extends Controller
 
         // update payreq status
         if ($payreq->amount == $outgoings->sum('amount')) {
+
+            // update app_balance in account table
+            $response = app(AccountController::class)->outgoing($request->amount);
+
+            if (!$response) {
+                return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Account not found!');
+            }
+
             $this->payreqStatusUpdate($payreq, $outgoing);
-            /*
-            $payreq->status = 'paid';
-            $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
-            $payreq->printable = 0;
-            $payreq->save(); */
+            return redirect()->route('cashier.approveds.pay', $id)->with('success', 'Payreq successfully paid in full');
         } else {
+            // update app_balance in account table
+            $response = app(AccountController::class)->outgoing($request->amount);
+
+            if (!$response) {
+                return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Account not found!');
+            }
+
             $payreq->status = 'split';
             $payreq->printable = 0;
             $payreq->save();
+
+            return redirect()->route('cashier.approveds.pay', $id)->with('success', 'Payreq successfully paid splitted');
         }
-
-        // update app_balance in account table
-        app(AccountController::class)->outgoing($request->amount);
-
-        return redirect()->route('cashier.approveds.pay', $id)->with('success', 'Payreq successfully paid splitted');
     }
 
     public function data()
