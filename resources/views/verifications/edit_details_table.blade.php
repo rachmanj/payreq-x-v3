@@ -17,10 +17,12 @@
                             <th>New Account</th>
                             <td></td>
 
-                            @hasanyrole('superadmin|admin|cashier|cashier_017|cashier_bo')
+                            {{-- @hasanyrole('superadmin|admin|cashier|cashier_017|cashier_bo') --}}
+                            @can('edit_verification_project')
                             <th>Project</th>
                             <th>Dept</th>
-                            @endhasanyrole
+                            @endcan
+                            {{-- @endhasanyrole --}}
 
                             <th class="text-right">Amount (IDR)</th>
                         </tr>
@@ -52,7 +54,8 @@
                                         </div> 
                                     </td>
 
-                                    @hasanyrole('superadmin|admin|cashier|cashier_017|cashier_bo')
+                                    {{-- @hasanyrole('superadmin|admin|cashier|cashier_017|cashier_bo') --}}
+                                    @can('edit_verification_project')
                                     <td>
                                         <select name="realization_details[{{ $key }}][project]" class="form-control">
                                             @foreach ($projects as $project)
@@ -67,7 +70,8 @@
                                             @endforeach
                                         </select>
                                     </td>
-                                    @endhasanyrole
+                                    @endcan
+                                    {{-- @endhasanyrole --}}
 
                                     <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                 </tr>
