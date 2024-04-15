@@ -262,14 +262,14 @@ class VerificationJournalController extends Controller
             'nomor' => $nomor
         ]);
 
-        // update realization
+        // update realization table for verification_journal_id and remove flag
         foreach ($realizations as $realization) {
             $realization->verification_journal_id = $verification_journal->id;
             $realization->flag = null;
             $realization->save();
         }
 
-        // update realization_details
+        // update realization_details table for verification_journal_id
         foreach ($realization_details as $realization_detail) {
             $realization_detail->verification_journal_id = $verification_journal->id;
             $realization_detail->save();
@@ -353,50 +353,31 @@ class VerificationJournalController extends Controller
         $realizations = Realization::where('verification_journal_id', $verification_journal_id)
             ->get();
 
-        $realization_details = $realizations->pluck('realizationDetails')->flatten();
-        $projects = $realization_details->pluck('project')->unique();
-        $departments = $realization_details->pluck('department')->unique();
-        $accounts = $realization_details->pluck('account_id')->unique();
+        $realization_details = $realizations->pluck('realizationDetails')->flatten()->map(function ($detail) {
+            return [
+                'account_number' => $detail->account->account_number,
+                'account_name' => $detail->account->account_name,
+                'description' => $detail->description,
+                'project' => $detail->project,
+                'department' => $detail->department->akronim,
+                'amount' => $detail->amount,
+                'realization_number' => $detail->realization->nomor,
+            ];
+        });
 
-        // FOR EACH PROJECT
-        foreach ($projects as $project) {
-            // THEN FOR EACH DEPARTMENT
-            // foreach ($departments as $department) {     --this will be used when department is added to realization
-            // THEN FOR EACH ACCOUNT
-            foreach ($accounts as $account) {
-                if ($realization_details->where('project', $project)->where('account_id', $account)->sum('amount')) {
-                    $array_desc = $realization_details->where('project', $project)->where('account_id', $account)->pluck('description')->unique();
-                    // $array_desc = $realization_details->where('project', $project)->where('department_id', $department->id)->where('account_id', $account)->pluck('description')->unique();
-                    $descriptions = implode(', ', $array_desc->toArray());
-
-                    $jurnals[] = [
-                        // 'account_id' => $account,
-                        'account_number' => $realization_details->where('account_id', $account)->first()->account->account_number,
-                        'account_name' => $realization_details->where('account_id', $account)->first()->account->account_name,
-                        'amount' => $realization_details->where('project', $project)->where('account_id', $account)->sum('amount'),
-                        // 'amount' => $realization_details->where('project', $project)->where('department_id', $department->id)->where('account_id', $account)->sum('amount'),
-                        'description' => $descriptions,
-                        'project' => $project,
-                        // 'department' => $department->akronim
-                    ];
-                }
-            }
-            // }
-        }
-
-        $advance_account = Account::select(['account_number', 'account_name', 'project'])->where('type', 'advance')->where('project', auth()->user()->project)->first();
+        $cash_account = Account::select(['account_number', 'account_name', 'project'])->where('type', 'cash')->where('project', auth()->user()->project)->first();
 
         $result = [
             'debits' => [
-                'journals' => $jurnals,
+                'debit_details' => $realization_details,
                 'amount' => $realization_details->sum('amount')
             ],
             'credit' => [
-                'account_number' => $advance_account->account_number,
-                'account_name' => $advance_account->account_name,
+                'account_number' => $cash_account->account_number,
+                'account_name' => $cash_account->account_name,
                 'amount' => $realization_details->sum('amount'),
-                'project' => $advance_account->project,
-                // 'department' => auth()->user()->department->akronim
+                'project' => $cash_account->project,
+                'department' => auth()->user()->department->akronim
             ]
         ];
 

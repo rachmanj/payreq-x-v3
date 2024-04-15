@@ -10,10 +10,15 @@
       <li><a href="{{ route('cashier.giros.index') }}" class="dropdown-item">Giro</a></li>
       @endcan
       <li class="dropdown-divider">EOD</li>
+      @can('akses_cash_journal')
       <li><a href="{{ route('cash-journals.index') }}" class="dropdown-item">Cash Journal</a></li>
+      @endcan
       @can('akses_verification_journal')
       <li><a href="{{ route('verifications.journal.index') }}" class="dropdown-item">Verification Journal</a></li>
       @endcan
+      {{-- @can('akses_cashier_dashboard')
+      <li><a href="{{ route('cashier.dashboard.index') }}" class="dropdown-item">Cashier Dashboard</a></li>
+      @endcan --}}
       @can('akses_pcbc')
       <li><a href="{{ route('cashier.pcbc.index') }}" class="dropdown-item">PCBC</a></li>
       @endcan

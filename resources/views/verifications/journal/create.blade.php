@@ -15,7 +15,7 @@
             <div class="card">
                 <div class="card-header">
                     @if ($select_all_button)
-                    <a href="{{ route('verifications.journal.move_all_tocart') }}" class="btn btn-sm btn-warning">Select All to Cart</a>
+                    <a href="{{ route('verifications.journal.move_all_tocart') }}" class="btn btn-sm btn-warning">Move All to Cart</a>
                     @endif
                     <a href="{{ route('verifications.journal.index') }}" class="btn btn-sm btn-primary float-right"><i class="fa fa-arrow-left"></i> Back</a>
                 </div>
@@ -80,7 +80,7 @@
                     @csrf
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="date">Date</label>
+                        <label for="date">Posting Date <span style="color:red;">*</span></label>
                         <input type="date" name="date" class="form-control" value="{{ date('Y-m-d') }}">
                     </div>
                     <div class="form-group">

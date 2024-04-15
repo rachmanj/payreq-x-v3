@@ -28,7 +28,9 @@
         <h4 class="page-header"><strong>Verification Journal</strong></h4>
        
         <h5>Document No: <b>{{ $verification_journal->nomor }}</b> | Date: {{ date('d-M-Y', strtotime($verification_journal->date)) }}</h5>
+        @if($verification_journal->sap_journal_no)
         <h5>SAP Document No: <b>{{ $verification_journal->sap_journal_no }}</b> | Date: {{ date('d-M-Y', strtotime($verification_journal->sap_posting_date)) }}</h5>
+        @endif
       </div>
       <!-- /.col -->
     </div>
@@ -43,18 +45,20 @@
                 <th>Account</th>
                 <th>Description</th>
                 <th>Project</th>
+                <th>Dept</th>
                 <th class="text-right">Debit (IDR)</th>
                 <th class="text-right">Credit (IDR)</th>
             </tr>
           </thead>
           <tbody>
-            @foreach ($debits['journals'] as $item)
+            @foreach ($debits['debit_details'] as $item)
             <tr>
                 <td>
                     {{ $item['account_number'] }} - {{ $item['account_name'] }}
                 </td>
                 <td>{{ $item['description'] }}</td>
                 <td>{{ $item['project'] }}</td>
+                <td>{{ $item['department'] }}</td>
                 <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
                 <td class="text-right">-</td>
             </tr>
@@ -66,14 +70,13 @@
                 <th>
                     {{ $verification_journal->nomor }}
                 </th>
-                <th>
-                  {{ $credit['project'] }}
-              </th>
+                <th>{{ $credit['project'] }}</th>
+                <th>{{ $credit['department'] }}</th>
                 <th class="text-right">-</th>
                 <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
             </tr>
             <tr>
-              <th class="text-right" colspan="3">TOTAL</th>
+              <th class="text-right" colspan="4">TOTAL</th>
               <th class="text-right">{{ number_format($debits['amount'], 2) }}</th>
               <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
             </tr>
