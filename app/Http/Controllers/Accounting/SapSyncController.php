@@ -6,6 +6,7 @@ use App\Exports\VerificationJournalExport;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\VerificationJournalController;
 use App\Models\VerificationJournal;
+use App\Models\VerificationJournalDetail;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -70,7 +71,7 @@ class SapSyncController extends Controller
     {
         $vj_id = request()->query('vj_id');
 
-        $journal_details = app(VerificationJournalController::class)->journal_details($vj_id);
+        $journal_details = VerificationJournalDetail::where('verification_journal_id', $vj_id)->get();
 
         return Excel::download(new VerificationJournalExport($journal_details), 'journal.xlsx');
     }

@@ -432,6 +432,8 @@ class VerificationJournalController extends Controller
 
             // credit type
             $cash_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+            $array_desc = $realization_details->pluck('description')->unique();
+            $descriptions = implode(', ', $array_desc->toArray());
 
             $data = [
                 'verification_journal_id' => $verification_journal_id,
@@ -440,7 +442,7 @@ class VerificationJournalController extends Controller
                 'realization_no' => $realization->nomor,
                 'account_code' => $cash_account->account_number,
                 'amount' => $realization->realizationDetails->sum('amount'),
-                'description' => $realization->payreq->remarks,
+                'description' => $descriptions,
                 'project' => $realization->project,
                 'cost_center' => $realization->department->akronim,
             ];
