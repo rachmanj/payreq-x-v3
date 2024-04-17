@@ -144,28 +144,28 @@ class OngoingDashboardController extends Controller
 
         foreach ($users as $user) {
             $payreq_belum_realisasi_amount = $this->payreqs_belum_realisasi_by_user_amount($user->id);
-            if ($payreq_belum_realisasi_amount != 0) {
+            if ($payreq_belum_realisasi_amount > 0) {
                 $payreq_belum_realisasi_amount = number_format($payreq_belum_realisasi_amount, 2);
             } else {
                 $payreq_belum_realisasi_amount = 0;
             }
 
             $realisasi_belum_verifikasi_by_user_amount = $this->realisasi_belum_verifikasi_by_user_amount($user->id);
-            if ($realisasi_belum_verifikasi_by_user_amount != 0) {
+            if ($realisasi_belum_verifikasi_by_user_amount > 0) {
                 $realisasi_belum_verifikasi_amount = number_format($realisasi_belum_verifikasi_by_user_amount, 2);
             } else {
                 $realisasi_belum_verifikasi_amount = 0;
             }
 
             $variance_realisasi_belum_incoming_amount = $this->variance_realisasi_belum_incoming_by_user_amount($user->id);
-            if ($variance_realisasi_belum_incoming_amount != 0) {
+            if ($variance_realisasi_belum_incoming_amount > 0) {
                 $variance_realisasi_belum_incoming_amount = number_format($variance_realisasi_belum_incoming_amount, 2);
             } else {
                 $variance_realisasi_belum_incoming_amount = 0;
             }
 
             $variance_realisasi_belum_outgoing_amount = $this->variance_realisasi_belum_outgoing_by_user_amount($user->id);
-            if ($variance_realisasi_belum_outgoing_amount != 0) {
+            if ($variance_realisasi_belum_outgoing_amount > 0) {
                 $variance_realisasi_belum_outgoing_amount = number_format($variance_realisasi_belum_outgoing_amount, 2);
             } else {
                 $variance_realisasi_belum_outgoing_amount = 0;
@@ -192,8 +192,8 @@ class OngoingDashboardController extends Controller
 
     public function dana_belum_diselesaikan($user_id)
     {
-        $total = $this->payreqs_belum_realisasi_by_user_amount($user_id) + $this->realisasi_belum_verifikasi_by_user_amount($user_id) + $this->variance_realisasi_belum_incoming_amount($user_id) - $this->variance_realisasi_belum_outgoing_amount($user_id);
-        return $total != 0 ? number_format($total, 2) : 0;
+        $total = $this->payreqs_belum_realisasi_by_user_amount($user_id) + $this->realisasi_belum_verifikasi_by_user_amount($user_id) + $this->variance_realisasi_belum_incoming_by_user_amount($user_id) - $this->variance_realisasi_belum_outgoing_by_user_amount($user_id);
+        return $total > 0 ? number_format($total, 2) : 0;
     }
 
 

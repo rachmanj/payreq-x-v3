@@ -6,40 +6,15 @@ use App\Models\Account;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\VerificationJournal;
+use App\Models\VerificationJournalDetail;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class VerificationJournalController extends Controller
 {
     public function index()
     {
-        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
-            $realizations_count1 = Realization::whereNull('verification_journal_id')
-                ->where('status', 'verification-complete')
-                ->count();
-
-            $realizations_count2 = 0;
-        } else if (auth()->user()->hasRole(['cashier'])) {
-            $projects = ['000H', 'APS'];
-            $realizations_count1 = Realization::whereNull('verification_journal_id')
-                ->where('status', 'verification-complete')
-                ->whereNull('flag')
-                ->whereIn('project', $projects)
-                ->count();
-
-            $realizations_count2 = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
-                ->count();
-        } else {
-            $realizations_count1 = Realization::whereNull('verification_journal_id')
-                ->where('status', 'verification-complete')
-                ->whereNull('flag')
-                ->where('project', auth()->user()->project)
-                ->count();
-
-            $realizations_count2 = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
-                ->count();
-        }
-
-        $realizations_count = $realizations_count1 + $realizations_count2;
+        $realizations_count = $this->available_realizations();
 
         return view('verifications.journal.index', compact([
             'realizations_count'
@@ -76,15 +51,12 @@ class VerificationJournalController extends Controller
 
     public function show($id)
     {
-        $verification_journal = VerificationJournal::findOrFail($id);
-        $journal_details = $this->journal_details($id);
-        $debits = $journal_details['debits'];
-        $credit = $journal_details['credit'];
+        $verification_journal_details = VerificationJournal::where('verification_journal_id', $id)
+            ->orderBy('id', 'asc')
+            ->get();
 
         return view('verifications.journal.show', compact([
-            'verification_journal',
-            'debits',
-            'credit'
+            'verification_journal_details',
         ]));
     }
 
@@ -275,13 +247,17 @@ class VerificationJournalController extends Controller
             $realization_detail->save();
         }
 
-        return $this->index()->with('success', 'Verification Journal created successfully');
+        // store verification_journal_details
+        $this->store_verification_journal_details($verification_journal->id);
+
+        return redirect()->route('verifications.journal.index')->with('success', 'Verification Journal created successfully');
     }
 
     public function destroy($id)
     {
         $verification_journal = VerificationJournal::findOrFail($id);
 
+        // update realizations table
         $realizations = Realization::where('verification_journal_id', $verification_journal->id)
             ->get();
 
@@ -290,6 +266,7 @@ class VerificationJournalController extends Controller
             $realization->save();
         }
 
+        // update realization_details table
         $realization_details = RealizationDetail::where('verification_journal_id', $verification_journal->id)
             ->get();
 
@@ -298,9 +275,18 @@ class VerificationJournalController extends Controller
             $realization_detail->save();
         }
 
+        // delete verification_journal_details
+        $verification_journal_details = VerificationJournalDetail::where('verification_journal_id', $verification_journal->id)
+            ->get();
+
+        foreach ($verification_journal_details as $verification_journal_detail) {
+            $verification_journal_detail->delete();
+        }
+
+        // delete verification_journal
         $verification_journal->delete();
 
-        return $this->index()->with('success', 'Verification Journal deleted successfully');
+        return redirect()->route('verifications.journal.index')->with('success', 'Verification Journal deleted successfully');
     }
 
     public function data()
@@ -353,7 +339,7 @@ class VerificationJournalController extends Controller
         $realizations = Realization::where('verification_journal_id', $verification_journal_id)
             ->get();
 
-        $realization_details = $realizations->pluck('realizationDetails')->flatten()->map(function ($detail) {
+        $debit_details = $realizations->pluck('realizationDetails')->flatten()->map(function ($detail) {
             return [
                 'account_number' => $detail->account->account_number,
                 'account_name' => $detail->account->account_name,
@@ -365,22 +351,135 @@ class VerificationJournalController extends Controller
             ];
         });
 
-        $cash_account = Account::select(['account_number', 'account_name', 'project'])->where('type', 'cash')->where('project', auth()->user()->project)->first();
+        $verification_journal = VerificationJournal::findOrFail($verification_journal_id);
 
         $result = [
             'debits' => [
-                'debit_details' => $realization_details,
-                'amount' => $realization_details->sum('amount')
+                'debit_details' => $debit_details,
+                'debit_amount' => $debit_details->sum('amount')
             ],
             'credit' => [
-                'account_number' => $cash_account->account_number,
-                'account_name' => $cash_account->account_name,
-                'amount' => $realization_details->sum('amount'),
-                'project' => $cash_account->project,
-                'department' => auth()->user()->department->akronim
+                'credit_details' => $this->credit_details($verification_journal_id),
+                'credit_amount' => $debit_details->sum('amount'),
+
+            ],
+            'verification' => [
+                'nomor' => $verification_journal->nomor,
+                'date' => $verification_journal->date,
+                'project' => $verification_journal->project,
+                'department' => auth()->user()->department->akronim,
+                'createdBy' => $verification_journal->createdBy->name,
+                'amount' => $verification_journal->amount,
             ]
         ];
 
         return $result;
+    }
+
+    public function credit_details($verification_journal_id)
+    {
+        $realizations = Realization::where('verification_journal_id', $verification_journal_id)
+            ->get();
+
+        $realization_details = $realizations->pluck('realizationDetails')->flatten();
+        $accounts = $realization_details->pluck('account_id')->unique();
+        $cash_account = Account::select(['account_number', 'account_name', 'project'])->where('type', 'cash')->where('project', auth()->user()->project)->first();
+
+        foreach ($accounts as $account) {
+            if ($realization_details->where('account_id', $account)->sum('amount') > 0) {
+                $array_desc = $realization_details->where('account_id', $account)->pluck('description')->unique();
+                $descriptions = implode(', ', $array_desc->toArray());
+
+                $result[] = [
+                    'account_number' => $cash_account->account_number,
+                    'account_name' => $cash_account->account_name,
+                    'amount' => $realization_details->where('account_id', $account)->sum('amount'),
+                    'description' => $descriptions,
+                    // add project and department
+                    'project' => $realization_details->where('account_id', $account)->first()->project,
+                    'department' => $realization_details->where('account_id', $account)->first()->department->akronim,
+                ];
+            }
+        }
+
+        return $result;
+    }
+
+    public function store_verification_journal_details($verification_journal_id)
+    {
+        // debits type
+        $realizations = Realization::where('verification_journal_id', $verification_journal_id)
+            ->get();
+
+        foreach ($realizations as $realization) {
+            $realization_details = $realization->realizationDetails;
+
+            foreach ($realization_details as $realization_detail) {
+                $data = [
+                    'verification_journal_id' => $verification_journal_id,
+                    'realization_date' => Carbon::parse($realization->created_at)->format('Y-m-d'),
+                    'debit_credit' => 'debit',
+                    'realization_no' => $realization_detail->realization->nomor,
+                    'account_code' => $realization_detail->account->account_number,
+                    'amount' => $realization_detail->amount,
+                    'description' => $realization_detail->description,
+                    'project' => $realization_detail->project,
+                    'cost_center' => $realization_detail->department->akronim,
+                ];
+
+                VerificationJournalDetail::create($data);
+            }
+
+            // credit type
+            $cash_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+
+            $data = [
+                'verification_journal_id' => $verification_journal_id,
+                'realization_date' => Carbon::parse($realization->created_at)->format('Y-m-d'),
+                'debit_credit' => 'credit',
+                'realization_no' => $realization->nomor,
+                'account_code' => $cash_account->account_number,
+                'amount' => $realization->realizationDetails->sum('amount'),
+                'description' => $realization->payreq->remarks,
+                'project' => $realization->project,
+                'cost_center' => $realization->department->akronim,
+            ];
+
+            VerificationJournalDetail::create($data);
+        }
+
+        return true;
+    }
+
+    public function available_realizations()
+    {
+        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
+            $realizations_count1 = Realization::whereNull('verification_journal_id')
+                ->where('status', 'verification-complete')
+                ->count();
+
+            $realizations_count2 = 0;
+        } else if (auth()->user()->hasRole(['cashier'])) {
+            $projects = ['000H', 'APS'];
+            $realizations_count1 = Realization::whereNull('verification_journal_id')
+                ->where('status', 'verification-complete')
+                ->whereNull('flag')
+                ->whereIn('project', $projects)
+                ->count();
+
+            $realizations_count2 = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
+                ->count();
+        } else {
+            $realizations_count1 = Realization::whereNull('verification_journal_id')
+                ->where('status', 'verification-complete')
+                ->whereNull('flag')
+                ->where('project', auth()->user()->project)
+                ->count();
+
+            $realizations_count2 = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
+                ->count();
+        }
+
+        return $realizations_count1 + $realizations_count2;
     }
 }

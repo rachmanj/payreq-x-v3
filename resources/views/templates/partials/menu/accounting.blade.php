@@ -2,12 +2,15 @@
     <a id="dropdownPayreq" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle">Accounting</a>
     <ul aria-labelledby="dropdownPayreq" class="dropdown-menu border-0 shadow">
 
-      @hasanyrole('cashier_site|cashier_bo')
+      <li><a href="{{ route('accounting.sap-sync.index', ['project' => 'HO']) }}" class="dropdown-item">SAP Sync</a></li>
+      <li class="dropdown-divider"></li>
+      @can('akses_coa')
       <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Available Accounts</a></li>
-      <li><a href="{{ route('accounting.payreqs.index') }}" class="dropdown-item">Project Payreqs</a></li>
-      @endhasanyrole
+      @endcan
+      
       
       @hasanyrole('superadmin|admin|cashier')
+      <li><a href="{{ route('accounting.payreqs.index') }}" class="dropdown-item">Project Payreqs</a></li>
       <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Available Accounts</a></li>
       <li><a href="{{ route('accounting.payreqs.index') }}" class="dropdown-item">Project Payreqs</a></li>
       <li><a href="{{ route('journals.index') }}" class="dropdown-item">Journals</a></li>

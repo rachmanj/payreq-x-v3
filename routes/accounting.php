@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Accounting\SapSyncController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountingPayreqController;
 use App\Http\Controllers\InstallmentController;
@@ -13,6 +14,13 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/create', [AccountingPayreqController::class, 'create'])->name('create');
         Route::post('/store', [AccountingPayreqController::class, 'store'])->name('store');
         Route::get('/{id}/show', [AccountingPayreqController::class, 'show'])->name('show');
+    });
+
+    // SAP Sync
+    Route::prefix('sap-sync')->name('sap-sync.')->group(function () {
+        Route::get('/', [SapSyncController::class, 'index'])->name('index');
+        Route::get('/data', [SapSyncController::class, 'data'])->name('data');
+        Route::get('/export', [SapSyncController::class, 'export'])->name('export');
     });
 
     // ANGSURAN

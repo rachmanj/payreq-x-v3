@@ -60,7 +60,7 @@
                 <td>{{ $item['project'] }}</td>
                 <td>{{ $item['department'] }}</td>
                 <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
-                <td class="text-right">-</td>
+                <td class="text-right">0.00</td>
             </tr>
             @endforeach
             <tr>
@@ -72,13 +72,13 @@
                 </th>
                 <th>{{ $credit['project'] }}</th>
                 <th>{{ $credit['department'] }}</th>
-                <th class="text-right">-</th>
-                <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
+                <th class="text-right">0.00</th>
+                <th class="text-right">{{ number_format($credit['credit_amount'], 2) }}</th>
             </tr>
             <tr>
               <th class="text-right" colspan="4">TOTAL</th>
-              <th class="text-right">{{ number_format($debits['amount'], 2) }}</th>
-              <th class="text-right">{{ number_format($credit['amount'], 2) }}</th>
+              <th class="text-right">{{ number_format($debits['debit_amount'], 2) }}</th>
+              <th class="text-right">{{ number_format($credit['credit_amount'], 2) }}</th>
             </tr>
         </tbody>
           <tfoot>
