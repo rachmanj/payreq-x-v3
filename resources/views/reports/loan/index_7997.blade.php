@@ -56,7 +56,8 @@ reports / loans
               <thead>
               <tr>
                 <th>#</th>
-                <th>Paid Date</th>
+                <th>DueDate</th>
+                <th>PaidDate</th>
                 <th>Creditor</th>
                 <th>Desc</th>
                 <th>Angs ke</th>
@@ -135,6 +136,7 @@ reports / loans
       ajax: '{{ route('reports.loan.paid_data') . "?akun_no=1270077977997" }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
+        {data: 'due_date'},
         {data: 'paid_date'},
         {data: 'creditor'},
         {data: 'loan.description'},
@@ -146,11 +148,11 @@ reports / loans
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [4, 6],
+                "targets": [5, 7],
                 "className": "text-right"
               },
               {
-                "targets": [5],
+                "targets": [6],
                 "className": "text-center"
               }
             ]

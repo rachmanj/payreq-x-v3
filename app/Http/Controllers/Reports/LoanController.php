@@ -111,8 +111,11 @@ class LoanController extends Controller
             ->addColumn('creditor', function ($installment) {
                 return $installment->loan->creditor->name;
             })
-            ->editColumn('paid_date', function ($installment) {
+            ->editColumn('due_date', function ($installment) {
                 return date('d-M-Y', strtotime($installment->due_date));
+            })
+            ->editColumn('paid_date', function ($installment) {
+                return date('d-M-Y', strtotime($installment->paid_date));
             })
             ->editColumn('bilyet_amount', function ($installment) {
                 return number_format($installment->bilyet_amount, 2, ',', '.');
