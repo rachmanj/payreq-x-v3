@@ -172,6 +172,9 @@ class UserController extends Controller
                     return '<span class="badge badge-danger">Inactive</span>';
                 }
             })
+            ->addColumn('department', function ($user) {
+                return $user->department->department_name;
+            })
             ->addColumn('action', 'users.action')
             ->rawColumns(['action', 'is_active'])
             ->toJson();

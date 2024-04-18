@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('department_name', 100)->nullable();
             $table->string('akronim', 10)->nullable();
+            $table->string('sap_code', 10)->nullable();
             $table->timestamps();
         });
     }

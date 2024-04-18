@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Department;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\VerificationJournal;
@@ -57,7 +58,9 @@ class VerificationJournalController extends Controller
             ->get()
             ->map(function ($detail) {
                 $account = Account::where('account_number', $detail->account_code)->first();
+                $dept = Department::where('sap_code', $detail->cost_center)->first();
                 $detail->account_name = $account->account_name;
+                $detail->dept_akronim = $dept->akronim;
                 return $detail;
             });
 
@@ -320,77 +323,6 @@ class VerificationJournalController extends Controller
             ->toJson();
     }
 
-    public function journal_details($verification_journal_id)
-    {
-        $realizations = Realization::where('verification_journal_id', $verification_journal_id)
-            ->get();
-
-        $debit_details = $realizations->pluck('realizationDetails')->flatten()->map(function ($detail) {
-            return [
-                'account_number' => $detail->account->account_number,
-                'account_name' => $detail->account->account_name,
-                'description' => $detail->description,
-                'project' => $detail->project,
-                'department' => $detail->department->akronim,
-                'amount' => $detail->amount,
-                'realization_number' => $detail->realization->nomor,
-            ];
-        });
-
-        $verification_journal = VerificationJournal::findOrFail($verification_journal_id);
-
-        $result = [
-            'debits' => [
-                'debit_details' => $debit_details,
-                'debit_amount' => $debit_details->sum('amount')
-            ],
-            'credit' => [
-                'credit_details' => $this->credit_details($verification_journal_id),
-                'credit_amount' => $debit_details->sum('amount'),
-
-            ],
-            'verification' => [
-                'nomor' => $verification_journal->nomor,
-                'date' => $verification_journal->date,
-                'project' => $verification_journal->project,
-                'department' => auth()->user()->department->akronim,
-                'createdBy' => $verification_journal->createdBy->name,
-                'amount' => $verification_journal->amount,
-            ]
-        ];
-
-        return $result;
-    }
-
-    public function credit_details($verification_journal_id)
-    {
-        $realizations = Realization::where('verification_journal_id', $verification_journal_id)
-            ->get();
-
-        $realization_details = $realizations->pluck('realizationDetails')->flatten();
-        $accounts = $realization_details->pluck('account_id')->unique();
-        $cash_account = Account::select(['account_number', 'account_name', 'project'])->where('type', 'cash')->where('project', auth()->user()->project)->first();
-
-        foreach ($accounts as $account) {
-            if ($realization_details->where('account_id', $account)->sum('amount') > 0) {
-                $array_desc = $realization_details->where('account_id', $account)->pluck('description')->unique();
-                $descriptions = implode(', ', $array_desc->toArray());
-
-                $result[] = [
-                    'account_number' => $cash_account->account_number,
-                    'account_name' => $cash_account->account_name,
-                    'amount' => $realization_details->where('account_id', $account)->sum('amount'),
-                    'description' => $descriptions,
-                    // add project and department
-                    'project' => $realization_details->where('account_id', $account)->first()->project,
-                    'department' => $realization_details->where('account_id', $account)->first()->department->akronim,
-                ];
-            }
-        }
-
-        return $result;
-    }
-
     public function store_verification_journal_details($verification_journal_id)
     {
         // debits type
@@ -410,7 +342,7 @@ class VerificationJournalController extends Controller
                     'amount' => $realization_detail->amount,
                     'description' => $realization_detail->description,
                     'project' => $realization_detail->project,
-                    'cost_center' => $realization_detail->department->akronim,
+                    'cost_center' => $realization_detail->department->sap_code,
                 ];
 
                 VerificationJournalDetail::create($data);
@@ -430,7 +362,7 @@ class VerificationJournalController extends Controller
                 'amount' => $realization->realizationDetails->sum('amount'),
                 'description' => $descriptions,
                 'project' => $realization->project,
-                'cost_center' => $realization->department->akronim,
+                'cost_center' => $realization->department->sap_code,
             ];
 
             VerificationJournalDetail::create($data);

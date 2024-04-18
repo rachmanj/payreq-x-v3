@@ -24,6 +24,8 @@
             <th>No</th>
             <th>Name</th>
             <th>Username</th>
+            <th>Project</th>
+            <th>Dept</th>
             <th>Email</th>
             <th>is active</th>
             <th></th>
@@ -135,6 +137,8 @@
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'name'},
         {data: 'username'},
+        {data: 'project'},
+        {data: 'department'},
         {data: 'email'},
         {data: 'is_active'},
         {data: 'action', orderable: false, searchable: false},
