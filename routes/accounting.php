@@ -21,6 +21,9 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/', [SapSyncController::class, 'index'])->name('index');
         Route::get('/data', [SapSyncController::class, 'data'])->name('data');
         Route::get('/export', [SapSyncController::class, 'export'])->name('export');
+        Route::get('/{id}/show', [SapSyncController::class, 'show'])->name('show');
+        Route::post('/cancel_sap_info', [SapSyncController::class, 'cancel_sap_info'])->name('cancel_sap_info');
+        Route::post('/update_sap_info', [SapSyncController::class, 'update_sap_info'])->name('update_sap_info');
     });
 
     // ANGSURAN

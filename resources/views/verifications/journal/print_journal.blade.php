@@ -22,14 +22,14 @@
     <div class="row">
       <div class="col-6">
         <h4 class="page-header"><strong>PT Arkananta Apta Pratista</strong></h4>
-        <h5>Project: {{ auth()->user()->project }}</h5>
+        <h5>Project: {{ $vj->project }}</h5>
       </div>
       <div class="col-6" style="text-align: right">
         <h4 class="page-header"><strong>Verification Journal</strong></h4>
        
-        <h5>Document No: <b>{{ $verification_journal->nomor }}</b> | Date: {{ date('d-M-Y', strtotime($verification_journal->date)) }}</h5>
-        @if($verification_journal->sap_journal_no)
-        <h5>SAP Document No: <b>{{ $verification_journal->sap_journal_no }}</b> | Date: {{ date('d-M-Y', strtotime($verification_journal->sap_posting_date)) }}</h5>
+        <h5>Document No: <b>{{ $vj->nomor }}</b> | Date: {{ date('d-M-Y', strtotime($vj->date)) }}</h5>
+        @if($vj->sap_journal_no)
+        <h5>SAP Document No: <b>{{ $vj->sap_journal_no }}</b> | Date: {{ date('d-M-Y', strtotime($vj->sap_posting_date)) }}</h5>
         @endif
       </div>
       <!-- /.col -->
@@ -42,45 +42,40 @@
         <table class="table table-bordered table-striped">
           <thead>
             <tr>
-                <th>Account</th>
-                <th>Description</th>
-                <th>Project</th>
-                <th>Dept</th>
-                <th class="text-right">Debit (IDR)</th>
-                <th class="text-right">Credit (IDR)</th>
+              <th>#</th>
+              <th>Account</th>
+              <th>Description</th>
+              <th>Project</th>
+              <th>Dept</th>
+              <th class="text-right">Debit (IDR)</th>
+              <th class="text-right">Credit (IDR)</th>
             </tr>
           </thead>
           <tbody>
-            @foreach ($debits['debit_details'] as $item)
-            <tr>
+            @foreach ($vj_details as $key => $item)
+              <tr>
+                <td>{{ $key + 1 }}</td>
                 <td>
-                    {{ $item['account_number'] }} - {{ $item['account_name'] }}
+                    {{ $item['account_code'] }} - {{ $item['account_name'] }}
                 </td>
                 <td>{{ $item['description'] }}</td>
                 <td>{{ $item['project'] }}</td>
-                <td>{{ $item['department'] }}</td>
-                <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
-                <td class="text-right">0.00</td>
-            </tr>
-            @endforeach
-            <tr>
-                <th>
-                    {{ $credit['account_number'] }} - {{ $credit['account_name'] }}
-                </th>
-                <th>
-                    {{ $verification_journal->nomor }}
-                </th>
-                <th>{{ $credit['project'] }}</th>
-                <th>{{ $credit['department'] }}</th>
-                <th class="text-right">0.00</th>
-                <th class="text-right">{{ number_format($credit['credit_amount'], 2) }}</th>
-            </tr>
-            <tr>
-              <th class="text-right" colspan="4">TOTAL</th>
-              <th class="text-right">{{ number_format($debits['debit_amount'], 2) }}</th>
-              <th class="text-right">{{ number_format($credit['credit_amount'], 2) }}</th>
-            </tr>
-        </tbody>
+                <td>{{ $item['cost_center'] }}</td>
+                @if ($item['debit_credit'] === 'debit')
+                    <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
+                    <td class="text-right">-</td>
+                @else
+                    <td class="text-right">-</td>
+                    <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
+                @endif
+              </tr>
+              @endforeach
+              <tr>
+                <th class="text-right" colspan="5">TOTAL</th>
+                <th class="text-right">{{ number_format($vj_details->where('debit_credit', 'debit')->sum('amount'), 2) }}</th>
+                <th class="text-right">{{ number_format($vj_details->where('debit_credit', 'credit')->sum('amount'), 2) }}</th>
+              </tr>
+          </tbody>
           <tfoot>
             {{--  --}}
           </tfoot>

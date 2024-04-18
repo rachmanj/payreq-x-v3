@@ -28,7 +28,5 @@ Route::prefix('verifications')->name('verifications.')->group(function () {
         Route::get('/{id}/show', [VerificationJournalController::class, 'show'])->name('show');
         Route::get('/{id}/print', [VerificationJournalController::class, 'print'])->name('print');
         Route::delete('/{id}', [VerificationJournalController::class, 'destroy'])->name('destroy');
-        Route::post('/update_sap_info', [VerificationJournalController::class, 'update_sap_info'])->name('update_sap_info');
-        Route::post('/cancel_sap_info', [VerificationJournalController::class, 'cancel_sap_info'])->name('cancel_sap_info');
     });
 });

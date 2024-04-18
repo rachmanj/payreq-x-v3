@@ -51,51 +51,37 @@ class VerificationJournalController extends Controller
 
     public function show($id)
     {
-        $verification_journal_details = VerificationJournal::where('verification_journal_id', $id)
+        $vj = VerificationJournal::find($id);
+        $vj_details = VerificationJournalDetail::where('verification_journal_id', $id)
             ->orderBy('id', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($detail) {
+                $account = Account::where('account_number', $detail->account_code)->first();
+                $detail->account_name = $account->account_name;
+                return $detail;
+            });
 
         return view('verifications.journal.show', compact([
-            'verification_journal_details',
+            'vj',
+            'vj_details'
         ]));
-    }
-
-    public function update_sap_info(Request $request)
-    {
-        $request->validate([
-            'sap_journal_no' => 'required',
-            'sap_posting_date' => 'required',
-        ]);
-
-        $verification_journal = VerificationJournal::findOrFail($request->verification_journal_id);
-        $verification_journal->sap_journal_no = $request->sap_journal_no;
-        $verification_journal->sap_posting_date = $request->sap_posting_date;
-        $verification_journal->save();
-
-        return $this->show($verification_journal->id)->with('success', 'SAP Info updated successfully');
-    }
-
-    public function cancel_sap_info(Request $request)
-    {
-        $verification_journal = VerificationJournal::findOrFail($request->verification_journal_id);
-        $verification_journal->sap_journal_no = null;
-        $verification_journal->sap_posting_date = null;
-        $verification_journal->save();
-
-        return $this->show($verification_journal->id)->with('success', 'SAP Info cancelled successfully');
     }
 
     public function print($id)
     {
-        $verification_journal = VerificationJournal::findOrFail($id);
-        $journal_details = $this->journal_details($id);
-        $debits = $journal_details['debits'];
-        $credit = $journal_details['credit'];
+        $vj = VerificationJournal::find($id);
+        $vj_details = VerificationJournalDetail::where('verification_journal_id', $id)
+            ->orderBy('id', 'asc')
+            ->get()
+            ->map(function ($detail) {
+                $account = Account::where('account_number', $detail->account_code)->first();
+                $detail->account_name = $account->account_name;
+                return $detail;
+            });
 
         return view('verifications.journal.print_journal', compact([
-            'verification_journal',
-            'debits',
-            'credit'
+            'vj',
+            'vj_details'
         ]));
     }
 

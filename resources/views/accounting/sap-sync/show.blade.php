@@ -14,7 +14,7 @@ accounting / sap-sync / show
         <div class="card card-info">
             <div class="card-header">
                 <h3 class="card-title">Verification Journal</h3>
-                <a href="{{ route('verifications.journal.index', ['project' => $vj->project]) }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
+                <a href="{{ route('accounting.sap-sync.index', ['project' => $vj->project]) }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -46,6 +46,13 @@ accounting / sap-sync / show
             </div>
             <div class="card-header">
                 <h3 class="card-title">Detail</h3>
+                <form action="{{ route('accounting.sap-sync.cancel_sap_info') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+                    <button class="btn btn-sm btn-danger float-right" {{ $vj->sap_journal_no ? '' : 'disabled' }} onclick="return confirm('Are You sure You want to cancel this SAP Info? This action cannot be undone')">Cancel SAP Info</button>
+                </form>
+                <button class="btn btn-sm btn-warning float-right mr-2" data-toggle="modal" data-target="#update-sap" style="color: black; font-weight: bold" {{ $vj->sap_journal_no ? 'disabled' : '' }}>Update SAP Info</button>
+                <a href="{{ route('accounting.sap-sync.export', ['vj_id' => $vj->id]) }}" class="btn btn-sm btn-warning float-right mr-2" style="color: black; font-weight: bold">Export to Excel</a>
             </div>
             <div class="card-body">
                 <table class="table table-bordered table-striped">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Accounting;
 use App\Exports\VerificationJournalExport;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\VerificationJournalController;
+use App\Models\Account;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
 use Illuminate\Http\Request;
@@ -23,6 +24,60 @@ class SapSyncController extends Controller
         }
     }
 
+    public function show($id)
+    {
+        $vj = VerificationJournal::find($id);
+        $vj_details = VerificationJournalDetail::where('verification_journal_id', $id)
+            ->orderBy('id', 'asc')
+            ->get()
+            ->map(function ($detail) {
+                $account = Account::where('account_number', $detail->account_code)->first();
+                $detail->account_name = $account->account_name;
+                return $detail;
+            });
+
+        return view('accounting.sap-sync.show', compact([
+            'vj',
+            'vj_details'
+        ]));
+    }
+
+    public function update_sap_info(Request $request)
+    {
+        // update sap_journal_no and sap_posting_date on verification_journals table
+        $verification_journal = VerificationJournal::find($request->verification_journal_id);
+        $verification_journal->sap_journal_no = $request->sap_journal_no;
+        $verification_journal->sap_posting_date = $request->sap_posting_date;
+        $verification_journal->save();
+
+        // update sap_journal_no on verification_journal_details table
+        $verification_journal_details = VerificationJournalDetail::where('verification_journal_id', $request->verification_journal_id)->get();
+        foreach ($verification_journal_details as $detail) {
+            $detail->sap_journal_no = $request->sap_journal_no;
+            $detail->save();
+        }
+
+        return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)->with('success', 'SAP Info Updated');
+    }
+
+    public function cancel_sap_info(Request $request)
+    {
+        // update sap_journal_no and sap_posting_date on verification_journals table
+        $verification_journal = VerificationJournal::find($request->verification_journal_id);
+        $verification_journal->sap_journal_no = null;
+        $verification_journal->sap_posting_date = null;
+        $verification_journal->save();
+
+        // update sap_journal_no on verification_journal_details table
+        $verification_journal_details = VerificationJournalDetail::where('verification_journal_id', $request->verification_journal_id)->get();
+        foreach ($verification_journal_details as $detail) {
+            $detail->sap_journal_no = null;
+            $detail->save();
+        }
+
+        return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)->with('success', 'SAP Info Canceled');
+    }
+
     public function data()
     {
         $query = request()->query('project');
@@ -34,6 +89,7 @@ class SapSyncController extends Controller
         }
 
         $verification_journals = VerificationJournal::whereIn('project', $project)
+            ->orderByRaw('sap_journal_no IS NULL DESC')
             ->orderBy('date', 'desc')
             ->get();
 
