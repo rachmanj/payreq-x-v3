@@ -10,9 +10,4 @@ class Account extends Model
     use HasFactory;
 
     protected $guarded = [];
-
-    public function account_type()
-    {
-        return $this->belongsTo(AccountType::class, 'type_id');
-    }
 }

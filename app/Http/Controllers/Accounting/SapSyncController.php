@@ -48,6 +48,7 @@ class SapSyncController extends Controller
         $verification_journal = VerificationJournal::find($request->verification_journal_id);
         $verification_journal->sap_journal_no = $request->sap_journal_no;
         $verification_journal->sap_posting_date = $request->sap_posting_date;
+        $verification_journal->posted_by = auth()->user()->id;
         $verification_journal->save();
 
         // update sap_journal_no on verification_journal_details table
@@ -62,10 +63,16 @@ class SapSyncController extends Controller
 
     public function cancel_sap_info(Request $request)
     {
-        // update sap_journal_no and sap_posting_date on verification_journals table
+        // check if user is the one who posted the SAP Info
         $verification_journal = VerificationJournal::find($request->verification_journal_id);
+        if ($verification_journal->posted_by != auth()->user()->id) {
+            return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)->with('error', 'You are not allowed to cancel this SAP Info');
+        }
+
+        // update sap_journal_no and sap_posting_date on verification_journals table
         $verification_journal->sap_journal_no = null;
         $verification_journal->sap_posting_date = null;
+        $verification_journal->posted_by = null;
         $verification_journal->save();
 
         // update sap_journal_no on verification_journal_details table

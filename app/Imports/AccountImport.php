@@ -14,6 +14,8 @@ class AccountImport implements ToModel, WithHeadingRow
             'account_number' => $row['account_number'],
             'account_name' => $row['account_name'],
             'description' => $row['description'],
+            'type' => $row['type'],
+            'project' => $row['project'],
         ]);
     }
 }
