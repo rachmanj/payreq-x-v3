@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('payreqs', function (Blueprint $table) {
             $table->id();
             $table->string('nomor')->nullable();
+            $table->string('draft_no')->nullable();
             $table->foreignId('user_id');
             $table->string('type')->nullable();
             $table->double('amount')->nullable();

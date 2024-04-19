@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('realizations', function (Blueprint $table) {
             $table->id();
             $table->string('nomor');
+            $table->string('draft_no')->nullable();
             $table->foreignId('payreq_id');
             $table->foreignId('user_id');
             $table->string('project', 10)->nullable();

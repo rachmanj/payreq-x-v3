@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('department_id')->nullable();
             $table->string('description')->nullable();
             $table->string('unit_no', 20)->nullable();
+            $table->string('nopol')->nullable();
             $table->foreignId('account_id')->nullable();
             $table->decimal('amount', 10, 2)->default(0);
             $table->string('type', 10)->nullable();
