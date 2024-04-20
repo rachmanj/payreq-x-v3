@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('uom', 10)->nullable();
             $table->integer('km_position')->nullable();
             $table->string('flag', 10)->nullable();
+            $table->integer('rab_id')->nullable();
             $table->boolean('editable')->default(true);
             $table->boolean('deleteable')->default(true);
             $table->foreignId('verification_journal_id')->nullable();

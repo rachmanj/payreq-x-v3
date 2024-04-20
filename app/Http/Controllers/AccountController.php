@@ -101,8 +101,9 @@ class AccountController extends Controller
 
     public function incoming($amount)
     {
-        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
-        $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+        $cashier_project = auth()->user()->project;
+        $account_cash = Account::where('type', 'cash')->where('project', $cashier_project)->first();
+        $account_advance = Account::where('type', 'advance')->where('project', $cashier_project)->first();
 
         // if account is not found
         if (!$account_cash || !$account_advance) {

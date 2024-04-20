@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreignId('department_id')->nullable();
             $table->text('remarks')->nullable();
             $table->timestamp('submit_at')->nullable();
-            $table->string('status', 20)->nullable(); // draft / approved / reject / cancel / pending (wait approve) / verified
+            $table->string('status', 50)->nullable(); // draft / approved / reject / cancel / pending (wait approve) / verified
             $table->boolean('editable')->default(true);
             $table->boolean('deletable')->default(true);
             $table->boolean('printable')->default(false);
