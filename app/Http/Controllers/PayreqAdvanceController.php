@@ -101,7 +101,7 @@ class PayreqAdvanceController extends Controller
             'submit_at' => date('Y-m-d H:i:s'),
         ]);
 
-        $payreq_no = app(PayreqController::class)->generatePRNumber($payreq->id);
+        $payreq_no = app(DocumentNumberController::class)->generate_document_number('payreq', $realization->project);
 
         $payreq->update([
             'nomor' => $payreq_no,
