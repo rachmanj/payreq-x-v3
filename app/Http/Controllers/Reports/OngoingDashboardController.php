@@ -10,6 +10,7 @@ use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\User;
+use App\Models\VerificationJournalDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PhpParser\Node\Expr\Include_;
@@ -28,16 +29,18 @@ class OngoingDashboardController extends Controller
     {
         $saldo_pc_payreq_system = Account::where('type', 'cash')->where('project', $project)->first()->app_balance;
         $payreq_belum_realisasi_amount = $this->payreq_belum_realisasi_amount($project);
-        $payreq_belum_verifikasi_amount = $this->payreq_belum_verifikasi_amount($project);
+        $realisasi_belum_verifikasi_amount = $this->realisasi_belum_verifikasi_amount($project);
+        $verifikasi_belum_posted_amount = $this->verifikasi_belum_posted_amount($project); // this is not used anymore, so we just set it to '0.00
         $variance_realisasi_belum_outgoing_amount = $this->variance_realisasi_belum_outgoing_amount($project);
         $variance_realisasi_belum_incoming_amount = $this->variance_realisasi_belum_incoming_amount($project);
-        $total_advance_employee = $this->payreq_belum_realisasi_amount($project) + $this->payreq_belum_verifikasi_amount($project) + $this->variance_realisasi_belum_outgoing_amount($project) - $this->variance_realisasi_belum_incoming_amount($project);
-        $cek_balance_pc_sap = $saldo_pc_payreq_system + $payreq_belum_realisasi_amount + $payreq_belum_verifikasi_amount + $variance_realisasi_belum_incoming_amount - $variance_realisasi_belum_outgoing_amount;
+        $total_advance_employee = $this->payreq_belum_realisasi_amount($project) + $this->realisasi_belum_verifikasi_amount($project) + $this->variance_realisasi_belum_outgoing_amount($project) - $this->variance_realisasi_belum_incoming_amount($project);
+        $cek_balance_pc_sap = $saldo_pc_payreq_system + $payreq_belum_realisasi_amount + $realisasi_belum_verifikasi_amount + $variance_realisasi_belum_incoming_amount - $variance_realisasi_belum_outgoing_amount;
 
         $dashboard_data = [
             'saldo_pc_payreq_system' => number_format($saldo_pc_payreq_system, 2),
             'payreq_belum_realisasi_amount' => number_format($payreq_belum_realisasi_amount, 2),
-            'payreq_belum_verifikasi_amount' => number_format($payreq_belum_verifikasi_amount, 2),
+            'realisasi_belum_verifikasi_amount' => number_format($realisasi_belum_verifikasi_amount, 2),
+            'verifikasi_belum_posted_amount' => number_format($verifikasi_belum_posted_amount, 2),
             'variance_realisasi_belum_incoming_amount' => number_format($variance_realisasi_belum_incoming_amount, 2),
             'variance_realisasi_belum_outgoing_amount' => number_format($variance_realisasi_belum_outgoing_amount, 2),
             'total_advance_employee' => number_format($total_advance_employee, 2),
@@ -52,13 +55,11 @@ class OngoingDashboardController extends Controller
     {
         if ($project === '000H') {
             $project = ['000H', 'APS'];
-            $exclude_user_id = [23]; // this is dncdiv because they have their own system
-            $payreqs = $this->get_payreq_belum_realisasi_with_exclude_user($project, $exclude_user_id);
         } else {
             $project = [$project];
-            $payreqs = $this->get_payreq_belum_realisasi($project);
         }
 
+        $payreqs = $this->get_payreq_belum_realisasi($project);
         $payreqIds = $payreqs->pluck('id')->toArray();
 
         $outgoings = Outgoing::whereIn('payreq_id', $payreqIds)->get();
@@ -67,18 +68,15 @@ class OngoingDashboardController extends Controller
         return $amount;
     }
 
-    public function payreq_belum_verifikasi_amount($project)
+    public function realisasi_belum_verifikasi_amount($project)
     {
         if ($project === '000H') {
             $project = ['000H', 'APS'];
-            $exclude_user_id = [23]; // this is dncdiv because they have their own system
-
-            $realizations = $this->get_payreq_belum_verifikasi_with_exclude_user($project, $exclude_user_id);
         } else {
             $project = [$project];
-            $realizations = $this->get_payreq_belum_verifikasi($project);
         }
 
+        $realizations = $this->get_realisasi_belum_verifikasi($project);
         $realizationIds = $realizations->pluck('id')->toArray();
 
         $realizationDetails = RealizationDetail::whereIn('realization_id', $realizationIds)->get();
@@ -87,18 +85,29 @@ class OngoingDashboardController extends Controller
         return $amount;
     }
 
+    public function verifikasi_belum_posted_amount($project)
+    {
+        if ($project === '000H') {
+            $project = ['000H', 'APS'];
+        } else {
+            $project = [$project];
+        }
+
+        $vj_details = $this->get_verifikasi_belum_posted($project);
+        $amount = $vj_details->sum('amount');
+
+        return $amount;
+    }
+
     public function variance_realisasi_belum_outgoing_amount($project)
     {
         if ($project === '000H') {
             $project = ['000H', 'APS'];
-            $exclude_user_id = [23]; // this is dncdiv because they have their own system
-
-            $payreqs = $this->get_payreq_other_belum_outgoing_with_exclude_user($project, $exclude_user_id);
         } else {
             $project = [$project];
-            $payreqs = $this->get_payreq_other_belum_outgoing($project);
         }
 
+        $payreqs = $this->get_payreq_other_belum_outgoing($project);
         $total_amount = $payreqs->sum('amount');
 
         return $total_amount;
@@ -108,14 +117,11 @@ class OngoingDashboardController extends Controller
     {
         if ($project === '000H') {
             $project = ['000H', 'APS'];
-            $exclude_user_id = [23]; // this is dncdiv because they have their own system
-
-            $incomings = $this->get_incomings_belum_diterima_with_exclude_user($project, $exclude_user_id);
         } else {
             $project = [$project];
-            $incomings = $this->get_incomings_belum_diterima($project);
         }
 
+        $incomings = $this->get_incomings_belum_diterima($project);
         $total_amount = $incomings->sum('amount');
 
         return $total_amount;
@@ -225,7 +231,7 @@ class OngoingDashboardController extends Controller
 
     public function get_realisasi_belum_verifikasi_by_user($user_id)
     {
-        $realizations = Realization::whereIn('status', ['approved'])->where('user_id', $user_id)->get();
+        $realizations = Realization::whereIn('status', ['approved', 'reimburse-paid'])->where('user_id', $user_id)->get();
         $realizationIds = $realizations->pluck('id')->toArray();
 
         return RealizationDetail::whereIn('realization_id', $realizationIds)
@@ -267,17 +273,6 @@ class OngoingDashboardController extends Controller
             ->get();
     }
 
-
-
-    public function get_payreq_belum_realisasi_with_exclude_user($project, $exclude_user_id)
-    {
-        $payreqs = Payreq::whereIn('status', ['paid', 'split'])->whereIn('project', $project)
-            ->whereNotIn('user_id', $exclude_user_id)
-            ->get();
-
-        return $payreqs;
-    }
-
     public function get_payreq_belum_realisasi($project)
     {
         $payreqs = Payreq::whereIn('status', ['paid', 'split'])->whereIn('project', $project)
@@ -286,34 +281,22 @@ class OngoingDashboardController extends Controller
         return $payreqs;
     }
 
-    public function get_payreq_belum_verifikasi_with_exclude_user($project, $exclude_user_id)
+    public function get_realisasi_belum_verifikasi($project)
     {
-        $realizations = Realization::whereIn('status', ['approved'])
-            ->whereIn('project', $project)
-            ->whereNotIn('user_id', $exclude_user_id)
-            ->get();
-
-        return $realizations;
-    }
-
-    public function get_payreq_belum_verifikasi($project)
-    {
-        $realizations = Realization::whereIn('status', ['approved'])
+        $realizations = Realization::whereIn('status', ['approved', 'reimburse-paid'])
             ->whereIn('project', $project)
             ->get();
 
         return $realizations;
     }
 
-    public function get_payreq_other_belum_outgoing_with_exclude_user($project, $exclude_user_id)
+    public function get_verifikasi_belum_posted($project)
     {
-        $payreqs = Payreq::where('type', 'other')
+        $vj_details = VerificationJournalDetail::whereNull('sap_journal_no')
             ->whereIn('project', $project)
-            ->whereNotIn('user_id', $exclude_user_id)
-            ->doesntHave('outgoings')
             ->get();
 
-        return $payreqs;
+        return $vj_details;
     }
 
     public function get_payreq_other_belum_outgoing($project)
@@ -324,18 +307,6 @@ class OngoingDashboardController extends Controller
             ->get();
 
         return $payreqs;
-    }
-
-    public function get_incomings_belum_diterima_with_exclude_user($project, $exclude_user_id)
-    {
-        $incomings = Incoming::whereNull('receive_date')
-            ->join('realizations', 'incomings.realization_id', '=', 'realizations.id')
-            ->whereIn('incomings.project', $project)
-            ->whereNotIn('realizations.user_id', $exclude_user_id)
-            ->select('incomings.*', 'realizations.user_id')
-            ->get();
-
-        return $incomings;
     }
 
     public function get_incomings_belum_diterima($project)

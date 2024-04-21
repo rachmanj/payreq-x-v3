@@ -41,7 +41,12 @@
               </div>
               <div class="form-group">
                 <label for="amount">Amount</label>
-                <input type="text" class="form-control" name="amount" value="{{ old('amount', $available_amount) }}">
+                <input type="text" class="form-control @error('amount') is-invalid @enderror" name="amount" value="{{ old('amount', $available_amount) }}">
+                @error('amount')
+                <div class="invalid-feedback">
+                  {{ $message }}
+                </div>
+                @enderror
               </div>
             </form>
           </div>

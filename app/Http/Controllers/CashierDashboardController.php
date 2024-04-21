@@ -15,8 +15,9 @@ class CashierDashboardController extends Controller
     public function index()
     {
         $dashboard_data = $this->dashboard_data();
+        $dashboard_report = $dashboard_data['dashboard_report'];
 
-        return view('cashier.dashboard.index', compact(['dashboard_data']));
+        return view('cashier.dashboard.index', compact(['dashboard_data', 'dashboard_report']));
     }
 
     public function dashboard_data()
@@ -59,6 +60,8 @@ class CashierDashboardController extends Controller
         }
 
         $result['cj_to_create'] = app(CashJournalController::class)->cj_to_create();
+
+        $result['dashboard_report'] = app(Reports\OngoingDashboardController::class)->dashboard_data($project);
 
         return $result;
     }

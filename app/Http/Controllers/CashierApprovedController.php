@@ -90,7 +90,7 @@ class CashierApprovedController extends Controller
         $outgoings = Outgoing::where('payreq_id', $id)->get();
         $available_amount = $payreq->amount - $outgoings->sum('amount');
         if ($request->amount > $available_amount) {
-            return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Amount is more than available amount');
+            return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Pembayaran tidak boleh melebihi jumlah yang tersisa!');
         }
 
         // create new outgoing record

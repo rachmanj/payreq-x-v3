@@ -16,6 +16,12 @@
                 @include('cashier.dashboard.info')
                 @include('cashier.dashboard.tx')
             </div>
+            <div class="row">
+                @include('cashier.dashboard.pc-balance')
+            </div>
+            <div class="row">
+                @include('cashier.dashboard.ongoing-by-user')
+            </div>
         </div>
     </div>
 @endsection
