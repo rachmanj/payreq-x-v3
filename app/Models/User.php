@@ -41,7 +41,9 @@ class User extends Authenticatable
 
     public function department()
     {
-        return $this->belongsTo(Department::class, 'department_id', 'id');
+        return $this->belongsTo(Department::class, 'department_id', 'id')->withDefault([
+            'department_name' => 'n/a',
+        ]);
     }
 
     public function approval_stages()
