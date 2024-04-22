@@ -9,7 +9,8 @@ class TestController extends Controller
 {
     public function index()
     {
-        $test = app(CashierDashboardController::class)->dashboard_data();
+        // $test = app(CashierDashboardController::class)->dashboard_data();
+        $test = app(Reports\OngoingDashboardController::class)->get_verifikasi_belum_posted(['000H', 'APS']);
         // $test = app(UserPayreqController::class)->ongoing_payreqs();
         // $test = Realization::with('realizationDetails')->where('id', 483)->first();
         // $test = app(UserRealizationController::class)->ongoing_realizations();

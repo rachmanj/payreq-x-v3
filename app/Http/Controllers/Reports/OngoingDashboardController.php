@@ -294,6 +294,7 @@ class OngoingDashboardController extends Controller
     {
         $vj_details = VerificationJournalDetail::whereNull('sap_journal_no')
             ->whereIn('project', $project)
+            ->where('debit_credit', 'debit')
             ->get();
 
         return $vj_details;
