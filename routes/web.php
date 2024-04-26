@@ -8,6 +8,7 @@ use App\Http\Controllers\EquipmentSyncController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\MigrasiController;
 use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PermissionController;
@@ -147,6 +148,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [EquipmentSyncController::class, 'index'])->name('index');
             Route::get('/equipments', [EquipmentSyncController::class, 'sync_equipments'])->name('sync_equipments');
         });
+    });
+
+    // MIGRASI
+    Route::prefix('migrasi')->name('migrasi.')->group(function () {
+        Route::get('/', [MigrasiController::class, 'index'])->name('index');
+        Route::get('/precheck', [MigrasiController::class, 'precheck'])->name('precheck');
     });
 
     Route::get('/test', [TestController::class, 'index']);

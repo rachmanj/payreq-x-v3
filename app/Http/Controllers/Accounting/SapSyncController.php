@@ -56,6 +56,11 @@ class SapSyncController extends Controller
         foreach ($verification_journal_details as $detail) {
             $detail->sap_journal_no = $request->sap_journal_no;
             $detail->save();
+
+            // update sap_balance on accounts table
+            $account = Account::where('account_number', $detail->account_code)->first();
+            $account->sap_balance = $account->sap_balance - $detail->amount;
+            $account->save();
         }
 
         return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)->with('success', 'SAP Info Updated');

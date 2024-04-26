@@ -53,11 +53,7 @@ class OngoingDashboardController extends Controller
 
     public function payreq_belum_realisasi_amount($project)
     {
-        if ($project === '000H') {
-            $project = ['000H', 'APS'];
-        } else {
-            $project = [$project];
-        }
+        $project = $this->get_projects($project);
 
         $payreqs = $this->get_payreq_belum_realisasi($project);
         $payreqIds = $payreqs->pluck('id')->toArray();
@@ -70,11 +66,7 @@ class OngoingDashboardController extends Controller
 
     public function realisasi_belum_verifikasi_amount($project)
     {
-        if ($project === '000H') {
-            $project = ['000H', 'APS'];
-        } else {
-            $project = [$project];
-        }
+        $project = $this->get_projects($project);
 
         $realizations = $this->get_realisasi_belum_verifikasi($project);
         $realizationIds = $realizations->pluck('id')->toArray();
@@ -87,11 +79,7 @@ class OngoingDashboardController extends Controller
 
     public function verifikasi_belum_posted_amount($project)
     {
-        if ($project === '000H') {
-            $project = ['000H', 'APS'];
-        } else {
-            $project = [$project];
-        }
+        $project = $this->get_projects($project);
 
         $vj_details = $this->get_verifikasi_belum_posted($project);
         $amount = $vj_details->sum('amount');
@@ -101,11 +89,7 @@ class OngoingDashboardController extends Controller
 
     public function variance_realisasi_belum_outgoing_amount($project)
     {
-        if ($project === '000H') {
-            $project = ['000H', 'APS'];
-        } else {
-            $project = [$project];
-        }
+        $project = $this->get_projects($project);
 
         $payreqs = $this->get_payreq_other_belum_outgoing($project);
         $total_amount = $payreqs->sum('amount');
@@ -115,11 +99,7 @@ class OngoingDashboardController extends Controller
 
     public function variance_realisasi_belum_incoming_amount($project)
     {
-        if ($project === '000H') {
-            $project = ['000H', 'APS'];
-        } else {
-            $project = [$project];
-        }
+        $project = $this->get_projects($project);
 
         $incomings = $this->get_incomings_belum_diterima($project);
         $total_amount = $incomings->sum('amount');
@@ -132,7 +112,7 @@ class OngoingDashboardController extends Controller
         $project = $this->get_projects($project);
 
         $users = User::join('departments', 'users.department_id', '=', 'departments.id')
-            ->where('project', $project)
+            ->whereIn('project', $project)
             ->select('users.name', 'users.id', 'users.project', 'departments.department_name')
             ->orderBy('users.name', 'asc')
             ->get();
