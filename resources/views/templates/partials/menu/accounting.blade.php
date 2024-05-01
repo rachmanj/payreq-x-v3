@@ -10,10 +10,7 @@
       <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Available Accounts</a></li>
       @endcan
       
-      
       @hasanyrole('superadmin|admin|cashier')
-      <li><a href="{{ route('accounting.payreqs.index') }}" class="dropdown-item">Project Payreqs</a></li>
-      <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Available Accounts</a></li>
       <li><a href="{{ route('accounting.payreqs.index') }}" class="dropdown-item">Project Payreqs</a></li>
       <li><a href="{{ route('journals.index') }}" class="dropdown-item">Journals</a></li>
       <li><a href="{{ route('general-ledgers.index') }}" class="dropdown-item">General Ledgers</a></li>

@@ -19,7 +19,11 @@ class OngoingDashboardController extends Controller
 {
     public function dashboard()
     {
-        $project = request()->query('project');
+        if (auth()->user()->hasRole(['superadmin', 'admin', 'cashier'])) {
+            $project = request()->query('project');
+        } else {
+            $project = auth()->user()->project;
+        }
         $dashboard_data = $this->dashboard_data($project);
 
         return view('reports.ongoing.dashboard', compact(['project', 'dashboard_data']));

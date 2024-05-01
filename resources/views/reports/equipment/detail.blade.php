@@ -24,43 +24,6 @@
                 <div class="box-header">
                 </div>
             </div> --}}
-            
-            {{-- FUEL --}}
-            <div class="box">
-                <div class="box-header">
-                    <h3 class="box-title">Expense Detail of Unit No: {{ $unit_no }}</h3> <hr>
-                    <h3 class="box-title">FUEL total IDR {{ number_format($result['fuel']['total'], 0) }}</h3>
-                </div>
-                <div class="box-body">
-                    <table class="table table-bordered">
-                        {{-- <thead> --}}
-                            <tr>
-                                <th>#</th>
-                                <th>Date</th>
-                                <th>Desc</th>
-                                <th class="text-right">Qty</th>
-                                <th>UOM</th>
-                                <th class="text-right">HM</th>
-                                <th class="text-right">Amount</th>
-                            </tr>
-                        {{-- </thead> --}}
-                        <tbody>
-                            @foreach ($result['fuel']['details'] as $key => $item)
-                                <tr>
-                                    <td>{{ $key + 1 }}</td>
-                                    <td>{{ $item->created_at->format('d-M-Y') }}</td>
-                                    <td>{{ $item['description'] }}</td>
-                                    <td class="text-right">{{ number_format($item['qty'], 0) }}</td>
-                                    <td>{{ $item['uom'] }}</td>
-                                    <td class="text-right">{{ $item['km_position'] }}</td>
-                                    <td class="text-right">{{ number_format($item['amount'], 0) }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                        
-                    </table>
-                </div>
-            </div>
 
             {{-- SERVICE --}}
             <div class="box box-secondary">
@@ -131,6 +94,45 @@
                     </table>
                 </div>
             </div>
+            
+            {{-- FUEL --}}
+            <div class="box">
+                <div class="box-header">
+                    <h3 class="box-title">Expense Detail of Unit No: {{ $unit_no }}</h3> <hr>
+                    <h3 class="box-title">FUEL total IDR {{ number_format($result['fuel']['total'], 0) }}</h3>
+                </div>
+                <div class="box-body">
+                    <table class="table table-bordered">
+                        {{-- <thead> --}}
+                            <tr>
+                                <th>#</th>
+                                <th>Date</th>
+                                <th>Desc</th>
+                                <th class="text-right">Qty</th>
+                                <th>UOM</th>
+                                <th class="text-right">HM</th>
+                                <th class="text-right">Amount</th>
+                            </tr>
+                        {{-- </thead> --}}
+                        <tbody>
+                            @foreach ($result['fuel']['details'] as $key => $item)
+                                <tr>
+                                    <td>{{ $key + 1 }}</td>
+                                    <td>{{ $item->created_at->format('d-M-Y') }}</td>
+                                    <td>{{ $item['description'] }}</td>
+                                    <td class="text-right">{{ number_format($item['qty'], 0) }}</td>
+                                    <td>{{ $item['uom'] }}</td>
+                                    <td class="text-right">{{ $item['km_position'] }}</td>
+                                    <td class="text-right">{{ number_format($item['amount'], 0) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        
+                    </table>
+                </div>
+            </div>
+
+            
         </div>
     </div>
     

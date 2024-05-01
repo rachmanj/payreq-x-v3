@@ -16,7 +16,7 @@ Send Verification Journal to SAP
       <div class="card-header">
         <a href="{{ route('accounting.sap-sync.index', ['project' => 'HO']) }}">HO & APS</a> | 
         <a href="{{ route('accounting.sap-sync.index', ['project' => '001H']) }}">BO Jkt</a> |
-        <a href="{{ route('accounting.sap-sync.index', ['project' => '017C']) }}"><b>017C</b></a> |
+        <b>017C</b> |
         <a href="{{ route('accounting.sap-sync.index', ['project' => '021C']) }}">021C</a> |
         <a href="{{ route('accounting.sap-sync.index', ['project' => '022C']) }}">022C</a> |
         <a href="{{ route('accounting.sap-sync.index', ['project' => '023C']) }}">023C</a>

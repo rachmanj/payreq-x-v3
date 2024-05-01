@@ -23,6 +23,7 @@ return new class extends Migration
             $table->foreignId('cash_journal_id')->nullable();
             $table->string('sap_journal_no', 50)->nullable();
             $table->string('flag', 10)->nullable(); // Cash Journal Temporary (CJT) + user_id
+            $table->boolean('will_post')->default(true);
             $table->timestamps();
         });
     }

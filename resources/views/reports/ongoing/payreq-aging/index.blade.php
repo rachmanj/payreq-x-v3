@@ -5,7 +5,7 @@ Reports
 @endsection
 
 @section('breadcrumb_title')
-ongoings
+aging
 @endsection
 
 @section('content')
@@ -14,7 +14,7 @@ ongoings
 
     <div class="card">
       <div class="card-header">
-        {{-- <h3 class="card-title">Ongoing Payreqs of <b>{{ implode(', ', $project_include) }}</b> | Total IDR <b>{{ number_format($total_amount, 2) }}</b></h3> --}}
+        <h3 class="card-title">Payreqs Aging</h3>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
         <br>
       </div>

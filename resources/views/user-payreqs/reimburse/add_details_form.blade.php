@@ -95,6 +95,8 @@
                                     <option value="">-- type --</option>
                                     <option value="fuel">Fuel</option>
                                     <option value="service">Service</option>
+                                    <option value="tax">STNK / Tax</option>
+                                    <option value="other">Others</option>
                                 </select>
                             </div> 
                         </div>

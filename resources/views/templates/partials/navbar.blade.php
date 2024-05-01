@@ -42,6 +42,8 @@
           @can('akses_admin')
             @include('templates.partials.menu.admin')
           @endcan
+
+          <a href="{{ route('dashboard.index') }}" class="nav-link">Search</a>
           
         </ul>
       </div>

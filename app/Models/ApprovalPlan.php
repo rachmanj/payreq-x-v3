@@ -13,7 +13,9 @@ class ApprovalPlan extends Model
 
     public function approver()
     {
-        return $this->belongsTo(User::class, 'approver_id');
+        return $this->belongsTo(User::class, 'approver_id')->withDefault([
+            'name' => 'N/A',
+        ]);
     }
 
     public function payreq()
