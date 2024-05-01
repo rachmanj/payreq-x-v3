@@ -37,8 +37,8 @@ class OngoingDashboardController extends Controller
         $verifikasi_belum_posted_amount = $this->verifikasi_belum_posted_amount($project); // this is not used anymore, so we just set it to '0.00
         $variance_realisasi_belum_outgoing_amount = $this->variance_realisasi_belum_outgoing_amount($project);
         $variance_realisasi_belum_incoming_amount = $this->variance_realisasi_belum_incoming_amount($project);
-        $total_advance_employee = $this->payreq_belum_realisasi_amount($project) + $this->realisasi_belum_verifikasi_amount($project) + $this->variance_realisasi_belum_outgoing_amount($project) - $this->variance_realisasi_belum_incoming_amount($project);
-        $cek_balance_pc_sap = $saldo_pc_payreq_system + $payreq_belum_realisasi_amount + $realisasi_belum_verifikasi_amount + $variance_realisasi_belum_incoming_amount - $variance_realisasi_belum_outgoing_amount;
+        $total_advance_employee = $this->payreq_belum_realisasi_amount($project) + $this->realisasi_belum_verifikasi_amount($project) + $verifikasi_belum_posted_amount + $this->variance_realisasi_belum_outgoing_amount($project) - $this->variance_realisasi_belum_incoming_amount($project);
+        $cek_balance_pc_sap = $saldo_pc_payreq_system + $total_advance_employee;
 
         $dashboard_data = [
             'saldo_pc_payreq_system' => number_format($saldo_pc_payreq_system, 2),
