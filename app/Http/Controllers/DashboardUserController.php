@@ -74,10 +74,14 @@ class DashboardUserController extends Controller
         }
 
         foreach ($months as $month) {
-            $payreqs = Payreq::where('user_id', $user_id)
+            $payreqs = Payreq::select('id', 'user_id', 'nomor')->where('user_id', $user_id)
                 ->where('status', 'close')
-                ->whereMonth('approved_at', $month)
-                ->whereYear('approved_at', $year)
+                // ->whereMonth('approved_at', $month)
+                // ->whereYear('approved_at', $year)
+                ->whereHas('outgoings', function ($query) use ($month, $year) {
+                    $query->whereMonth('outgoing_date', $month)
+                        ->whereYear('outgoing_date', $year);
+                })
                 ->get();
 
             $realization_details = $payreqs->pluck('realization')->flatten()->pluck('realizationDetails')->flatten()->sum('amount');
@@ -87,10 +91,11 @@ class DashboardUserController extends Controller
             $monthly_amount[] = [
                 'month' => $month,
                 'month_name' => $month_name,
-                'amount' => $realization_details
+                'amount' => $realization_details,
             ];
         }
 
+        // return $realization_details;
         return $monthly_amount;
     }
 }

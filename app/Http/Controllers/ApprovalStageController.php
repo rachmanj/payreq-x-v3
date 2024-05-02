@@ -101,7 +101,7 @@ class ApprovalStageController extends Controller
     public function data()
     {
         // list of users where has role approver
-        $approvers = User::role('approver')->select('id', 'name')
+        $approvers = User::select('id', 'name')
             ->whereHas('approval_stages')
             ->get();
 

@@ -17,7 +17,7 @@
 <body class="hold-transition login-page">
 <div class="login-box">
   <div class="login-logo">
-    <a href="#"><b>Payreq</b> - <small>System</small></a>
+    <h2><b>Payreq</b> System<small> | v.2</small></h2>
   </div>
   <!-- /.login-logo -->
   <div class="card">

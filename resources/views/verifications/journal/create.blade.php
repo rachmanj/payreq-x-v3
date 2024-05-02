@@ -44,7 +44,7 @@
                 <div class="card-header">
                     <h3 class="card-title">CART</h3>
                     @if ($remove_all_button)
-                    <a href="#" class="btn btn-sm btn-primary float-right" role="button" data-toggle="modal" data-target="#create-journal">Create Journal</a>
+                    <a href="#" class="btn btn-sm btn-primary float-right" role="button" data-toggle="modal" data-target="#create-journal">Submit Journal</a>
                     <a href="{{ route('verifications.journal.remove_all_fromcart') }}" class="btn btn-sm btn-warning float-right mr-2">Remove All From Cart</a>
                     @endif
                 </div>
