@@ -71,7 +71,7 @@ class ReportIndexController extends Controller
                     [
                         'name' => 'Sum Expense by Equipment',
                         'url' => route('reports.equipment.index'),
-                        'protector' => null,
+                        'protector' => 'akses_sum_expense_by_equipment',
                     ],
                     [
                         'name' => 'Report 2.2',

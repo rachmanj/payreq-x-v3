@@ -14,8 +14,11 @@
       <li><a href="{{ route('accounting.payreqs.index') }}" class="dropdown-item">Project Payreqs</a></li>
       <li><a href="{{ route('journals.index') }}" class="dropdown-item">Journals</a></li>
       <li><a href="{{ route('general-ledgers.index') }}" class="dropdown-item">General Ledgers</a></li>
-      <li><a href="{{ route('accounting.loans.index') }}" class="dropdown-item">Loan List</a></li>
       @endhasanyrole
+
+      @can('akses_loan_report')
+      <li><a href="{{ route('accounting.loans.index') }}" class="dropdown-item">Loan List</a></li>
+      @endcan
       
       @can('akses_reports')
       <li><a href="{{ route('reports.index') }}" class="dropdown-item">Reports</a></li>
