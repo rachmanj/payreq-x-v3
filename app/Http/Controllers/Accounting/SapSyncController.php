@@ -6,6 +6,7 @@ use App\Exports\VerificationJournalExport;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\VerificationJournalController;
 use App\Models\Account;
+use App\Models\Realization;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
 use Illuminate\Http\Request;
@@ -139,7 +140,27 @@ class SapSyncController extends Controller
     {
         $vj_id = request()->query('vj_id');
 
-        $journal_details = VerificationJournalDetail::where('verification_journal_id', $vj_id)->get();
+        $journal_details = VerificationJournalDetail::select(
+            'verification_journal_id',
+            'account_code',
+            'project',
+            'realization_date',
+            'debit_credit',
+            'description',
+            'cost_center',
+            'amount',
+            'realization_no'
+        )->where('verification_journal_id', $vj_id)->get();
+
+        // add payreq number to journal_details
+        foreach ($journal_details as $detail) {
+            $realization = Realization::where('nomor', $detail->realization_no)->first();
+            $payreq_no = $realization->payreq()->first()->nomor;
+            $detail->payreq_no = $payreq_no;
+            $detail->vj_no = VerificationJournal::where('id', $detail->verification_journal_id)->first()->nomor;
+        }
+
+        // return $journal_details;
 
         return Excel::download(new VerificationJournalExport($journal_details), 'journal.xlsx');
     }

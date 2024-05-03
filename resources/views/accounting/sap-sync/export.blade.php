@@ -4,11 +4,12 @@
             <td>#</td>
             <td>Akun No</td>
             <td>Remark</td>
-            <td>RealizationNo</td>
             <td>Project</td>
             <td>CCenter</td>
             <td>DebitIDR</td>
             <td>CreditIDR</td>
+            <td>PayreqNo</td>
+            <td>VJNo</td>
         </tr>
     </thead>
     <tbody>
@@ -17,17 +18,18 @@
             <td>{{ $key + 1 }}</td>
             <td>{{ $item['account_code'] }}</td>
             <td>{{ $item['description'] }}</td>
-            <td>{{ $item['realization_no'] }}</td>
             <td>{{ $item['project'] }}</td>
             <td>{{ $item['cost_center'] }}</td>
             @if ($item['debit_credit'] == 'debit')
-                <td>{{ $item['amount'] }}</td>
-                <td>0.00</td>
+                <td>IDR {{ $item['amount'] }}</td>
+                <td>IDR 0</td>
             @endif
             @if ($item['debit_credit'] == 'credit')
-                <td>0.00</td>
-                <td>{{ $item['amount'] }}</td>
+                <td>IDR 0</td>
+                <td>IDR {{ $item['amount'] }}</td>
             @endif
+            <td>{{ $item['payreq_no'] }}</td>
+            <td>{{ $item['vj_no'] }}</td>
         </tr>
         @endforeach
     </tbody>
