@@ -3,7 +3,7 @@
     <ul aria-labelledby="dropdownPayreq" class="dropdown-menu border-0 shadow">
 
       @can('akses_sap_sync')
-      <li><a href="{{ route('accounting.sap-sync.index', ['project' => 'HO']) }}" class="dropdown-item">SAP Sync</a></li>
+      <li><a href="{{ route('accounting.sap-sync.index', ['project' => '000H']) }}" class="dropdown-item">SAP Sync</a></li>
       @endcan
       <li class="dropdown-divider"></li>
       @can('akses_coa')

@@ -18,7 +18,7 @@ class SapSyncController extends Controller
     {
         $project = request()->query('project');
 
-        if ($project === 'HO') {
+        if ($project === '000H' || $project === 'APS') {
             return view('accounting.sap-sync.index');
         } else {
             return view('accounting.sap-sync.' . $project);
@@ -36,6 +36,8 @@ class SapSyncController extends Controller
                 $detail->account_name = $account->account_name;
                 return $detail;
             });
+
+        // return $vj_details;
 
         return view('accounting.sap-sync.show', compact([
             'vj',

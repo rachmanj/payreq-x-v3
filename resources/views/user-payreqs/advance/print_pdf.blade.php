@@ -109,12 +109,12 @@
           <br>
           <br>
           <br>
-          (....................................................)
-          {{-- <div> 
-             @foreach ($approvers as $approver)
-            ( {{ $approver }} {{ '_____________________' }}) 
-            @endforeach 
-          </div> --}}
+           @foreach ($approvers as $approver) 
+           ({{ $approver }} |   
+          @endforeach ...............................)
+          
+             
+          
         </div>
 
         <div class="col-sm-4 invoice-col">
