@@ -356,7 +356,11 @@ class VerificationJournalController extends Controller
             }
 
             $array_desc = $realization_details->pluck('description')->unique();
+
             $descriptions = implode(', ', $array_desc->toArray());
+            if (strlen($descriptions) > 100) {
+                $descriptions = substr($descriptions, 0, 100);
+            }
 
             $data = [
                 'verification_journal_id' => $verification_journal_id,

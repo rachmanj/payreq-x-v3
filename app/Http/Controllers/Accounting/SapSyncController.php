@@ -162,8 +162,8 @@ class SapSyncController extends Controller
             $detail->vj_no = VerificationJournal::where('id', $detail->verification_journal_id)->first()->nomor;
         }
 
-        return $journal_details;
+        // return $journal_details;
 
-        // return Excel::download(new VerificationJournalExport($journal_details), 'journal.xlsx');
+        return Excel::download(new VerificationJournalExport($journal_details), 'journal.xlsx');
     }
 }
