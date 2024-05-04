@@ -1,4 +1,4 @@
-@hasanyrole('superadmin')
+@hasanyrole(['superadmin', 'cashier', 'admin'])
 <form action="{{ route('accounts.destroy', $model->id) }}" method="POST">
   @csrf @method('DELETE')
   <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#account-edit-{{ $model->id }}">edit</button>
