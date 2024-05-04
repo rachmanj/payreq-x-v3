@@ -349,7 +349,12 @@ class VerificationJournalController extends Controller
             }
 
             // credit type
-            $cash_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+            if (auth()->user()->project === '000H' || auth()->user()->project === 'APS') {
+                $cash_account = Account::where('type', 'cash')->where('project', '000H')->first();
+            } else {
+                $cash_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+            }
+
             $array_desc = $realization_details->pluck('description')->unique();
             $descriptions = implode(', ', $array_desc->toArray());
 
