@@ -33,7 +33,9 @@ accounting / sap-sync / show
                             <dt class="col-sm-4">Amount</dt>
                             <dd class="col-sm-8">: Rp.{{ number_format($vj->amount, 2) }}</dd>
                             <dt class="col-sm-4">Created by</dt>
-                            <dd class="col-sm-8">: {{ $vj->createdBy->name }} on {{  date('d-M-Y', strtotime($vj->created_at)) }}</dd>
+                            <dd class="col-sm-8">: {{ $vj->createdBy->name }} on {{  date('d-M-Y H:m', strtotime($vj->created_at . '+8 hours')) }} wita</dd>
+                            <dt class="col-sm-4">Posted by</dt>
+                            <dd class="col-sm-8">: {{ $vj->postedBy->name }} on {{  date('d-M-Y H:m', strtotime($vj->updated_at . '+8 hours')) }} wita</dd>
                         </div>
                     </div>
                     <div class="col-4">

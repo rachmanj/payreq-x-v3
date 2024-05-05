@@ -37,7 +37,7 @@ class SapSyncController extends Controller
                 return $detail;
             });
 
-        // return $vj_details;
+        // return $vj;
 
         return view('accounting.sap-sync.show', compact([
             'vj',

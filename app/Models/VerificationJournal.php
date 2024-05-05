@@ -25,4 +25,11 @@ class VerificationJournal extends Model
     {
         return $this->hasMany(VerificationJournalDetail::class);
     }
+
+    public function postedBy()
+    {
+        return $this->belongsTo(User::class, 'posted_by')->withDefault([
+            'name' => 'N/A'
+        ]);
+    }
 }

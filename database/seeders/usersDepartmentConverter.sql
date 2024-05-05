@@ -29,3 +29,8 @@ UPDATE approval_stages SET department_id = 4 WHERE department_id = 1200;
 UPDATE approval_stages SET department_id = 18 WHERE department_id = 1300;
 UPDATE approval_stages SET department_id = 17 WHERE department_id = 1400;
 UPDATE approval_stages SET department_id = 6 WHERE department_id = 1600;
+
+
+UPDATE realizations SET department_id = 14 WHERE id = 1144;
+UPDATE verification_journal_details SET account_code = '11100018' WHERE id = 10;
+UPDATE verification_journal_details SET account_code = '11100018' WHERE id = 12;
