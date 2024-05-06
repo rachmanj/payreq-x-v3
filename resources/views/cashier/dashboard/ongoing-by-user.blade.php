@@ -33,7 +33,7 @@
                     <li class="col-sm-12"><strong>Realisasi belum verifikasi total = Rp. {{ $user['realisasi_belum_verifikasi_amount'] }}</strong></li>
                   <ol>
                     @foreach ($user['realisasi_belum_verifikasi_list'] as $item)
-                      <li class="col-sm-12">Realisasi No.{{ $item->realization_nomor }} = Rp. {{ number_format($item->total_amount, 2) }}</li>  
+                      <li class="col-sm-12">Realisasi No.{{ $item->realization_nomor }} | Approved at {{ date('d-M-Y', strtotime($item->approved_at)) }} = Rp. {{ number_format($item->total_amount, 2) }}</li>  
                     @endforeach
                   </ol>
                   @endif

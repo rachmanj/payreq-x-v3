@@ -44,7 +44,7 @@
                 </p>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
+            {{-- <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                 <p class="d-flex flex-column">
                     <span class="font-weight-bold">
                     Cash-Out Journal Pending
@@ -55,9 +55,9 @@
                     Rp. {{ number_format($dashboard_data['cj_to_create']['outgoings_amount'], 0) }} | {{ $dashboard_data['cj_to_create']['outgoings_count'] }} payreqs 
                 </span>
                 </p>
-            </div>
+            </div> --}}
 
-            <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
+            {{-- <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                 <p class="d-flex flex-column">
                     <span class="font-weight-bold">
                     Cash-In Journal Pending
@@ -68,9 +68,9 @@
                     Rp. {{ number_format($dashboard_data['cj_to_create']['incomings_amount'], 0) }} | {{ $dashboard_data['cj_to_create']['incomings_count'] }} payreqs 
                 </span>
                 </p>
-            </div>
+            </div> --}}
 
-            <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
+            {{-- <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
                 <p class="d-flex flex-column">
                     <span class="font-weight-bold">
                     Cash Journal Pending
@@ -81,7 +81,7 @@
                     Rp. {{ number_format($dashboard_data['cj_to_create']['pending_posting_amount'], 0) }} | {{ $dashboard_data['cj_to_create']['pending_posting_count'] }} journals 
                 </span>
                 </p>
-            </div>
+            </div> --}}
             
         </div>
     </div>

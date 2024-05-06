@@ -220,8 +220,8 @@ class OngoingDashboardController extends Controller
 
         return RealizationDetail::whereIn('realization_id', $realizationIds)
             ->join('realizations', 'realizations.id', '=', 'realization_details.realization_id')
-            ->select('realizations.nomor as realization_nomor', DB::raw('SUM(realization_details.amount) as total_amount'))
-            ->groupBy('realizations.nomor')
+            ->select('realizations.nomor as realization_nomor', 'realizations.id as realization_id', DB::raw('SUM(realization_details.amount) as total_amount'), 'realizations.approved_at')
+            ->groupBy('realizations.nomor', 'realizations.id', 'realizations.approved_at')
             ->get();
     }
 
