@@ -90,8 +90,13 @@ class MigrasiPayreqController extends Controller
 
     public function data()
     {
-        $payreqIds = PayreqMigrasi::where('created_by', auth()->user()->id)->pluck('payreq_id');
-        $payreqs = Payreq::whereIn('id', $payreqIds)->get();
+        if (auth()->user()->hasRole('superadmin')) {
+            $payreqIds = PayreqMigrasi::pluck('payreq_id');
+            $payreqs = Payreq::whereIn('id', $payreqIds)->get();
+        } else {
+            $payreqIds = PayreqMigrasi::where('created_by', auth()->user()->id)->pluck('payreq_id');
+            $payreqs = Payreq::whereIn('id', $payreqIds)->get();
+        }
 
         return datatables()->of($payreqs)
             ->addColumn('requestor', function ($payreq) {

@@ -20,7 +20,9 @@ class Outgoing extends Model
 
     public function cashier()
     {
-        return $this->belongsTo(User::class, 'cashier_id', 'id');
+        return $this->belongsTo(User::class, 'cashier_id', 'id')->withDefault([
+            'name' => 'n/a',
+        ]);
     }
 
     public function account()
