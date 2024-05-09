@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Migrasi\MigrasiPayreqController;
 use App\Models\Payreq;
 use Illuminate\Http\Request;
 
@@ -25,10 +26,10 @@ class TestController extends Controller
         // $test = app(BucSyncController::class)->cek_rab_id();
         // $test = app(Reports\LoanController::class)->dashboard_data();
         // $test = app(Reports\OngoingDashboardController::class)->dashboard_data('017C');
-        $test = app(Reports\OngoingDashboardController::class)->ongoing_documents_by_user('000H');
+        // $test = app(Reports\OngoingDashboardController::class)->ongoing_documents_by_user('000H');
         // $test = app(VerificationJournalController::class)->journal_details(2);
         // $test = app(MigrasiController::class)->checkIsDataExist();
-        // $test = app(DashboardUserController::class)->user_monthly_amount();
+        $test = app(MigrasiPayreqController::class)->update();
 
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)

@@ -115,7 +115,8 @@ class DocumentNumberController extends Controller
         $document->increment('last_number');
         $document_code = $this->document_code($document_type);
 
-        $nomor = Carbon::now()->format('y') . $document_code . substr(auth()->user()->project, 1, 2)  . str_pad($document->last_number, 5, '0', STR_PAD_LEFT);
+        // $nomor = Carbon::now()->format('y') . $document_code . substr(auth()->user()->project, 1, 2)  . str_pad($document->last_number, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y') . $document_code . substr($project, 1, 2)  . str_pad($document->last_number, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }

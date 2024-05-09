@@ -55,6 +55,7 @@ class MigrasiPayreqController extends Controller
             'submit_at' => $request->paid_date,
             'draft_no' => $request->old_payreq_no,
             'user_id' => $request->requestor_id,
+            'due_date' => '2024-05-09',
         ]));
 
         // store to payreq_migrasis
@@ -77,6 +78,30 @@ class MigrasiPayreqController extends Controller
         $outgoing->save();
 
         return redirect()->route('cashier.migrasi.payreqs.index')->with('success', 'Payreq has been created successfully');
+    }
+
+    public function edit($id)
+    {
+        $payreq = Payreq::findOrFail($id);
+        $cashier = $payreq->outgoings->count() > 0 ? $payreq->outgoings->first()->cashier->name : 'n/a';
+
+        return view('migrasi.payreqs.edit', [
+            'payreq' => $payreq,
+            'cashier' => $cashier,
+        ]);
+    }
+
+    public function update(Request $request, $id) // just to update paid_date
+    {
+        $payreq = Payreq::findOrFail($id);
+        $approved_at = strtotime($request->paid_date);
+        $payreq->update([
+            'approved_at' => date('Y-m-d H:i:s', $approved_at),
+            'submit_at' => date('Y-m-d H:i:s', $approved_at),
+            'due_date' => $request->paid_date,
+        ]);
+
+        return redirect()->route('cashier.migrasi.payreqs.index')->with('success', 'Payreq has been updated successfully');
     }
 
     public function destroy(Request $request)
@@ -113,7 +138,11 @@ class MigrasiPayreqController extends Controller
                 return $payreq_date->addHours(8)->diffInDays(now());
             })
             ->addColumn('cashier', function ($payreq) {
-                return $payreq->outgoings->first()->cashier->name;
+                // if payreq has outgoings, get the cashier name
+                if ($payreq->outgoings->count() > 0) {
+                    return $payreq->outgoings->first()->cashier->name;
+                }
+                return 'no outgoing found';
             })
             ->editColumn('amount', function ($payreq) {
                 if ($payreq->status == 'split') {
@@ -123,9 +152,47 @@ class MigrasiPayreqController extends Controller
                 }
                 return number_format($payreq->amount, 2);
             })
+            // ->addColumn('approved_at', function ($payreq) {
+            //     return $payreq->approved_at ? $payreq->approved_at->format('d-m-Y') : '-';
+            // })
             ->addIndexColumn()
             ->addColumn('action', 'migrasi.payreqs.action')
             ->rawColumns(['action', 'amount', 'nomor'])
             ->toJson();
+    }
+
+    public function update_status()
+    {
+        $payreqIds = PayreqMigrasi::pluck('payreq_id');
+        $payreqs = Payreq::whereIn('id', $payreqIds)->get();
+
+        foreach ($payreqs as $payreq) {
+            $payreq->update([
+                'status' => 'paid',
+            ]);
+        }
+
+        return redirect()->route('cashier.migrasi.payreqs.index')->with('success', 'Payreqs status has been updated successfully');
+    }
+
+
+
+    public function update_koreksi()
+    {
+        $payreqIds = PayreqMigrasi::pluck('payreq_id');
+        $payreqs = Payreq::whereIn('id', $payreqIds)->whereNull('approved_at')->get();
+        return $payreqIds;
+
+        foreach ($payreqs as $payreq) {
+            // get created_at and convert to date
+            $created_date = $payreq->created_at->format('Y-m-d');
+            // return $created_date;
+            $payreq->update([
+                'approved_at' => $payreq->$created_date,
+                'status' => 'paid',
+                'submit_at' => $payreq->$created_date,
+                'due_date' => '2024-05-09',
+            ]);
+        }
     }
 }

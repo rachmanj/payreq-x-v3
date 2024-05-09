@@ -69,11 +69,14 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::prefix('migrasi')->name('migrasi.')->group(function () {
         Route::get('/', [MigrasiIndexController::class, 'index'])->name('index');
         Route::prefix('payreqs')->name('payreqs.')->group(function () {
+            Route::get('/update-status', [MigrasiPayreqController::class, 'update_status'])->name('update_status');
             Route::get('/data', [MigrasiPayreqController::class, 'data'])->name('data');
             Route::get('/', [MigrasiPayreqController::class, 'index'])->name('index');
             Route::get('/create', [MigrasiPayreqController::class, 'create'])->name('create');
             Route::post('/store', [MigrasiPayreqController::class, 'store'])->name('store');
             Route::post('/destroy', [MigrasiPayreqController::class, 'destroy'])->name('destroy');
+            Route::get('/{id}', [MigrasiPayreqController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [MigrasiPayreqController::class, 'update'])->name('update');
         });
     });
 });

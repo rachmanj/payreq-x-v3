@@ -17,11 +17,14 @@
             <h3 class="card-title">Migrasi Payreqs</h3>
             {{-- create payreq --}}
             <div class="card-tools">
-                <a href="{{ route('cashier.migrasi.index') }}" class="btn btn-primary btn-sm float-right">
-                    <i class="fas fa-arrow-left"></i> Back
-                </a>
-                <a href="{{ route('cashier.migrasi.payreqs.create') }}" class="btn btn-success btn-sm float-right mr-2">
-                  <i class="fas fa-plus"></i> New Payreq Migrasi
+              <a href="{{ route('cashier.migrasi.index') }}" class="btn btn-primary btn-sm float-right">
+                  <i class="fas fa-arrow-left"></i> Back
+              </a>
+              <a href="{{ route('cashier.migrasi.payreqs.create') }}" class="btn btn-success btn-sm float-right mr-2">
+                <i class="fas fa-plus"></i> New Payreq Migrasi
+              </a>
+              <a href="{{ route('cashier.migrasi.payreqs.update_status') }}" class="btn btn-warning btn-sm float-right mr-2">
+                <i class="fas fa-pencil"></i> Update Status
               </a>
             </div>
           </div>
@@ -32,11 +35,12 @@
             <tr>
               <th>#</th>
               <th>Employee</th>
-              <th>Payreq No</th>
+              <th>PayreqNo</th>
+              <th>PaidDate</th>
               <th>Project</th>
               <th>Cashier</th>
-              <th>IDR Due</th>
-              <th>Days</th>
+              <th>Status</th>
+              <th>Amount</th>
               <th></th>
             </tr>
             </thead>
@@ -74,22 +78,19 @@
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'requestor'},
         {data: 'nomor'},
+        {data: 'approved_at'},
         {data: 'project'},
         {data: 'cashier'},
+        {data: 'status'},
         {data: 'amount'},
-        {data: 'days'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5, 6],
+                "targets": [7],
                 "className": "text-right"
               },
-              {
-                "targets": [4],
-                "className": "text-center"
-              }
             ]
     })
   });
