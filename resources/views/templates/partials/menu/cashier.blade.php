@@ -22,5 +22,8 @@
       @can('akses_pcbc')
       <li><a href="{{ route('cashier.pcbc.index') }}" class="dropdown-item">PCBC</a></li>
       @endcan
+      @can('akses_migrasi')
+      <li><a href="{{ route('cashier.migrasi.index') }}" class="dropdown-item">Migrasi</a></li>
+      @endcan
     </ul>
 </li>

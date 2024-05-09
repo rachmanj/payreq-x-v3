@@ -20,7 +20,6 @@
       <li><a href="{{ route('permissions.index') }}" class="dropdown-item">Permissions</a></li>
       <li><a href="{{ route('document-number.index') }}" class="dropdown-item">Document Numbering</a></li>
       <li><a href="{{ route('parameters.index') }}" class="dropdown-item">Advance Parameters</a></li>
-      <li><a href="{{ route('migrasi.index') }}" class="dropdown-item">Migrasi</a></li>
       @endcan
     </ul>
   </li>

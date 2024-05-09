@@ -35,7 +35,7 @@ accounting / sap-sync / show
                             <dt class="col-sm-4">Created by</dt>
                             <dd class="col-sm-8">: {{ $vj->createdBy->name }} on {{  date('d-M-Y H:m', strtotime($vj->created_at . '+8 hours')) }} wita</dd>
                             <dt class="col-sm-4">Posted by</dt>
-                            <dd class="col-sm-8">: {{ $vj->postedBy->name }} on {{  date('d-M-Y H:m', strtotime($vj->updated_at . '+8 hours')) }} wita</dd>
+                            <dd class="col-sm-8">: {{ ($vj->posted_by ? $vj->postedBy->name . ' on ' . date('d-M-Y H:m', strtotime($vj->updated_at . '+8 hours')) . ' wita' : 'not posted yet') }}</dd>
                         </div>
                     </div>
                     <div class="col-4">

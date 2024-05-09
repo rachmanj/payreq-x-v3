@@ -8,6 +8,8 @@ use App\Http\Controllers\CashierDashboardController;
 use App\Http\Controllers\CashierGiroController;
 use App\Http\Controllers\CashierGiroDetailController;
 use App\Http\Controllers\CashOpnameController;
+use App\Http\Controllers\Migrasi\MigrasiIndexController;
+use App\Http\Controllers\Migrasi\MigrasiPayreqController;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
@@ -62,4 +64,16 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/{id}/print', [CashOpnameController::class, 'print'])->name('print');
     });
     Route::resource('pcbc', CashOpnameController::class);
+
+    // MIGRASI
+    Route::prefix('migrasi')->name('migrasi.')->group(function () {
+        Route::get('/', [MigrasiIndexController::class, 'index'])->name('index');
+        Route::prefix('payreqs')->name('payreqs.')->group(function () {
+            Route::get('/data', [MigrasiPayreqController::class, 'data'])->name('data');
+            Route::get('/', [MigrasiPayreqController::class, 'index'])->name('index');
+            Route::get('/create', [MigrasiPayreqController::class, 'create'])->name('create');
+            Route::post('/store', [MigrasiPayreqController::class, 'store'])->name('store');
+            Route::post('/destroy', [MigrasiPayreqController::class, 'destroy'])->name('destroy');
+        });
+    });
 });

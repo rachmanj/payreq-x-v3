@@ -65,4 +65,9 @@ class Payreq extends Model
             return $lastOutgoing;
         }
     }
+
+    public function PayreqMigrasi()
+    {
+        return $this->hasOne(PayreqMigrasi::class);
+    }
 }

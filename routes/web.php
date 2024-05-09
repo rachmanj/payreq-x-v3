@@ -150,12 +150,6 @@ Route::middleware('auth')->group(function () {
         });
     });
 
-    // MIGRASI
-    Route::prefix('migrasi')->name('migrasi.')->group(function () {
-        Route::get('/', [MigrasiController::class, 'index'])->name('index');
-        Route::get('/precheck', [MigrasiController::class, 'precheck'])->name('precheck');
-    });
-
     Route::get('/test', [TestController::class, 'index']);
 
     require __DIR__ . '/user_payreqs.php';
