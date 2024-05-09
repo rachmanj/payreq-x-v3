@@ -33,8 +33,8 @@
               <th>#</th>
               <th>Employee</th>
               <th>Payreq No</th>
-              <th>Type</th>
-              <th>Apprved at</th>
+              <th>Project</th>
+              <th>Cashier</th>
               <th>IDR Due</th>
               <th>Days</th>
               <th></th>
@@ -74,8 +74,8 @@
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'requestor'},
         {data: 'nomor'},
-        {data: 'type'},
-        {data: 'approved_at'},
+        {data: 'project'},
+        {data: 'cashier'},
         {data: 'amount'},
         {data: 'days'},
         {data: 'action', orderable: false, searchable: false},

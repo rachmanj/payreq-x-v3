@@ -97,19 +97,15 @@ class MigrasiPayreqController extends Controller
             ->addColumn('requestor', function ($payreq) {
                 return $payreq->requestor->name;
             })
-            ->editColumn('type', function ($payreq) {
-                return ucfirst($payreq->type);
-            })
             ->editColumn('nomor', function ($payreq) {
                 return '<a href="#" style="color: black" title="' . $payreq->remarks . '">' . $payreq->nomor . '</a>';
-            })
-            ->editColumn('payreq_at', function ($payreq) {
-                $payreq_date = new \Carbon\Carbon($payreq->payreq_at);
-                return $payreq_date->addHours(8)->format('d-M-Y H:i:s');
             })
             ->addColumn('days', function ($payreq) {
                 $payreq_date = new \Carbon\Carbon($payreq->payreq_at);
                 return $payreq_date->addHours(8)->diffInDays(now());
+            })
+            ->addColumn('cashier', function ($payreq) {
+                return $payreq->outgoings->first()->cashier->name;
             })
             ->editColumn('amount', function ($payreq) {
                 if ($payreq->status == 'split') {
