@@ -43,14 +43,17 @@ class MigrasiPayreqController extends Controller
 
         $payreq = Payreq::create(array_merge($validated, [
             'project' => $project,
-            'status' => 'approved',
+            'status' => 'paid',
             'editable' => '0',
             'deletable' => '0',
             'nomor' => app(DocumentNumberController::class)->generate_document_number('payreq', $project),
             'department_id' => $department_id,
             'type' => 'advance',
-            'remarks' => $request->remarks . ', migrasi from payreq ' . $request->old_payreq_no,
-            'rab_id' => $request->rab_id,
+            'remarks' => $request->remarks . ', migrasi payreq ' . $request->old_payreq_no,
+            'rab_id' => null,
+            'approved_at' => $request->paid_date,
+            'submit_at' => $request->paid_date,
+            'draft_no' => $request->old_payreq_no,
             'user_id' => $request->requestor_id,
         ]));
 
