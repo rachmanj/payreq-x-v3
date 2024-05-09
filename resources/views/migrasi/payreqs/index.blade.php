@@ -23,9 +23,9 @@
               <a href="{{ route('cashier.migrasi.payreqs.create') }}" class="btn btn-success btn-sm float-right mr-2">
                 <i class="fas fa-plus"></i> New Payreq Migrasi
               </a>
-              <a href="{{ route('cashier.migrasi.payreqs.update_status') }}" class="btn btn-warning btn-sm float-right mr-2">
+              {{-- <a href="{{ route('cashier.migrasi.payreqs.update_status') }}" class="btn btn-warning btn-sm float-right mr-2">
                 <i class="fas fa-pencil"></i> Update Status
-              </a>
+              </a> --}}
             </div>
           </div>
 
