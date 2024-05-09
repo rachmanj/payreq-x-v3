@@ -77,6 +77,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
             Route::post('/destroy', [MigrasiPayreqController::class, 'destroy'])->name('destroy');
             Route::get('/{id}', [MigrasiPayreqController::class, 'edit'])->name('edit');
             Route::put('/{id}', [MigrasiPayreqController::class, 'update'])->name('update');
+            Route::put('/update_no/{id}', [MigrasiPayreqController::class, 'update_no'])->name('update_no');
         });
     });
 });
