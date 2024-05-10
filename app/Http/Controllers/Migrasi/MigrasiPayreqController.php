@@ -123,7 +123,7 @@ class MigrasiPayreqController extends Controller
             $payreqs = Payreq::whereIn('id', $payreqIds)->get();
         } else {
             $payreqIds = PayreqMigrasi::where('created_by', auth()->user()->id)->pluck('payreq_id');
-            $payreqs = Payreq::whereIn('id', $payreqIds)->get();
+            $payreqs = Payreq::whereIn('id', $payreqIds)->whereIn('status', ['paid'])->get();
         }
 
         return datatables()->of($payreqs)
