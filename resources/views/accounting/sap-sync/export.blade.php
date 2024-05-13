@@ -21,12 +21,12 @@
             <td>{{ $item['project'] }}</td>
             <td>{{ $item['cost_center'] }}</td>
             @if ($item['debit_credit'] == 'debit')
-                <td>IDR {{ $item['amount'] }}</td>
-                <td>IDR 0</td>
+                <td>{{ $item['amount'] }}</td>
+                <td>0</td>
             @endif
             @if ($item['debit_credit'] == 'credit')
-                <td>IDR 0</td>
-                <td>IDR {{ $item['amount'] }}</td>
+                <td>0</td>
+                <td>{{ $item['amount'] }}</td>
             @endif
             <td>{{ $item['payreq_no'] }}</td>
             <td>{{ $item['vj_no'] }}</td>
