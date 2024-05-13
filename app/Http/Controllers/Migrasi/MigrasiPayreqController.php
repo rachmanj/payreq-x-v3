@@ -120,7 +120,7 @@ class MigrasiPayreqController extends Controller
     {
         if (auth()->user()->hasRole('superadmin')) {
             $payreqIds = PayreqMigrasi::pluck('payreq_id');
-            $payreqs = Payreq::whereIn('id', $payreqIds)->get();
+            $payreqs = Payreq::whereIn('id', $payreqIds)->whereIn('status', ['paid', 'realization'])->get();
         } else {
             $payreqIds = PayreqMigrasi::where('created_by', auth()->user()->id)->pluck('payreq_id');
             $payreqs = Payreq::whereIn('id', $payreqIds)->whereIn('status', ['paid'])->get();
