@@ -74,7 +74,13 @@ accounting / sap-sync / show
                         <tr>
                             <td>{{ $key + 1 }}</td>
                             <td>
-                                {{ $item['account_code'] }}
+                                {{ $item['account_code'] }} <br> 
+                                @if ($item['account_name'] === 'not found')
+                                    <span style="color: red;"><small><b>{{ $item['account_name'] }}</b></small></span>
+                                @else
+                                    <small><b>{{ $item['account_name'] }}</b></small>
+                                @endif
+                            </td>
                             </td>
                             <td>{{ $item['description'] }}</td>
                             <td>{{ $item['project'] }}</td>
