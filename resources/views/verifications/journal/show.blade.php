@@ -67,11 +67,16 @@ accounting / sap-sync / show
                         <tr>
                             <td>{{ $key + 1 }}</td>
                             <td>
-                                {{ $item['account_code'] }} - {{ $item['account_name'] }}
+                                {{ $item['account_code'] }} <br> 
+                                @if ($item['account_name'] === 'not found')
+                                    <span style="color: red;"><small><b>{{ $item['account_name'] }}</b></small></span>
+                                @else
+                                    <small><b>{{ $item['account_name'] }}</b></small>
+                                @endif
                             </td>
                             <td>{{ $item['description'] }}</td>
                             <td>{{ $item['project'] }}</td>
-                            <td>{{ $item['cost_center'] . ' - ' . $item['dept_akronim'] }}</td>
+                            <td>{{ $item['cost_center'] }} <br> <small>{{ $item['dept_akronim'] }}</small></td>
                             @if ($item['debit_credit'] === 'debit')
                                 <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
                                 <td class="text-right">-</td>

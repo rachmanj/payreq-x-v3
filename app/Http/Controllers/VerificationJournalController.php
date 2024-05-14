@@ -59,7 +59,7 @@ class VerificationJournalController extends Controller
             ->map(function ($detail) {
                 $account = Account::where('account_number', $detail->account_code)->first();
                 $dept = Department::where('sap_code', $detail->cost_center)->first();
-                $detail->account_name = $account->account_name;
+                $detail->account_name = $account ? $account->account_name : "not found";
                 $detail->dept_akronim = $dept->akronim;
                 return $detail;
             });
