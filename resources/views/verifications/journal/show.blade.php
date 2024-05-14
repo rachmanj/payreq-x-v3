@@ -75,8 +75,8 @@ accounting / sap-sync / show
                                 @endif
                             </td>
                             <td>{{ $item['description'] }}</td>
-                            <td>{{ $item['project'] }}</td>
-                            <td>{{ $item['cost_center'] }} <br> <small>{{ $item['dept_akronim'] }}</small></td>
+                            <td class="text-center">{{ $item['project'] }}</td>
+                            <td class="text-center">{{ $item['cost_center'] }} <br> <small><b>{{ $item['dept_akronim'] }}</b></small></td>
                             @if ($item['debit_credit'] === 'debit')
                                 <td class="text-right">{{ number_format($item['amount'], 2) }}</td>
                                 <td class="text-right">-</td>
