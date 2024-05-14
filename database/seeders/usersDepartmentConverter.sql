@@ -94,3 +94,6 @@ UPDATE realization_details SET department_id = 5 WHERE realization_id = 724;
 UPDATE realization_details SET department_id = 19 WHERE realization_id = 1142;
 UPDATE realization_details SET department_id = 18 WHERE realization_id = 1160;
 
+
+
+UPDATE payreqs SET department_id = 19 WHERE user_id = 14;

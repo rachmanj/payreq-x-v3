@@ -39,7 +39,7 @@ class LoanController extends Controller
         $installment->account_id = $request->account_id;
         $installment->save();
 
-        return redirect()->route('reports.loan.index');
+        return back()->with('success', 'Installment updated successfully');
     }
 
     public function data(Request $request)

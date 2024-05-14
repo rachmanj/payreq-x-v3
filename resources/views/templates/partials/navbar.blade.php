@@ -43,7 +43,9 @@
             @include('templates.partials.menu.admin')
           @endcan
 
-          <a href="{{ route('dashboard.index') }}" class="nav-link">Search</a>
+          @can('can_search')
+          <a href="{{ route('search.index') }}" class="nav-link">Search</a>
+          @endcan
           
         </ul>
       </div>

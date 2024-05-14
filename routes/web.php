@@ -16,6 +16,7 @@ use App\Http\Controllers\PayreqOverdueController;
 use App\Http\Controllers\RealizationOverdueController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
@@ -148,6 +149,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [EquipmentSyncController::class, 'index'])->name('index');
             Route::get('/equipments', [EquipmentSyncController::class, 'sync_equipments'])->name('sync_equipments');
         });
+    });
+
+    // SEARCH
+    Route::prefix('search')->name('search.')->group(function () {
+        Route::get('/', [SearchController::class, 'index'])->name('index');
+        Route::post('/display', [SearchController::class, 'display'])->name('display');
+        Route::get('/show', [SearchController::class, 'show'])->name('show');
     });
 
     Route::get('/test', [TestController::class, 'index']);

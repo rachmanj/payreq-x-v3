@@ -46,7 +46,7 @@
                   <select name="account_id" class="form-control">
                     <option value="">Select Account</option>
                     @foreach (\App\Models\Account::where('type', 'bank')->get() as $account)
-                      <option value="{{ $account->id }}" {{ $account->id == $model->account_id ? 'selected' : '' }}>{{ $account->account_number }}</option>
+                      <option value="{{ $account->id }}" {{ $account->id == $model->account_id ? 'selected' : '' }}>{{ $account->account_number }} - {{ $account->account_name }}</option>
                     @endforeach
                   </select>
                 </div>
