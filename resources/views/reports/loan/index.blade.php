@@ -134,7 +134,7 @@ reports / loans
     $("#paid-table").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('reports.loan.paid_data') . "?akun_no=1490004194751" }}',
+      ajax: '{{ route('reports.loan.paid_data') . "?akun_no=11201001" }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'due_date'},
