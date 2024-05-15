@@ -264,6 +264,7 @@ class UserRealizationController extends Controller
         } else {
             $realizations = Realization::whereIn('status', $status_include)
                 ->where('user_id', auth()->user()->id)
+                ->whereNotNull('payreq_id')
                 ->get();
         }
 
@@ -302,6 +303,8 @@ class UserRealizationController extends Controller
                     $dif_days = $due_date->diffInDays($today);
                     if ($today > $due_date && $realization->status == 'approved') {
                         return ucfirst($realization->status) . '<button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                    } else {
+                        return '<button class="btn btn-xs btn-outline-info mx-2" style="pointer-events: none;">and due in <b>' . $dif_days . '</b> days</button>';
                     }
                 }
             })

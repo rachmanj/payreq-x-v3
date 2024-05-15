@@ -13,7 +13,9 @@ class Realization extends Model
 
     public function payreq()
     {
-        return $this->belongsTo(Payreq::class);
+        return $this->belongsTo(Payreq::class)->withDefault([
+            'payreq_no' => 'n/a',
+        ]);
     }
 
     public function realizationDetails()
