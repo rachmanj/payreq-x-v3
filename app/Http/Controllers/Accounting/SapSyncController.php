@@ -166,4 +166,42 @@ class SapSyncController extends Controller
 
         return Excel::download(new VerificationJournalExport($journal_details), 'journal.xlsx');
     }
+
+    public function edit_vjdetail_display()
+    {
+        $vj_id = request()->query('vj_id');
+        $vj = VerificationJournal::find($vj_id);
+
+        return view('accounting.sap-sync.edit-vjdetail.index', [
+            'vj' => $vj
+        ]);
+    }
+
+    public function edit_vjdetail_data()
+    {
+        $vj_id = request()->query('vj_id');
+
+        $vj_details = VerificationJournalDetail::where('verification_journal_id', $vj_id)->get();
+
+        return datatables()->of($vj_details)
+            ->addColumn('akun', function ($vj_detail) {
+                return $vj_detail->account_code . ' <br><small><b> ' . Account::where('account_number', $vj_detail->account_code)->first()->account_name . '</b></small>';
+            })
+            ->addIndexColumn()
+            ->addColumn('action', 'accounting.sap-sync.edit-vjdetail.action')
+            ->rawColumns(['akun', 'action'])
+            ->toJson();
+    }
+
+    public function update_detail(Request $request)
+    {
+        $vj_detail = VerificationJournalDetail::find($request->vj_detail_id);
+        $vj_detail->account_code = $request->account_code;
+        $vj_detail->project = $request->project;
+        $vj_detail->cost_center = $request->cost_center;
+
+        $vj_detail->save();
+
+        return back()->with('success', 'Detail Updated');
+    }
 }
