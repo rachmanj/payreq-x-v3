@@ -24,7 +24,7 @@
             <th>Employee</th>
             <th>Payreq No</th>
             <th>Type</th>
-            <th>Apprved at</th>
+            <th>Aprvd at (wita)</th>
             <th>IDR Due</th>
             <th>Days</th>
             <th></th>

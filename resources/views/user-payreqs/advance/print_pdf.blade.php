@@ -120,9 +120,13 @@
           <br>
           <br>
           <br>
-           @foreach ($approvers as $approver) 
-           ({{ $approver }} |   
-          @endforeach ...............................)
+          @if ($payreq->type === 'advance')
+            @foreach ($approvers as $approver) 
+            ({{ $approver }} |   
+            @endforeach ...............................)
+          @else
+            (...............................)
+          @endif 
         </div>
 
         <div class="col-sm-3 invoice-col">
