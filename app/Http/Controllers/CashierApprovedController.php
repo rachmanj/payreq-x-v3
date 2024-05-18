@@ -147,12 +147,12 @@ class CashierApprovedController extends Controller
             $project_includes = ['000H', 'APS'];
             $approveds = Payreq::whereIn('status', $status_includes)
                 ->whereIn('project', $project_includes)
-                ->orderBy('approved_at', 'desc')
+                ->orderBy('approved_at', 'asc')
                 ->get();
         } else {
             $approveds = Payreq::whereIn('status', $status_includes)
                 ->where('project', auth()->user()->project)
-                ->orderBy('approved_at', 'desc')
+                ->orderBy('approved_at', 'asc')
                 ->get();
         }
 
