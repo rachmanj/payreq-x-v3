@@ -141,7 +141,7 @@ class CashierApprovedController extends Controller
 
         if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
             $approveds = Payreq::whereIn('status', $status_includes)
-                ->orderBy('approved_at', 'desc')
+                ->orderBy('approved_at', 'asc')
                 ->get();
         } elseif (in_array('cashier', $roles)) {
             $project_includes = ['000H', 'APS'];
