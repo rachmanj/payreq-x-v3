@@ -28,7 +28,8 @@
                         <th>Realization No</th>
                         <th>Status</th>
                         <th>IDR</th>
-                        <th>Days</th>
+                        <th>DFA</th>
+                        <th>DFD</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -69,13 +70,18 @@
           {data: 'nomor'},
           {data: 'status'},
           {data: 'amount'},
-          {data: 'days'},
+          {data: 'dfa'},
+          {data: 'dfd'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [5, 6],
+                  "targets": [2, 3],
+                  "className": "text-center"
+                },
+                {
+                  "targets": [5, 6, 7],
                   "className": "text-right"
                 },
               ]

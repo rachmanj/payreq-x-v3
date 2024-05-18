@@ -42,8 +42,12 @@ class RealizationOverdueController extends Controller
             ->editColumn('status', function ($realization) {
                 return ucfirst($realization->status);
             })
-            ->addColumn('days', function ($realization) {
-                return Carbon::parse($realization->due_date)->diffInDays(now());
+            ->addColumn('dfa', function ($realization) {
+                // Days from approved date
+                return Carbon::parse($realization->approved_at)->diffInDays(now());
+            })
+            ->addColumn('dfd', function ($realization) {
+                return Carbon::parse($realization->due_date)->diffInDays(now()); // Days from due date
             })
             ->addIndexColumn()
             ->addColumn('action', 'document-overdue.realization.action')

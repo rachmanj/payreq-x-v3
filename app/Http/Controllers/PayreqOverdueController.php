@@ -37,8 +37,12 @@ class PayreqOverdueController extends Controller
             ->editColumn('nomor', function ($approved) {
                 return '<a href="#" style="color: black" title="' . $approved->remarks . '">' . $approved->nomor . '</a>';
             })
-            ->addColumn('days', function ($payreq) {
-                return Carbon::parse($payreq->due_date)->diffInDays(now());
+            ->addColumn('dfp', function ($payreq) {
+                $last_outgoing = $payreq->outgoings->last();
+                return Carbon::parse($last_outgoing->outgoing_date)->diffInDays(now()); // Days from paid date
+            })
+            ->addColumn('dfd', function ($payreq) {
+                return Carbon::parse($payreq->due_date)->diffInDays(now()); // Days from due date
             })
             ->editColumn('amount', function ($payreq) {
                 return number_format($payreq->amount, 2);

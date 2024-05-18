@@ -29,7 +29,8 @@ Document Overdue
                         <th>Type</th>
                         <th>Status</th>
                         <th>IDR</th>
-                        <th>Days</th>
+                        <th>DFP</th>
+                        <th>DFD</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -71,13 +72,18 @@ Document Overdue
           {data: 'type'},
           {data: 'status'},
           {data: 'amount'},
-          {data: 'days'},
+          {data: 'dfp'},
+          {data: 'dfd'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [6, 7],
+                  "targets": [2, 3],
+                  "className": "text-center"
+                },
+                {
+                  "targets": [6, 7, 8],
                   "className": "text-right"
                 },
               ]
