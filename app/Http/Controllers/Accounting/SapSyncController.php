@@ -6,6 +6,7 @@ use App\Exports\VerificationJournalExport;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\VerificationJournalController;
 use App\Models\Account;
+use App\Models\Department;
 use App\Models\Realization;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
@@ -187,9 +188,12 @@ class SapSyncController extends Controller
             ->addColumn('akun', function ($vj_detail) {
                 return $vj_detail->account_code . ' <br><small><b> ' . Account::where('account_number', $vj_detail->account_code)->first()->account_name . '</b></small>';
             })
+            ->addColumn('cost_center', function ($vj_detail) {
+                return $vj_detail->cost_center . ' <br><small><b> ' . Department::where('sap_code', $vj_detail->cost_center)->first()->akronim . '</b></small>';
+            })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.sap-sync.edit-vjdetail.action')
-            ->rawColumns(['akun', 'action'])
+            ->rawColumns(['akun', 'action', 'cost_center'])
             ->toJson();
     }
 
@@ -199,6 +203,7 @@ class SapSyncController extends Controller
         $vj_detail->account_code = $request->account_code;
         $vj_detail->project = $request->project;
         $vj_detail->cost_center = $request->cost_center;
+        $vj_detail->description = $request->description;
 
         $vj_detail->save();
 

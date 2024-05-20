@@ -75,9 +75,9 @@ Edit Detail VJ
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [4],
-                "className": "text-right"
-              }
+                "targets": [3, 4],
+                "className": "text-center"
+              },
             ]
     })
   });

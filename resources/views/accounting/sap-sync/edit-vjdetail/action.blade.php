@@ -1,4 +1,6 @@
-<button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#vjdetail-edit-{{ $model->id }}">edit</button>
+@if ($model->debit_credit === 'debit')
+    <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#vjdetail-edit-{{ $model->id }}">edit</button>
+@endif
 
 {{-- modal update --}}
 <div class="modal fade" id="vjdetail-edit-{{ $model->id }}">
@@ -54,7 +56,7 @@
                         <div class="col-12">
                             <div class="form-group">
                             <label>Description</label>
-                            <input class="form-control" value="{{ $model->description }}" readonly>
+                            <input class="form-control" name="description" value="{{ old('description', $model->description) }}">
                             </div>
                         </div>
                     </div>        
