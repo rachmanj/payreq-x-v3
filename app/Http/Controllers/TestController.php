@@ -29,7 +29,8 @@ class TestController extends Controller
         // $test = app(Reports\OngoingDashboardController::class)->ongoing_documents_by_user('000H');
         // $test = app(VerificationJournalController::class)->journal_details(2);
         // $test = app(MigrasiController::class)->checkIsDataExist();
-        $test = app(MigrasiPayreqController::class)->update();
+        // $test = app(MigrasiPayreqController::class)->update();
+        $test = app(ToolController::class)->getApproversName(1812, 'payreq');
 
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)

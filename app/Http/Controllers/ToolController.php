@@ -206,6 +206,8 @@ class ToolController extends Controller
     {
         $approvers = ApprovalPlan::where('document_id', $document_id)
             ->where('document_type', $document_type)
+            ->where('status', 1)
+            ->where('is_open', 1)
             ->get();
 
         $approvers_name = [];
