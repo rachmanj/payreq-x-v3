@@ -256,7 +256,7 @@ class UserRealizationController extends Controller
     {
         // get user's roles
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'revise', 'submitted', 'draft', 'rejected', 'verification', 'verified-complete'];
+        $status_include = ['approved', 'revise', 'submitted', 'draft', 'rejected', 'verification', 'verification-complete'];
 
         if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)
@@ -293,6 +293,8 @@ class UserRealizationController extends Controller
             ->editColumn('status', function ($realization) {
                 if ($realization->status === 'submitted') {
                     return 'Waiting Approval';
+                } elseif ($realization->status === 'verification-complete') {
+                    return '<button class="btn btn-xs btn-outline-success mx-2" style="pointer-events: none;">Verification Complete</button>';
                 } else {
                     if ($realization->due_date == null) {
                         return ucfirst($realization->status);
