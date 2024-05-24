@@ -67,6 +67,15 @@ class SapSyncController extends Controller
             $account->save();
         }
 
+        // get realizations
+        $realizations = Realization::whereIn('nomor', $verification_journal_details->pluck('realization_no')->toArray())->get();
+
+        // update realization status to close
+        foreach ($realizations as $realization) {
+            $realization->status = 'close';
+            $realization->save();
+        }
+
         return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)->with('success', 'SAP Info Updated');
     }
 
@@ -89,6 +98,15 @@ class SapSyncController extends Controller
         foreach ($verification_journal_details as $detail) {
             $detail->sap_journal_no = null;
             $detail->save();
+        }
+
+        // get realizations
+        $realizations = Realization::whereIn('nomor', $verification_journal_details->pluck('realization_no')->toArray())->get();
+
+        // update realization status to verification-complete
+        foreach ($realizations as $realization) {
+            $realization->status = 'verification-complete';
+            $realization->save();
         }
 
         return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)->with('success', 'SAP Info Canceled');
