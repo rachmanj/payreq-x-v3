@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Reports\EomController;
 use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\EquipmentController;
@@ -39,5 +40,10 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/paid-data', [LoanController::class, 'paid_data'])->name('paid_data');
         Route::post('/update', [LoanController::class, 'update'])->name('update');
         Route::get('/dashboard', [LoanController::class, 'dashboard'])->name('dashboard');
+    });
+
+    Route::prefix('eom')->name('eom.')->group(function () {
+        Route::get('/', [EomController::class, 'index'])->name('index');
+        Route::get('/export', [EomController::class, 'export'])->name('export');
     });
 });

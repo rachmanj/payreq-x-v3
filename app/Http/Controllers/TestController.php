@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Migrasi\MigrasiPayreqController;
 use App\Models\Payreq;
+use App\Models\Realization;
+use App\Models\VerificationJournal;
 use Illuminate\Http\Request;
 
 class TestController extends Controller
@@ -30,7 +32,9 @@ class TestController extends Controller
         // $test = app(VerificationJournalController::class)->journal_details(2);
         // $test = app(MigrasiController::class)->checkIsDataExist();
         // $test = app(MigrasiPayreqController::class)->update();
-        $test = app(ToolController::class)->getApproversName(1812, 'payreq');
+        // $test = app(ToolController::class)->getApproversName(1812, 'payreq');
+        $test = app(Reports\EomController::class)->eom_journal();
+        // $test = $this->get_realization();
 
 
         // $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
@@ -61,5 +65,50 @@ class TestController extends Controller
         $realization_array = $user_payreqs_no_realization->merge($payreq_with_realization_rejected);
 
         return $realization_array;
+    }
+
+    public function cek_realization_posted()
+    {
+        // get verification_journal_id from verification_journal table where sap_journal_no is not null and make array of verification_journal_id
+        $verification_journals = VerificationJournal::whereNotNull('sap_journal_no')
+            ->pluck('id')
+            ->toArray();
+
+        // now get realization data where verification_journal_id is in array of verification_journal_id
+        $realizations = Realization::whereIn('verification_journal_id', $verification_journals)
+            ->pluck('id');
+
+        return $realizations;
+    }
+
+    public function get_realization()
+    {
+        // get realization include with verification_journal and realization_details
+        // $realizations = Realization::select('id', 'nomor', 'created_at', 'verification_journal_id', 'status')
+        $realizations = Realization::select('verification_journal_id')
+            ->whereIn('id', $this->cek_realization_posted())
+            ->where('status', 'verification-complete')
+            ->distinct('verification_journal_id')
+            ->orderBy('verification_journal_id', 'asc')
+            ->get();
+
+        // foreach ($realizations as $realization) {
+        //     // $realization->status_before = $realization->status;
+
+        //     // $realization_after = Realization::where('id', $realization->id)->first()
+        //     //     ->update([
+        //     //         'status' => 'close'
+        //     //     ]);
+
+        //     // $realization->status_after = $realization_after;
+
+        //     $realization->verification_journal = VerificationJournal::select('id', 'sap_journal_no', 'sap_posting_date')->where('id', $realization->verification_journal_id)
+        //         ->first();
+        // }
+
+        return [
+            'realization_count' => $realizations->count(),
+            'realizations' => $realizations
+        ];
     }
 }

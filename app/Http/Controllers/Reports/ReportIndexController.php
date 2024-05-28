@@ -61,6 +61,11 @@ class ReportIndexController extends Controller
                         'name' => 'Payreq Aging',
                         'url' => route('reports.ongoing.payreq-aging.index'),
                         'protector' => 'akses_payreq_aging',
+                    ],
+                    [
+                        'name' => 'EOM',
+                        'url' => route('reports.eom.index'),
+                        'protector' => 'akses_eom',
                     ]
                 ],
             ],
