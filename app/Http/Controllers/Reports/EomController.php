@@ -15,13 +15,14 @@ class EomController extends Controller
 {
     public function index()
     {
-        // $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
+        $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
 
         return view('reports.eom.index', compact('projects'));
     }
 
     public function store(Request $request)
     {
+        // return $request->all();
         $eom_journal = EomJournal::create([
             'date' => $request->date,
             'nomor' => app(DocumentNumberController::class)->generate_document_number('eom-journal', auth()->user()->project),
@@ -30,7 +31,7 @@ class EomController extends Controller
             'project' => auth()->user()->project,
         ]);
 
-        $eom_journal_details = $this->eom_journal();
+        $eom_journal_details = $this->eom_journal($request->projects);
 
         foreach ($eom_journal_details as $detail) {
             $eom_journal->eomJournalDetails()->create([
@@ -62,9 +63,9 @@ class EomController extends Controller
         return redirect()->route('reports.eom.index')->with('success', 'EOM Journal created successfully.');
     }
 
-    public function eom_journal()
+    public function eom_journal($projects)
     {
-        $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
+        // $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
 
         foreach ($projects as $project) {
             $journal[] = [
@@ -119,7 +120,7 @@ class EomController extends Controller
 
     public function data()
     {
-        $eom_journals = EomJournal::orderBy('date', 'desc')->get();
+        $eom_journals = EomJournal::orderBy('created_at', 'desc')->get();
 
         return datatables()->of($eom_journals)
             ->editColumn('date', function ($journal) {
@@ -136,6 +137,10 @@ class EomController extends Controller
             ->editColumn('amount', function ($journal) {
                 return number_format($journal->amount, 2);
             })
+            ->addColumn('projects', function ($journal) {
+                $projects = $journal->eomJournalDetails->pluck('project')->unique()->toArray();
+                return '<small><b>' . implode(', ', $projects) . '</b></small>';
+            })
             ->editColumn('sap_posting_date', function ($journal) {
                 if ($journal->sap_posting_date == null) {
                     return '-';
@@ -146,7 +151,7 @@ class EomController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'reports.eom.action')
-            ->rawColumns(['status', 'action'])
+            ->rawColumns(['status', 'action', 'projects'])
             ->toJson();
     }
 

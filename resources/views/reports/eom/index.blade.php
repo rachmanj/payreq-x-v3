@@ -23,6 +23,7 @@ End Of Month Adjusment
             <th>#</th>
             <th>EOM Journal No</th>
             <th>Date</th>
+            <th>Projects</th>
             <th>Status</th> {{-- posted or not posted --}}
             <th>Amount</th>
             <th>SAPJ No</th>
@@ -54,6 +55,18 @@ End Of Month Adjusment
                   <label for="date">Posting Date <span style="color:red;">*</span></label>
                   <input type="date" name="date" class="form-control" value="{{ date('Y-m-d') }}">
               </div>
+              
+              <div class="form-group">
+                <label>Select Projects <small>(multiple select)</small></label>
+                <div class="select2-purple">
+                  <select name="projects[]" class="select2 form-control" multiple="multiple" data-dropdown-css-class="select2-purple" data-placeholder="Select projects" style="width: 100%;">
+                    @foreach ($projects as $project)
+                      <option value="{{ $project }}">{{ $project }}</option>
+                    @endforeach
+                  </select>
+                </div>
+              </div>
+
               <div class="form-group">
                   <label for="description">Description</label>
                   <input type="text" name="description" class="form-control">
@@ -76,6 +89,9 @@ End Of Month Adjusment
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
   <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}"/>
+  <!-- Select2 -->
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
 @endsection
 
 @section('scripts')
@@ -85,7 +101,20 @@ End Of Month Adjusment
 <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables/datatables.min.js') }}"></script>
+<!-- Select2 -->
+<script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
 
+<script>
+  $(function () {
+    //Initialize Select2 Elements
+    $('.select2').select2()
+
+    //Initialize Select2 Elements
+    $('.select2bs4').select2({
+      theme: 'bootstrap4'
+    })
+  }) 
+</script>
 <script>
   $(function () {
     $("#eom_journals").DataTable({
@@ -96,6 +125,7 @@ End Of Month Adjusment
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'nomor'},
         {data: 'date'},
+        {data: 'projects'},
         {data: 'status'},
         {data: 'amount'},
         {data: 'sap_journal_no'},
@@ -105,7 +135,7 @@ End Of Month Adjusment
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [4],
+                "targets": [5],
                 "className": "text-right"
               }
             ]
