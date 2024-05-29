@@ -160,7 +160,7 @@ class UserPayreqController extends Controller
         // payreq with status in array as follows
         $status_include = ['draft', 'submitted', 'approved', 'revise', 'split', 'paid', 'rejected', 'realization'];
 
-        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
+        if (in_array('superadmin', $userRoles)) {
             $payreqs = Payreq::whereIn('status', $status_include)
                 ->orderBy('status', 'asc')
                 ->orderBy('approved_at', 'desc')

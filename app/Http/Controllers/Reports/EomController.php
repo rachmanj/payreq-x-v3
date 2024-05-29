@@ -15,7 +15,9 @@ class EomController extends Controller
 {
     public function index()
     {
-        return view('reports.eom.index');
+        // $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
+
+        return view('reports.eom.index', compact('projects'));
     }
 
     public function store(Request $request)
