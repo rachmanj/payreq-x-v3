@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Reports;
 
 use App\Exports\EomJournalExport;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\DocumentNumberController;
 use App\Models\Account;
+use App\Models\EomJournal;
+use App\Models\EomJournalDetail;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -12,11 +15,49 @@ class EomController extends Controller
 {
     public function index()
     {
-        $journal = $this->eom_journal();
+        return view('reports.eom.index');
+    }
 
-        return view('reports.eom.index', compact([
-            'journal'
-        ]));
+    public function store(Request $request)
+    {
+        $eom_journal = EomJournal::create([
+            'date' => $request->date,
+            'nomor' => app(DocumentNumberController::class)->generate_document_number('eom-journal', auth()->user()->project),
+            'description' => $request->description,
+            'created_by' => auth()->user()->id,
+            'project' => auth()->user()->project,
+        ]);
+
+        $eom_journal_details = $this->eom_journal();
+
+        foreach ($eom_journal_details as $detail) {
+            $eom_journal->eomJournalDetails()->create([
+                'account_number' => $detail['debit']['account_number'],
+                'posting_date' =>  $eom_journal->date,
+                'description' => $detail['debit']['description'],
+                'project' => $detail['debit']['project_code'],
+                'cost_center' => $detail['debit']['cost_center'],
+                'amount' => str_replace(',', '', $detail['debit']['amount']),
+                'd_c' => 'debit',
+            ]);
+
+            $eom_journal->eomJournalDetails()->create([
+                'account_number' => $detail['credit']['account_number'],
+                'posting_date' => $eom_journal->date,
+                'description' => $detail['credit']['description'],
+                'project' => $detail['credit']['project_code'],
+                'cost_center' => $detail['credit']['cost_center'],
+                'amount' => str_replace(',', '', $detail['credit']['amount']),
+                'd_c' => 'credit',
+            ]);
+        }
+
+        // update eom_journal with total amount
+        $eom_journal->update([
+            'amount' => $eom_journal->eomJournalDetails->where('d_c', 'debit')->sum('amount'),
+        ]);
+
+        return redirect()->route('reports.eom.index')->with('success', 'EOM Journal created successfully.');
     }
 
     public function eom_journal()
@@ -30,7 +71,7 @@ class EomController extends Controller
                     'account_name' => Account::where('type', 'advance')->where('project', $project)->first()->account_name,
                     'description' => 'EOM ' . date('dmY') . ' Journal',
                     'project_code' => $project,
-                    'ccenter' => '30',
+                    'cost_center' => '30',
                     'amount' => app(OngoingDashboardController::class)->dashboard_data($project)['total_advance_employee'],
                 ],
                 'credit' => [
@@ -38,7 +79,7 @@ class EomController extends Controller
                     'account_name' => Account::where('type', 'advance')->where('project', $project)->first()->account_name,
                     'description' => 'EOM ' . date('dmY') . ' Journal',
                     'project_code' => $project,
-                    'ccenter' => '30',
+                    'cost_center' => '30',
                     'amount' => app(OngoingDashboardController::class)->dashboard_data($project)['total_advance_employee'],
                 ],
             ];
@@ -47,10 +88,93 @@ class EomController extends Controller
         return $journal;
     }
 
+    public function show($id)
+    {
+        $journal = EomJournal::with('EomJournalDetails')->find($id);
+        $journal_details = $journal->eomJournalDetails;
+
+        return view('reports.eom.show', compact(['journal', 'journal_details']));
+    }
+
     public function export()
     {
-        $eom_journal = $this->eom_journal();
+        $eom_journal_id = request()->query('eom_journal_id');
 
-        return Excel::download(new EomJournalExport($eom_journal), 'eom_journal.xlsx');
+        $eom_journal_details = EomJournalDetail::select(
+            "id",
+            "eom_journal_id",
+            "posting_date",
+            "account_number",
+            "d_c",
+            "description",
+            "project",
+            "cost_center",
+            "amount",
+        )->where('eom_journal_id', $eom_journal_id)->get();
+
+        return Excel::download(new EomJournalExport($eom_journal_details), 'eom_journal.xlsx');
+    }
+
+    public function data()
+    {
+        $eom_journals = EomJournal::orderBy('date', 'desc')->get();
+
+        return datatables()->of($eom_journals)
+            ->editColumn('date', function ($journal) {
+                $date = new \Carbon\Carbon($journal->date);
+                return $date->addHours(8)->format('d-M-Y');
+            })
+            ->addColumn('status', function ($journal) {
+                if ($journal->sap_journal_no == null) {
+                    return '<span class="badge badge-danger">Not Posted Yet</span>';
+                } else {
+                    return '<span class="badge badge-success">Posted</span>';
+                }
+            })
+            ->editColumn('amount', function ($journal) {
+                return number_format($journal->amount, 2);
+            })
+            ->editColumn('sap_posting_date', function ($journal) {
+                if ($journal->sap_posting_date == null) {
+                    return '-';
+                } else {
+                    $date = new \Carbon\Carbon($journal->sap_posting_date);
+                    return $date->addHours(8)->format('d-M-Y');
+                }
+            })
+            ->addIndexColumn()
+            ->addColumn('action', 'reports.eom.action')
+            ->rawColumns(['status', 'action'])
+            ->toJson();
+    }
+
+    public function update_sap_info(Request $request)
+    {
+        // update sap_journal_no and sap_posting_date on verification_journals table
+        $eom_journal = EomJournal::find($request->eom_journal_id);
+        $eom_journal->sap_journal_no = $request->sap_journal_no;
+        $eom_journal->sap_posting_date = $request->sap_posting_date;
+        $eom_journal->posted_by = auth()->user()->id;
+        $eom_journal->save();
+
+        return redirect()->route('reports.eom.show', $request->eom_journal_id)->with('success', 'SAP Info Updated');
+    }
+
+    public function cancel_sap_info(Request $request)
+    {
+        // cek if user is authorized to cancel sap info
+        $eom_journal = EomJournal::find($request->eom_journal_id);
+        if ($eom_journal->posted_by != auth()->user()->id) {
+            return redirect()->route('reports.eom.show', $request->eom_journal_id)->with('error', 'You are not authorized to cancel SAP Info');
+        }
+
+        // update sap_journal_no and sap_posting_date on verification_journals table
+        $eom_journal = EomJournal::find($request->eom_journal_id);
+        $eom_journal->sap_journal_no = null;
+        $eom_journal->sap_posting_date = null;
+        $eom_journal->posted_by = null;
+        $eom_journal->save();
+
+        return redirect()->route('reports.eom.show', $request->eom_journal_id)->with('success', 'SAP Info Cancelled');
     }
 }

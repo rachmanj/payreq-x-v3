@@ -43,7 +43,12 @@ Route::prefix('reports')->name('reports.')->group(function () {
     });
 
     Route::prefix('eom')->name('eom.')->group(function () {
+        Route::get('/data', [EomController::class, 'data'])->name('data');
         Route::get('/', [EomController::class, 'index'])->name('index');
+        Route::get('/{id}/show', [EomController::class, 'show'])->name('show');
         Route::get('/export', [EomController::class, 'export'])->name('export');
+        Route::post('/store', [EomController::class, 'store'])->name('store');
+        Route::post('/cancel_sap_info', [EomController::class, 'cancel_sap_info'])->name('cancel_sap_info');
+        Route::post('/update_sap_info', [EomController::class, 'update_sap_info'])->name('update_sap_info');
     });
 });

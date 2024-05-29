@@ -10,22 +10,21 @@
         </tr>
     </thead>
     <tbody>
-        @foreach($data as $item)
+        @foreach($data as $key => $item)
         <tr>
-            <td>{{ $item['debit']['account_number'] }}</td>
-            <td>{{ $item['debit']['description'] }}</td>
-            <td>{{ $item['debit']['project_code'] }}</td>
-            <td>{{ $item['debit']['ccenter'] }}</td>
-            <td>{{ str_replace(',', '', $item['debit']['amount']) }}</td>
-            <td>0.00</td>
-        </tr>
-        <tr>
-            <td>{{ $item['credit']['account_number'] }}</td>
-            <td>{{ $item['credit']['description'] }}</td>
-            <td>{{ $item['credit']['project_code'] }}</td>
-            <td>{{ $item['credit']['ccenter'] }}</td>
-            <td>0.00</td>
-            <td>{{ str_replace(',', '', $item['credit']['amount']) }}</td>
+            <td>{{ $key + 1 }}</td>
+            <td>{{ $item['account_number'] }}</td>
+            <td>{{ $item['description'] }}</td>
+            <td>{{ $item['project'] }}</td>
+            <td>{{ $item['cost_center'] }}</td>
+            @if ($item['d_c'] == 'debit')
+                <td>{{ $item['amount'] }}</td>
+                <td>0</td>
+            @endif
+            @if ($item['d_c'] == 'credit')
+                <td>0</td>
+                <td>{{ $item['amount'] }}</td>
+            @endif
         </tr>
         @endforeach
     </tbody>

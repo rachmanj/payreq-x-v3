@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class DocumentNumberController extends Controller
 {
-    public $document_types = ['payreq', 'realization', 'cash-journal', 'verification-journal', 'pcbc', 'draft'];
+    public $document_types = ['payreq', 'realization', 'cash-journal', 'verification-journal', 'eom-journal', 'pcbc', 'draft'];
 
     public function index()
     {
@@ -149,6 +149,7 @@ class DocumentNumberController extends Controller
             'realization' => '02',
             'cash-journal' => '05',
             'verification-journal' => '06',
+            'eom-journal' => '08',
             'pcbc' => '09',
         ];
 

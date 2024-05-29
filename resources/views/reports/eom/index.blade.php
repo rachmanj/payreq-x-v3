@@ -1,74 +1,115 @@
 @extends('templates.main')
 
 @section('title_page')
-  End Of Month Adjusment
+End Of Month Adjusment
 @endsection
 
 @section('breadcrumb_title')
-    eom
+    reports / eom
 @endsection
 
 @section('content')
 <div class="row">
   <div class="col-12">
-    <div class="card card-info">
+    <div class="card">
       <div class="card-header">
-        <h3 class="card-title">End Of Month PC Rekap</h3>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
-        <a href="{{ route('reports.eom.export') }}" class="btn btn-sm btn-warning float-right mr-2" style="color: black; font-weight: bold">Export to Excel</a>
+        <a href="#" class="btn btn-sm btn-primary float-right mr-2" role="button" data-toggle="modal" data-target="#create-journal">Generate Journal</a>
       </div>
-      <div class="form-horizontal">
-        <div class="card-body">
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        {{-- <th>#</th> --}}
-                        <th>Account</th>
-                        <th>Description</th>
-                        <th class="text-center">Project</th>
-                        <th class="text-center">CCenter</th>
-                        <th class="text-right">Debit (IDR)</th>
-                        <th class="text-right">Credit (IDR)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($journal as $key => $item)
-                    <tr> 
-                        {{-- <td>{{ $key + 1 }}</td> --}}
-                        <td>
-                            {{ $item['debit']['account_number'] }} <br> 
-                            <small><b>{{ $item['debit']['account_name'] }}</b></small>
-                        </td>
-                        <td>{{ $item['debit']['description'] }}</td>
-                        <td class="text-center">{{ $item['debit']['project_code'] }}</td>
-                        <td class="text-center">{{ $item['debit']['ccenter'] }}</td>
-                        <td class="text-right">{{ $item['debit']['amount'] }}</td>
-                        <td class="text-right">0.00</td>
-                    </tr>
-                    <tr>
-                        {{-- <td>{{ $key + 2 }}</td> --}}
-                        <td>
-                            {{ $item['credit']['account_number'] }} <br> 
-                            <small><b>{{ $item['credit']['account_name'] }}</b></small>
-                        </td>
-                        <td>{{ $item['credit']['description'] }}</td>
-                        <td class="text-center">{{ $item['credit']['project_code'] }}</td>
-                        <td class="text-center">{{ $item['credit']['ccenter'] }}</td>
-                        <td class="text-right">0.00</td>
-                        <td class="text-right">{{ $item['credit']['amount'] }}</td>
-                    </tr>
-                    @endforeach
-                    {{-- <tr>
-                        <th class="text-right" colspan="5">TOTAL</th>
-                        <th class="text-right">{{ number_format($vj_details->where('debit_credit', 'debit')->sum('amount'), 2) }}</th>
-                        <th class="text-right">{{ number_format($vj_details->where('debit_credit', 'credit')->sum('amount'), 2) }}</th>
-                    </tr> --}}
-                </tbody>
-            </table>
-        </div>
+      <div class="card-body">
+        <table id="eom_journals" class="table table-bordered table-striped">
+          <thead>
+          <tr>
+            <th>#</th>
+            <th>EOM Journal No</th>
+            <th>Date</th>
+            <th>Status</th> {{-- posted or not posted --}}
+            <th>Amount</th>
+            <th>SAPJ No</th>
+            <th>SAPJ Date</th>
+            <th></th>
+          </tr>
+          </thead>
+        </table>
       </div>
-    </div> 
+    </div>
+
   </div>
 </div>
 
+{{-- MODAL CREATE JOURNAL --}}
+<div class="modal fade" id="create-journal">
+  <div class="modal-dialog modal-md">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title">Generate Journal</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <form action="{{ route('reports.eom.store') }}" method="POST">
+              @csrf
+          <div class="modal-body">
+              <div class="form-group">
+                  <label for="date">Posting Date <span style="color:red;">*</span></label>
+                  <input type="date" name="date" class="form-control" value="{{ date('Y-m-d') }}">
+              </div>
+              <div class="form-group">
+                  <label for="description">Description</label>
+                  <input type="text" name="description" class="form-control">
+              </div>
+          </div>
+          {{-- button --}}
+          <div class="modal-footer justify-content-between">
+              <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+          </div>
+          </form>
+      </div>
+  </div>
+</div>
+@endsection
+
+@section('styles')
+    <!-- DataTables -->
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}"/>
+@endsection
+
+@section('scripts')
+    <!-- DataTables  & Plugins -->
+<script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
+<script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
+<script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('adminlte/plugins/datatables/datatables.min.js') }}"></script>
+
+<script>
+  $(function () {
+    $("#eom_journals").DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: '{{ route('reports.eom.data') }}',
+      columns: [
+        {data: 'DT_RowIndex', orderable: false, searchable: false},
+        {data: 'nomor'},
+        {data: 'date'},
+        {data: 'status'},
+        {data: 'amount'},
+        {data: 'sap_journal_no'},
+        {data: 'sap_posting_date'},
+        {data: 'action', orderable: false, searchable: false},
+      ],
+      fixedHeader: true,
+      columnDefs: [
+              {
+                "targets": [4],
+                "className": "text-right"
+              }
+            ]
+    })
+  });
+</script>
 @endsection

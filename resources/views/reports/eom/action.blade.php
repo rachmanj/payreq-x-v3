@@ -1,0 +1,2 @@
+<a href="{{ route('reports.eom.show', $model->id) }}" class="btn btn-xs btn-success">show</a>
+<a href="{{ route('reports.eom.export', ['eomj_id' => $model->id]) }}" class="btn btn-xs btn-warning">export</a>
