@@ -20,4 +20,9 @@ class EomJournal extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function postedBy()
+    {
+        return $this->belongsTo(User::class, 'posted_by');
+    }
 }
