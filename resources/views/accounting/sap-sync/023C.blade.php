@@ -34,7 +34,7 @@ Send Verification Journal to SAP
             <th>Status</th> {{-- posted or not posted --}}
             <th>IDR</th>
             <th>SAPJ No</th>
-            <th>SAPJ Date</th>
+            <th>Sync at</th>
             <th></th>
           </tr>
           </thead>

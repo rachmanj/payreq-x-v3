@@ -147,8 +147,9 @@ class SapSyncController extends Controller
                 if ($journal->sap_posting_date == null) {
                     return '-';
                 } else {
-                    $date = new \Carbon\Carbon($journal->sap_posting_date);
-                    return $date->addHours(8)->format('d-M-Y');
+                    // $date = new \Carbon\Carbon($journal->sap_posting_date);
+                    $date = new \Carbon\Carbon($journal->updated_at);
+                    return $date->addHours(8)->format('d-M-Y H:i');
                 }
             })
             ->addIndexColumn()
