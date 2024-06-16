@@ -40,4 +40,21 @@ class SearchController extends Controller
             'realizations' => $realizations
         ]);
     }
+
+    public function show()
+    {
+        $doctype = request()->doctype;
+        $doc_id = request()->doc_id;
+
+        if ($doctype === 'payreq') {
+            $document = Payreq::find($doc_id);
+        } elseif ($doctype === 'realization') {
+            $realization = Realization::find($doc_id);
+            $document = $realization->payreq;
+        }
+
+        return view('search.show', [
+            'payreq' => $document,
+        ]);
+    }
 }
