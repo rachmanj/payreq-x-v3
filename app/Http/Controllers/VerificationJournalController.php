@@ -24,10 +24,7 @@ class VerificationJournalController extends Controller
 
     public function create()
     {
-        $realizations = Realization::whereNull('verification_journal_id')
-            ->whereNull('flag')
-            ->where('project', auth()->user()->project)
-            ->count();
+        $realizations = $this->getToCartRealizations()->count();
 
         if ($realizations > 0) {
             $select_all_button = true;
@@ -35,18 +32,29 @@ class VerificationJournalController extends Controller
             $select_all_button = false;
         }
 
-        $realizations_in_cart = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
-            ->get();
+        $realizations_in_cart = $this->getIncartRealizations()->count();
 
-        if ($realizations_in_cart->count() > 0) {
+        // if realization_in_cart > 0 and less than 50, show remove_all_button = true and submit_button = true
+        if ($realizations_in_cart > 0 && $realizations_in_cart < 50) {
             $remove_all_button = true;
+            $submit_button = true;
+            $rows_count_text = false;
+        } elseif ($realizations_in_cart > 0 && $realizations_in_cart >= 50) {
+            $remove_all_button = true;
+            $submit_button = false;
+            $rows_count_text = true;
         } else {
             $remove_all_button = false;
+            $submit_button = false;
+            $rows_count_text = false;
         }
+
 
         return view('verifications.journal.create', compact([
             'select_all_button',
-            'remove_all_button'
+            'remove_all_button',
+            'submit_button',
+            'rows_count_text'
         ]));
     }
 
@@ -110,11 +118,13 @@ class VerificationJournalController extends Controller
 
     public function move_all_tocart()
     {
-        $realizations = Realization::whereNull('verification_journal_id')
-            ->where('status', 'verification-complete')
-            ->whereNull('flag')
-            ->where('project', auth()->user()->project)
-            ->get();
+        // $realizations = Realization::whereNull('verification_journal_id')
+        //     ->where('status', 'verification-complete')
+        //     ->whereNull('flag')
+        //     ->where('project', auth()->user()->project)
+        //     ->get();
+
+        $realizations = $this->getToCartRealizations();
 
         $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
 
@@ -142,27 +152,7 @@ class VerificationJournalController extends Controller
 
     public function tocart_data()
     {
-        $userRoles = app(UserController::class)->getUserRoles();
-
-        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
-            $realizations = Realization::where('status', 'verification-complete')
-                ->whereNull('verification_journal_id')
-                ->whereNull('flag')
-                ->get();
-        } elseif (in_array('cashier', $userRoles)) {
-            $include_projects = ['000H', 'APS'];
-            $realizations = Realization::where('status', 'verification-complete')
-                ->whereIn('project', $include_projects)
-                ->whereNull('verification_journal_id')
-                ->whereNull('flag')
-                ->get();
-        } else {
-            $realizations = Realization::where('project', auth()->user()->project)
-                ->where('status', 'verification-complete')
-                ->whereNull('verification_journal_id')
-                ->whereNull('flag')
-                ->get();
-        }
+        $realizations = $this->getToCartRealizations();
 
         return datatables()->of($realizations)
             ->addColumn('employee', function ($realization) {
@@ -173,6 +163,9 @@ class VerificationJournalController extends Controller
             })
             ->addColumn('amount', function ($realization) {
                 return number_format($realization->realizationDetails->sum('amount'), 2);
+            })
+            ->addColumn('r_detail_rows', function ($realization) {
+                return $realization->realizationDetails->count();
             })
             ->addColumn('action', 'verifications.journal.tocart-action')
             ->addIndexColumn()
@@ -181,9 +174,7 @@ class VerificationJournalController extends Controller
 
     public function incart_data()
     {
-        $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
-
-        $realizations = Realization::where('flag', $flag)->get();
+        $realizations = $this->getIncartRealizations();
 
         return datatables()->of($realizations)
             ->addColumn('employee', function ($realization) {
@@ -194,6 +185,9 @@ class VerificationJournalController extends Controller
             })
             ->addColumn('amount', function ($realization) {
                 return number_format($realization->realizationDetails->sum('amount'), 2);
+            })
+            ->addColumn('r_detail_rows', function ($realization) {
+                return $realization->realizationDetails->count();
             })
             ->addColumn('action', 'verifications.journal.incart-action')
             ->addIndexColumn()
@@ -280,10 +274,12 @@ class VerificationJournalController extends Controller
 
     public function data()
     {
-        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
             $verification_journals = VerificationJournal::orderBy('date', 'desc')
                 ->get();
-        } else if (auth()->user()->hasRole(['cashier'])) {
+        } else if (in_array('cashier', $userRoles)) {
             $projects = ['000H', 'APS'];
             $verification_journals = VerificationJournal::whereIn('project', $projects)
                 ->orderBy('date', 'desc')
@@ -382,33 +378,45 @@ class VerificationJournalController extends Controller
 
     public function available_realizations()
     {
-        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
-            $realizations_count1 = Realization::whereNull('verification_journal_id')
-                ->where('status', 'verification-complete')
-                ->count();
-
-            $realizations_count2 = 0;
-        } else if (auth()->user()->hasRole(['cashier'])) {
-            $projects = ['000H', 'APS'];
-            $realizations_count1 = Realization::whereNull('verification_journal_id')
-                ->where('status', 'verification-complete')
-                ->whereNull('flag')
-                ->whereIn('project', $projects)
-                ->count();
-
-            $realizations_count2 = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
-                ->count();
-        } else {
-            $realizations_count1 = Realization::whereNull('verification_journal_id')
-                ->where('status', 'verification-complete')
-                ->whereNull('flag')
-                ->where('project', auth()->user()->project)
-                ->count();
-
-            $realizations_count2 = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
-                ->count();
-        }
+        $realizations_count1 = $this->getToCartRealizations()->count();
+        $realizations_count2 = $this->getIncartRealizations()->count(); // realizations in cart of current user
 
         return $realizations_count1 + $realizations_count2;
+    }
+
+    public function getToCartRealizations()
+    {
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
+            $realizations = Realization::where('status', 'verification-complete')
+                ->whereNull('verification_journal_id')
+                ->whereNull('flag')
+                ->get();
+        } elseif (in_array('cashier', $userRoles)) {
+            $include_projects = ['000H', 'APS'];
+            $realizations = Realization::where('status', 'verification-complete')
+                ->whereIn('project', $include_projects)
+                ->whereNull('verification_journal_id')
+                ->whereNull('flag')
+                ->get();
+        } else {
+            $realizations = Realization::where('project', auth()->user()->project)
+                ->where('status', 'verification-complete')
+                ->whereNull('verification_journal_id')
+                ->whereNull('flag')
+                ->get();
+        }
+
+        return $realizations;
+    }
+
+    public function getIncartRealizations()
+    {
+        $realizations = $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
+
+        $realizations = Realization::where('flag', $flag)->get();
+
+        return $realizations;
     }
 }

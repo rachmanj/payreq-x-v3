@@ -28,6 +28,7 @@
                                 <th>Employee</th>
                                 <th>Project</th>
                                 <th>Amount</th>
+                                <th>rows</th>
                                 <th>action</th>
                             </tr>
                         </thead>
@@ -42,9 +43,16 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">CART</h3>
-                    @if ($remove_all_button)
+                    <h3 class="card-title">CART</h3><br>
+                    @if ($rows_count_text)
+                    <small class="text-red">Baris Realization details tidak boleh lebih dari 50 baris </small>
+                    @endif
+                    @if ($submit_button)
                     <a href="#" class="btn btn-sm btn-primary float-right" role="button" data-toggle="modal" data-target="#create-journal">Submit Journal</a>
+                    @else
+                    <a href="#" class="btn btn-sm btn-primary float-right disabled" role="button" data-toggle="modal" data-target="#create-journal">Submit Journal</a>
+                    @endif
+                    @if ($remove_all_button)
                     <a href="{{ route('verifications.journal.remove_all_fromcart') }}" class="btn btn-sm btn-warning float-right mr-2">Remove All From Cart</a>
                     @endif
                 </div>
@@ -57,6 +65,7 @@
                                 <th>Employee</th>
                                 <th>Project</th>
                                 <th>Amount</th>
+                                <th>rows</th>
                                 <th>action</th>
                             </tr>
                         </thead>
@@ -135,12 +144,13 @@
         {data: 'employee'},
         {data: 'project'},
         {data: 'amount'},
+        {data: 'r_detail_rows'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [4],
+                "targets": [4, 5],
                 "className": "text-right"
               }
             ]
@@ -157,12 +167,13 @@
         {data: 'employee'},
         {data: 'project'},
         {data: 'amount'},
+        {data: 'r_detail_rows'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [4],
+                "targets": [4, 5],
                 "className": "text-right"
               }
             ]
