@@ -75,7 +75,9 @@ class CashierIncomingController extends Controller
 
     public function data()
     {
-        if (auth()->user()->hasRole(['superadmin', 'admin', 'cashier'])) {
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (in_array(['superadmin', 'admin', 'cashier'], $userRoles)) {
             $incomings = Incoming::whereNull('receive_date')
                 ->whereIn('project', ['000H', 'APS'])
                 ->orderBy('created_at', 'desc')
@@ -91,6 +93,13 @@ class CashierIncomingController extends Controller
             ->addColumn('employee', function ($incoming) {
                 if ($incoming->realization_id !== null) {
                     return $incoming->realization->requestor->name;
+                } else {
+                    return $incoming->cashier->name;
+                }
+            })
+            ->addColumn('dept', function ($incoming) {
+                if ($incoming->realization_id !== null) {
+                    return $incoming->realization->requestor->department->akronim;
                 } else {
                     return $incoming->cashier->name;
                 }
@@ -116,7 +125,8 @@ class CashierIncomingController extends Controller
 
     public function received_data()
     {
-        if (auth()->user()->hasRole(['superadmin', 'admin'])) {
+        $userRoles = app(UserController::class)->getUserRoles();
+        if (in_array(['superadmin', 'admin'], $userRoles)) {
             $incomings = Incoming::where('receive_date', '!=', null)
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -131,6 +141,13 @@ class CashierIncomingController extends Controller
             ->addColumn('employee', function ($incoming) {
                 if ($incoming->realization_id !== null) {
                     return $incoming->realization->requestor->name;
+                } else {
+                    return $incoming->cashier->name;
+                }
+            })
+            ->addColumn('dept', function ($incoming) {
+                if ($incoming->realization_id !== null) {
+                    return $incoming->realization->requestor->department->akronim;
                 } else {
                     return $incoming->cashier->name;
                 }

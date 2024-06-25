@@ -25,6 +25,8 @@
           <tr>
             <th>#</th>
             <th>Employee</th>
+            <th>Project</th>
+            <th>Dept</th>
             <th>Realization No / Desc</th>
             <th>IDR</th>
             <th>Account</th>
@@ -73,6 +75,8 @@
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'employee'},
+        {data: 'project'},
+        {data: 'dept'},
         {data: 'realization_no'},
         {data: 'amount'},
         {data: 'account'},
@@ -81,7 +85,11 @@
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [3],
+                "targets": [2, 6],
+                "className": "text-center"
+              },
+              {
+                "targets": [5],
                 "className": "text-right"
               }
             ]
