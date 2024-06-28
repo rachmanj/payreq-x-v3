@@ -413,7 +413,7 @@ class VerificationJournalController extends Controller
 
     public function getIncartRealizations()
     {
-        $realizations = $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
+        $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
 
         $realizations = Realization::where('flag', $flag)->get();
 
