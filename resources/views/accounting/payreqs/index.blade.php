@@ -16,11 +16,11 @@
         <div class="card-header">
             <h3 class="card-title">Ongoing Payreq</h3>
             {{-- create payreq --}}
-            <div class="card-tools">
+            {{-- <div class="card-tools">
                 <a href="{{ route('accounting.payreqs.create') }}" class="btn btn-primary btn-sm">
                     <i class="fas fa-plus"></i> New Payreq
                 </a>
-            </div>
+            </div> --}}
           </div>
 
         <div class="card-body">

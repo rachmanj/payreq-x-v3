@@ -6,6 +6,7 @@ use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\Reports\OngoingController;
 use App\Http\Controllers\Reports\PayreqAgingController;
+use App\Http\Controllers\Reports\ReportCashierController;
 use App\Http\Controllers\Reports\ReportIndexController;
 use Illuminate\Support\Facades\Route;
 
@@ -50,5 +51,9 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::post('/store', [EomController::class, 'store'])->name('store');
         Route::post('/cancel_sap_info', [EomController::class, 'cancel_sap_info'])->name('cancel_sap_info');
         Route::post('/update_sap_info', [EomController::class, 'update_sap_info'])->name('update_sap_info');
+    });
+
+    Route::prefix('cashier')->name('cashier.')->group(function () {
+        Route::get('/', [ReportCashierController::class, 'index'])->name('index');
     });
 });

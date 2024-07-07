@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Cashier\CashierModalController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\CashierOutgoingController;
@@ -58,6 +59,13 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::delete('/{giro_detail_id}/destroy', [CashierGiroDetailController::class, 'destroy'])->name('detail.destroy');
     });
     Route::resource('giros', CashierGiroController::class);
+
+    Route::prefix('modal')->name('modal.')->group(function () {
+        Route::get('/data', [CashierModalController::class, 'data'])->name('data');
+        Route::post('/store', [CashierModalController::class, 'store'])->name('store');
+        Route::get('/', [CashierModalController::class, 'index'])->name('index');
+        Route::put('/{id}/receive', [CashierModalController::class, 'receive'])->name('receive');
+    });
 
     Route::prefix('pcbc')->name('pcbc.')->group(function () {
         Route::get('/data', [CashOpnameController::class, 'data'])->name('data');

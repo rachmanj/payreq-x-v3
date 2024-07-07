@@ -33,7 +33,9 @@ class TestController extends Controller
         // $test = app(MigrasiController::class)->checkIsDataExist();
         // $test = app(MigrasiPayreqController::class)->update();
         // $test = app(ToolController::class)->getApproversName(1812, 'payreq');
-        $test = app(Reports\EomController::class)->eom_journal();
+        // $test = app(Reports\EomController::class)->eom_journal();
+        $test = app(Reports\ReportCashierController::class)->dashboard_data();
+        // $test = app(Reports\ReportCashierController::class)->getIncomingsData();
         // $test = $this->get_realization();
 
 

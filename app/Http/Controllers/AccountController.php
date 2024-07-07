@@ -133,7 +133,7 @@ class AccountController extends Controller
         $nama_file = rand() . $file->getClientOriginalName();
 
         // UPLOAD FILE TO FOLDER FILE_IMPORT
-        $file->move('public/file_upload', $nama_file);
+        $file->move('file_upload', $nama_file);
 
         // IMPORT DATA
         Excel::import(new AccountImport, public_path('/file_upload/' . $nama_file));
@@ -144,8 +144,9 @@ class AccountController extends Controller
 
     public function data()
     {
-        // if user has role superadmin or admin or cashier, get all accounts
-        if (auth()->user()->hasRole('superadmin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('cashier')) {
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (in_array(['superadmin', 'admin', 'cashier'], $userRoles)) {
             $accounts = Account::orderBy('account_number', 'asc')
                 ->get();
         } else {

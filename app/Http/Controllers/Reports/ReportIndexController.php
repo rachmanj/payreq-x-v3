@@ -70,6 +70,22 @@ class ReportIndexController extends Controller
                 ],
             ],
             [
+                'name' => 'Cashier Related',
+                'protector' => null,
+                'subMenu' => [
+                    [
+                        'name' => 'Today Transaction',
+                        'url' => route('reports.cashier.index'),
+                        'protector' => 'akses_today_transaction',
+                    ],
+                    [
+                        'name' => 'Report 2.2',
+                        'url' => 'report2.2',
+                        'protector' => null,
+                    ],
+                ],
+            ],
+            [
                 'name' => 'Equipment Related',
                 'protector' => null,
                 'subMenu' => [

@@ -276,10 +276,10 @@ class VerificationJournalController extends Controller
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
-        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
+        if (in_array(['superadmin', 'admin'], $userRoles)) {
             $verification_journals = VerificationJournal::orderBy('date', 'desc')
                 ->get();
-        } else if (in_array('cashier', $userRoles)) {
+        } else if (in_array(['cashier'], $userRoles)) {
             $projects = ['000H', 'APS'];
             $verification_journals = VerificationJournal::whereIn('project', $projects)
                 ->orderBy('date', 'desc')
@@ -388,12 +388,12 @@ class VerificationJournalController extends Controller
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
-        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
+        if (in_array(['superadmin', 'admin'], $userRoles)) {
             $realizations = Realization::where('status', 'verification-complete')
                 ->whereNull('verification_journal_id')
                 ->whereNull('flag')
                 ->get();
-        } elseif (in_array('cashier', $userRoles)) {
+        } elseif (in_array(['cashier'], $userRoles)) {
             $include_projects = ['000H', 'APS'];
             $realizations = Realization::where('status', 'verification-complete')
                 ->whereIn('project', $include_projects)

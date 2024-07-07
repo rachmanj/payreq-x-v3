@@ -10,6 +10,9 @@
       <li><a href="{{ route('cashier.giros.index') }}" class="dropdown-item">Giro</a></li>
       @endcan
       <li class="dropdown-divider">EOD</li>
+      @can('akses_cashier_modal')
+      <li><a href="{{ route('cashier.modal.index') }}" class="dropdown-item">Serah/Terima Modal</a></li>
+      @endcan
       @can('akses_cash_journal')
       <li><a href="{{ route('cash-journals.index') }}" class="dropdown-item">Cash Journal</a></li>
       @endcan
