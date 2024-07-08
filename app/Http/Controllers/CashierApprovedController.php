@@ -177,8 +177,11 @@ class CashierApprovedController extends Controller
             ->editColumn('amount', function ($approved) {
                 if ($approved->status == 'split') {
                     $outgoings = Outgoing::where('payreq_id', $approved->id)->get();
-                    $amount = $approved->amount - $outgoings->sum('amount');
-                    return '<span class="badge badge-warning">split</span>' . ' ' . number_format($amount, 2);
+                    $original_amount = $approved->amount;
+                    $applied_amount = $outgoings->sum('amount');
+                    $amount_due = $approved->amount - $outgoings->sum('amount');
+                    return '<span class="badge badge-warning">split</span><small>Original: ' . number_format($original_amount, 2) .
+                        '</small><br><small>applied: ' . number_format($applied_amount, 2)  . '</small><br>' . '<small>Due: ' . number_format($amount_due, 2) . '</small>';
                 }
                 return number_format($approved->amount, 2);
             })

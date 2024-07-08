@@ -44,7 +44,7 @@ Cashier Reports
                 <table class="table table-sm table-striped">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th class="text-right">#</th>
                             <th>Desc</th>
                             <th class="text-right">Amount</th>
                         </tr>
@@ -52,7 +52,7 @@ Cashier Reports
                     <tbody>
                         @foreach ($data['incomings'] as $key => $item)
                             <tr>
-                                <td>{{ $key + 1 }}</td>
+                                <td class="text-right">{{ $key + 1 }}</td>
                                 <td>{{ $item->description }}</td>
                                 <td class="text-right">IDR {{ number_format($item->amount, 2) }}</td>
                             </tr>
@@ -67,7 +67,7 @@ Cashier Reports
                 <table class="table table-sm table-striped">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th class="text-right">#</th>
                             <th>Desc</th>
                             <th class="text-right">Amount</th>
                         </tr>
@@ -75,7 +75,7 @@ Cashier Reports
                     <tbody>
                         @foreach ($data['outgoings'] as $key => $item)
                             <tr>
-                                <td>{{ $key + 1 }}</td>
+                                <td class="text-right">{{ $key + 1 }}</td>
                                 <td>{{ $item->description }}</td>
                                 <td class="text-right">IDR {{ number_format($item->amount, 2) }}</td>
                             </tr>

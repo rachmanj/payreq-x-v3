@@ -25,7 +25,7 @@
             <th>Payreq No</th>
             <th>Type</th>
             <th>Aprvd at (wita)</th>
-            <th>IDR Due</th>
+            <th>IDR</th>
             <th>Days</th>
             <th></th>
           </tr>
@@ -82,7 +82,7 @@
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5, 6],
+                "targets": [0, 5, 6],
                 "className": "text-right"
               },
               {
