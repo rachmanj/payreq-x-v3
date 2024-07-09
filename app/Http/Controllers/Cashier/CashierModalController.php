@@ -102,11 +102,15 @@ class CashierModalController extends Controller
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (in_array(['superadmin', 'admin'], $userRoles)) {
-            $modals = CashierModal::orderBy('created_at', 'desc')->get();
+            $modals = CashierModal::orderBy('created_at', 'desc')
+                ->limit(500)
+                ->get();
         } else {
             $modals = CashierModal::where('receiver', auth()->user()->id)
                 ->orWhere('submitter', auth()->user()->id)
-                ->orderBy('created_at', 'desc')->get();
+                ->orderBy('created_at', 'desc')
+                ->limit(500)
+                ->get();
         }
 
         return datatables()->of($modals)

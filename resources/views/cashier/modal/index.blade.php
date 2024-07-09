@@ -15,7 +15,7 @@
       <div class="card">
         <div class="card-header">
         <h3 class="card-title">Serah Terima Modal Cashier</h3>
-        @hasanyrole('superadmin|admin')
+        @hasanyrole('superadmin|admin|head_cashier')
         <button href="#" class="btn btn-sm btn-primary float-right" data-toggle="modal" data-target="#modal-head_cashier"><i class="fas fa-plus"></i> Awal Hari</button>
         @endhasanyrole
         @hasanyrole('cashier')
@@ -34,8 +34,6 @@
               <th>Type</th>
               <th>Diserahkan by</th>
               <th>Diterima by</th>
-              {{-- <th class="text-center">Mutasi</th> --}}
-              {{-- <th class="text-center">Saldo</th> --}}
               <th>status</th>
               <th></th>
             </tr>
@@ -231,8 +229,6 @@
         {data: 'type'},
         {data: 'submitter'},
         {data: 'receiver'},
-        // {data: 'mutasi'},
-        // {data: 'saldo'},
         {data: 'status'},
         {data: 'action', orderable: false, searchable: false},
       ],

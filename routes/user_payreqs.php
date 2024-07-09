@@ -5,10 +5,18 @@ use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserOngoingController;
 use App\Http\Controllers\PayreqAdvanceController;
 use App\Http\Controllers\PayreqReimburseController;
+use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Http\Controllers\UserRealizationController;
 use App\Http\Controllers\UserPayreqHistoriesController;
 
 Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
+
+    // ANGGARAN
+    Route::prefix('anggarans')->name('anggarans.')->group(function () {
+        Route::get('/data', [UserAnggaranController::class, 'data'])->name('data');
+        Route::resource('/', UserAnggaranController::class);
+    });
+
     // ONGOINGS
     Route::prefix('ongoings')->name('ongoings.')->group(function () {
         Route::get('/', [UserOngoingController::class, 'index'])->name('index');
@@ -46,8 +54,6 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
     Route::put('/{id}', [UserPayreqController::class, 'destroy'])->name('destroy');
     // print pdf
     Route::get('/{id}/print', [UserPayreqController::class, 'print'])->name('print');
-
-
 
     //REIMBURSE TYPE
     Route::prefix('reimburse')->name('reimburse.')->group(function () {
