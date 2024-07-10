@@ -71,7 +71,7 @@ class VerificationController extends Controller
         $userRoles = app(UserController::class)->getUserRoles();
         $status_include = ['approved', 'reimburse-paid', 'verification', 'close', 'verification-complete'];
 
-        if (in_array('superadmin', $userRoles) || in_array('admin', $userRoles)) {
+        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $realizations = Realization::whereIn('status', $status_include)
                 ->whereNull('verification_journal_id')
                 ->orderBy('created_at', 'desc')

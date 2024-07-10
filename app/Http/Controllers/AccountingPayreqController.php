@@ -69,10 +69,10 @@ class AccountingPayreqController extends Controller
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
-        if (in_array(['superadmin', 'admin'], $userRoles)) {
+        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $payreqs = Payreq::orderBy('created_at', 'desc')
                 ->get();
-        } elseif (in_array(['cashier'], $userRoles)) {
+        } elseif (in_array('cashier', $userRoles)) {
             $projects_include = ['000H', 'APS'];
             $payreqs = Payreq::whereIn('project', $projects_include)
                 ->orderBy('created_at', 'desc')

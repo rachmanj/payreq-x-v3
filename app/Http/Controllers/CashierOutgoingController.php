@@ -57,7 +57,7 @@ class CashierOutgoingController extends Controller
         // limit date is 5 months ago
         $limit_date = Carbon::now()->subMonths(5)->format('Y-m-d');
 
-        if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
+        if (array_intersect(['superadmin', 'admin'], $roles)) {
             $outgoings = Outgoing::orderBy('outgoing_date', 'desc')
                 ->get();
         } else {

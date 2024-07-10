@@ -77,7 +77,11 @@ class CashierIncomingController extends Controller
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
-        if (in_array(['superadmin', 'admin', 'cashier'], $userRoles)) {
+        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
+            $incomings = Incoming::whereNull('receive_date')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } elseif (in_array('cashier', $userRoles)) {
             $incomings = Incoming::whereNull('receive_date')
                 ->whereIn('project', ['000H', 'APS'])
                 ->orderBy('created_at', 'desc')
@@ -128,6 +132,11 @@ class CashierIncomingController extends Controller
         $userRoles = app(UserController::class)->getUserRoles();
         if (in_array(['superadmin', 'admin'], $userRoles)) {
             $incomings = Incoming::where('receive_date', '!=', null)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } elseif (in_array('cashier', $userRoles)) {
+            $incomings = Incoming::where('receive_date', '!=', null)
+                ->whereIn('project', ['000H', 'APS'])
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
