@@ -62,7 +62,7 @@
                 <div class="col-6">
                     <div class="form-group">
                         <label for="date">Date</label>
-                        <input type="date" name="date" id="date" class="form-control" value="{{ date('Y-m-d') }}" readonly>
+                        <input type="date" name="date" id="date" class="form-control" value="{{ date('Y-m-d') }}">
                     </div>
                 </div>
                 <div class="col-6">

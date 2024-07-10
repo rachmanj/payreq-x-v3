@@ -9,7 +9,36 @@
 @endsection
 
 @section('content')
+<div class="row">
+  <div class="col-12">
 
+    <div class="card">
+      <div class="card-header">
+        
+        <button href="#" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> RAB</button>
+       
+      </div>  <!-- /.card-header -->
+     
+      <div class="card-body">
+        <table id="bucs" class="table table-bordered table-striped">
+          <thead>
+          <tr>
+            <th>#</th>
+            <th>RAB No</th>
+            <th>Date</th>
+            <th>Project</th>
+            <th>Budget</th>
+            <th>Advance</th>
+            <th>Realization</th>
+            <th>Progress</th>
+            <th></th>
+          </tr>
+          </thead>
+        </table>
+      </div> <!-- /.card-body -->
+    </div> <!-- /.card -->
+  </div> <!-- /.col -->
+</div>  <!-- /.row -->
 @endsection
 
 @section('styles')
