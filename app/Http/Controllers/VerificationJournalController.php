@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Department;
+use App\Models\Parameter;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\VerificationJournal;
@@ -32,14 +33,16 @@ class VerificationJournalController extends Controller
             $select_all_button = false;
         }
 
-        $realizations_in_cart = $this->getIncartRealizations()->count();
+        $max_rows = Parameter::where('name1', 'max_row_r_details')->first()->param_value;
+        $realizations = $this->getIncartRealizations();
+        $realization_detail_rows = $realizations->pluck('realizationDetails')->flatten()->count() + $realizations->count();
 
         // if realization_in_cart > 0 and less than 50, show remove_all_button = true and submit_button = true
-        if ($realizations_in_cart > 0 && $realizations_in_cart < 50) {
+        if ($realization_detail_rows > 0 && $realization_detail_rows <= $max_rows) {
             $remove_all_button = true;
             $submit_button = true;
             $rows_count_text = false;
-        } elseif ($realizations_in_cart > 0 && $realizations_in_cart >= 50) {
+        } elseif ($realization_detail_rows > 0 && $realization_detail_rows > $max_rows) {
             $remove_all_button = true;
             $submit_button = false;
             $rows_count_text = true;
@@ -54,7 +57,9 @@ class VerificationJournalController extends Controller
             'select_all_button',
             'remove_all_button',
             'submit_button',
-            'rows_count_text'
+            'rows_count_text',
+            'max_rows',
+            'realization_detail_rows',
         ]));
     }
 
@@ -165,7 +170,7 @@ class VerificationJournalController extends Controller
                 return number_format($realization->realizationDetails->sum('amount'), 2);
             })
             ->addColumn('r_detail_rows', function ($realization) {
-                return $realization->realizationDetails->count();
+                return $realization->realizationDetails->count() + 1;
             })
             ->addColumn('action', 'verifications.journal.tocart-action')
             ->addIndexColumn()
@@ -187,7 +192,7 @@ class VerificationJournalController extends Controller
                 return number_format($realization->realizationDetails->sum('amount'), 2);
             })
             ->addColumn('r_detail_rows', function ($realization) {
-                return $realization->realizationDetails->count();
+                return $realization->realizationDetails->count() + 1;
             })
             ->addColumn('action', 'verifications.journal.incart-action')
             ->addIndexColumn()

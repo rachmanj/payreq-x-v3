@@ -45,7 +45,9 @@
                 <div class="card-header">
                     <h3 class="card-title">CART</h3><br>
                     @if ($rows_count_text)
-                    <small class="text-red">Baris Realization details tidak boleh lebih dari 50 baris </small>
+                    <small class="text-red">Jumlah baris Realization Details Tidak boleh lebih dari {{ $max_rows }} baris (in cart: {{ $realization_detail_rows }} baris) </small>
+                    @else
+                    <small class="text-green">Realization Details rows: {{ $realization_detail_rows }} </small>
                     @endif
                     @if ($submit_button)
                     <a href="#" class="btn btn-sm btn-primary float-right" role="button" data-toggle="modal" data-target="#create-journal">Submit Journal</a>
