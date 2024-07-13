@@ -15,7 +15,7 @@
     <div class="card">
       <div class="card-header">
         
-        <button href="#" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> RAB</button>
+        <a href="{{ route('user-payreqs.anggarans.create') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> RAB</a>
        
       </div>  <!-- /.card-header -->
      

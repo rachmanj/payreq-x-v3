@@ -37,53 +37,65 @@ Cashier Reports
                     </tbody>
                 </table>
             </div>
-            <div class="card-header">
-                <h3 class="card-title">Incoming List</h3>
+        </div>
+        
+        <div class="row">
+            <div class="col-6">
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Incoming List</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th class="text-right">#</th>
+                                    <th>Desc</th>
+                                    <th class="text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($data['incomings'] as $key => $item)
+                                    <tr>
+                                        <td class="text-right">{{ $key + 1 }}</td>
+                                        <td>{{ $item->description }}</td>
+                                        <td class="text-right">IDR {{ number_format($item->amount, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <table class="table table-sm table-striped">
-                    <thead>
-                        <tr>
-                            <th class="text-right">#</th>
-                            <th>Desc</th>
-                            <th class="text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($data['incomings'] as $key => $item)
-                            <tr>
-                                <td class="text-right">{{ $key + 1 }}</td>
-                                <td>{{ $item->description }}</td>
-                                <td class="text-right">IDR {{ number_format($item->amount, 2) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            <div class="card-header">
-                <h3 class="card-title">Outgoing List</h3>
-            </div>
-            <div class="card-body">
-                <table class="table table-sm table-striped">
-                    <thead>
-                        <tr>
-                            <th class="text-right">#</th>
-                            <th>Desc</th>
-                            <th class="text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($data['outgoings'] as $key => $item)
-                            <tr>
-                                <td class="text-right">{{ $key + 1 }}</td>
-                                <td>{{ $item->description }}</td>
-                                <td class="text-right">IDR {{ number_format($item->amount, 2) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            <div class="col-6">
+                    <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Outgoing List</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th class="text-right">#</th>
+                                    <th>Desc</th>
+                                    <th class="text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($data['outgoings'] as $key => $item)
+                                    <tr>
+                                        <td class="text-right">{{ $key + 1 }}</td>
+                                        <td>{{ $item->description }}</td>
+                                        <td class="text-right">IDR {{ number_format($item->amount, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
+            
     </div>
 </div>
 @endsection

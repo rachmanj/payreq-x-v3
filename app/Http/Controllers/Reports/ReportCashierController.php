@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\UserController;
 use App\Models\CashierModal;
 use App\Models\Incoming;
 use App\Models\Outgoing;
@@ -34,14 +35,25 @@ class ReportCashierController extends Controller
 
     public function getLastSerahTerimaModal()
     {
-        $last_serah_terima_modal = CashierModal::where('type', 'bod')
-            ->where('receiver', auth()->user()->id)
-            ->where('status', 'close')
-            ->orderBy('date', 'desc')
-            ->first();
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (array_intersect(['superadmin', 'admin', 'approver'], $userRoles)) {
+            $last_serah_terima_modal = CashierModal::where('type', 'bod')
+                ->where('status', 'close')
+                ->where('date', date('Y-m-d'))
+                ->get()
+                ->sum('receive_amount');
+        } else {
+            $last_serah_terima_modal = CashierModal::where('type', 'bod')
+                ->where('receiver', auth()->user()->id)
+                ->where('status', 'close')
+                ->orderBy('date', 'desc')
+                ->first()
+                ->receive_amount;
+        }
 
         if ($last_serah_terima_modal) {
-            return $last_serah_terima_modal->receive_amount;
+            return $last_serah_terima_modal;
         } else {
             return 0;
         }
@@ -50,11 +62,18 @@ class ReportCashierController extends Controller
     public function getIncomings()
     {
         $date = date('Y-m-d');
+        $userRoles = app(UserController::class)->getUserRoles();
 
-        $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
-            ->where('receive_date',  $date)
-            ->where('cashier_id', auth()->user()->id)
-            ->get();
+        if (array_intersect(['superadmin', 'admin', 'approver'], $userRoles)) {
+            $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
+                ->where('receive_date',  $date)
+                ->get();
+        } else {
+            $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
+                ->where('receive_date',  $date)
+                ->where('cashier_id', auth()->user()->id)
+                ->get();
+        }
 
         foreach ($incomings as $incoming) {
             $realization_desc = $incoming->realization_id !== null ? $incoming->realization->requestor->name . ", realization no " . $incoming->realization->nomor : $incoming->description;
@@ -68,9 +87,16 @@ class ReportCashierController extends Controller
     {
         $date = date('Y-m-d');
 
-        $outgoings = Outgoing::where('outgoing_date', $date)
-            ->where('cashier_id', auth()->user()->id)
-            ->get();
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (array_intersect(['superadmin', 'admin', 'approver'], $userRoles)) {
+            $outgoings = Outgoing::where('outgoing_date', $date)
+                ->get();
+        } else {
+            $outgoings = Outgoing::where('outgoing_date', $date)
+                ->where('cashier_id', auth()->user()->id)
+                ->get();
+        }
 
         foreach ($outgoings as $outgoing) {
             $payreq_no = $outgoing->payreq->nomor;
