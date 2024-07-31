@@ -17,4 +17,6 @@ yarn-error.log
 /.idea
 /.vscode
 /database/sql
+/public/file_upload
+
 

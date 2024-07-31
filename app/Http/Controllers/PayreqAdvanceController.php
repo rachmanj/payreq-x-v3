@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Anggaran;
 use App\Models\Payreq;
 use App\Models\Rab;
 use App\Models\Realization;
@@ -12,7 +13,10 @@ class PayreqAdvanceController extends Controller
     public function create()
     {
         $payreq_no = app(PayreqController::class)->generateDraftNumber();
-        $rabs = Rab::where('status', 'progress')->orderBy('rab_no', 'asc')->get();
+        $rabs = Anggaran::where('created_by', auth()->user()->id)
+            ->where('status', 'approved')
+            ->orderBy('nomor', 'asc')
+            ->get();
 
         return view('user-payreqs.advance.create', compact(['payreq_no', 'rabs']));
     }

@@ -9,6 +9,7 @@ use App\Http\Controllers\CashierDashboardController;
 use App\Http\Controllers\CashierGiroController;
 use App\Http\Controllers\CashierGiroDetailController;
 use App\Http\Controllers\CashOpnameController;
+use App\Http\Controllers\Migrasi\MigrasiBucController;
 use App\Http\Controllers\Migrasi\MigrasiIndexController;
 use App\Http\Controllers\Migrasi\MigrasiPayreqController;
 
@@ -86,6 +87,13 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
             Route::get('/{id}', [MigrasiPayreqController::class, 'edit'])->name('edit');
             Route::put('/{id}', [MigrasiPayreqController::class, 'update'])->name('update');
             Route::put('/update_no/{id}', [MigrasiPayreqController::class, 'update_no'])->name('update_no');
+        });
+
+        // BUC
+        Route::prefix('rab')->name('rab.')->group(function () {
+            Route::get('/', [MigrasiBucController::class, 'index'])->name('index');
+            Route::get('/exec-migrasi-rab', [MigrasiBucController::class, 'migrasi_rab'])->name('migrasi_rab');
+            Route::get('/exec-realisasi-rab', [MigrasiBucController::class, 'realisasi_rab'])->name('realisasi_rab');
         });
     });
 });

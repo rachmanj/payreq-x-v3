@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-  GIRO  
+  Document Numbering  
 @endsection
 
 @section('breadcrumb_title')
-    giro
+    document-numbering
 @endsection
 
 @section('content')

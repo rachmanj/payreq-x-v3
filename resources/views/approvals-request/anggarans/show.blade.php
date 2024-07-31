@@ -58,17 +58,6 @@
         </div>
     </div>
 </div>
-
-@if ($payreq->rab_id != null)
-    <div class="row">
-        <div class="col-12">
-            <div class="form-group">
-                <label for="anggaran">RAB</label>
-                <input type="text" class="form-control" value="{{ $payreq->anggaran->nomor }} {{ $payreq->anggaran->rab_no ? '|' . $payreq->anggaran->rab_no : '' }} | {{ $payreq->anggaran->description }}" readonly>
-            </div>
-        </div>
-    </div>
-@endif
 <!-- /.row -->
 
 @include('approvals-request.payreqs.details_table')

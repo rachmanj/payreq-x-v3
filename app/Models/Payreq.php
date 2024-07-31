@@ -66,6 +66,11 @@ class Payreq extends Model
         }
     }
 
+    public function anggaran()
+    {
+        return $this->belongsTo(Anggaran::class, 'rab_id', 'id');
+    }
+
     public function PayreqMigrasi()
     {
         return $this->hasOne(PayreqMigrasi::class);

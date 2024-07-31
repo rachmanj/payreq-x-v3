@@ -7,7 +7,7 @@
       @can('akses_approval_request')
       <li><a href="{{ route('approvals.request.payreqs.index') }}" class="dropdown-item">Payment Request</a></li>
       <li><a href="{{ route('approvals.request.realizations.index') }}" class="dropdown-item">Realizations</a></li>
-      <li><a href="{{ route('approvals.request.rabs.index') }}" class="dropdown-item">RAB</a></li>
+      <li><a href="{{ route('approvals.request.anggarans.index') }}" class="dropdown-item">RAB</a></li>
       @endcan
       @can('akses_reports')
       <li><a href="{{ route('reports.index') }}" class="dropdown-item">Reports</a></li>

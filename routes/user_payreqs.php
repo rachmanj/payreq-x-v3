@@ -14,7 +14,12 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
     // ANGGARAN
     Route::prefix('anggarans')->name('anggarans.')->group(function () {
         Route::get('/data', [UserAnggaranController::class, 'data'])->name('data');
-        Route::resource('/', UserAnggaranController::class);
+        Route::get('/', [UserAnggaranController::class, 'index'])->name('index');
+        Route::get('/create', [UserAnggaranController::class, 'create'])->name('create');
+        Route::post('/proses', [UserAnggaranController::class, 'proses'])->name('proses');
+        Route::get('/{id}/show', [UserAnggaranController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [UserAnggaranController::class, 'edit'])->name('edit');
+        Route::get('/{id}/data', [UserAnggaranController::class, 'payreqs_data'])->name('payreqs_data');
     });
 
     // ONGOINGS

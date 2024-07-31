@@ -13,6 +13,16 @@
                         </div>
                     </div>
                 </div>
+                @if ($payreq->rab_id != null)
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label for="anggaran">RAB</label>
+                            <input type="text" class="form-control" value="{{ $payreq->anggaran->nomor }} {{ $payreq->anggaran->rab_no ? '|' . $payreq->anggaran->rab_no : '' }} | {{ $payreq->anggaran->description }}" readonly>
+                        </div>
+                    </div>
+                </div>
+                @endif
             </div>
             <div class="card-header">
                 <h4 class="card-title">Form</h4>

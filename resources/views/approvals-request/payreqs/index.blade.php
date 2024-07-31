@@ -21,7 +21,7 @@
           <a href="{{ route('approvals.request.realizations.index') }}">Realization @if ($document_count['realization'] > 0)
             <span class="badge badge-danger">{{ $document_count['realization'] }}</span>
             @endif</a> |
-            <a href="{{ route('approvals.request.rabs.index') }}">RABs @if ($document_count['rab'] > 0)
+            <a href="{{ route('approvals.request.anggarans.index') }}">RABs @if ($document_count['rab'] > 0)
               <span class="badge badge-danger">{{ $document_count['rab'] }}</span>
           @endif</a>
         </div>

@@ -64,7 +64,7 @@ class ApprovalStageController extends Controller
         ]);
 
         $departments = Department::all();
-        $documents = ['payreq', 'realization'];
+        $documents = ['payreq', 'realization', 'rab'];
 
         foreach ($departments as $department) {
             foreach ($documents as $document) {

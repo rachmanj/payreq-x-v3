@@ -6,6 +6,7 @@ use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\Reports\OngoingController;
 use App\Http\Controllers\Reports\PayreqAgingController;
+use App\Http\Controllers\Reports\PeriodeAnggaranController;
 use App\Http\Controllers\Reports\ReportCashierController;
 use App\Http\Controllers\Reports\ReportIndexController;
 use Illuminate\Support\Facades\Route;
@@ -55,5 +56,13 @@ Route::prefix('reports')->name('reports.')->group(function () {
 
     Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/', [ReportCashierController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('periode-anggaran')->name('periode-anggaran.')->group(function () {
+        Route::get('/', [PeriodeAnggaranController::class, 'index'])->name('index');
+        Route::get('/data', [PeriodeAnggaranController::class, 'data'])->name('data');
+        Route::post('/store', [PeriodeAnggaranController::class, 'store'])->name('store');
+        Route::put('/{id}/update', [PeriodeAnggaranController::class, 'update'])->name('update');
+        Route::delete('/{id}/delete', [PeriodeAnggaranController::class, 'delete'])->name('delete');
     });
 });

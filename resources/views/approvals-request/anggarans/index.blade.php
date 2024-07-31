@@ -16,14 +16,14 @@
       <div class="card-header">
         <div class="h3 card-title">
           <a href="{{ route('approvals.request.payreqs.index') }}">Payment Request @if ($document_count['payreq'] > 0)
-          <span class="badge badge-danger">{{ $document_count['payreq'] }}</span>
-          @endif</a> |
-          <b>Realizations</b> @if ($document_count['realization'] > 0)
-                <span class="badge badge-danger">{{ $document_count['realization'] }}</span>
-            @endif |
-            <a href="{{ route('approvals.request.anggarans.index') }}">RABs @if ($document_count['rab'] > 0)
-              <span class="badge badge-danger">{{ $document_count['rab'] }}</span>
-          @endif</a>
+            <span class="badge badge-danger">{{ $document_count['payreq'] }}</span>
+            @endif</a> |
+          <a href="{{ route('approvals.request.realizations.index') }}">Realization @if ($document_count['realization'] > 0)
+            <span class="badge badge-danger">{{ $document_count['realization'] }}</span>
+            @endif</a> |
+            <b>RAB</b> @if ($document_count['rab'] > 0)
+          <span class="badge badge-danger">{{ $document_count['rab'] }}</span>
+          @endif
         </div>
       </div>
       
@@ -32,10 +32,11 @@
           <thead>
           <tr>
             <th>#</th>
-            <th>RealzNo</th>
-            <th>PayreqNo</th>
+            <th>RAB No</th>
+            <th>For</th>
             <th>Requestor</th>
             <th>Submit at</th>
+            <th>Type</th>
             <th>IDR</th>
             <th>Days</th>
             <th></th>
@@ -77,13 +78,14 @@
     $("#mypayreqs").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('approvals.request.realizations.data') }}',
+      ajax: '{{ route('approvals.request.anggarans.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'nomor'},
-        {data: 'payreq_no'},
+        {data: 'project'},
         {data: 'requestor'},
-        {data: 'submit_at'},
+        {data: 'created_at'},
+        {data: 'type'},
         {data: 'amount'},
         {data: 'days'},
         {data: 'action', orderable: false, searchable: false},
@@ -91,7 +93,7 @@
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5, 6],
+                "targets": [6, 7],
                 "className": "text-right"
               },
             ]

@@ -27,4 +27,9 @@ class ApprovalPlan extends Model
     {
         return $this->belongsTo(Realization::class, 'document_id', 'id');
     }
+
+    public function anggaran()
+    {
+        return $this->belongsTo(Anggaran::class, 'document_id', 'id');
+    }
 }

@@ -117,6 +117,22 @@ class ReportIndexController extends Controller
                     ],
                 ],
             ],
+            [
+                'name' => 'Parameters Related',
+                'protector' => null,
+                'subMenu' => [
+                    [
+                        'name' => 'Periode Anggaran',
+                        'url' => route('reports.periode-anggaran.index'),
+                        'protector' => 'akses_periode_anggaran',
+                    ],
+                    [
+                        'name' => 'Report 2.2',
+                        'url' => 'report2.2',
+                        'protector' => null,
+                    ],
+                ],
+            ],
         ];
 
         return $menuList;

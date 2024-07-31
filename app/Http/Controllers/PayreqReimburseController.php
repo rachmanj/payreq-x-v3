@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Anggaran;
 use App\Models\Equipment;
 use App\Models\Payreq;
 use App\Models\Realization;
@@ -13,10 +14,13 @@ class PayreqReimburseController extends Controller
 {
     public function create()
     {
-        // $payreq_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
         $payreq_no = app(PayreqController::class)->generateDraftNumber();
+        $rabs = Anggaran::where('created_by', auth()->user()->id)
+            ->where('status', 'approved')
+            ->orderBy('nomor', 'asc')
+            ->get();
 
-        return view('user-payreqs.reimburse.create', compact('payreq_no'));
+        return view('user-payreqs.reimburse.create', compact('payreq_no', 'rabs'));
     }
 
     public function store(Request $request)
@@ -37,13 +41,13 @@ class PayreqReimburseController extends Controller
 
         // Create new Payreq with type 'reimburse'
         $payreq = Payreq::create([
-            // 'nomor' => app(PayreqController::class)->generateDraftNumber(),
             'nomor' => app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project),
             'type' => 'reimburse',
             'status' => 'draft',
             'remarks' => $request->remarks,
             'project' => auth()->user()->project,
             'department_id' => auth()->user()->department_id,
+            'rab_id' => $request->rab_id,
             'user_id' => auth()->user()->id,
         ]);
 

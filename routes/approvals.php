@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApprovalPlanController;
 use App\Http\Controllers\ApprovalStageController;
-use App\Http\Controllers\ApprovalRequestRabController;
+use App\Http\Controllers\ApprovalRequestAnggaranController;
 use App\Http\Controllers\ApprovalRequestPayreqController;
 use App\Http\Controllers\ApprovalRequestRealizationController;
 
@@ -20,9 +20,9 @@ Route::prefix('approvals')->name('approvals.')->group(function () {
             Route::get('/', [ApprovalRequestRealizationController::class, 'index'])->name('index');
             Route::get('/{id}', [ApprovalRequestRealizationController::class, 'show'])->name('show');
         });
-        Route::prefix('rabs')->name('rabs.')->group(function () {
-            Route::get('/data', [ApprovalRequestRabController::class, 'data'])->name('data');
-            Route::get('/', [ApprovalRequestRabController::class, 'index'])->name('index');
+        Route::prefix('anggarans')->name('anggarans.')->group(function () {
+            Route::get('/data', [ApprovalRequestAnggaranController::class, 'data'])->name('data');
+            Route::get('/', [ApprovalRequestAnggaranController::class, 'index'])->name('index');
         });
     });
     Route::prefix('plan')->name('plan.')->group(function () {

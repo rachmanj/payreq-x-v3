@@ -35,6 +35,22 @@ class MigrasiIndexController extends Controller
                     ],
                 ],
             ],
+            [
+                'name' => 'BUC / RAB',
+                'protector' => null,
+                'subMenu' => [
+                    [
+                        'name' => 'Migrasi RAB table ke Anggaran table',
+                        'url' => route('cashier.migrasi.rab.index'),
+                        'protector' => null,
+                    ],
+                    [
+                        'name' => 'Migrasi rab_id to realisasi_anggarans',
+                        'url' => route('cashier.migrasi.rab.index'),
+                        'protector' => null,
+                    ],
+                ],
+            ],
         ];
 
         return $menuList;

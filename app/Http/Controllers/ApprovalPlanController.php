@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Anggaran;
 use App\Models\ApprovalPlan;
 use App\Models\ApprovalStage;
 use App\Models\Payreq;
@@ -18,7 +19,7 @@ class ApprovalPlanController extends Controller
         } elseif ($document_type == 'realization') {
             $document = Realization::findOrFail($document_id);
         } elseif ($document_type == 'rab') {
-            // 
+            $document = Anggaran::findOrFail($document_id);
         } else {
             return false;
         }
@@ -73,7 +74,7 @@ class ApprovalPlanController extends Controller
             $document = Realization::findOrFail($approval_plan->document_id);
             // $nomor = app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project);
         } elseif ($document_type == 'rab') {
-            // 
+            $document = Anggaran::findOrFail($approval_plan->document_id);
         } else {
             return false;
         }
@@ -121,6 +122,7 @@ class ApprovalPlanController extends Controller
 
         // jika semua approver menyetujui
         if ($approved_count === $approval_plans->count()) {
+            // update fields of document, so all documents must have these fields
             $document->update([
                 'status' => 'approved',
                 'draft_no' => $document->nomor,
@@ -137,12 +139,12 @@ class ApprovalPlanController extends Controller
                     $realization->update([
                         'status' => 'reimburse-approved',
                         'approved_at' => $approval_plan->updated_at,
-                        // 'nomor' => app(ToolController::class)->generateRealizationNumber($realization->id),
                         'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
                     ]);
                 }
             }
 
+            // additional action for realization when document is approved
             if ($request->document_type === 'realization') {
                 // update field due_date of realization
                 $realization = Realization::findOrFail($document->id);
@@ -152,14 +154,23 @@ class ApprovalPlanController extends Controller
                 // check the variance between payreq and realization
                 app(UserRealizationController::class)->check_realization_amount($document->id);
             }
+
+            // additional action for anggaran when document is approved
+            if ($request->document_type === 'rab') {
+                // update field periode_ofr of anggaran
+                $document->update([
+                    'periode_ofr' => $request->periode_ofr,
+                ]);
+            }
         }
 
+        // redirect base on document type
         if ($request->document_type === 'payreq') {
             return redirect()->route('approvals.request.payreqs.index')->with('success', 'Approval Request updated');
         } elseif ($request->document_type === 'realization') {
             return redirect()->route('approvals.request.realizations.index')->with('success', 'Approval Request updated');
         } elseif ($request->document_type === 'rab') {
-            // 
+            return redirect()->route('approvals.request.anggarans.index')->with('success', 'Approval Request updated');
         } else {
             return false;
         }

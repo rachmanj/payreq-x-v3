@@ -20,17 +20,16 @@
       </div>  <!-- /.card-header -->
      
       <div class="card-body">
-        <table id="bucs" class="table table-bordered table-striped">
+        <table id="anggarans" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
-            <th>RAB No</th>
-            <th>Date</th>
-            <th>Project</th>
-            <th>Budget</th>
-            <th>Advance</th>
-            <th>Realization</th>
-            <th>Progress</th>
+            <th>Nomor</th>
+            <th>For Project</th>
+            <th>Desc</th>
+            <th>Budget IDR</th>
+            <th>Realisasi IDR</th>
+            <th>Progres</th>
             <th></th>
           </tr>
           </thead>
@@ -59,24 +58,24 @@
 
 <script>
     $(function () {
-      $("#payreq-anggarans").DataTable({
+      $("#anggarans").DataTable({
         processing: true,
         serverSide: true,
         ajax: '{{ route('user-payreqs.anggarans.data') }}',
         columns: [
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'nomor'},
-          {data: 'type'},
-          {data: 'realization_no'},
-          {data: 'status'},
-          {data: 'duration'},
-          {data: 'amount'},
+          {data: 'rab_project'},
+          {data: 'description'},
+          {data: 'budget'},
+          {data: 'realisasi'},
+          {data: 'progres'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [5, 6],
+                  "targets": [0, 4, 5],
                   "className": "text-right"
                 },
               ]
