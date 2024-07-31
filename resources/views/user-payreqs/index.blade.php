@@ -69,7 +69,7 @@
         </button>
       </div>
       <div class="modal-body justify-content-between">
-          <a href="{{ route('payreq-advance.create') }}" class="btn btn-outline-success btn-lg btn-block">Advance</a>
+          <a href="{{ route('user-payreqs.advance.create') }}" class="btn btn-outline-success btn-lg btn-block">Advance</a>
           <a href="{{ route('payreq-reimburse.create') }}" class="btn btn-outline-primary btn-lg btn-block">Reimburse</a>
       </div>
     </div> <!-- /.modal-content -->

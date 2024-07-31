@@ -18,10 +18,9 @@
             <a href="{{ route('user-payreqs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
           </div>
           <div class="card-body">
-            <form action="{{ route('payreq-advance.store') }}" method="POST">
+            <form action="{{ route('user-payreqs.advance.proses') }}" method="POST">
               @csrf
 
-              <input type="hidden" name="form_type" value="advance">
               <input type="hidden" name="employee_id" value="{{ auth()->user()->id }}">
               <div class="row">
                 <div class="col-4">
@@ -120,13 +119,13 @@
   // btn-save as draft
   $('#btn-draft').click(function() {
     // add attribute name="draft" to form
-    $('form').append('<input type="hidden" name="draft" value="1">');
+    $('form').append('<input type="hidden" name="button_type" value="create">');
   });
 
   // btn-save and submit
   $('#btn-submit').click(function() {
     // add attribute name="draft" to form
-    $('form').append('<input type="hidden" name="draft" value="0">');
+    $('form').append('<input type="hidden" name="button_type" value="create_submit">');
   });
 </script>
 @endsection

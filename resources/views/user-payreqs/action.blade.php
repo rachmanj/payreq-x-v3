@@ -12,7 +12,7 @@
 </form>
 @if ($model->editable)
     @if ($model->type == 'advance')
-        <a href="{{ route('payreq-advance.edit', $model->id) }}" class="btn btn-xs btn-warning">edit</a>
+        <a href="{{ route('user-payreqs.advance.edit', $model->id) }}" class="btn btn-xs btn-warning">edit</a>
     @else 
         <a href="{{ route('payreq-reimburse.edit', $model->id) }}" class="btn btn-xs btn-warning">edit</a>
     @endif

@@ -3,8 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserOngoingController;
-use App\Http\Controllers\PayreqAdvanceController;
 use App\Http\Controllers\PayreqReimburseController;
+use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Http\Controllers\UserRealizationController;
 use App\Http\Controllers\UserPayreqHistoriesController;
@@ -40,7 +40,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
     Route::prefix('realizations')->name('realizations.')->group(function () {
         Route::get('/data', [UserRealizationController::class, 'data'])->name('data');
         Route::get('/', [UserRealizationController::class, 'index'])->name('index');
-        // add realization detials
+        // add realization details
         Route::get('/{realization_id}/add_details', [UserRealizationController::class, 'add_details'])->name('add_details');
         Route::post('/store_detail', [UserRealizationController::class, 'store_detail'])->name('store_detail');
         Route::post('/submit', [UserRealizationController::class, 'submit_realization'])->name('submit_realization');
@@ -51,7 +51,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
     });
     Route::resource('realizations', UserRealizationController::class);
 
-    // PAYREQS
+    // PAYREQS INDEX
     Route::get('/data', [UserPayreqController::class, 'data'])->name('data');
     Route::get('/', [UserPayreqController::class, 'index'])->name('index');
     Route::get('/{id}', [UserPayreqController::class, 'show'])->name('show');
@@ -59,6 +59,14 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
     Route::put('/{id}', [UserPayreqController::class, 'destroy'])->name('destroy');
     // print pdf
     Route::get('/{id}/print', [UserPayreqController::class, 'print'])->name('print');
+
+    // PAYREQ ADVANCE
+    Route::prefix('advance')->name('advance.')->group(function () {
+        Route::get('/', [PayreqAdvanceController::class, 'index'])->name('index');
+        Route::get('/create', [PayreqAdvanceController::class, 'create'])->name('create');
+        Route::post('/proses', [PayreqAdvanceController::class, 'proses'])->name('proses');
+        Route::get('/{id}/edit', [PayreqAdvanceController::class, 'edit'])->name('edit');
+    });
 
     //REIMBURSE TYPE
     Route::prefix('reimburse')->name('reimburse.')->group(function () {
@@ -69,9 +77,6 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         // Route::delete('/{realization_detail_id}/delete_detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
     });
 });
-
-// PAYREQ ADVANCE
-Route::resource('payreq-advance', PayreqAdvanceController::class);
 
 // PAYREQ OTHER
 Route::resource('payreq-reimburse', PayreqReimburseController::class);

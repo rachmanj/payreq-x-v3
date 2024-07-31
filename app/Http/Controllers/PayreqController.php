@@ -10,55 +10,34 @@ class PayreqController extends Controller
 {
     public function store($data)
     {
-        // PAYREQ TYPE IS ADVANCE
-        if ($data->form_type == 'advance') {
-            $validated = $data->validate([
-                'remarks' => 'required',
-                'amount' => 'required|numeric',
-                'project' => 'required',
-                'department_id' => 'required',
-            ]);
+        $payreq = Payreq::create([
+            'remarks' => $data->remarks,
+            'amount' => $data->amount,
+            'project' => $data->project,
+            'department_id' => $data->department_id,
+            'nomor' => $data->payreq_no,
+            'status' => 'draft',
+            'type' => 'advance',
+            'rab_id' => $data->rab_id,
+            'user_id' => $data->employee_id,
+        ]);
 
-            $payreq = Payreq::create(array_merge($validated, [
-                'project' => $data->project,
-                'status' => $data->draft == '1' ? 'draft' : 'submitted',
-                'editable' => $data->draft == '1' ? '1' : '0',
-                'deletable' => $data->draft == '1' ? '1' : '0',
-                'nomor' => $data->payreq_no,
-                'type' => 'advance',
-                'rab_id' => $data->rab_id,
-                'user_id' => $data->employee_id,
-            ]));
-
-            return $payreq;
-        } else {
-            // PAYREQ TYPE IS OTHER
-        }
+        return $payreq;
     }
 
-    public function update($data, $id)
+    public function update($data)
     {
-        // if payreq type is advance
-        if ($data->form_type == 'advance') {
-            $validated = $data->validate([
-                'remarks' => 'required',
-                'amount' => 'required|numeric',
-                'project' => 'required',
-                'department_id' => 'required',
-            ]);
+        $validated = $data->validate([
+            'remarks' => 'required',
+            'amount' => 'required|numeric',
+        ]);
 
-            $payreq = Payreq::findOrFail($id);
-            $payreq->update(array_merge($validated, [
-                'status' => $data->draft == '1' ? 'draft' : 'submitted',
-                'editable' => $data->draft == '1' ? '1' : '0',
-                'deletable' => $data->draft == '1' ? '1' : '0',
-                'rab_id' => $data->rab_id,
-            ]));
+        $payreq = Payreq::findOrFail($data->payreq_id);
+        $payreq->update(array_merge($validated, [
+            'rab_id' => $data->rab_id,
+        ]));
 
-            return $payreq;
-        } else {
-            // payreq type is other
-        }
+        return $payreq;
     }
 
     public function cancel($id)

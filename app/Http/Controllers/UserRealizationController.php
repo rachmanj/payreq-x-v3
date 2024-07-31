@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Models\ApprovalPlan;
 use App\Models\Equipment;
 use App\Models\Incoming;
