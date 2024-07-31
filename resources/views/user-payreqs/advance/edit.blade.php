@@ -71,7 +71,7 @@
                 <select name="rab_id" class="form-control select2bs4">
                   <option value="">-- Select RAB --</option>
                   @foreach ($rabs as $rab)
-                    <option value="{{ $rab->id }}" {{ $payreq->rab_id === $rab->id ? 'selected' : '' }}>{{ $rab->rab_no }} | {{ $rab->project_code }} | {{ $rab->description }}</option>
+                    <option value="{{ $rab->id }}" {{ $payreq->rab_id === $rab->id ? 'selected' : '' }}>{{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} | {{ $rab->project }} | {{ $rab->description }}</option>
                   @endforeach
                 </select>
               </div>

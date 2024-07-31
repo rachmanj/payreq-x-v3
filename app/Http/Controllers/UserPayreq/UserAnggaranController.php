@@ -10,7 +10,6 @@ use App\Models\Anggaran;
 use App\Models\Payreq;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
-use App\Models\RealisasiAnggaran;
 use Illuminate\Http\Request;
 
 class UserAnggaranController extends Controller
@@ -36,7 +35,7 @@ class UserAnggaranController extends Controller
     public function proses(Request $request)
     {
         if ($request->button_type === 'create') {
-            $response = $this->store_anggaran($request);
+            $response = $this->store($request);
 
             if ($response) {
                 return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil dibuat sebagai draft');
@@ -44,7 +43,7 @@ class UserAnggaranController extends Controller
                 return redirect()->back()->with('error', 'There is an error in the form');
             }
         } elseif ($request->button_type === 'edit') {
-            $response = $this->update_anggaran($request);
+            $response = $this->update($request);
 
             if ($response) {
                 return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diupdate sebagai draft');
@@ -52,19 +51,19 @@ class UserAnggaranController extends Controller
                 return redirect()->back()->with('error', 'There is an error in the form');
             }
         } elseif ($request->button_type === 'create_submit') {
-            $response = $this->store_anggaran($request);
+            $response = $this->store($request);
 
             if ($response) {
-                $this->submit_anggaran($response->id);
+                $this->submit($response->id);
                 return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diajukan');
             } else {
                 return redirect()->back()->with('error', 'There is an error in the form');
             }
         } elseif ($request->button_type === 'edit_submit') {
-            $response = $this->update_anggaran($request);
+            $response = $this->update($request);
 
             if ($response) {
-                $this->submit_anggaran($response->id);
+                $this->submit($response->id);
                 return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diajukan');
             } else {
                 return redirect()->back()->with('error', 'There is an error in the form');
@@ -74,7 +73,7 @@ class UserAnggaranController extends Controller
         }
     }
 
-    public function submit_anggaran($id)
+    public function submit($id)
     {
         $response = app(ApprovalPlanController::class)->create_approval_plan('rab', $id);
 
@@ -89,7 +88,7 @@ class UserAnggaranController extends Controller
         }
     }
 
-    public function store_anggaran($data)
+    public function store($data)
     {
         $data->validate([
             'description' => 'required',
@@ -124,7 +123,7 @@ class UserAnggaranController extends Controller
         return $anggaran;
     }
 
-    public function update_anggaran($data)
+    public function update($data)
     {
         $anggaran = Anggaran::find($data->anggaran_id);
 
@@ -151,8 +150,6 @@ class UserAnggaranController extends Controller
 
         return $anggaran;
     }
-
-
 
     public function edit($id)
     {

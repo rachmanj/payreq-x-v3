@@ -12,11 +12,8 @@ class PayreqAdvanceController extends Controller
 {
     public function create()
     {
-        $payreq_no = app(PayreqController::class)->generateDraftNumber();
-        $rabs = Anggaran::where('created_by', auth()->user()->id)
-            ->where('status', 'approved')
-            ->orderBy('nomor', 'asc')
-            ->get();
+        $payreq_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
+        $rabs = $this->getUserRabs();
 
         return view('user-payreqs.advance.create', compact(['payreq_no', 'rabs']));
     }
@@ -28,6 +25,19 @@ class PayreqAdvanceController extends Controller
         if ($response->status == 'draft') {
             return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance Draft saved');
         } else {
+            // cek user project, jika user project adalah 000H, maka field rab_id harus diisi
+            if (auth()->user()->project == '000H' || auth()->user()->project == 'APS') {
+                if ($response->rab_id == null) {
+                    $response->update([
+                        'status' => 'draft',
+                        'editable' => '1',
+                        'deletable' => '1',
+                    ]);
+
+                    return redirect()->route('user-payreqs.index')->with('error', 'RAB harus diisi, payreq belum bisa disubmit');
+                }
+            }
+
             $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $response->id);
 
             if ($approval_plan_response == false) {
@@ -38,6 +48,7 @@ class PayreqAdvanceController extends Controller
                     'editable' => '1',
                     'deletable' => '1',
                 ]);
+
                 return redirect()->route('user-payreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft, contact IT Department');
             }
 
@@ -48,7 +59,7 @@ class PayreqAdvanceController extends Controller
     public function edit($id)
     {
         $payreq = Payreq::findOrFail($id);
-        $rabs = Rab::where('status', 'progress')->orderBy('rab_no', 'asc')->get();
+        $rabs = $this->getUserRabs();
 
         return view('user-payreqs.advance.edit', compact(['payreq', 'rabs']));
     }
@@ -60,6 +71,19 @@ class PayreqAdvanceController extends Controller
         if ($response->status == 'draft') {
             return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance Draft saved');
         } else {
+            // cek user project, jika user project adalah 000H, maka field rab_id harus diisi
+            if (auth()->user()->project == '000H' || auth()->user()->project == 'APS') {
+                if ($response->rab_id == null) {
+                    $response->update([
+                        'status' => 'draft',
+                        'editable' => '1',
+                        'deletable' => '1',
+                    ]);
+
+                    return redirect()->route('user-payreqs.index')->with('error', 'RAB harus diisi, payreq belum bisa disubmit');
+                }
+            }
+
             $approval_plan_response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $response->id);
 
             if ($approval_plan_response == false) {
@@ -72,11 +96,6 @@ class PayreqAdvanceController extends Controller
                 ]);
                 return redirect()->route('user-payreqs.index')->with('error', 'No Approval Plan found. Payreq Advance saved as draft, contact IT Department');
             }
-
-            // $payreq = Payreq::findOrFail($response->id);
-            // $payreq->update([
-            //     'approval_plan_count' => $approval_plan_response,
-            // ]);
 
             return redirect()->route('user-payreqs.index')->with('success', 'Payreq Advance submitted');
         }
@@ -112,5 +131,15 @@ class PayreqAdvanceController extends Controller
         ]);
 
         return $payreq;
+    }
+
+    public function getUserRabs()
+    {
+        $rabs = Anggaran::where('created_by', auth()->user()->id)
+            ->where('status', 'approved')
+            ->orderBy('nomor', 'asc')
+            ->get();
+
+        return $rabs;
     }
 }

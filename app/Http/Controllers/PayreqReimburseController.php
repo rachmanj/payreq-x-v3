@@ -14,7 +14,7 @@ class PayreqReimburseController extends Controller
 {
     public function create()
     {
-        $payreq_no = app(PayreqController::class)->generateDraftNumber();
+        $payreq_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
         $rabs = Anggaran::where('created_by', auth()->user()->id)
             ->where('status', 'approved')
             ->orderBy('nomor', 'asc')
@@ -25,14 +25,6 @@ class PayreqReimburseController extends Controller
 
     public function store(Request $request)
     {
-        // $roles = app(ToolController::class)->getUserRoles();
-
-        // if (in_array('superadmin', $roles) || in_array('admin', $roles)) {
-        //     $equipments = Equipment::orderBy('unit_code', 'asc')->get();
-        // } else {
-        //     $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();
-        // }
-
         if (auth()->user()->project == '000H' || auth()->user()->project == 'APS' || auth()->user()->project == '001H') {
             $equipments = Equipment::orderBy('unit_code', 'asc')->get();
         } else {
@@ -41,7 +33,7 @@ class PayreqReimburseController extends Controller
 
         // Create new Payreq with type 'reimburse'
         $payreq = Payreq::create([
-            'nomor' => app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project),
+            'nomor' => $request->payreq_no,
             'type' => 'reimburse',
             'status' => 'draft',
             'remarks' => $request->remarks,
@@ -58,7 +50,6 @@ class PayreqReimburseController extends Controller
             'department_id' => $payreq->department_id,
             'remarks' => $request->remarks,
             'user_id' => $payreq->user_id,
-            // 'nomor' => app(ToolController::class)->generateDraftRealizationNumber(),
             'nomor' => app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project),
             'status' => 'reimburse-draft',
         ]);
@@ -68,8 +59,6 @@ class PayreqReimburseController extends Controller
 
     public function edit($id)
     {
-        $roles = app(ToolController::class)->getUserRoles();
-
         if (auth()->user()->project == '000H' || auth()->user()->project == 'APS' || auth()->user()->project == '001H') {
             $equipments = Equipment::orderBy('unit_code', 'asc')->get();
         } else {
@@ -117,6 +106,19 @@ class PayreqReimburseController extends Controller
     {
         $realization = Realization::findOrFail($request->realization_id);
         $payreq = Payreq::findOrFail($realization->payreq_id);
+
+        // cek user project, jika user project adalah 000H, maka field rab_id harus diisi
+        if (auth()->user()->project == '000H' || auth()->user()->project == 'APS') {
+            if ($payreq->rab_id == null) {
+                $payreq->update([
+                    'status' => 'draft',
+                    'editable' => '1',
+                    'deletable' => '1',
+                ]);
+
+                return redirect()->route('user-payreqs.index')->with('error', 'RAB harus diisi, payreq belum bisa disubmit');
+            }
+        }
 
         // create approval plan
         $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('payreq', $payreq->id);
