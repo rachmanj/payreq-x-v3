@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserOngoingController;
-use App\Http\Controllers\PayreqReimburseController;
+// use App\Http\Controllers\PayreqReimburseController;
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
+use App\Http\Controllers\UserPayreq\PayreqReimburseController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Http\Controllers\UserRealizationController;
 use App\Http\Controllers\UserPayreqHistoriesController;
@@ -71,12 +72,14 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
     //REIMBURSE TYPE
     Route::prefix('reimburse')->name('reimburse.')->group(function () {
         Route::get('/create', [PayreqReimburseController::class, 'create'])->name('create');
+        Route::get('/{id}/edit', [PayreqReimburseController::class, 'edit'])->name('edit');
         Route::post('/submit', [PayreqReimburseController::class, 'submit_payreq'])->name('submit_payreq');
+        Route::post('/store', [PayreqReimburseController::class, 'store'])->name('store');
         Route::post('/store-detail', [PayreqReimburseController::class, 'store_detail'])->name('store_detail');
         Route::post('/delete-detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
-        // Route::delete('/{realization_detail_id}/delete_detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
+        Route::post('/update-rab', [PayreqReimburseController::class, 'update_rab'])->name('update_rab');
     });
 });
 
 // PAYREQ OTHER
-Route::resource('payreq-reimburse', PayreqReimburseController::class);
+// Route::resource('payreq-reimburse', PayreqReimburseController::class);

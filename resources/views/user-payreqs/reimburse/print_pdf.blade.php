@@ -56,7 +56,7 @@
         <table class="table table-bordered" style="border: 1px solid black;">
           <thead>
             <tr>
-              <th style="border: 1px solid black;">No</th>
+              <th style="border: 1px solid black;" class="text-right">No</th>
               <th style="border: 1px solid black;">Description</th>
               <th style="border: 1px solid black;" class="text-right">Amount (IDR)</th>
             </tr>
@@ -64,7 +64,7 @@
           <tbody>
             @foreach ($realization_details as $item)
             <tr>
-              <td style="border: 1px solid black;">{{ $loop->iteration }}</td>
+              <td style="border: 1px solid black;" class="text-right">{{ $loop->iteration }}</td>
               <td style="border: 1px solid black;">{{ $item->description }} 
           @if ($item->unit_no != null)
             <br/>

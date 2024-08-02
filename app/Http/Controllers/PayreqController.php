@@ -17,7 +17,7 @@ class PayreqController extends Controller
             'department_id' => $data->department_id,
             'nomor' => $data->payreq_no,
             'status' => 'draft',
-            'type' => 'advance',
+            'type' => $data->payreq_type,
             'rab_id' => $data->rab_id,
             'user_id' => $data->employee_id,
         ]);

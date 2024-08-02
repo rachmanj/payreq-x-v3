@@ -22,6 +22,7 @@
               @csrf
 
               <input type="hidden" name="employee_id" value="{{ auth()->user()->id }}">
+              <input type="hidden" name="payreq_type" value="advance">
               <div class="row">
                 <div class="col-4">
                   <div class="form-group">

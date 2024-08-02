@@ -42,7 +42,7 @@ class PayreqAdvanceController extends Controller
             return $this->draft_redirect(app(PayreqController::class)->update($request));
         } elseif ($request->button_type === 'create_submit') {
             $response = app(PayreqController::class)->store($request);
-            return $this->submit_redirect($response->id);
+            return $this->submit($response->id);
         } elseif ($request->button_type === 'edit_submit') {
             $response = app(PayreqController::class)->update($request);
             return $this->submit($response->id);
@@ -54,25 +54,27 @@ class PayreqAdvanceController extends Controller
     public function submit($id)
     {
         $payreq = Payreq::find($id);
-        $projecs = ['000H', 'APS'];
 
-        if (!in_array(auth()->user()->project, $projecs)) {
+        // jika project bukan 000H atau APS
+        if (!in_array(auth()->user()->project, ['000H', 'APS'])) {
             $response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $id);
 
-            if ($response) {
-
-                $payreq->update([
-                    'status' => 'submitted',
-                    'editable' => '0',
-                    'deletable' => '0',
-                ]);
-                return redirect()->route('user-payreqs.index')->with('success', 'Payreq berhasil disubmit');
-            } else {
+            if (!$response) {
                 return redirect()->route('user-payreqs.index')->with('error', 'Payreq gagal disubmit. Hubungi IT Administrator');
             }
+
+            $payreq->update([
+                'status' => 'submitted',
+                'editable' => '0',
+                'deletable' => '0',
+            ]);
+
+            return redirect()->route('user-payreqs.index')->with('success', 'Payreq berhasil disubmit');
         }
 
-        if ($payreq->rab_id == null) {
+        // jika project 000H atau APS
+        // cek apakah rab_id sudah diisi
+        if (!$payreq->rab_id) {
             $payreq->update([
                 'status' => 'draft',
             ]);
@@ -82,26 +84,26 @@ class PayreqAdvanceController extends Controller
 
         $response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $id);
 
-        if ($response) {
-            $payreq = Payreq::find($id);
-            $payreq->update([
-                'status' => 'submitted',
-                'editable' => '0',
-                'deletable' => '0',
-            ]);
-            return redirect()->route('user-payreqs.index')->with('success', 'Payreq berhasil disubmit');
-        } else {
+        if (!$response) {
             return redirect()->route('user-payreqs.index')->with('error', 'Payreq gagal disubmit. Hubungi IT Administrator');
         }
+
+        $payreq->update([
+            'status' => 'submitted',
+            'editable' => '0',
+            'deletable' => '0',
+        ]);
+
+        return redirect()->route('user-payreqs.index')->with('success', 'Payreq berhasil disubmit');
     }
 
     public function draft_redirect($response)
     {
-        if ($response) {
-            return redirect()->route('user-payreqs.index')->with('success', 'Payreq draft berhasil disimpan');
-        } else {
+        if (!$response) {
             return redirect()->route('user-payreqs.index')->with('error', 'Payreq draft gagal disimpan. Hubungi IT Administrator');
         }
+
+        return redirect()->route('user-payreqs.index')->with('success', 'Payreq draft berhasil disimpan');
     }
 
     public function create_new_payreq($realization_id)

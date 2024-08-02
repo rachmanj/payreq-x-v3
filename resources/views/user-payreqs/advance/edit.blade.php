@@ -116,7 +116,7 @@
   // btn-save as draft
   $('#btn-draft').click(function() {
     // add attribute name="draft" to form
-    $('form').append('<input type="hidden" name="button_type" value="edit_">');
+    $('form').append('<input type="hidden" name="button_type" value="edit">');
   });
 
   // btn-save and submit

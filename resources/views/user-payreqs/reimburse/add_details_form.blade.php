@@ -9,20 +9,29 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="form-group">
-                            <textarea name="remarks" cols="30" rows="2" class="form-control" readonly>{{ $payreq->remarks }}</textarea>
+                            <label for="remarks">Remarks</label>
+                            <input type="text" name="remarks" value="{{ old('remarks', $payreq->remarks) }}" class="form-control">
                         </div>
                     </div>
                 </div>
-                @if ($payreq->rab_id != null)
+                @can('rab_select')
                 <div class="row">
                     <div class="col-12">
-                        <div class="form-group">
-                            <label for="anggaran">RAB</label>
-                            <input type="text" class="form-control" value="{{ $payreq->anggaran->nomor }} {{ $payreq->anggaran->rab_no ? '|' . $payreq->anggaran->rab_no : '' }} | {{ $payreq->anggaran->description }}" readonly>
+                        <div class="input-group input-group-xs">
+                            {{-- <label for="anggaran">RAB</label> --}}
+                            <select name="rab_id" class="form-control select2bs4">
+                                <option value="">-- Select RAB --</option>
+                                @foreach ($rabs as $rab)
+                                  <option value="{{ $rab->id }}" {{ $payreq->rab_id == $rab->id ? 'selected' : '' }}>{{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} | {{ $rab->rab_project }} | {{ $rab->description }}</option>
+                                @endforeach
+                            </select>
+                            <span class="input-group-append">
+                                <button type="button" id="update_rab" class="btn btn-info btn-xs btn-flat">update</button>
+                            </span>
                         </div>
                     </div>
                 </div>
-                @endif
+                @endcan
             </div>
             <div class="card-header">
                 <h4 class="card-title">Form</h4>
@@ -131,3 +140,33 @@
         </div>
     </div>
 </div>
+
+@section('scripts')
+{{-- when update_rab button clicked then send api request with method post --}}
+<script>
+    $(document).ready(function() {
+        $('#update_rab').click(function() {
+            var rab_id = $('select[name="rab_id"]').val();
+            var remarks = $('input[name="remarks"]').val();
+            var payreq_id = '{{ $payreq->id }}';
+            $.ajax({
+                url: '{{ route('user-payreqs.reimburse.update_rab') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    rab_id: rab_id,
+                    remarks: remarks,
+                    payreq_id: payreq_id,
+                },
+                success: function(response) {
+                    if (response.status == 'success') {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            });
+        });
+    });
+</script>
+@endsection

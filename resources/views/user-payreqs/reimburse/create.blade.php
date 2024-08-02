@@ -18,10 +18,11 @@
             <a href="{{ route('user-payreqs.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
           </div>
           <div class="card-body">
-            <form action="{{ route('payreq-reimburse.store') }}" method="POST">
+            <form action="{{ route('user-payreqs.reimburse.store') }}" method="POST">
               @csrf
 
-              <input type="hidden" name="form_type" value="advance">
+              <input type="hidden" name="employee_id" value="{{ auth()->user()->id }}">
+              <input type="hidden" name="payreq_type" value="reimburse">
               <div class="row">
                 <div class="col-4">
                   <div class="form-group">
@@ -56,18 +57,13 @@
 
               @can('rab_select')
               <div class="form-group">
-                <label for="rab_id">RAB No</label><small> (Pilih RAB No jika merupakan payreq utk RAB)</small>
-                <select name="rab_id" class="form-control select2bs4 @error('rab_id') is-invalid @enderror">
+                <label for="rab_id">RAB No</label>
+                <select name="rab_id" class="form-control select2bs4">
                   <option value="">-- Select RAB --</option>
                   @foreach ($rabs as $rab)
                     <option value="{{ $rab->id }}">{{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} | {{ $rab->rab_project }} | {{ $rab->description }}</option>
                   @endforeach
                 </select>
-                @error('rab_id')
-                <div class="invalid-feedback">
-                  {{ $message }}
-                </div>
-                @enderror
               </div>
               @endcan
 

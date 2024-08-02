@@ -61,7 +61,7 @@ class ApprovalPlanController extends Controller
         $approval_plan->update([
             'status' => $request->status,
             'remarks' => $request->remarks,
-            'is_read' => 0
+            'is_read' => $request->remarks ? 0 : 1,
         ]);
 
         // update document status
