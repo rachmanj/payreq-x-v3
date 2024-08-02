@@ -25,6 +25,8 @@ reports / equipements
           <tr>
             <th>#</th>
             <th>Unit No</th>
+            <th>FCPKM</th>
+            <th>Project</th>
             <th>Last KM</th>
             <th>Expense</th>
             {{-- <th></th> --}}
@@ -79,6 +81,8 @@ reports / equipements
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'unit_no'},
+        {data: 'fuel_cost_per_km'},
+        {data: 'project'},
         {data: 'last_km'},
         {data: 'total_amount'},
         // {data: 'action', orderable: false, searchable: false},
@@ -86,7 +90,7 @@ reports / equipements
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [2, 3],
+                "targets": [2, 4, 5],
                 "className": "text-right"
               }
             ]

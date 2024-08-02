@@ -8,7 +8,6 @@ use App\Http\Controllers\EquipmentSyncController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\MigrasiController;
 use App\Http\Controllers\OutgoingController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PermissionController;
@@ -21,7 +20,6 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 
-
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'index'])->name('login');
     Route::post('/login', [LoginController::class, 'authenticate'])->name('authenticate');
@@ -29,6 +27,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'index'])->name('register');
     Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 });
+
 
 Route::middleware('auth')->group(function () {
     // Route::get('/', function () {

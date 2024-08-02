@@ -28,6 +28,7 @@
             {{-- SERVICE --}}
             <div class="box box-secondary">
                 <div class="box-header">
+                    <h3 class="box-title">Expense Detail of Unit No: {{ $unit_no }}</h3> <hr>
                     <h3 class="box-title">SERVICE total IDR {{ number_format($result['service']['total'], 0) }}</h3>
                 </div>
                 <div class="box-body">
@@ -98,7 +99,6 @@
             {{-- FUEL --}}
             <div class="box">
                 <div class="box-header">
-                    <h3 class="box-title">Expense Detail of Unit No: {{ $unit_no }}</h3> <hr>
                     <h3 class="box-title">FUEL total IDR {{ number_format($result['fuel']['total'], 0) }}</h3>
                 </div>
                 <div class="box-body">

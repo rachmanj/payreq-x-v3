@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Migrasi\MigrasiPayreqController;
+use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\VerificationJournal;
-use Illuminate\Http\Request;
 
 class TestController extends Controller
 {
     public function index()
     {
         // $test = app(UserAnggaranController::class)->progress(78);
-        $test = app(ApprovalPlanController::class)->create_approval_plan('rab', 17);
+        $test = app(EquipmentController::class)->fuelCostPerKM('VA 070');
+        // $test = app(EquipmentController::class)->km_array('VA 063');
 
         return $test;
     }
