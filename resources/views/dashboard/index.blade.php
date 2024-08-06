@@ -29,8 +29,14 @@
     </div>
 
     <div class="row">
+        @include('dashboard.chart2')
+    </div>
+
+    <div class="row">
         @include('dashboard.chart')
     </div>
+
+    
 
     
 @endsection

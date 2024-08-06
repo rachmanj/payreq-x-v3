@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Accounting\SapSyncController;
 use App\Models\ApprovalPlan;
 use App\Models\Outgoing;
 use App\Models\Payreq;
-use App\Models\Realization;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 
 class DashboardUserController extends Controller
 {
@@ -22,13 +21,17 @@ class DashboardUserController extends Controller
         $user_ongoing_realizations = app(UserRealizationController::class)->ongoing_realizations();
         $avg_completion_days = $this->user_completion_days(auth()->user()->id);
         $monthly_chart = $this->user_monthly_amount();
+        $vj_not_posted = app(SapSyncController::class)->vjNotPosted()->count();
+        $chart_activites = app(SapSyncController::class)->chart_vj_postby();
 
         return view('dashboard.index', compact([
             'wait_approve',
             'user_ongoing_payreqs',
             'user_ongoing_realizations',
             'avg_completion_days',
-            'monthly_chart'
+            'monthly_chart',
+            'vj_not_posted',
+            'chart_activites',
         ]));
     }
 

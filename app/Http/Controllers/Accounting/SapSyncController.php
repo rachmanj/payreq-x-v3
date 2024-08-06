@@ -8,9 +8,12 @@ use App\Http\Controllers\VerificationJournalController;
 use App\Models\Account;
 use App\Models\Department;
 use App\Models\Realization;
+use App\Models\User;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class SapSyncController extends Controller
@@ -136,9 +139,8 @@ class SapSyncController extends Controller
             ->addColumn('status', function ($journal) {
                 if ($journal->sap_journal_no == null) {
                     return '<span class="badge badge-danger">Not Posted Yet</span>';
-                } else {
-                    return '<span class="badge badge-success">Posted</span>';
                 }
+                return '<span class="badge badge-success">Posted</span>';
             })
             ->editColumn('amount', function ($journal) {
                 return number_format($journal->amount, 2);
@@ -146,11 +148,9 @@ class SapSyncController extends Controller
             ->editColumn('sap_posting_date', function ($journal) {
                 if ($journal->sap_posting_date == null) {
                     return '-';
-                } else {
-                    // $date = new \Carbon\Carbon($journal->sap_posting_date);
-                    $date = new \Carbon\Carbon($journal->updated_at);
-                    return $date->addHours(8)->format('d-M-Y H:i');
                 }
+                $date = new \Carbon\Carbon($journal->updated_at);
+                return $date->addHours(8)->format('d-M-Y H:i');
             })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.sap-sync.action')
@@ -227,5 +227,36 @@ class SapSyncController extends Controller
         $vj_detail->save();
 
         return back()->with('success', 'Detail Updated');
+    }
+
+    public function vjNotPosted()
+    {
+        $vjs = VerificationJournal::whereNull('sap_journal_no')->get();
+
+        return $vjs;
+    }
+
+    public function chart_vj_postby()
+    {
+        // personel activities by name
+        $activities = VerificationJournal::select(
+            'posted_by',
+            DB::raw("(COUNT(*)) as total_count")
+        )
+            ->whereYear('created_at', Carbon::now())
+            ->groupBy(DB::raw("posted_by"))
+            ->get();
+
+        //convert user_id to name
+        foreach ($activities as $activity) {
+            $activity->posted_name = User::find($activity->posted_by) ? User::find($activity->posted_by)->name : "not found";
+        }
+
+        $activities_count = $activities->pluck('total_count')->toArray();
+
+        return [
+            'activities_count' => array_sum($activities_count),
+            'activities' => $activities,
+        ];
     }
 }

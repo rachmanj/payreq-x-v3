@@ -67,5 +67,78 @@
         })
 
 
+        // activities chart
+        let activities = {!! json_encode($chart_activites['activities']) !!};
+         var username = activities.map(function(obj) {
+              return obj.posted_name;
+         });
+         
+         var total_counts = activities.map(function(obj) {
+              return obj.total_count;
+         });
+
+        //  console.log(username);
+
+         var $activitiesChart = $('#activities-chart')
+         var activitiesChart = new Chart($activitiesChart, {
+        type: 'pie',
+        data: {
+          labels: username,
+          datasets: [
+            {
+              data: total_counts,
+              backgroundColor: ['#007bff', '#28a745', '#333333', '#c3e6cb', '#dc3545', '#6c757d'],
+            }
+          ]
+        },
+        options: {
+          maintainAspectRatio: false,
+          tooltips: {
+            mode: mode,
+            intersect: intersect
+          },
+          hover: {
+            mode: mode,
+            intersect: intersect
+          },
+          legend: {
+            display: true
+          },
+          scales: {
+            yAxes: [{
+              display: false,
+              gridLines: {
+                display: true,
+                lineWidth: '4px',
+                color: 'rgba(0, 0, 0, .2)',
+                zeroLineColor: 'transparent'
+              },
+              ticks: $.extend({
+                beginAtZero: true,
+    
+                // Include a dollar sign in the ticks
+                callback: function (value) {
+                  if (value >= 1000000) {
+                    value /= 1000000
+                    value += 'Jt'
+                  }
+    
+                  return '' + value
+                }
+              }, ticksStyle)
+            }],
+            xAxes: [{
+              display: false,
+              gridLines: {
+                display: false
+              },
+              ticks: ticksStyle
+            }]
+          }
+        }
+        })
+
+
+
     })
 </script>

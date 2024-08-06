@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Models\Payreq;
@@ -13,8 +14,9 @@ class TestController extends Controller
     public function index()
     {
         // $test = app(UserAnggaranController::class)->progress(78);
-        $test = app(EquipmentController::class)->fuelCostPerKM('VA 070');
+        // $test = app(EquipmentController::class)->fuelCostPerKM('VA 070');
         // $test = app(EquipmentController::class)->km_array('VA 063');
+        $test = app(SapSyncController::class)->chart_vj_postby();
 
         return $test;
     }
