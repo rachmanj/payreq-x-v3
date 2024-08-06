@@ -15,8 +15,9 @@
       @endcan
       
       @hasanyrole('superadmin|admin|cashier')
-      <li><a href="{{ route('journals.index') }}" class="dropdown-item">Journals</a></li>
-      <li><a href="{{ route('general-ledgers.index') }}" class="dropdown-item">General Ledgers</a></li>
+      <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
+      {{-- <li><a href="{{ route('journals.index') }}" class="dropdown-item">Journals</a></li> --}}
+      {{-- <li><a href="{{ route('general-ledgers.index') }}" class="dropdown-item">General Ledgers</a></li> --}}
       @endhasanyrole
 
       @can('akses_loan_report')
