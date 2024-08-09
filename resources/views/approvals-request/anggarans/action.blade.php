@@ -8,7 +8,10 @@
 @endphp
 
 
-<button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#approvals-update-{{ $model->id }}">detail</button>
+<button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#approvals-update-{{ $model->id }}">vote</button>
+@if($model->anggaran->filename)
+<a href="{{ asset('file_upload/') . '/'. $model->anggaran->filename }}" class="btn btn-xs btn-success" target=_blank>show</a>
+@endif
 
 {{-- modal update --}}
 <div class="modal fade" id="approvals-update-{{ $model->id }}">

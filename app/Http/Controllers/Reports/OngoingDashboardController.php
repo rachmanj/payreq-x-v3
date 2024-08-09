@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\UserController;
 use App\Models\Account;
 use App\Models\Incoming;
 use App\Models\Outgoing;
@@ -11,15 +12,17 @@ use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\User;
 use App\Models\VerificationJournalDetail;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use PhpParser\Node\Expr\Include_;
+
 
 class OngoingDashboardController extends Controller
 {
     public function dashboard()
     {
-        if (auth()->user()->hasRole(['superadmin', 'admin', 'cashier'])) {
+        // get user roles
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (array_intersect(['superadmin', 'admin', 'cashier'], $userRoles)) {
             $project = request()->query('project');
         } else {
             $project = auth()->user()->project;
@@ -35,9 +38,9 @@ class OngoingDashboardController extends Controller
         $payreq_belum_realisasi_amount = $this->payreq_belum_realisasi_amount($project);
         $realisasi_belum_verifikasi_amount = $this->realisasi_belum_verifikasi_amount($project);
         $verifikasi_belum_posted_amount = $this->verifikasi_belum_posted_amount($project); // this is not used anymore, so we just set it to '0.00
-        $variance_realisasi_belum_outgoing_amount = $this->variance_realisasi_belum_outgoing_amount($project);
         $variance_realisasi_belum_incoming_amount = $this->variance_realisasi_belum_incoming_amount($project);
-        $total_advance_employee = $payreq_belum_realisasi_amount + $realisasi_belum_verifikasi_amount + $verifikasi_belum_posted_amount + $variance_realisasi_belum_outgoing_amount - $variance_realisasi_belum_incoming_amount;
+        $variance_realisasi_belum_outgoing_amount = $this->variance_realisasi_belum_outgoing_amount($project);
+        $total_advance_employee = $payreq_belum_realisasi_amount + $realisasi_belum_verifikasi_amount + $verifikasi_belum_posted_amount + $variance_realisasi_belum_incoming_amount - $variance_realisasi_belum_outgoing_amount;
         $cek_balance_pc_sap = $saldo_pc_payreq_system + $total_advance_employee;
 
         $dashboard_data = [

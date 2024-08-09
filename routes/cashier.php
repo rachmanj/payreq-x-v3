@@ -1,13 +1,12 @@
 <?php
 
 use App\Http\Controllers\Cashier\CashierModalController;
+use App\Http\Controllers\Cashier\TransaksiController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CashierApprovedController;
 use App\Http\Controllers\CashierOutgoingController;
 use App\Http\Controllers\CashierIncomingController;
 use App\Http\Controllers\CashierDashboardController;
-use App\Http\Controllers\CashierGiroController;
-use App\Http\Controllers\CashierGiroDetailController;
 use App\Http\Controllers\CashOpnameController;
 use App\Http\Controllers\Migrasi\MigrasiBucController;
 use App\Http\Controllers\Migrasi\MigrasiIndexController;
@@ -52,15 +51,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
     });
 
-    Route::prefix('giros')->name('giros.')->group(function () {
-        Route::get('/data', [CashierGiroController::class, 'data'])->name('data');
-        Route::get('/{giro_id}/data', [CashierGiroDetailController::class, 'data'])->name('detail.data');
-        Route::get('/{giro_id}', [CashierGiroDetailController::class, 'index'])->name('detail.index');
-        Route::post('/{giro_id}/store', [CashierGiroDetailController::class, 'store'])->name('detail.store');
-        Route::delete('/{giro_detail_id}/destroy', [CashierGiroDetailController::class, 'destroy'])->name('detail.destroy');
-    });
-    Route::resource('giros', CashierGiroController::class);
-
     Route::prefix('modal')->name('modal.')->group(function () {
         Route::get('/data', [CashierModalController::class, 'data'])->name('data');
         Route::post('/store', [CashierModalController::class, 'store'])->name('store');
@@ -73,6 +63,27 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/{id}/print', [CashOpnameController::class, 'print'])->name('print');
     });
     Route::resource('pcbc', CashOpnameController::class);
+
+    // TRANSAKSIS
+    Route::prefix('transaksis')->name('transaksis.')->group(function () {
+        Route::get('/data', [TransaksiController::class, 'data'])->name('data');
+        Route::get('/', [TransaksiController::class, 'index'])->name('index');
+        Route::post('/store', [TransaksiController::class, 'store'])->name('store');
+    });
+
+    // BILYET
+    Route::prefix('bilyets')->name('bilyets.')->group(function () {
+        Route::get('/data', [TransaksiController::class, 'bilyet_data'])->name('data');
+        Route::get('/', [TransaksiController::class, 'bilyet_index'])->name('index');
+        Route::post('/store', [TransaksiController::class, 'bilyet_store'])->name('store');
+    });
+
+    // GIROS
+    Route::prefix('giros')->name('giros.')->group(function () {
+        Route::get('/data', [TransaksiController::class, 'giro_data'])->name('data');
+        Route::get('/', [TransaksiController::class, 'giro_index'])->name('index');
+        Route::post('/store', [TransaksiController::class, 'giro_store'])->name('store');
+    });
 
     // MIGRASI
     Route::prefix('migrasi')->name('migrasi.')->group(function () {

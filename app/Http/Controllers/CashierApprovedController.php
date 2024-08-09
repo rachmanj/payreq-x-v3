@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Cashier\TransaksiController;
 use App\Models\Account;
 use App\Models\Outgoing;
 use App\Models\Payreq;
@@ -32,29 +33,8 @@ class CashierApprovedController extends Controller
 
         $this->payreqStatusUpdate($payreq, $outgoing);
 
-        /*
-        if ($payreq->type === 'advance') { // if payreq type is 'advance'
-            // update payreq status
-            $payreq->status = 'paid';
-            $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
-            $payreq->printable = 0;
-            $payreq->save();
-        } elseif ($payreq->type === 'reimburse') { // if payreq type is 'reimburse'
-            $payreq->status = 'close';
-            $payreq->printable = 0;
-            $payreq->deletable = 0;
-            $payreq->save();
-            // update realiztion status
-            $realization = $payreq->realization;
-            $realization->status = 'reimburse-paid';
-            $realization->save();
-        } else { // if payreq type is 'other'
-            // update payreq status
-            $payreq->status = 'close';
-            $payreq->printable = 0;
-            $payreq->deletable = 0;
-            $payreq->save();
-        } */
+        // create transaksi
+        app(TransaksiController::class)->store('outgoing', $outgoing);
 
         // update app_balance in account table
         app(AccountController::class)->outgoing($payreq->amount);
@@ -103,28 +83,25 @@ class CashierApprovedController extends Controller
         $outgoing->outgoing_date = $request->date;
         $outgoing->save();
 
-        $outgoings = Outgoing::where('payreq_id', $id)->get();
+        // create transaksi
+        app(TransaksiController::class)->store('outgoing', $outgoing);
 
+        // update app_balance in account table
+        $response = app(AccountController::class)->outgoing($request->amount);
+
+        if (!$response) {
+            return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Account not found!');
+        }
+
+        $outgoings = Outgoing::where('payreq_id', $id)->get();
 
         // update payreq status
         if ($payreq->amount == $outgoings->sum('amount')) {
 
-            // update app_balance in account table
-            $response = app(AccountController::class)->outgoing($request->amount);
-
-            if (!$response) {
-                return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Account not found!');
-            }
-
             $this->payreqStatusUpdate($payreq, $outgoing);
+
             return redirect()->route('cashier.approveds.pay', $id)->with('success', 'Payreq successfully paid in full');
         } else {
-            // update app_balance in account table
-            $response = app(AccountController::class)->outgoing($request->amount);
-
-            if (!$response) {
-                return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Account not found!');
-            }
 
             $payreq->status = 'split';
             $payreq->printable = 0;

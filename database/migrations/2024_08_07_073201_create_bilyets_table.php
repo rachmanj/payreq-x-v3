@@ -11,16 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('giros', function (Blueprint $table) {
+        Schema::create('bilyets', function (Blueprint $table) {
             $table->id();
             $table->string('nomor', 30)->unique();
             $table->string('bank', 50)->nullable();
             $table->string('account', 50)->nullable();
-            $table->string('giro_type', 20)->nullable(); //cek or bilyet
+            $table->string('giro_type', 20)->nullable(); //cek or bilyet or loa
             $table->date('tanggal')->nullable();
+            $table->double('amount')->nullable();
             $table->string('remarks')->nullable();
-            $table->text('use_for')->nullable();
+            $table->string('use_for')->nullable();
             $table->string('filename')->nullable();
+            $table->foreignId('created_by')->nullable();
             $table->timestamps();
         });
     }
@@ -30,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('giros');
+        Schema::dropIfExists('bilyets');
     }
 };

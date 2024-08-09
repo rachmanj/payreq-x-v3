@@ -13,20 +13,10 @@
   <div class="col-12">
     <div class="card card-info">
       <div class="card-header">
-        <h3 class="card-title">Rekaps</h3>
+        <h3 class="card-title">Rekaps for project {{ $project }}</h3>
         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
       </div>
       <div class="card-body">
-        {{-- <dl class="row">
-          <dt class="col-sm-4">Saldo PC Payreq System</dt>
-          <dd class="col-sm-8">: IDR {{ $dashboard_data['saldo_pc_payreq_system'] }}</dd>
-          <dt class="col-sm-4">Payreq belum realisasi</dt>
-            <dd class="col-sm-8">: IDR {{ $dashboard_data['payreq_belum_realisasi'] }}</dd>
-          <dt class="col-sm-4">Payreq belum verifikasi</dt>
-            <dd class="col-sm-8">: IDR {{ $dashboard_data['payreq_belum_verifikasi'] }}</dd>
-          <dt class="col-sm-4">Cek balance PC SAP</dt>
-            <dd class="col-sm-8">: IDR {{ $dashboard_data['cek_balance_pc_sap'] }}</dd>
-        </dl> --}}
         <table class="table table-striped">
           <tbody>
             <tr>

@@ -4,9 +4,10 @@
       {{-- <li><a href="{{ route('cashier.dashboard.index') }}" class="dropdown-item">Dashboard</a></li> --}}
       <li><a href="{{ route('cashier.approveds.index') }}" class="dropdown-item">Ready to Pay</a></li>
       <li><a href="{{ route('verifications.index') }}" class="dropdown-item">Verifications</a></li>
+      <li><a href="{{ route('cashier.transaksis.index') }}" class="dropdown-item">Account History</a></li>
       <li><a href="{{ route('cashier.outgoings.index') }}" class="dropdown-item">Outgoing List</a></li>
       <li><a href="{{ route('cashier.incomings.index') }}" class="dropdown-item">Incoming List</a></li>
-      @can('akses_cashier_giro')
+      @can('akses_giro')
       <li><a href="{{ route('cashier.giros.index') }}" class="dropdown-item">Giro</a></li>
       @endcan
       <li class="dropdown-divider">EOD</li>

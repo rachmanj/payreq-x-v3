@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Reports\EquipmentController;
+use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Models\Payreq;
 use App\Models\Realization;
@@ -17,6 +18,7 @@ class TestController extends Controller
         // $test = app(EquipmentController::class)->fuelCostPerKM('VA 070');
         // $test = app(EquipmentController::class)->km_array('VA 063');
         $test = app(SapSyncController::class)->chart_vj_postby();
+        $test = app(OngoingDashboardController::class)->dashboard_data('017C');
 
         return $test;
     }

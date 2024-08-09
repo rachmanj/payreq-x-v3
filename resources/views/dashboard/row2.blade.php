@@ -26,7 +26,7 @@
     <div class="icon">
       <i class="ion ion-stats-bars"></i>
     </div>
-    <a href="#" class="small-box-footer" style="cursor: default">VJ Not Synced Yet</a>
+    <a href="#" class="small-box-footer" style="cursor: default">VJ to Synced</a>
   </div>
 </div>
 @endcan

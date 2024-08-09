@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('giro_details', function (Blueprint $table) {
+        Schema::create('giros', function (Blueprint $table) {
             $table->id();
-            $table->string('giro_id');
-            $table->string('remarks')->nullable();
-            $table->double('amount')->nullable();
-            $table->string('tx_flag')->nullable();
-            $table->boolean('is_cashin')->default(false);
+            $table->string('bank', 50)->nullable();
+            $table->string('giro_type', 50)->nullable(); // tabungan, giro, deposito
+            $table->string('account_no', 50)->nullable();
+            $table->string('account_name', 50)->nullable();
+            $table->string('currency', 5)->nullable();
             $table->timestamps();
         });
     }
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('giro_details');
+        Schema::dropIfExists('giros');
     }
 };
