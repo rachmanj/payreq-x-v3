@@ -317,4 +317,16 @@ class UserAnggaranController extends Controller
             return 'bg-danger';
         }
     }
+
+    public function getAvailableRabs()
+    {
+        $rabs = Anggaran::where('department_id', 12)
+            // ->where('created_by', auth()->user()->id)
+            ->where('status', 'approved')
+            ->where('is_active', 1)
+            ->orderBy('nomor', 'asc')
+            ->get();
+
+        return $rabs;
+    }
 }

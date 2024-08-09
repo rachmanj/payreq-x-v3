@@ -118,7 +118,7 @@ class ReportIndexController extends Controller
                 ],
             ],
             [
-                'name' => 'Parameters Related',
+                'name' => 'Anggaran Related',
                 'protector' => null,
                 'subMenu' => [
                     [

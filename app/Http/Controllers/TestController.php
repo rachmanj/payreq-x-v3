@@ -14,11 +14,11 @@ class TestController extends Controller
 {
     public function index()
     {
-        // $test = app(UserAnggaranController::class)->progress(78);
+        $test = app(UserAnggaranController::class)->getAvailableRabs();
         // $test = app(EquipmentController::class)->fuelCostPerKM('VA 070');
         // $test = app(EquipmentController::class)->km_array('VA 063');
-        $test = app(SapSyncController::class)->chart_vj_postby();
-        $test = app(OngoingDashboardController::class)->dashboard_data('017C');
+        // $test = app(SapSyncController::class)->chart_vj_postby();
+        // $test = app(OngoingDashboardController::class)->dashboard_data('017C');
 
         return $test;
     }

@@ -16,7 +16,7 @@ class PayreqAdvanceController extends Controller
     public function create()
     {
         $payreq_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
-        $rabs = $this->getUserRabs();
+        $rabs = app(UserAnggaranController::class)->getAvailableRabs();
 
         return view('user-payreqs.advance.create', compact(['payreq_no', 'rabs']));
     }
@@ -131,15 +131,5 @@ class PayreqAdvanceController extends Controller
         ]);
 
         return $payreq;
-    }
-
-    public function getUserRabs()
-    {
-        $rabs = Anggaran::where('created_by', auth()->user()->id)
-            ->where('status', 'approved')
-            ->orderBy('nomor', 'asc')
-            ->get();
-
-        return $rabs;
     }
 }

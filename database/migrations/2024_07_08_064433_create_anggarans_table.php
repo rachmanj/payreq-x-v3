@@ -37,6 +37,7 @@ return new class extends Migration
             $table->boolean('editable')->default(true);
             $table->boolean('deletable')->default(true);
             $table->boolean('printable')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
