@@ -20,7 +20,7 @@ aging
       </div>
       <!-- /.card-header -->
       <div class="card-body">
-        <table id="ongoings" class="table table-bordered table-striped">
+        <table id="agings" class="table table-bordered table-striped">
           <thead>
           <tr>
             <th>#</th>
@@ -31,16 +31,8 @@ aging
             <th>PaidD</th>
             <th>IDR</th>
             <th>Days</th>
-            {{-- <th></th> --}}
           </tr>
           </thead>
-          {{-- <tfoot>
-          <tr>
-            <th colspan="5" class="text-right">TOTAL</th>
-            <th>{{ number_format($total_amount, 0) }}</th>
-            <th></th>
-            <th></th>
-          </tfoot> --}}
         </table>
       </div>
       <!-- /.card-body -->
@@ -76,10 +68,10 @@ aging
 
 <script>
   $(function () {
-    $("#ongoings").DataTable({
+    $("#agings").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('reports.ongoing.data') }}',
+      ajax: '{{ route('reports.ongoing.payreq-aging.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'employee'},
@@ -88,7 +80,7 @@ aging
         {data: 'status'},
         {data: 'outgoing_date'},
         {data: 'amount'},
-        {data: 'days'},
+        {data: 'aging'},
         // {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
@@ -98,7 +90,7 @@ aging
                 "className": "text-center"
               },
               {
-                "targets": [6, 7],
+                "targets": [0, 6, 7],
                 "className": "text-right"
               }
             ]

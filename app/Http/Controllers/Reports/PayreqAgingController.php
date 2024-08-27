@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\ToolController;
+use App\Http\Controllers\UserController;
 use App\Models\Payreq;
 use Illuminate\Http\Request;
 
@@ -17,8 +17,9 @@ class PayreqAgingController extends Controller
     public function data()
     {
         $status_include = ['paid', 'realization'];
+        $userRoles = app(UserController::class)->getUserRoles();
 
-        if (auth()->user()->hasRole(['superadmin', 'admin', 'cashier'])) {
+        if (array_intersect(['superadmin', 'admin', 'cashier'], $userRoles)) {
             $project_include = ['000H', 'APS'];
         } else {
             $project_include = [auth()->user()->project];
@@ -60,6 +61,7 @@ class PayreqAgingController extends Controller
                 $interval = $now->diff($outgoing_date);
                 return $interval->days;
             })
+            ->addIndexColumn()
             ->rawColumns(['nomor', 'status'])
             ->make(true);
     }

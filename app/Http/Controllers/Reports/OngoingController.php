@@ -6,14 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Payreq;
 use Illuminate\Http\Request;
 use App\Http\Controllers\ToolController; // Import the missing class
+use App\Http\Controllers\UserController;
 
 class OngoingController extends Controller
 {
     public function index()
     {
         $status_include = ['paid', 'realization'];
+        $userRoles = app(UserController::class)->getUserRoles();
 
-        if (auth()->user()->hasRole(['superadmin', 'admin', 'cashier'])) {
+        if (array_intersect(['superadmin', 'admin', 'cashier'], $userRoles)) {
             $project_include = ['000H', 'APS'];
         } else {
             $project_include = explode(',', auth()->user()->project);
@@ -28,15 +30,15 @@ class OngoingController extends Controller
 
     public function project_index($int)
     {
-
         return $int;
     }
 
     public function data()
     {
         $status_include = ['paid', 'realization'];
+        $userRoles = app(UserController::class)->getUserRoles();
 
-        if (auth()->user()->hasRole(['superadmin', 'admin', 'cashier'])) {
+        if (array_intersect(['superadmin', 'admin', 'cashier'], $userRoles)) {
             $project_include = ['000H', 'APS'];
         } else {
             $project_include = explode(',', auth()->user()->project);
