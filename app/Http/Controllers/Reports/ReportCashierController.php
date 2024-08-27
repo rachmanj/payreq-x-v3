@@ -18,11 +18,11 @@ class ReportCashierController extends Controller
 
     public function dashboard_data()
     {
-        $closing_balance = $this->getLastSerahTerimaModal() + $this->getIncomings()->sum('amount') - $this->getOutgoings()->sum('amount');
+        $closing_balance = $this->getTodayTerimaModal() + $this->getIncomings()->sum('amount') - $this->getOutgoings()->sum('amount');
         $formated_closing_balance = number_format($closing_balance, 2);
 
         $data = [
-            'opening_balance' => $this->getLastSerahTerimaModal(),
+            'opening_balance' => $this->getTodayTerimaModal(),
             'total_incoming' => number_format($this->getIncomings()->sum('amount'), 2),
             'total_outgoing' => number_format($this->getOutgoings()->sum('amount'), 2),
             'closing_balance' => $formated_closing_balance,
@@ -33,27 +33,26 @@ class ReportCashierController extends Controller
         return $data;
     }
 
-    public function getLastSerahTerimaModal()
+    public function getTodayTerimaModal()
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (array_intersect(['superadmin', 'admin', 'approver'], $userRoles)) {
-            $last_serah_terima_modal = CashierModal::where('type', 'bod')
+            $today_terima_modal = CashierModal::where('type', 'bod')
                 ->where('status', 'close')
                 ->where('date', date('Y-m-d'))
                 ->get()
                 ->sum('receive_amount');
         } else {
-            $last_serah_terima_modal = CashierModal::where('type', 'bod')
+            $today_terima_modal = CashierModal::where('type', 'bod')
                 ->where('receiver', auth()->user()->id)
                 ->where('status', 'close')
-                ->orderBy('date', 'desc')
-                ->first()
-                ->receive_amount;
+                ->where('date', date('Y-m-d'))
+                ->first();
         }
 
-        if ($last_serah_terima_modal) {
-            return $last_serah_terima_modal;
+        if ($today_terima_modal) {
+            return $today_terima_modal->receive_amount;
         } else {
             return 0;
         }
@@ -64,9 +63,14 @@ class ReportCashierController extends Controller
         $date = date('Y-m-d');
         $userRoles = app(UserController::class)->getUserRoles();
 
-        if (array_intersect(['superadmin', 'admin', 'approver'], $userRoles)) {
+        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
                 ->where('receive_date',  $date)
+                ->get();
+        } elseif (in_array('approver', $userRoles)) {
+            $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
+                ->where('receive_date',  $date)
+                ->where('project', '000H')
                 ->get();
         } else {
             $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
@@ -89,8 +93,12 @@ class ReportCashierController extends Controller
 
         $userRoles = app(UserController::class)->getUserRoles();
 
-        if (array_intersect(['superadmin', 'admin', 'approver'], $userRoles)) {
+        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $outgoings = Outgoing::where('outgoing_date', $date)
+                ->get();
+        } elseif (array_intersect(['approver', 'approver_bo', 'approver_017', 'approver_021', 'approver_022', 'approver_023'], $userRoles)) {
+            $outgoings = Outgoing::where('outgoing_date', $date)
+                ->where('project', '000H')
                 ->get();
         } else {
             $outgoings = Outgoing::where('outgoing_date', $date)

@@ -29,6 +29,7 @@ return new class extends Migration
             $table->date('periode_ofr')->nullable();
             $table->decimal('amount', 20, 2)->default(0);
             $table->decimal('balance', 20, 2)->default(0);
+            $table->string('usage', 20)->default('user'); // budget usage by user / department / project
             $table->string('status', 20)->default('draft');
             $table->foreignId('created_by');
             $table->timestamp('approved_at')->nullable();
