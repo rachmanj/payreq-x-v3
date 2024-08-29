@@ -99,7 +99,7 @@
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5],
+                "targets": [0, 5],
                 "className": "text-right"
               }
             ]

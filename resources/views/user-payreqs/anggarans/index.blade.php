@@ -25,8 +25,8 @@
           <tr>
             <th>#</th>
             <th>Nomor</th>
-            <th>For Project</th>
-            <th>Desc</th>
+            <th>For<br>Usage</th>
+            <th>Description</th>
             <th>Budget IDR</th>
             <th>Realisasi IDR</th>
             <th>Progres</th>

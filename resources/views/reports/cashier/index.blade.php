@@ -24,11 +24,11 @@ Cashier Reports
                             <td class="text-right">IDR {{ number_format($data['opening_balance'], 2) }}</td>
                         </tr>
                         <tr>
-                            <td>Incoming</td>
+                            <td>Incomings</td>
                             <td class="text-right">IDR {{ $data['total_incoming'] }}</td>
                         </tr>
                         <tr>
-                            <td>Outgoing</td>
+                            <td>Outgoings</td>
                             <td class="text-right">IDR {{ $data['total_outgoing'] }}</td>
                         </tr>
                         <tr>
@@ -52,7 +52,7 @@ Cashier Reports
                                 <tr>
                                     <th class="text-right">#</th>
                                     <th>Desc</th>
-                                    <th class="text-right">Amount</th>
+                                    <th class="text-right">Amount IDR</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -60,7 +60,7 @@ Cashier Reports
                                     <tr>
                                         <td class="text-right">{{ $key + 1 }}</td>
                                         <td>{{ $item->description }}</td>
-                                        <td class="text-right">IDR {{ number_format($item->amount, 2) }}</td>
+                                        <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -79,7 +79,7 @@ Cashier Reports
                                 <tr>
                                     <th class="text-right">#</th>
                                     <th>Desc</th>
-                                    <th class="text-right">Amount</th>
+                                    <th class="text-right">Amount IDR</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -87,7 +87,7 @@ Cashier Reports
                                     <tr>
                                         <td class="text-right">{{ $key + 1 }}</td>
                                         <td>{{ $item->description }}</td>
-                                        <td class="text-right">IDR {{ number_format($item->amount, 2) }}</td>
+                                        <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

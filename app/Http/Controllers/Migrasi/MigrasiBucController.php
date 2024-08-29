@@ -41,11 +41,15 @@ class MigrasiBucController extends Controller
                 'old_rab_id' => $rab->id,
                 'date' => $rab->date,
                 'description' => $rab->description,
-                'project' => $rab->project_code,
+                'rab_project' => $rab->project_code,
+                'project' => '000H',
                 'department_id' => $rab->department_id,
                 'type' => 'buc',
                 'amount' => $rab->budget,
                 'status' => 'approved',
+                'editable' => 0,
+                'deletable' => 0,
+                'filename' => $rab->filename,
                 'created_by' => 23, // dncdiv
             ]);
 
@@ -69,20 +73,20 @@ class MigrasiBucController extends Controller
     public function realisasi_rab()
     {
         // get anggarans
-        $anggarans = Anggaran::orderBy('id', 'asc')->get();
+        // $anggarans = Anggaran::orderBy('id', 'asc')->get();
 
-        foreach ($anggarans as $anggaran) {
-            // get payreqs where rab_id === old_rab_id
-            $payreqs = Payreq::where('rab_id', $anggaran->old_rab_id)->get();
+        // foreach ($anggarans as $anggaran) {
+        //     // get payreqs where rab_id === old_rab_id
+        //     $payreqs = Payreq::where('rab_id', $anggaran->old_rab_id)->get();
 
-            foreach ($payreqs as $payreq) {
-                RealisasiAnggaran::create([
-                    'anggaran_id' => $anggaran->id,
-                    'payreq_id' => $payreq->id,
-                ]);
-            }
-        }
+        //     foreach ($payreqs as $payreq) {
+        //         RealisasiAnggaran::create([
+        //             'anggaran_id' => $anggaran->id,
+        //             'payreq_id' => $payreq->id,
+        //         ]);
+        //     }
+        // }
 
-        return redirect()->back()->with('success', 'realisasi rab success');
+        // return redirect()->back()->with('success', 'realisasi rab success');
     }
 }

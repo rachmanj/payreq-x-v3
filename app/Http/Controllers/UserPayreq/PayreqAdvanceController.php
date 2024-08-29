@@ -24,7 +24,7 @@ class PayreqAdvanceController extends Controller
     public function edit($id)
     {
         $payreq = Payreq::findOrFail($id);
-        $rabs = $this->getUserRabs();
+        $rabs = app(UserAnggaranController::class)->getAvailableRabs();
 
         return view('user-payreqs.advance.edit', compact(['payreq', 'rabs']));
     }

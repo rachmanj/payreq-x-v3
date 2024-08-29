@@ -155,9 +155,12 @@ class UserAnggaranController extends Controller
     {
         $anggaran = Anggaran::find($id);
         $projects = Project::orderBy('code', 'asc')->get();
+
         $periode_anggarans = PeriodeAnggaran::orderBy('periode', 'asc')
-            ->where('project', '000H')
-            ->where('is_active', 1)->get();
+            ->where('periode_type', 'anggaran')
+            ->where('project', auth()->user()->project)
+            ->where('is_active', 1)
+            ->get();
 
         // rab_45654654654_filename.pdf convert this to filename.pdf
         if ($anggaran->filename) {
@@ -193,10 +196,7 @@ class UserAnggaranController extends Controller
                 ->limit(300)
                 ->get();
         } else {
-            $anggarans = Anggaran::where('created_by', auth()->user()->id)
-                ->orderBy('date', 'desc')
-                ->limit(300)
-                ->get();
+            $anggarans = $this->getAvailableRabs();
         }
 
         return datatables()->of($anggarans)
@@ -226,9 +226,13 @@ class UserAnggaranController extends Controller
                     return $anggaran->status;
                 }
             })
+            ->editColumn('rab_project', function ($anggaran) {
+                $content = $anggaran->rab_project . '<br><small>' . ucfirst($anggaran->usage) . '</small>';
+                return $content;
+            })
             ->addIndexColumn()
             ->addColumn('action', 'user-payreqs.anggarans.action')
-            ->rawColumns(['action', 'nomor', 'description', 'progres'])
+            ->rawColumns(['action', 'nomor', 'description', 'progres', 'rab_project'])
             ->toJson();
     }
 
@@ -256,7 +260,7 @@ class UserAnggaranController extends Controller
         $anggaran = Anggaran::find($id);
 
         // cek payreqs dgn status paid
-        if ($anggaran->rab_old_id !== null) {
+        if ($anggaran->old_rab_id !== null) {
             $payreqs = Payreq::where('rab_id', $anggaran->old_rab_id)
                 ->whereHas('outgoings')
                 ->get();
@@ -309,23 +313,37 @@ class UserAnggaranController extends Controller
 
     public function statusColor($progress)
     {
-        if ($progress == 100) {
-            return 'bg-success';
-        } elseif ($progress > 0 && $progress < 100) {
+        // if progress > 100 then red, if progress > 90 then yellow, else green
+        if ($progress > 100) {
+            return 'bg-danger';
+        } elseif ($progress > 90) {
             return 'bg-warning';
         } else {
-            return 'bg-danger';
+            return 'bg-success';
         }
     }
 
     public function getAvailableRabs()
     {
-        $rabs = Anggaran::where('department_id', 12)
-            // ->where('created_by', auth()->user()->id)
+        $project_rabs = Anggaran::where('usage', 'project')
+            ->where('project', auth()->user()->project)
             ->where('status', 'approved')
             ->where('is_active', 1)
-            ->orderBy('nomor', 'asc')
             ->get();
+
+        $department_rabs = Anggaran::where('usage', 'department')
+            ->where('department_id', auth()->user()->department_id)
+            ->where('status', 'approved')
+            ->where('is_active', 1)
+            ->get();
+
+        $user_rabs = Anggaran::where('usage', 'user')
+            ->where('created_by', auth()->user()->id)
+            ->where('status', 'approved')
+            ->where('is_active', 1)
+            ->get();
+
+        $rabs = $project_rabs->merge($department_rabs)->merge($user_rabs);
 
         return $rabs;
     }

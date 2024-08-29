@@ -19,7 +19,7 @@ class PayreqReimburseController extends Controller
     public function create()
     {
         $payreq_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
-        $rabs = $this->getRabs();
+        $rabs = app(UserAnggaranController::class)->getAvailableRabs();
 
         return view('user-payreqs.reimburse.create', compact('payreq_no', 'rabs'));
     }
@@ -51,7 +51,7 @@ class PayreqReimburseController extends Controller
         $equipments = $this->getEquipments();
         $payreq = Payreq::findOrFail($id);
         $realization = Realization::where('payreq_id', $payreq->id)->first();
-        $rabs = $this->getRabs();
+        $rabs = app(UserAnggaranController::class)->getAvailableRabs();
 
         return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs']));
     }

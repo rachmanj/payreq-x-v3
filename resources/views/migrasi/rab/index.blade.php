@@ -26,8 +26,10 @@
         <div class="card-body">
           <div class="row">
             <div class="col-12">
+              @hasrole('superadmin')
               <a href="{{ route('cashier.migrasi.rab.migrasi_rab') }}" class="btn btn-sm btn-warning">Migrate RAB</a>
-              <a href="{{ route('cashier.migrasi.rab.realisasi_rab') }}" class="btn btn-sm btn-warning mx-5">Migrate Realisasi RAB</a>
+              {{-- <a href="{{ route('cashier.migrasi.rab.realisasi_rab') }}" class="btn btn-sm btn-warning mx-5">Migrate Realisasi RAB</a> --}}
+              @endhasrole
             </div>
           </div>
         </div>

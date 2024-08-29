@@ -160,6 +160,8 @@ class ApprovalPlanController extends Controller
                 // update field periode_ofr of anggaran
                 $document->update([
                     'periode_ofr' => $request->periode_ofr,
+                    'usage' => $request->usage,
+                    'periode_anggaran' => $request->periode_anggaran,
                 ]);
             }
         }

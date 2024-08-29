@@ -46,13 +46,14 @@ class ReportCashierController extends Controller
         } else {
             $today_terima_modal = CashierModal::where('type', 'bod')
                 ->where('receiver', auth()->user()->id)
-                ->where('status', 'close')
+                // ->where('status', 'close')
                 ->where('date', date('Y-m-d'))
-                ->first();
+                ->first()
+                ->receive_amount;
         }
 
         if ($today_terima_modal) {
-            return $today_terima_modal->receive_amount;
+            return $today_terima_modal;
         } else {
             return 0;
         }
@@ -67,10 +68,15 @@ class ReportCashierController extends Controller
             $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
                 ->where('receive_date',  $date)
                 ->get();
-        } elseif (in_array('approver', $userRoles)) {
+        } elseif (array_intersect(['approver', 'cashier'], $userRoles)) {
             $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
                 ->where('receive_date',  $date)
-                ->where('project', '000H')
+                ->whereIn('project', ['000H', 'APS'])
+                ->get();
+        } elseif (array_intersect(['approver_bo', 'approver_017', 'approver_021', 'approver_022', 'approver_023'], $userRoles)) {
+            $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
+                ->where('receive_date',  $date)
+                ->where('project', auth()->user()->project)
                 ->get();
         } else {
             $incomings = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
@@ -90,15 +96,18 @@ class ReportCashierController extends Controller
     public function getOutgoings()
     {
         $date = date('Y-m-d');
-
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $outgoings = Outgoing::where('outgoing_date', $date)
                 ->get();
-        } elseif (array_intersect(['approver', 'approver_bo', 'approver_017', 'approver_021', 'approver_022', 'approver_023'], $userRoles)) {
+        } elseif (array_intersect(['approver', 'cashier'], $userRoles)) {
             $outgoings = Outgoing::where('outgoing_date', $date)
-                ->where('project', '000H')
+                ->whereIn('project', ['000H', 'APS'])
+                ->get();
+        } elseif (array_intersect(['approver_bo', 'approver_017', 'approver_021', 'approver_022', 'approver_023'], $userRoles)) {
+            $outgoings = Outgoing::where('outgoing_date', $date)
+                ->where('project', auth()->user()->project)
                 ->get();
         } else {
             $outgoings = Outgoing::where('outgoing_date', $date)

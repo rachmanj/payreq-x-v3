@@ -86,6 +86,46 @@
 
                     <div class="row">
                         <div class="col-12">
+                            <label for="type">Anggaran Type</label>
+                            <div class="form-group">
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="periode" name="type" {{ $model->anggaran->type === 'periode' ? 'checked' : '' }}>
+                                    <label class="form-check-label">Periode</label>
+                                </div>
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="event" name="type"  {{ $model->anggaran->type === 'event' ? 'checked' : '' }}>
+                                    <label class="form-check-label">Event</label>
+                                </div>
+                                <div class="form-check d-inline">
+                                    <input class="form-check-input" type="radio" value="buc" name="type"  {{ $model->anggaran->type === 'buc' ? 'checked' : '' }}>
+                                    <label class="form-check-label">BUC</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="usage">Usage</label>
+                            <div class="form-group">
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="user" name="usage" {{ $model->anggaran->usage === 'user' ? 'checked' : '' }}>
+                                    <label class="form-check-label">User</label>
+                                </div>
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="department" name="usage"  {{ $model->anggaran->usage === 'department' ? 'checked' : '' }}>
+                                    <label class="form-check-label">Department</label>
+                                </div>
+                                <div class="form-check d-inline">
+                                    <input class="form-check-input" type="radio" value="project" name="usage"  {{ $model->anggaran->usage === 'project' ? 'checked' : '' }}>
+                                    <label class="form-check-label">Project</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
                             <div id="remarks" class="form-group">
                                 <label for="remarks">Note</label>
                                 <textarea name="remarks" id="remarks" class="form-control" rows="2">{{ old('remarks') }}</textarea>
