@@ -28,7 +28,7 @@
             <th>For<br>Usage</th>
             <th>Description</th>
             <th>Budget IDR</th>
-            <th>Release IDR</th>
+            {{-- <th>Release IDR</th> --}}
             <th>Progres</th>
             <th></th>
           </tr>
@@ -68,15 +68,19 @@
           {data: 'rab_project'},
           {data: 'description'},
           {data: 'budget'},
-          {data: 'realisasi'},
+          // {data: 'realisasi'},
           {data: 'progres'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [0, 4, 5],
+                  "targets": [0, 4],
                   "className": "text-right"
+                },
+                {
+                  "targets": [5],
+                  "className": "text-center"
                 },
               ]
       })

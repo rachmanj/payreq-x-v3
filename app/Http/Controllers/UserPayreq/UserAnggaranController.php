@@ -196,10 +196,7 @@ class UserAnggaranController extends Controller
                 ->limit(300)
                 ->get();
         } else {
-            $anggarans = Anggaran::where('created_by', auth()->user()->id)
-                ->orderBy('date', 'desc')
-                ->limit(300)
-                ->get();
+            $anggarans = $this->getRabsData();
         }
 
         return datatables()->of($anggarans)
@@ -214,14 +211,15 @@ class UserAnggaranController extends Controller
             ->editColumn('budget', function ($anggaran) {
                 return number_format($anggaran->amount, 2);
             })
-            ->editColumn('realisasi', function ($anggaran) {
-                return number_format($this->progress($anggaran->id)['amount'], 2);
-            })
+            // ->editColumn('realisasi', function ($anggaran) {
+            //     return number_format($this->progress($anggaran->id)['amount'], 2);
+            // })
             ->addColumn('progres', function ($anggaran) {
                 $progres = $this->progress($anggaran->id)['persen'];
                 $statusColor = $this->statusColor($progres);
-                $progres_bar = '<div class="progress" style="height: 20px;">
-                                    <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100">' . $progres . '%</div>
+                $text = $progres > 0 ? $progres . '%' : '0%';
+                $progres_bar = '<small>' . $text . '</small><br><div class="progress" style="height: 20px;">
+                                    <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>';
                 if ($anggaran->status === 'approved') {
                     return $progres > 0 ? $progres_bar : 'approved';
@@ -344,6 +342,31 @@ class UserAnggaranController extends Controller
             ->where('created_by', auth()->user()->id)
             ->where('status', 'approved')
             ->where('is_active', 1)
+            ->get();
+
+        $rabs = $project_rabs->merge($department_rabs)->merge($user_rabs);
+
+        return $rabs;
+    }
+
+    public function getRabsData()
+    {
+        $project_rabs = Anggaran::where('usage', 'project')
+            ->where('project', auth()->user()->project)
+            ->whereIn('status', ['approved', 'close'])
+            ->where('is_active', 1)
+            ->get();
+
+        $department_rabs = Anggaran::where('usage', 'department')
+            ->where('department_id', auth()->user()->department_id)
+            ->whereIn('status', ['approved', 'close'])
+            ->where('is_active', 1)
+            ->get();
+
+        $user_rabs = Anggaran::where('usage', 'user')
+            ->where('created_by', auth()->user()->id)
+            // ->where('is_active', 1)
+            ->limit(300)
             ->get();
 
         $rabs = $project_rabs->merge($department_rabs)->merge($user_rabs);
