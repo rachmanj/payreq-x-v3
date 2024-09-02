@@ -34,8 +34,8 @@
             <dd class="col-sm-8">: Rp. {{ number_format($total_release, 2) }}
             <dt class="col-sm-4">Status</dt>
             <dd class="col-sm-8">: {{ ucfirst($anggaran->status) }}</dd>
-            <dt class="col-sm-4">Created by | Usage</dt>
-            <dd class="col-sm-8">: {{ $anggaran->createdBy->name }} | {{ ucfirst($anggaran->usage) }}</dd>
+            <dt class="col-sm-4">Created by</dt>
+            <dd class="col-sm-8">: {{ $anggaran->createdBy->name }}</dd>
             <dt class="col-sm-4">Progress</dt>
             <dd class="col-sm-4">
               <div class="text-center"><small>{{ number_format($progres_persen, 2) }}%</small>

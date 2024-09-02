@@ -61,7 +61,7 @@
       $("#anggarans").DataTable({
         processing: true,
         serverSide: true,
-        ajax: '{{ route('user-payreqs.anggarans.data') }}',
+        ajax: '{{ route('reports.anggaran.data') }}',
         columns: [
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'nomor'},

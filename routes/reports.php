@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Reports\AnggaranController;
 use App\Http\Controllers\Reports\EomController;
 use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
@@ -64,5 +65,10 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::post('/store', [PeriodeAnggaranController::class, 'store'])->name('store');
         Route::put('/{id}/update', [PeriodeAnggaranController::class, 'update'])->name('update');
         Route::delete('/{id}/delete', [PeriodeAnggaranController::class, 'delete'])->name('delete');
+    });
+
+    Route::prefix('anggaran')->name('anggaran.')->group(function () {
+        Route::get('/', [AnggaranController::class, 'index'])->name('index');
+        Route::get('/data', [AnggaranController::class, 'data'])->name('data');
     });
 });

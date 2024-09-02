@@ -66,7 +66,7 @@
             <tr>
           <td style="border: 1px solid black;">1</td>
           <td style="border: 1px solid black;">{{ $payreq->remarks }} <br>
-            {{ $payreq->rab_id ? 'RAB No. ' . $payreq->rab->rab_no . ' | ' . $payreq->rab->project_code . ' | ' . $payreq->rab->description : '' }}
+            {{ $payreq->rab_id ? 'RAB No. ' . $payreq->anggaran->rab_no . ' | ' . $payreq->anggaran->rab_project . ' | ' . $payreq->anggaran->description : '' }}
           </td>
           <td class="text-right" style="border: 1px solid black;">{{ number_format($payreq->amount, 2) }}</td>
             </tr>

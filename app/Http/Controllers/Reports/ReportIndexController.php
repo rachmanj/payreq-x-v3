@@ -118,18 +118,18 @@ class ReportIndexController extends Controller
                 ],
             ],
             [
-                'name' => 'Anggaran Related',
+                'name' => 'RAB Related',
                 'protector' => null,
                 'subMenu' => [
                     [
-                        'name' => 'Periode Anggaran',
+                        'name' => 'Periode RAB',
                         'url' => route('reports.periode-anggaran.index'),
                         'protector' => 'akses_periode_anggaran',
                     ],
                     [
-                        'name' => 'Report 2.2',
-                        'url' => 'report2.2',
-                        'protector' => null,
+                        'name' => 'RAB List',
+                        'url' => route('reports.anggaran.index'),
+                        'protector' => 'akses_report_rab',
                     ],
                 ],
             ],
