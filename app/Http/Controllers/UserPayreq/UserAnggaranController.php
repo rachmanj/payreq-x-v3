@@ -196,7 +196,10 @@ class UserAnggaranController extends Controller
                 ->limit(300)
                 ->get();
         } else {
-            $anggarans = $this->getAvailableRabs();
+            $anggarans = Anggaran::where('created_by', auth()->user()->id)
+                ->orderBy('date', 'desc')
+                ->limit(300)
+                ->get();
         }
 
         return datatables()->of($anggarans)

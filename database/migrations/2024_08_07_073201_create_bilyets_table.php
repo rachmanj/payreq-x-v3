@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('bilyets', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('giro_id');
+            $table->string('prefix', 10)->nullable();
             $table->string('nomor', 30)->unique();
-            $table->string('bank', 50)->nullable();
-            $table->string('account', 50)->nullable();
-            $table->string('giro_type', 20)->nullable(); //cek or bilyet or loa
-            $table->date('tanggal')->nullable();
-            $table->double('amount')->nullable();
+            $table->string('type', 20)->nullable(); //cek or bg or loa
+            $table->date('bilyet_date')->nullable();
+            $table->date('cair_date')->nullable();
+            $table->decimal('amount', 20, 2)->nullable();
             $table->string('remarks')->nullable();
-            $table->string('use_for')->nullable();
             $table->string('filename')->nullable();
             $table->foreignId('created_by')->nullable();
             $table->timestamps();

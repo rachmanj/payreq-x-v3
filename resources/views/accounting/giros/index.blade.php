@@ -14,9 +14,10 @@
 
     <div class="card">
       <div class="card-header">
+        <h3 class="card-title">Giro Account</h3>
 
         @hasanyrole('superadmin|admin|cashier')
-        <button href="#" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Bilyet</button>
+        <button href="#" class="btn btn-sm btn-primary float-right" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Giro Account</button>
         @endhasanyrole
       </div>  <!-- /.card-header -->
      
@@ -25,11 +26,12 @@
           <thead>
           <tr>
             <th>#</th>
-            <th>Nomor</th>
-            <th>Bank | Account</th>
+            <th>Account No</th>
+            <th>Name</th>
+            <th>Bank</th>
             <th>Type</th>
-            <th>Date</th>
-            <th>Amount</th>
+            <th>Curr</th>
+            <th>Project</th>
             <th></th>
           </tr>
           </thead>
@@ -44,79 +46,63 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title"> New Bilyet</h4>
+        <h4 class="modal-title"> New Giro Account</h4>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <form action="{{ route('cashier.giros.store') }}" method="POST" enctype="multipart/form-data">
+      <form action="{{ route('accounting.giros.store') }}" method="POST">
         @csrf
       <div class="modal-body">
 
         <div class="form-group">
-          <label for="nomor">Document No</label>
-          <input name="nomor" id="nomor" class="form-control @error('nomor') is-invalid @enderror">
-          @error('nomor')
+          <label for="acc_no">Account No</label>
+          <input name="acc_no" id="acc_no" class="form-control @error('acc_no') is-invalid @enderror">
+          @error('acc_no')
             <div class="invalid-feedback">
               {{ $message }}
             </div>
           @enderror
         </div>
 
-        <div class="row">
-          <div class="col-6">
-            <div class="form-group">
-              <label for="bank">Bank</label>
-              <select name="bank" id="bank" class="form-control select2bs4">
-                @foreach ($banks as $bank)
-                    <option value="{{ $bank }}">{{ $bank }}</option>
-                @endforeach
-              </select>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="form-group">
-              <label for="account">Account</label>
-              <select name="account" id="account" class="form-control select2bs4">
-                @foreach ($accounts as $account)
-                    <option value="{{ $account }}">{{ $account }}</option>
-                @endforeach
-              </select>
-            </div>
-          </div>
-        </div>
-
         <div class="form-group">
-          <label for="giro_type">Giro Type</label>
-          <select name="giro_type" id="giro_type" class="form-control select2bs4">
-                <option value="cek">Cek</option>
-                <option value="Bilyet">Bilyet Giro</option>
+          <label for="acc_name">Account Name</label>
+          <input name="acc_name" id="acc_name" class="form-control">
+        </div>
+        
+        <div class="form-group">
+          <label for="bank_id">Bank</label>
+          <select name="bank_id" id="bank" class="form-control select2bs4">
+            <option value="">-- Select Bank --</option>
+            @foreach ($banks as $bank)
+                <option value="{{ $bank->id }}">{{ $bank->name }}</option>
+            @endforeach
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="type">Giro Type</label>
+          <select name="type" id="type" class="form-control select2bs4">
+                <option value="giro">Giro</option>
+                <option value="tabungan">Tabungan</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="tanggal">Date</label>
-          <input type="date" name="tanggal" class="form-control @error('tanggal') is-invalid @enderror">
-          @error('tanggal')
-            <div class="invalid-feedback">
-              {{ $message }}
-            </div>
-          @enderror
+          <label for="curr">Currency</label>
+          <select name="curr" id="curr" class="form-control select2bs4">
+                <option value="idr">IDR</option>
+                <option value="usd">USD</option>
+          </select>
         </div>
 
         <div class="form-group">
-          <label for="remarks">Remarks</label>
-          <input type="text" name="remarks" id="remarks" class="form-control @error('remarks') is-invalid @enderror">
-          @error('remarks')
-            <div class="invalid-feedback">
-              {{ $message }}
-            </div>
-          @enderror
-        </div>
-
-        <div class="form-group">
-          <label for="file_upload">Upload giro</label>
-          <input type="file" name="file_upload" id="file_upload" class="form-control">
+          <label for="project">Project</label>
+          <select name="project" id="project" class="form-control select2bs4">
+            @foreach ($projects as $project)
+                <option value="{{ $project->code }}">{{ $project->code }}</option>
+            @endforeach
+          </select>
         </div>
 
       </div> <!-- /.modal-body -->
@@ -136,6 +122,9 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
   <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}"/>
+  <!-- Select2 -->
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
 @endsection
 
 @section('scripts')
@@ -145,30 +134,40 @@
 <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables/datatables.min.js') }}"></script>
+<!-- Select2 -->
+<script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
 
 <script>
   $(function () {
     $("#giros").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cashier.giros.data') }}',
+      ajax: '{{ route('accounting.giros.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
-        {data: 'nomor'},
+        {data: 'acc_no'},
+        {data: 'acc_name'},
         {data: 'bank'},
-        {data: 'giro_type'},
-        {data: 'tanggal'},
-        {data: 'amount'},
+        {data: 'type'},
+        {data: 'curr'},
+        {data: 'project'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5],
-                "className": "text-right"
+                "targets": [6],
+                "className": "text-center"
               }
             ]
     })
+
+     //Initialize Select2 Elements
+     $('.select2bs4').select2({
+      theme: 'bootstrap4'
+    });
+
   });
+
 </script>
 @endsection

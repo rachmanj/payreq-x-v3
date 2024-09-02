@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Cashier\BilyetController;
 use App\Http\Controllers\Cashier\CashierModalController;
 use App\Http\Controllers\Cashier\TransaksiController;
 use Illuminate\Support\Facades\Route;
@@ -73,16 +74,9 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
     // BILYET
     Route::prefix('bilyets')->name('bilyets.')->group(function () {
-        Route::get('/data', [TransaksiController::class, 'bilyet_data'])->name('data');
-        Route::get('/', [TransaksiController::class, 'bilyet_index'])->name('index');
-        Route::post('/store', [TransaksiController::class, 'bilyet_store'])->name('store');
-    });
-
-    // GIROS
-    Route::prefix('giros')->name('giros.')->group(function () {
-        Route::get('/data', [TransaksiController::class, 'giro_data'])->name('data');
-        Route::get('/', [TransaksiController::class, 'giro_index'])->name('index');
-        Route::post('/store', [TransaksiController::class, 'giro_store'])->name('store');
+        Route::get('data', [BilyetController::class, 'data'])->name('data');
+        Route::get('/', [BilyetController::class, 'index'])->name('index');
+        Route::post('/', [BilyetController::class, 'store'])->name('store');
     });
 
     // MIGRASI

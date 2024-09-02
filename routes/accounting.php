@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Accounting\GiroController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountingPayreqController;
@@ -49,5 +50,13 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
             Route::post('/update', [InstallmentController::class, 'update'])->name('update');
             Route::delete('/{id}/destroy', [InstallmentController::class, 'destroy'])->name('destroy');
         });
+    });
+
+    // GIRO
+    Route::prefix('giros')->name('giros.')->group(function () {
+        Route::get('data', [GiroController::class, 'data'])->name('data');
+        Route::get('/', [GiroController::class, 'index'])->name('index');
+        Route::post('/', [GiroController::class, 'store'])->name('store');
+        Route::put('/{id}', [GiroController::class, 'update'])->name('update');
     });
 });
