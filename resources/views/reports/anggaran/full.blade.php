@@ -15,7 +15,7 @@
     <div class="card">
       <div class="card-header">
         
-        {{-- <a href="{{ route('reports.anggaran.create') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-plus"></i> RAB</a> --}}
+        <a href="{{ route('user-payreqs.anggarans.create') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-plus"></i> RAB</a>
        
       </div>  <!-- /.card-header -->
      
@@ -25,10 +25,11 @@
           <tr>
             <th>#</th>
             <th>Nomor</th>
-            <td><small>For<br>Usage<br>Type</small></td>
+            <th>For<br>Usage</th>
             <th>Description</th>
-            <td><small>P Anggaran<br>P OFR<br>is active</small></td>
             <th>Budget IDR</th>
+            <th>Release IDR</th>
+            <th>Progres</th>
             <th></th>
           </tr>
           </thead>
@@ -66,14 +67,15 @@
           {data: 'nomor'},
           {data: 'rab_project'},
           {data: 'description'},
-          {data: 'periode'},
           {data: 'budget'},
+          {data: 'realisasi'},
+          {data: 'progres'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [0, 5],
+                  "targets": [0, 4, 5],
                   "className": "text-right"
                 },
               ]

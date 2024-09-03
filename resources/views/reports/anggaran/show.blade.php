@@ -14,7 +14,7 @@
       <div class="card card-info">
         <div class="card-header">
           <h3 class="card-title">RAB Detail</h3>
-          <a href="{{ route('user-payreqs.anggarans.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
+          <a href="{{ route('reports.anggaran.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
         <div class="card-body">
           <dl class="row">
@@ -24,10 +24,12 @@
             <dd class="col-sm-8">: {{ date('d-M-Y', strtotime($anggaran->date)) }}</dd>
             <dt class="col-sm-4">Description</dt>
             <dd class="col-sm-8">: {{ $anggaran->description }}</dd>
-            <dt class="col-sm-4">For Project</dt>
-            <dd class="col-sm-8">: {{ $anggaran->rab_project }}</dd>
+            <dt class="col-sm-4">For Project | Usage</dt>
+            <dd class="col-sm-8">: {{ $anggaran->rab_project }} | {{ ucfirst($anggaran->usage) }}</dd>
             <dt class="col-sm-4">Department</dt>
             <dd class="col-sm-8">: {{ $anggaran->createdBy->department->department_name }}</dd>
+            <dt class="col-sm-4">Periode: Anggaran | OFR</dt>
+            <dd class="col-sm-8">: {{ date('M Y', strtotime($anggaran->periode_anggaran)) }} | {{ date('M Y', strtotime($anggaran->periode_ofr)) }}</dd>
             <dt class="col-sm-4">Budget</dt>
             <dd class="col-sm-8">: Rp.{{ number_format($anggaran->amount, 2) }}</dd>
             <dt class="col-sm-4">Release to Date</dt>

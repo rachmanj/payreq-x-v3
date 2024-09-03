@@ -14,11 +14,11 @@
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">Edit RAB | {{ $anggaran->nomor }}</h3>
-                <a href="{{ route('user-payreqs.anggarans.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
+                <a href="{{ route('reports.anggaran.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
             </div>
             <div class="card-body">
             
-                <form action="{{ route('user-payreqs.anggarans.proses') }}" method="POST" enctype="multipart/form-data" id="form_anggaran">
+                <form action="{{ route('reports.anggaran.update') }}" method="POST" enctype="multipart/form-data" id="form_anggaran">
                 @csrf
 
                     <div class="row">
@@ -27,13 +27,13 @@
                                 <label for="rab_no">RAB No <small>(optional)</small></label>
                                 <input type="hidden" name="anggaran_id" value="{{ $anggaran->id }}">
                                 <input type="hidden" name="nomor" value="{{ $anggaran->nomor }}">
-                                <input type="text" name="rab_no" id="rab_no" class="form-control" value="{{ $anggaran->rab_no }}">
+                                <input type="text" name="rab_no" id="rab_no" class="form-control" value="{{ old('rab_no', $anggaran->rab_no) }}">
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="form-group">
                                 <label for="date">Date</label>
-                                <input type="date" name="date" id="date" class="form-control @error('date') is-invalid @enderror" value={{ $anggaran->date }}>
+                                <input type="date" name="date" id="date" class="form-control @error('date') is-invalid @enderror" value={{ old('date', $anggaran->date) }}>
                                 @error('date')
                                 <div class="invalid-feedback">
                                 {{ $message }}
@@ -57,7 +57,7 @@
                         <div class="col-12">
                         <div class="form-group">
                             <label for="description">Description</label>
-                            <textarea name="description" id="description" class="form-control @error('description') is-invalid @enderror">{{ $anggaran->description }}</textarea>
+                            <textarea name="description" id="description" class="form-control @error('description') is-invalid @enderror">{{ old('description', $anggaran->description) }}</textarea>
                             @error('description')
                             <div class="invalid-feedback">
                             {{ $message }}
@@ -71,7 +71,7 @@
                         <div class="col-4">
                             <div class="form-group">
                                 <label for="amount">Amount</label>
-                                <input type="number" name="amount" id="amount" class="form-control @error('amount') is-invalid @enderror" value="{{ $anggaran->amount }}">
+                                <input type="number" name="amount" id="amount" class="form-control @error('amount') is-invalid @enderror" value="{{ old('amount', $anggaran->amount) }}">
                                 @error('amount')
                                 <div class="invalid-feedback">
                                 {{ $message }}
@@ -96,11 +96,11 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-12">
+                        <div class="col-8">
                             <label for="rab_type">Type</label>
                             <div class="form-group">
                                 <div class="form-check d-inline mr-4">
-                                    <input class="form-check-input" type="radio" value="periode" name="rab_type" {{ $anggaran->type === 'periode' ? 'checked' : '' }}>
+                                    <input class="form-check-input" type="radio"name="rab_type"  value="periode"  {{ $anggaran->type === 'periode' ? 'checked' : '' }}>
                                     <label class="form-check-label">Periode</label>
                                 </div>
                                 <div class="form-check d-inline mr-4">
@@ -110,6 +110,19 @@
                                 <div class="form-check d-inline">
                                     <input class="form-check-input" type="radio" name="rab_type" value="buc" {{ $anggaran->type === 'buc' ? 'checked' : '' }}>
                                     <label class="form-check-label">BUC <small>(DNC only)</small></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <label for="rab_type">Is Active</label>
+                            <div class="form-group">
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="1" name="is_active" {{ $anggaran->is_active === 1 ? 'checked' : '' }}>
+                                    <label class="form-check-label">Yes</label>
+                                </div>
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="0" name="is_active" {{ $anggaran->is_active === 0 ? 'checked' : '' }}>
+                                    <label class="form-check-label">No</label>
                                 </div>
                             </div>
                         </div>
@@ -153,11 +166,8 @@
             </div> {{-- card body --}}
             <div class="card-footer text-center">
                 <div class="row">
-                    <div class="col-6">
-                        <button type="submit" class="btn btn-primary btn-block" id="btn-draft" form="form_anggaran"><i class="fas fa-save"></i> Save as Draft</button>
-                    </div>
-                    <div class="col-6">
-                        <button type="submit" class="btn btn-warning btn-block" id="btn-submit" form="form_anggaran"><i class="fas fa-paper-plane"></i> Save and Submit</button>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary btn-block" id="btn-submit" form="form_anggaran"><i class="fas fa-paper-plane"></i> Save</button>
                     </div>
                 </div>
             </div>
@@ -166,7 +176,14 @@
 </div>
 @endsection
 
+@section('styles')
+<!-- Bootstrap Switch -->
+<link rel="stylesheet" href="{{ asset('adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
+@endsection
+
 @section('scripts')
+<!-- Bootstrap Switch -->
+<script src="{{ asset('adminlte/plugins/bootstrap-switch/js/bootstrap-switch.min.js') }}"></script>
 <script>
     $(document).ready(function() {
         $('#other').hide();
@@ -199,16 +216,5 @@
         });
     });
 
-    // btn-save as draft
-    $('#btn-draft').click(function() {
-        // add attribute name="draft" to form
-        $('form').append('<input type="hidden" name="button_type" value="edit">');
-    });
-
-    // btn-save and submit
-    $('#btn-submit').click(function() {
-        // add attribute name="draft" to form
-        $('form').append('<input type="hidden" name="button_type" value="edit_submit">');
-    });
 </script>
 @endsection
