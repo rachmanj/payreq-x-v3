@@ -20,9 +20,9 @@ class MigrasiBucController extends Controller
     public function migrasi_rab()
     {
         // get rabs tobe migrated
-        $rabs = Rab::where('status', 'progress')
-            ->where('date', '>=', '2023-01-01')
-            ->orderBy('id', 'asc')
+        $rabs = Rab::where('id', 201)
+            // ->where('date', '>=', '2023-01-01')
+            // ->orderBy('id', 'asc')
             ->get();
 
         // count success and failed
@@ -43,7 +43,7 @@ class MigrasiBucController extends Controller
                 'description' => $rab->description,
                 'rab_project' => $rab->project_code,
                 'project' => '000H',
-                'department_id' => $rab->department_id,
+                'department_id' => 10,
                 'type' => 'buc',
                 'amount' => $rab->budget,
                 'status' => 'approved',
