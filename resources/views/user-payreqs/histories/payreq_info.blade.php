@@ -34,5 +34,5 @@
         <dd class="col-sm-8">: -</dd>
     @endif
     <dt class="col-sm-4">RAB No</dt>
-    <dd class="col-sm-8">: {{ $payreq->rab_id ? $payreq->rab->rab_no . ' | ' . $payreq->rab->project_code . ' | ' . $payreq->rab->description : '-' }}</dd>
+    <dd class="col-sm-8">: {{ $payreq->rab_id ? $payreq->anggaran->nomor . ' | ' . $payreq->anggaran->rab_project . ' | ' . $payreq->anggaran->description : '-' }}</dd>
 </dl>
