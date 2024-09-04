@@ -25,6 +25,7 @@
           <tr>
             <th>#</th>
             <th>Nomor</th>
+            <th><small>Creator</small></th>
             <td><small>For<br>Usage<br>Type</small></td>
             <th>Description</th>
             <td><small>P Anggaran<br>P OFR<br>is active</small></td>
@@ -64,6 +65,7 @@
         columns: [
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'nomor'},
+          {data: 'creator'},
           {data: 'rab_project'},
           {data: 'description'},
           {data: 'periode'},
@@ -73,7 +75,7 @@
         fixedHeader: true,
         columnDefs: [
                 {
-                  "targets": [0, 5],
+                  "targets": [0, 6],
                   "className": "text-right"
                 },
               ]

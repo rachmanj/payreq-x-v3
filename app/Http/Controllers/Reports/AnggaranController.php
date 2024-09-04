@@ -110,12 +110,17 @@ class AnggaranController extends Controller
                 return '<small>' . $pa . '<br>' . date('M Y', strtotime($anggaran->periode_ofr)) . '</small>' . '<br>' . $radio;
             })
             ->editColumn('rab_project', function ($anggaran) {
-                $content = $anggaran->rab_project . '<br><small>' . ucfirst($anggaran->usage) . '<br>' . ucfirst($anggaran->type) . '</small>';
+                $usage = $anggaran->usage == 'department' ? $anggaran->createdBy->department->akronim : ucfirst($anggaran->usage);
+                $content = '<small>' . $anggaran->rab_project . '<br>' . $usage . '<br>' . ucfirst($anggaran->type) . '</small>';
                 return $content;
+            })
+            ->addColumn('creator', function ($anggaran) {
+                $name = explode(' ', $anggaran->createdBy->name);
+                return '<small>' . $name[0] . '</small>';
             })
             ->addIndexColumn()
             ->addColumn('action', 'reports.anggaran.action')
-            ->rawColumns(['action', 'nomor', 'description', 'rab_project', 'periode', 'radio'])
+            ->rawColumns(['action', 'nomor', 'description', 'rab_project', 'periode', 'radio', 'creator'])
             ->toJson();
     }
 
