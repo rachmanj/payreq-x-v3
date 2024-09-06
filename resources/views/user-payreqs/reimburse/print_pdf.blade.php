@@ -92,7 +92,7 @@
             </tr>
             <tr>
               <td style="border: 1px solid black;" colspan="3"><b>Remarks:</b> {{ $payreq->remarks }} <br>
-                {{ $payreq->rab_id ? 'RAB No. ' . $payreq->anggaran->rab_no . ' | ' . $payreq->anggaran->rab_project . ' | ' . substr($payreq->anggaran->description, 0, 100) : '' }}</td>
+                {{ $payreq->rab_id ? 'RAB No. ' . $payreq->anggaran->nomor . ' | ' . $payreq->anggaran->rab_project . ' | ' . substr($payreq->anggaran->description, 0, 100) : '' }}</td>
             </tr>
             <tr>
               <td style="border: 1px solid black;" colspan="3">Transfer Info (Bank / Acc No / Acc Name) :</td>

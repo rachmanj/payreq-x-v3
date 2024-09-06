@@ -28,6 +28,12 @@ class AnggaranController extends Controller
             ->where('is_active', 1)
             ->get();
 
+        $periode_ofrs = PeriodeAnggaran::orderBy('periode', 'asc')
+            ->where('periode_type', 'ofr')
+            ->where('project', auth()->user()->project)
+            ->where('is_active', 1)
+            ->get();
+
         // rab_45654654654_filename.pdf convert this to filename.pdf
         if ($anggaran->filename) {
             $origin_filename = preg_replace('/^rab_\d+_/', '', $anggaran->filename); // this to convert to original filename
@@ -35,7 +41,7 @@ class AnggaranController extends Controller
             $origin_filename = null;
         }
 
-        return view('reports.anggaran.edit', compact('anggaran', 'projects', 'origin_filename', 'periode_anggarans'));
+        return view('reports.anggaran.edit', compact('anggaran', 'projects', 'origin_filename', 'periode_anggarans', 'periode_ofrs'));
     }
 
     public function update(Request $request)
@@ -50,6 +56,8 @@ class AnggaranController extends Controller
             'type' => $request->rab_type,
             'amount' => $request->amount,
             'periode_anggaran' => $request->periode_anggaran,
+            'periode_ofr' => $request->periode_ofr,
+            'usage' => $request->usage,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'is_active' => $request->is_active,

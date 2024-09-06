@@ -41,7 +41,8 @@ class PayreqReimburseController extends Controller
         ]);
 
         $equipments = $this->getEquipments();
-        $rabs = $this->getRabs();
+        $rabs = app(UserAnggaranController::class)->getAvailableRabs();
+        // $rabs = $this->getRabs();
 
         return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs']));
     }
@@ -149,14 +150,6 @@ class PayreqReimburseController extends Controller
         }
 
         return Equipment::orderBy('unit_code', 'asc')->get();;
-    }
-
-    public function getRabs()
-    {
-        return Anggaran::where('created_by', auth()->user()->id)
-            ->where('status', 'approved')
-            ->orderBy('nomor', 'asc')
-            ->get();
     }
 
     public function update_rab(Request $request)

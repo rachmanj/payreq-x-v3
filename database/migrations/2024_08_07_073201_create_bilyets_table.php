@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('remarks')->nullable();
             $table->string('filename')->nullable();
             $table->foreignId('created_by')->nullable();
+            $table->string('project', 10)->nullable();
+            $table->string('status', 30)->default('onhand'); //onhand / release / cair / void
             $table->timestamps();
         });
     }

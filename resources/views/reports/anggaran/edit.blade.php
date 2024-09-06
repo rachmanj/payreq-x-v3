@@ -96,7 +96,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-8">
+                        <div class="col-4">
                             <label for="rab_type">Type</label>
                             <div class="form-group">
                                 <div class="form-check d-inline mr-4">
@@ -110,6 +110,23 @@
                                 <div class="form-check d-inline">
                                     <input class="form-check-input" type="radio" name="rab_type" value="buc" {{ $anggaran->type === 'buc' ? 'checked' : '' }}>
                                     <label class="form-check-label">BUC <small>(DNC only)</small></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <label for="rab_type">Usage</label>
+                            <div class="form-group">
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio"name="usage"  value="user"  {{ $anggaran->usage === 'user' ? 'checked' : '' }}>
+                                    <label class="form-check-label">User</label>
+                                </div>
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" name="usage" value="department" {{ $anggaran->usage === 'department' ? 'checked' : '' }}>
+                                    <label class="form-check-label">Department</label>
+                                </div>
+                                <div class="form-check d-inline">
+                                    <input class="form-check-input" type="radio" name="usage" value="project" {{ $anggaran->usage === 'project' ? 'checked' : '' }}>
+                                    <label class="form-check-label">Project</label>
                                 </div>
                             </div>
                         </div>
@@ -132,7 +149,7 @@
                     <div class="row" id="periode">
                         <div class="col-4">
                             <div class="form-group">
-                                <label for="periode_anggaran">Periode</label>
+                                <label for="periode_anggaran">Periode Anggaran</label>
                                 <select name="periode_anggaran" id="periode_anggaran" class="form-control">
                                 @foreach ($periode_anggarans as $periode_anggaran)
                                     @php
@@ -140,6 +157,20 @@
                                         $formattedDate = $date->format('F Y');
                                     @endphp
                                     <option value="{{ $periode_anggaran->periode }}" {{ $anggaran->periode_anggaran ==  $periode_anggaran->periode ? 'selected' : ''}}>{{ $formattedDate }}</option>
+                                @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="form-group">
+                                <label for="periode_anggaran">Periode OFR</label>
+                                <select name="periode_ofr" id="periode_ofr" class="form-control">
+                                @foreach ($periode_ofrs as $periode_ofr)
+                                    @php
+                                        $date = \Carbon\Carbon::parse($periode_ofr->periode);
+                                        $formattedDate = $date->format('F Y');
+                                    @endphp
+                                    <option value="{{ $periode_ofr->periode }}" {{ $anggaran->periode_ofr ==  $periode_ofr->periode ? 'selected' : ''}}>{{ $formattedDate }}</option>
                                 @endforeach
                                 </select>
                             </div>

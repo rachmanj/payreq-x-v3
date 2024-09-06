@@ -14,24 +14,25 @@
 
     <div class="card">
       <div class="card-header">
-
+        <a href="#" class="text-dark">ON HAND</a> | 
+        <a href="{{ route('cashier.bilyets.release') }}">Release</a>
         @can('add_bilyet')
-        <button href="#" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Bilyet</button>
+          <button href="#" class="btn btn-xs btn-success float-right" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Bilyet</button>
+          <button href="#" class="btn btn-xs btn-warning float-right mx-2" data-toggle="modal" data-target="#modal-upload"> Upload</button>
+          <button href="#" class="btn btn-xs btn-primary float-right" data-toggle="modal" data-target="#modal-download"> download template</button>
         @endcan
       </div>  <!-- /.card-header -->
      
       <div class="card-body">
         <table id="giros" class="table table-bordered table-striped">
           <thead>
-          <tr>
-            <th>#</th>
-            <th>Nomor</th>
-            <th>Bank | Account</th>
-            <th>Type</th>
-            <th>Date</th>
-            <th>Amount</th>
-            <th></th>
-          </tr>
+            <tr>
+              <th>#</th>
+              <th>Nomor</th>
+              <th>Bank | Account</th>
+              <th>Type</th>
+              <th></th>
+            </tr>
           </thead>
         </table>
       </div> <!-- /.card-body -->
@@ -41,7 +42,7 @@
 
 {{-- Modal create --}}
 <div class="modal fade" id="modal-create">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title"> New Bilyet</h4>
@@ -53,59 +54,84 @@
         @csrf
       <div class="modal-body">
 
-        <div class="form-group">
-          <label for="nomor">Document No</label>
-          <input name="nomor" id="nomor" class="form-control @error('nomor') is-invalid @enderror">
-          @error('nomor')
-            <div class="invalid-feedback">
-              {{ $message }}
-            </div>
-          @enderror
-        </div>
-
         <div class="row">
+          <div class="col-2">
             <div class="form-group">
-              <label for="giro_id">Giro</label>
-              <select name="giro_id" id="giro_id" class="form-control select2bs4">
-                @foreach ($giros as $giro)
-                    <option value="{{ $giro->id }}">{{ $giro->acc_name }}</option>
-                @endforeach
+              <label for="prefix">Prefix</label>
+              <input type="hidden" name="project" value="{{ auth()->user()->project }}">
+              <input name="prefix" id="prefix" class="form-control @error('prefix') is-invalid @enderror">
+              @error('prefix')
+                <div class="invalid-feedback">
+                  {{ $message }}
+                </div>
+              @enderror
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="form-group">
+              <label for="nomor">Bilyet No</label>
+              <input name="nomor" id="nomor" class="form-control @error('nomor') is-invalid @enderror">
+              @error('nomor')
+                <div class="invalid-feedback">
+                  {{ $message }}
+                </div>
+              @enderror
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="form-group">
+              <label for="type">Bilyet Type</label>
+              <select name="type" id="giro_type" class="form-control select2bs4">
+                    <option value="cek">Cek</option>
+                    <option value="bilyet">BG</option>
+                    <option value="loa">LOA</option>
               </select>
             </div>
+          </div>
         </div>
-
+        
         <div class="form-group">
-          <label for="giro_type">Bilyet Type</label>
-          <select name="giro_type" id="giro_type" class="form-control select2bs4">
-                <option value="cek">Cek</option>
-                <option value="bilyet">Bilyet Giro</option>
-                <option value="loa">LOA</option>
+          <label for="giro_id">Giro</label>
+          <select name="giro_id" id="giro_id" class="form-control select2bs4">
+            @foreach ($giros as $giro)
+                <option value="{{ $giro->id }}">{{ $giro->acc_no . ' - ' . $giro->acc_name }}</option>
+            @endforeach
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="tanggal">Date</label>
-          <input type="date" name="tanggal" class="form-control @error('tanggal') is-invalid @enderror">
-          @error('tanggal')
-            <div class="invalid-feedback">
-              {{ $message }}
+        <div class="row">
+          <div class="col-6">
+            <div class="form-group">
+              <label for="bilyet_date">Bilyet Date</label>
+              <input type="date" name="bilyet_date" class="form-control">
             </div>
-          @enderror
+          </div>
+          <div class="col-6">
+            <div class="form-group">
+              <label for="cair_date">Cair Date</label>
+              <input type="date" name="cair_date" class="form-control">
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
           <label for="remarks">Remarks</label>
-          <input type="text" name="remarks" id="remarks" class="form-control @error('remarks') is-invalid @enderror">
-          @error('remarks')
-            <div class="invalid-feedback">
-              {{ $message }}
-            </div>
-          @enderror
+          <textarea name="remarks" id="remarks" class="form-control"></textarea>
         </div>
 
-        <div class="form-group">
-          <label for="file_upload">Upload giro</label>
-          <input type="file" name="file_upload" id="file_upload" class="form-control">
+        <div class="row">
+          <div class="col-6">
+            <div class="form-group">
+              <label for="amount">Amount</label>
+              <input type="number" name="amount" id="amount" class="form-control">
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="form-group">
+              <label for="file_upload">Upload bilyet <small>(optional)</small></label>
+              <input type="file" name="file_upload" id="file_upload" class="form-control">
+            </div>
+          </div>
         </div>
 
       </div> <!-- /.modal-body -->
@@ -125,6 +151,9 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
   <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}"/>
+  <!-- Select2 -->
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
 @endsection
 
 @section('scripts')
@@ -134,6 +163,8 @@
 <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables/datatables.min.js') }}"></script>
+<!-- Select2 -->
+<script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
 
 <script>
   $(function () {
@@ -144,19 +175,22 @@
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'nomor'},
-        {data: 'bank'},
-        {data: 'giro_type'},
-        {data: 'tanggal'},
-        {data: 'amount'},
+        {data: 'account'},
+        {data: 'type'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5],
+                "targets": [0],
                 "className": "text-right"
               }
             ]
+    })
+
+    //Initialize Select2 Elements
+    $('.select2bs4').select2({
+      theme: 'bootstrap4'
     })
   });
 </script>

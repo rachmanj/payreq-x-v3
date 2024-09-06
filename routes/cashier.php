@@ -77,6 +77,8 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('data', [BilyetController::class, 'data'])->name('data');
         Route::get('/', [BilyetController::class, 'index'])->name('index');
         Route::post('/', [BilyetController::class, 'store'])->name('store');
+        Route::get('release', [BilyetController::class, 'release'])->name('release');
+        Route::put('{id}', [BilyetController::class, 'update'])->name('update');
     });
 
     // MIGRASI

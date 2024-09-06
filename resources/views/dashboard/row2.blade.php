@@ -26,7 +26,7 @@
     <div class="icon">
       <i class="ion ion-stats-bars"></i>
     </div>
-    <a href="#" class="small-box-footer" style="cursor: default">VJ to Synced</a>
+    <a href="{{ route('accounting.sap-sync.index', ['project' => '000H']) }}" class="small-box-footer" style="cursor: default">VJ to Synced</a>
   </div>
 </div>
 @endcan
