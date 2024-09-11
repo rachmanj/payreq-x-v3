@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Cashier\BilyetController;
+use App\Http\Controllers\Cashier\BilyetTempController;
 use App\Http\Controllers\Cashier\CashierModalController;
 use App\Http\Controllers\Cashier\TransaksiController;
 use Illuminate\Support\Facades\Route;
@@ -77,8 +78,20 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('data', [BilyetController::class, 'data'])->name('data');
         Route::get('/', [BilyetController::class, 'index'])->name('index');
         Route::post('/', [BilyetController::class, 'store'])->name('store');
-        Route::get('release', [BilyetController::class, 'release'])->name('release');
+        Route::get('release', [BilyetController::class, 'release_index'])->name('release_index');
         Route::put('{id}', [BilyetController::class, 'update'])->name('update');
+        Route::put('{id}/release', [BilyetController::class, 'release'])->name('release');
+        Route::get('export', [BilyetController::class, 'export'])->name('export');
+        Route::get('import', [BilyetController::class, 'import'])->name('import'); // move data from bilyet_temp to bilyet
+    });
+
+    // BILYET TEMP
+    Route::prefix('bilyet-temps')->name('bilyet-temps.')->group(function () {
+        Route::get('data', [BilyetTempController::class, 'data'])->name('data');
+        Route::get('/', [BilyetTempController::class, 'index'])->name('index');
+        Route::post('upload', [BilyetTempController::class, 'upload'])->name('upload');
+        Route::get('truncate', [BilyetTempController::class, 'truncate'])->name('truncate');
+        Route::get('/{id}/destroy', [BilyetTempController::class, 'destroy'])->name('destroy');
     });
 
     // MIGRASI

@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bilyets', function (Blueprint $table) {
+        Schema::create('bilyet_temps', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('giro_id');
+            $table->foreignId('giro_id')->nullable();
+            $table->string('acc_no', 50)->nullable();
             $table->string('prefix', 10)->nullable();
             $table->string('nomor', 30);
             $table->string('type', 20)->nullable(); //cek or bg or loa
@@ -21,10 +22,10 @@ return new class extends Migration
             $table->date('cair_date')->nullable();
             $table->decimal('amount', 20, 2)->nullable();
             $table->string('remarks')->nullable();
-            $table->string('filename')->nullable();
             $table->foreignId('created_by')->nullable();
             $table->string('project', 10)->nullable();
             $table->string('status', 30)->default('onhand'); //onhand / release / cair / void
+            $table->integer('batch')->nullable();
             $table->timestamps();
         });
     }
@@ -34,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bilyets');
+        Schema::dropIfExists('bilyet_temps');
     }
 };

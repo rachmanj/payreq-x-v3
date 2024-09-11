@@ -1,0 +1,25 @@
+<table>
+    <thead>
+        <tr>
+            <td>acc_no</td>
+            <td>prefix</td>
+            <td>nomor</td>
+            <td>type</td>
+            <td>bilyet_date</td>
+            <td>cair_date</td>
+            <td>amount</td>
+            <td>remarks</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1490004194751</td>
+            <td>GH</td>
+            <td>123456</td>
+            <td>cek</td>
+            <td>19-08-2024</td>
+            <td>19-08-2024</td>
+            <td>1500000</td>
+            <td>Installment BCA</td>
+        </tr>
+</table>

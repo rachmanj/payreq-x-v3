@@ -38,7 +38,7 @@
             <dd class="col-sm-8">: {{ $anggaran->createdBy->name }} | {{ ucfirst($anggaran->usage) }}</dd>
             <dt class="col-sm-4">Progress</dt>
             <dd class="col-sm-4">
-              <div class="text-center"><small>{{ number_format($progres_persen, 2) }}%</small>
+              <div class="text-center"><small>{{ $progres_persen }}%</small>
                 <div class="progress">
                   <div class="progress-bar progress-bar-striped {{ $statusColor }} text-center" role="progressbar" style="width: {{ $progres_persen }}%" aria-valuenow="{{ $progres_persen }}" aria-valuemin="0" aria-valuemax="100">
                   </div>
@@ -52,7 +52,7 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Payreq No</th>
+                <th>Payreq/Realz No</th>
                 <th>ApprovedDate</th>
                 <th>Requestor</th>
                 <th>Remarks</th>

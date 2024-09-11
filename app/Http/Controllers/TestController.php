@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Accounting\SapSyncController;
+use App\Http\Controllers\Cashier\BilyetTempController;
 use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
@@ -14,11 +15,13 @@ class TestController extends Controller
 {
     public function index()
     {
-        $test = app(UserAnggaranController::class)->getAvailableRabs();
+        // $test = app(UserAnggaranController::class)->getAvailableRabs();
         // $test = app(EquipmentController::class)->fuelCostPerKM('VA 070');
         // $test = app(EquipmentController::class)->km_array('VA 063');
         // $test = app(SapSyncController::class)->chart_vj_postby();
         // $test = app(OngoingDashboardController::class)->dashboard_data('017C');
+        // $test = app(UserAnggaranController::class)->progress(78);
+        $test = app(BilyetTempController::class)->cekDuplikasiTabelTujuan();
 
         return $test;
     }

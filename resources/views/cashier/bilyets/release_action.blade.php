@@ -1,6 +1,5 @@
 @if($model->project == auth()->user()->project)
-<button type="button" class="btn btn-xs btn-success" data-toggle="modal" data-target="#bilyet-release-{{ $model->id }}">release</button>
-<button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('Are you sure you want delete this record?')">delete</button>
+<button type="button" class="btn btn-xs btn-success" data-toggle="modal" data-target="#bilyet-release-{{ $model->id }}">edit</button>
 @endif
 
 {{-- modal receive --}}
@@ -8,11 +7,11 @@
     <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Release Data for {{ $model->type }} no {{ $model->prefix . $model->nomor }}</h4>
+                <h4 class="modal-title">Edit Data for {{ $model->type }} no {{ $model->prefix . $model->nomor }}</h4>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
 
-            <form action="{{ route('cashier.bilyets.release', $model->id) }}" method="POST">
+            <form action="{{ route('cashier.bilyets.update', $model->id) }}" method="POST">
                 @csrf @method('PUT')
 
                 <div class="modal-body">
@@ -25,15 +24,15 @@
                             </div>
                             <div class="form-group">
                                 <label for="cair_date">Cair Date</label>
-                                <input type="date" name="cair_date" id="cair_date" class="form-control">
+                                <input type="date" name="cair_date" id="cair_date" class="form-control" value="{{ old('cair_date', $model->cair_date) }}">
                             </div>
                             <div class="form-group">
                                 <label for="remarks">Purpose</label>
-                                <textarea type="text" name="remarks" id="remarks" class="form-control">{{ old('remarks') }}</textarea>
+                                <textarea type="text" name="remarks" id="remarks" class="form-control">{{ old('remarks', $model->remarks) }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label for="amount">Amount</label>
-                                <input type="text" name="amount" id="amount" class="form-control" value="{{ old('amount') }}">
+                                <input type="text" name="amount" id="amount" class="form-control" value="{{ old('amount', $model->amount) }}">
                             </div>
                         </div>
                     </div>

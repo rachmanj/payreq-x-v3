@@ -1,5 +1,3 @@
-<div class="col-6"></div>
-
 @can('see_activities_chart')
 <div class="col-6">
     <div class="card card-info">
@@ -30,3 +28,5 @@
     </div>
 </div>
 @endcan
+
+<div class="col-6"></div>

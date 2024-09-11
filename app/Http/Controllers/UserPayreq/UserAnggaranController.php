@@ -275,7 +275,7 @@ class UserAnggaranController extends Controller
         // if payreq has realization then payreq->nomor = realization->nomor
         foreach ($payreqs as $payreq) {
             if ($payreq->type === 'advance') {
-                if ($payreq->realization) {
+                if ($payreq->realization && $payreq->realization->realizationDetails->count() > 0) {
                     $payreq->nomor = $payreq->realization->nomor;
                     $payreq->amount = $payreq->realization->realizationDetails->sum('amount');
                     $payreq_list[] = $payreq;
@@ -293,7 +293,7 @@ class UserAnggaranController extends Controller
         $total_release = 0;
         foreach ($payreqs as $payreq) {
             // if payreq has realization then sum the realization_detail amount
-            if ($payreq->realization) {
+            if ($payreq->realization && $payreq->realization->realizationDetails->count() > 0) {
                 $total_release += $payreq->realization->realizationDetails->sum('amount');
                 $payreq->cek = 'ada realisasi';
             } else {

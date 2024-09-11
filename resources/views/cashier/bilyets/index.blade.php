@@ -15,11 +15,11 @@
     <div class="card">
       <div class="card-header">
         <a href="#" class="text-dark">ON HAND</a> | 
-        <a href="{{ route('cashier.bilyets.release') }}">Release</a>
+        <a href="{{ route('cashier.bilyets.release_index') }}"> Released</a> |
+        <a href="{{ route('cashier.bilyet-temps.index') }}"> Upload</a>
         @can('add_bilyet')
           <button href="#" class="btn btn-xs btn-success float-right" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Bilyet</button>
-          <button href="#" class="btn btn-xs btn-warning float-right mx-2" data-toggle="modal" data-target="#modal-upload"> Upload</button>
-          <button href="#" class="btn btn-xs btn-primary float-right" data-toggle="modal" data-target="#modal-download"> download template</button>
+          {{-- <a href="{{ route('cashier.bilyets.export') }}" class="btn btn-xs btn-primary float-right"> download template</a> --}}
         @endcan
       </div>  <!-- /.card-header -->
      
@@ -171,7 +171,7 @@
     $("#giros").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cashier.bilyets.data') }}',
+      ajax: '{{ route('cashier.bilyets.data') . '?status=onhand' }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'nomor'},

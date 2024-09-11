@@ -15,8 +15,12 @@
     <div class="card">
       <div class="card-header">
         <a href="{{ route('cashier.bilyets.index') }}">On hand</a> |
-        <a href="#" class="text-dark"> RELEASED</a> |
-        <a href="{{ route('cashier.bilyet-temps.index') }}"> Upload</a>
+        <a href="{{ route('cashier.bilyets.release_index') }}"> Released</a> |
+        <a href="#" class="text-dark"> UPLOAD</a>
+        <a href="{{ asset('file_upload/') . '/bilyet_template.xlsx' }}" class="btn btn-xs btn-success float-right" target=_blank>download template</a>
+        <a href="{{ route('cashier.bilyets.import') }}" class="btn btn-xs btn-warning float-right mx-2 {{ $import_button }}" onclick="return confirm('Are you sure you want to import to bilyets table?')"> Import</a>
+        <a href="{{ route('cashier.bilyet-temps.truncate') }}" class="btn btn-xs btn-danger float-right {{ $empty_button }}" onclick="return confirm('Are you sure you want to delete all data in table?')"> Empty Table</a>
+        <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal" data-target="#modal-upload"> Upload</button>
       </div>  <!-- /.card-header -->
      
       <div class="card-body">
@@ -25,11 +29,12 @@
             <tr>
               <th>#</th>
               <th>Nomor</th>
-              <th>Bank | Account</th>
+              <th>status</th>
+              {{-- <th>Giro ID</th> --}}
+              <th>Giro Acc</th>
               <th>Type</th>
               <th>BilyetD</th>
               <th>CairD</th>
-              <th>Status</th>
               <th>Amount</th>
               <th></th>
             </tr>
@@ -39,6 +44,35 @@
     </div> <!-- /.card -->
   </div> <!-- /.col -->
 </div>  <!-- /.row -->
+
+<div class="modal fade" id="modal-upload">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title"> Upload Bilyets</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form action="{{ route('cashier.bilyet-temps.upload') }}" enctype="multipart/form-data" method="POST">
+        @csrf
+      <div class="modal-body">
+          <label>Pilih file excel</label>
+          <div class="form-group">
+            <input type="file" name='file_upload' required class="form-control">
+          </div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-sm btn-primary"> Upload</button>
+      </div>
+    </form>
+    </div>
+    <!-- /.modal-content -->
+  </div>
+  <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
 @endsection
 
 @section('styles')
@@ -67,15 +101,16 @@
     $("#giros").DataTable({
       processing: true,
       serverSide: true,
-      ajax: '{{ route('cashier.bilyets.data') .'?status=release' }}',
+      ajax: '{{ route('cashier.bilyet-temps.data') }}',
       columns: [
         {data: 'DT_RowIndex', orderable: false, searchable: false},
         {data: 'nomor'},
-        {data: 'account'},
+        {data: 'status_duplikasi'},
+        // {data: 'giro_id'},
+        {data: 'acc_no'},
         {data: 'type'},
         {data: 'bilyet_date'},
         {data: 'cair_date'},
-        {data: 'status'},
         {data: 'amount'},
         {data: 'action', orderable: false, searchable: false},
       ],
