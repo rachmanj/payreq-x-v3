@@ -114,6 +114,15 @@ class UserPayreqController extends Controller
         if ($payreq->type === 'reimburse') {
             $realization_details = $payreq->realization->realizationDetails;
 
+            if ($payreq->project == '000H' || $payreq->project == 'APS') {
+                return view('user-payreqs.reimburse.print_pdf_signed', compact([
+                    'payreq',
+                    'terbilang',
+                    'realization_details',
+                    'approvers'
+                ]));
+            }
+
             return view('user-payreqs.reimburse.print_pdf', compact([
                 'payreq',
                 'terbilang',
@@ -121,6 +130,14 @@ class UserPayreqController extends Controller
                 'approvers'
             ]));
         } else {
+            if ($payreq->project == '000H' || $payreq->project == 'APS') {
+                return view('user-payreqs.advance.print_pdf_signed_advance', compact([
+                    'payreq',
+                    'terbilang',
+                    'approvers'
+                ]));
+            }
+
             return view('user-payreqs.advance.print_pdf', compact([
                 'payreq',
                 'terbilang',
