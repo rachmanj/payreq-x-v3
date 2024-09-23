@@ -115,7 +115,7 @@ class UserPayreqController extends Controller
             $realization_details = $payreq->realization->realizationDetails;
 
             if ($payreq->project == '000H' || $payreq->project == 'APS') {
-                return view('user-payreqs.reimburse.print_pdf_signed', compact([
+                return view('user-payreqs.reimburse.print_pdf', compact([
                     'payreq',
                     'terbilang',
                     'realization_details',

@@ -120,6 +120,7 @@ class OngoingDashboardController extends Controller
 
         $users = User::join('departments', 'users.department_id', '=', 'departments.id')
             ->whereIn('project', $project)
+            ->where('users.id', '!=', 44)
             ->select('users.name', 'users.id', 'users.project', 'departments.department_name')
             ->orderBy('users.name', 'asc')
             ->get();
