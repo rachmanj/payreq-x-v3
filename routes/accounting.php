@@ -58,5 +58,6 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/', [GiroController::class, 'index'])->name('index');
         Route::post('/', [GiroController::class, 'store'])->name('store');
         Route::put('/{id}', [GiroController::class, 'update'])->name('update');
+        Route::delete('/{id}', [GiroController::class, 'destroy'])->name('destroy');
     });
 });

@@ -1,13 +1,18 @@
-
-
+@hasanyrole('superadmin|admin')
 <button href="#" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#modal-edit-{{ $model->id }}"><i class="fas fa-edit"></i></button>
+{{-- delete giro --}}
+<form action="{{ route('accounting.giros.destroy', $model->id) }}" method="POST" class="d-inline">
+  @csrf @method('DELETE')
+  <button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('Are you sure you want to delete this giro account?')"><i class="fas fa-trash"></i></button>
+</form>
+@endhasanyrole
 
 {{-- Modal create --}}
 <div class="modal fade" id="modal-edit-{{ $model->id }}">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h4 class="modal-title"> New Giro Account</h4>
+          <h4 class="modal-title"> Update Giro Account</h4>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
@@ -42,17 +47,17 @@
           
           <div class="form-group">
             <label for="type">Giro Type</label>
-            <select name="type" id="type" class="form-control select2bs4">
-                  <option value="giro">Giro</option>
-                  <option value="tabungan">Tabungan</option>
+            <select name="type" id="type" class="form-control">
+                  <option value="giro" {{ $model->type == 'giro' ? 'selected' : '' }}>Giro</option>
+                  <option value="tabungan" {{ $model->type == 'tabungan' ? 'selected' : '' }}>Tabungan</option>
             </select>
           </div>
   
           <div class="form-group">
             <label for="curr">Currency</label>
-            <select name="curr" id="curr" class="form-control select2bs4">
-                  <option value="idr" {{ $model->curr == 'idr' ? 'selected' : '' }}>IDR</option>
-                  <option value="usd" {{ $model->curr == 'usd' ? 'selected' : '' }}>USD</option>
+            <select name="curr" id="curr" class="form-control">
+                  <option value="IDR" {{ $model->curr == 'IDR' ? 'selected' : '' }}>IDR</option>
+                  <option value="USD" {{ $model->curr == 'USD' ? 'selected' : '' }}>USD</option>
             </select>
           </div>
   
@@ -60,7 +65,7 @@
             <label for="project">Project</label>
             <select name="project" id="project" class="form-control select2bs4">
               @foreach (App\Models\Project::orderBy('code')->get() as $project)
-                  <option value="{{ $project->code }}">{{ $project->code }}</option>
+                  <option value="{{ $project->code }}" {{ $model->project == $project->code ? 'selected' : '' }}>{{ $project->code }}</option>
               @endforeach
             </select>
           </div>

@@ -25,13 +25,13 @@ class AnggaranController extends Controller
         $periode_anggarans = PeriodeAnggaran::orderBy('periode', 'asc')
             ->where('periode_type', 'anggaran')
             ->where('project', auth()->user()->project)
-            ->where('is_active', 1)
+            // ->where('is_active', 1)
             ->get();
 
         $periode_ofrs = PeriodeAnggaran::orderBy('periode', 'asc')
             ->where('periode_type', 'ofr')
             ->where('project', auth()->user()->project)
-            ->where('is_active', 1)
+            // ->where('is_active', 1)
             ->get();
 
         // rab_45654654654_filename.pdf convert this to filename.pdf
@@ -91,11 +91,13 @@ class AnggaranController extends Controller
 
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $anggarans = Anggaran::orderBy('date', 'desc')
+                ->where('status', 'approved')
                 ->limit(300)
                 ->get();
         } else {
             $anggarans = Anggaran::where('project', auth()->user()->project)
                 ->orderBy('date', 'desc')
+                ->where('status', 'approved')
                 ->limit(300)
                 ->get();
         }

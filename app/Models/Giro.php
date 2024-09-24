@@ -15,4 +15,9 @@ class Giro extends Model
     {
         return $this->belongsTo(Bank::class);
     }
+
+    public function bilyets()
+    {
+        return $this->hasMany(Bilyet::class);
+    }
 }

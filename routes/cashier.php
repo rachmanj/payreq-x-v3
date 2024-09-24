@@ -79,10 +79,13 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/', [BilyetController::class, 'index'])->name('index');
         Route::post('/', [BilyetController::class, 'store'])->name('store');
         Route::get('release', [BilyetController::class, 'release_index'])->name('release_index');
+        Route::get('cair', [BilyetController::class, 'cair_index'])->name('cair_index');
+        Route::get('void', [BilyetController::class, 'void_index'])->name('void_index');
         Route::put('{id}', [BilyetController::class, 'update'])->name('update');
         Route::put('{id}/release', [BilyetController::class, 'release'])->name('release');
         Route::get('export', [BilyetController::class, 'export'])->name('export');
         Route::get('import', [BilyetController::class, 'import'])->name('import'); // move data from bilyet_temp to bilyet
+        Route::delete('{id}', [BilyetController::class, 'destroy'])->name('destroy');
     });
 
     // BILYET TEMP

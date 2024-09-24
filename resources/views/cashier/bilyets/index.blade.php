@@ -16,6 +16,8 @@
       <div class="card-header">
         <a href="#" class="text-dark">ON HAND</a> | 
         <a href="{{ route('cashier.bilyets.release_index') }}"> Released</a> |
+        <a href="{{ route('cashier.bilyets.cair_index') }}"> Cair</a> |
+        <a href="{{ route('cashier.bilyets.void_index') }}"> Void</a> |
         <a href="{{ route('cashier.bilyet-temps.index') }}"> Upload</a>
         @can('add_bilyet')
           <button href="#" class="btn btn-xs btn-success float-right" data-toggle="modal" data-target="#modal-create"><i class="fas fa-plus"></i> Bilyet</button>
@@ -192,6 +194,7 @@
     $('.select2bs4').select2({
       theme: 'bootstrap4'
     })
+
   });
 </script>
 @endsection

@@ -16,6 +16,8 @@
       <div class="card-header">
         <a href="{{ route('cashier.bilyets.index') }}">On hand</a> |
         <a href="#" class="text-dark"> RELEASED</a> |
+        <a href="{{ route('cashier.bilyets.cair_index') }}"> Cair</a> |
+        <a href="{{ route('cashier.bilyets.void_index') }}"> Void</a> |
         <a href="{{ route('cashier.bilyet-temps.index') }}"> Upload</a>
       </div>  <!-- /.card-header -->
      
@@ -30,7 +32,7 @@
               <th>BilyetD</th>
               <th>CairD</th>
               <th>Status</th>
-              <th>Amount</th>
+              <th>IDR</th>
               <th></th>
             </tr>
           </thead>
@@ -82,7 +84,7 @@
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [5],
+                "targets": [7],
                 "className": "text-right"
               }
             ]
@@ -92,6 +94,8 @@
     $('.select2bs4').select2({
       theme: 'bootstrap4'
     })
+
+    
   });
 </script>
 @endsection

@@ -31,6 +31,16 @@ class BilyetController extends Controller
         return view('cashier.bilyets.release');
     }
 
+    public function cair_index()
+    {
+        return view('cashier.bilyets.cair');
+    }
+
+    public function void_index()
+    {
+        return view('cashier.bilyets.void');
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -62,24 +72,56 @@ class BilyetController extends Controller
 
     public function update(Request $request, $id)
     {
-        if ($request->bilyet_date == null && $request->cair_date == null && $request->amount == null) {
-            $request->merge([
-                'status' => 'onhand'
+        $bilyet = Bilyet::find($id);
+
+        if ($request->is_void) {
+            $bilyet->update([
+                'bilyet_date' => $request->bilyet_date,
+                'cair_date' => $request->cair_date,
+                'amount' => $request->amount,
+                'remarks' => $request->remarks,
+                'status' => 'void',
             ]);
         } else {
-            $request->merge([
-                'status' => 'release'
+            if ($request->amount && $request->bilyet_date && $request->cair_date) {
+                $status = 'cair';
+            } elseif ($request->amount || $request->bilyet_date) {
+                $status = 'release';
+            } else {
+                $status = 'onhand';
+            }
+
+            $bilyet->update([
+                'bilyet_date' => $request->bilyet_date,
+                'cair_date' => $request->cair_date,
+                'amount' => $request->amount,
+                'remarks' => $request->remarks,
+                'status' => $status,
             ]);
         }
 
-        Bilyet::find($id)->update($request->all());
-
-        return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet updated successfully.');
+        // redirect route
+        if ($request->from_page == 'release') {
+            return redirect()->route('cashier.bilyets.release_index')->with('success', 'Bilyet updated successfully.');
+        } elseif ($request->from_page == 'cair') {
+            return redirect()->route('cashier.bilyets.cair_index')->with('success', 'Bilyet updated successfully.');
+        } elseif ($request->from_page == 'void') {
+            return redirect()->route('cashier.bilyets.void_index')->with('success', 'Bilyet updated successfully.');
+        } else {
+            return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet updated successfully.');
+        }
     }
 
     public function export()
     {
         return Excel::download(new BilyetTemplateExport, 'bilyet_template.xlsx');
+    }
+
+    public function destroy($id)
+    {
+        Bilyet::destroy($id);
+
+        return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet deleted successfully.');
     }
 
     public function import()
@@ -89,7 +131,13 @@ class BilyetController extends Controller
 
         // insert data to bilyet table
         foreach ($bilyets as $bilyet) {
-            $status = $bilyet->amount || $bilyet->bilyet_date || $bilyet->cair_date ? 'release' : 'onhand';
+            // $status = $bilyet->amount || $bilyet->bilyet_date || $bilyet->cair_date ? 'release' : 'onhand';
+
+            if ($bilyet->amount && $bilyet->bilyet_date && $bilyet->cair_date) {
+                $status = 'cair';
+            } else {
+                $status = $bilyet->amount || $bilyet->bilyet_date ? 'release' : 'onhand';
+            }
 
             Bilyet::create([
                 'giro_id' => $bilyet->giro_id,
@@ -119,12 +167,24 @@ class BilyetController extends Controller
 
         $userRoles = app(UserController::class)->getUserRoles();
 
-        if ($status == 'onhand') {
-            $bilyet_bystatus = Bilyet::where('status', 'onhand');
-            $action_button = 'cashier.bilyets.action';
-        } else {
-            $bilyet_bystatus = Bilyet::whereIn('status', ['release', 'cair', 'void']);
-            $action_button = 'cashier.bilyets.release_action';
+        // determine which action button to show
+        switch ($status) {
+            case 'release':
+                $bilyet_bystatus = Bilyet::where('status', 'release');
+                $action_button = 'cashier.bilyets.release_action';
+                break;
+            case 'cair':
+                $bilyet_bystatus = Bilyet::where('status', 'cair');
+                $action_button = 'cashier.bilyets.cair_action';
+                break;
+            case 'trash':
+                $bilyet_bystatus = Bilyet::where('status', 'void');
+                $action_button = 'cashier.bilyets.void_action';
+                break;
+            default:
+                $bilyet_bystatus = Bilyet::where('status', 'onhand');
+                $action_button = 'cashier.bilyets.action';
+                break;
         }
 
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
@@ -140,17 +200,24 @@ class BilyetController extends Controller
                 return $bilyet->prefix . $bilyet->nomor;
             })
             ->addColumn('account', function ($bilyet) {
-                return $bilyet->giro->bank->name . ' ' . strtoupper($bilyet->giro->curr) . ' | ' . $bilyet->giro->acc_no;
+                $remarks = $bilyet->remarks ? $bilyet->remarks : '';
+                return '<small>' . $bilyet->giro->bank->name . ' ' . strtoupper($bilyet->giro->curr) . ' | ' . $bilyet->giro->acc_no . '<br>' . $remarks . '</small>';
             })
             ->editColumn('bilyet_date', function ($bilyet) {
-                return date('d-M-Y', strtotime($bilyet->bilyet_date));
+                return $bilyet->bilyet_date ? date('d-M-Y', strtotime($bilyet->bilyet_date)) : '-';
             })
             ->editColumn('cair_date', function ($bilyet) {
                 return $bilyet->cair_date ? date('d-M-Y', strtotime($bilyet->cair_date)) : '-';
             })
+            ->editColumn('amount', function ($bilyet) {
+                return $bilyet->amount ? number_format($bilyet->amount, 0, ',', '.') . ',-' : '-';
+            })
+            ->editColumn('type', function ($bilyet) {
+                return strtoupper($bilyet->type);
+            })
             ->addIndexColumn()
             ->addColumn('action', $action_button)
-            ->rawColumns(['action', 'account'])
+            ->rawColumns(['action', 'account', 'nomor'])
             ->toJson();
     }
 }

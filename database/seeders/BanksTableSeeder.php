@@ -14,14 +14,14 @@ class BanksTableSeeder extends Seeder
     {
         $banks = [
             ['name' => 'Bank Mandiri'],
+            ['name' => 'Bank BPD Kaltim'],
             ['name' => 'Bank BCA'],
             ['name' => 'Bank BNI'],
-            ['name' => 'Bank BRI'],
+            ['name' => 'Bank Panin'],
             ['name' => 'Bank Danamon'],
-            ['name' => 'Bank Permata'],
-            ['name' => 'Bank Syariah Indonesia'],
+            ['name' => 'Bank Nusantara Parahyangan'],
             ['name' => 'Bank CIMB Niaga'],
-            ['name' => 'Bank BTN'],
+            ['name' => 'Bank Syariah Indonesia'],
         ];
 
         DB::table('banks')->insert($banks);

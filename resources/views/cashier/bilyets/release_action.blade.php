@@ -19,7 +19,7 @@
                         <div class="col-12">
                             <div class="form-group">
                                 <label for="bilyet_date">Bilyet Date</label>
-                                <input type="hidden" name="status" value="release">
+                                <input type="hidden" name="from_page" value="release">
                                 <input type="date" name="bilyet_date" id="bilyet_date" class="form-control" value="{{ old('bilyet_date', $model->bilyet_date) }}">
                             </div>
                             <div class="form-group">
@@ -33,6 +33,13 @@
                             <div class="form-group">
                                 <label for="amount">Amount</label>
                                 <input type="text" name="amount" id="amount" class="form-control" value="{{ old('amount', $model->amount) }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="is_void">Is VOID?</label>
+                                <select name="is_void" class="form-control">
+                                    <option value="" {{ $model->status !== 'void' ? 'selected' : '' }}>NO</option>
+                                    <option value="void" {{ $model->status == 'void' ? 'selected' : '' }}>YES</option>
+                                </select>
                             </div>
                         </div>
                     </div>

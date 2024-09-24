@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('acc_name', 50)->nullable();
             $table->foreignId('bank_id');
             $table->string('type', 50)->nullable(); // tabungan, giro, deposito
-            $table->string('curr', 5)->default('idr');
+            $table->string('curr', 5)->default('idr'); // IDR, USD, EUR
             $table->string('project', 50)->nullable();
             $table->timestamps();
         });
