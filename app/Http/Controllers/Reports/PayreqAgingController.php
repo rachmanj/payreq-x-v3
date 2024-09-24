@@ -50,9 +50,9 @@ class PayreqAgingController extends Controller
             })
             ->editColumn('status', function ($payreq) {
                 if ($payreq->status == 'paid') {
-                    return '<span class="badge badge-success">Paid</span>';
+                    return '<span class="badge badge-warning">Paid</span>';
                 } else {
-                    return '<span class="badge badge-warning">Realization</span>';
+                    return '<span class="badge badge-success">Realization</span>';
                 }
             })
             ->editColumn('aging', function ($payreq) {
