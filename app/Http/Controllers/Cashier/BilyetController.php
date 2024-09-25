@@ -170,15 +170,15 @@ class BilyetController extends Controller
         // determine which action button to show
         switch ($status) {
             case 'release':
-                $bilyet_bystatus = Bilyet::where('status', 'release');
+                $bilyet_bystatus = Bilyet::where('status', 'release')->orderBy('bilyet_date', 'asc');
                 $action_button = 'cashier.bilyets.release_action';
                 break;
             case 'cair':
-                $bilyet_bystatus = Bilyet::where('status', 'cair');
+                $bilyet_bystatus = Bilyet::where('status', 'cair')->orderBy('cair_date', 'desc');
                 $action_button = 'cashier.bilyets.cair_action';
                 break;
             case 'trash':
-                $bilyet_bystatus = Bilyet::where('status', 'void');
+                $bilyet_bystatus = Bilyet::where('status', 'void')->orderBy('updated_at', 'desc');
                 $action_button = 'cashier.bilyets.void_action';
                 break;
             default:
