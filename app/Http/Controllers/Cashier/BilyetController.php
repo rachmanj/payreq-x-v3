@@ -58,18 +58,6 @@ class BilyetController extends Controller
         return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet created successfully.');
     }
 
-    public function release(Request $request, $id)
-    {
-        $request->validate([
-            'bilyet_date' => 'required',
-            'amount' => 'required',
-        ]);
-
-        Bilyet::find($id)->update($request->all());
-
-        return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet updated successfully.');
-    }
-
     public function update(Request $request, $id)
     {
         $bilyet = Bilyet::find($id);

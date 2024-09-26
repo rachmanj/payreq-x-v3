@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Reports\AnggaranController;
+use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\EomController;
 use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
@@ -74,5 +75,9 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/{id}/show', [AnggaranController::class, 'show'])->name('show');
         Route::get('/{id}/edit', [AnggaranController::class, 'edit'])->name('edit');
         Route::post('/update', [AnggaranController::class, 'update'])->name('update');
+    });
+
+    Route::prefix('bilyet')->name('bilyet.')->group(function () {
+        Route::get('/', [BilyetController::class, 'index'])->name('index');
     });
 });

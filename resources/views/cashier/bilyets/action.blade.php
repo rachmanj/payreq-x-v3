@@ -19,7 +19,7 @@
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
 
-            <form action="{{ route('cashier.bilyets.release', $model->id) }}" method="POST">
+            <form action="{{ route('cashier.bilyets.update', $model->id) }}" method="POST">
                 @csrf @method('PUT')
 
                 <div class="modal-body">

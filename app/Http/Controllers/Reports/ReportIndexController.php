@@ -102,9 +102,14 @@ class ReportIndexController extends Controller
                 ],
             ],
             [
-                'name' => 'Loan Related',
+                'name' => 'Loan / Bilyet Related',
                 'protector' => 'akses_loan_report',
                 'subMenu' => [
+                    [
+                        'name' => 'Bilyet Dashboard',
+                        'url' => route('reports.bilyet.index'),
+                        'protector' => null,
+                    ],
                     [
                         'name' => 'BG Jatuh Tempo dalam waktu dekat',
                         'url' => route('reports.loan.index'),
