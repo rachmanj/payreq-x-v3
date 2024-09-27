@@ -86,6 +86,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('export', [BilyetController::class, 'export'])->name('export');
         Route::get('import', [BilyetController::class, 'import'])->name('import'); // move data from bilyet_temp to bilyet
         Route::delete('{id}', [BilyetController::class, 'destroy'])->name('destroy');
+        Route::post('update-many', [BilyetController::class, 'update_many'])->name('update_many');
     });
 
     // BILYET TEMP

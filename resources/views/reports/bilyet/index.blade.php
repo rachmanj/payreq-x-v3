@@ -15,6 +15,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">On Hand</h3>
+                    <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body p-0">

@@ -23,7 +23,9 @@ class BilyetController extends Controller
             $giros = Giro::where('project', auth()->user()->project)->get();
         }
 
-        return view('cashier.bilyets.index', compact('giros'));
+        $onhands = Bilyet::where('status', 'onhand')->orderBy('prefix', 'asc')->orderBy('nomor', 'asc')->get();
+
+        return view('cashier.bilyets.index', compact('giros', 'onhands'));
     }
 
     public function release_index()
@@ -147,6 +149,24 @@ class BilyetController extends Controller
 
         // return to the index page with success message
         return redirect()->route('cashier.bilyet-temps.index')->with('success', 'Bilyet imported successfully.');
+    }
+
+    public function update_many(Request $request)
+    {
+        // return $request->all();
+
+        $bilyets = Bilyet::whereIn('id', $request->bilyet_ids)->get();
+
+        foreach ($bilyets as $bilyet) {
+            $bilyet->update([
+                'bilyet_date' => $request->bilyet_date,
+                'amount' => $request->amount,
+                'remarks' => $request->remarks,
+                'status' => 'release',
+            ]);
+        }
+
+        return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet updated successfully.');
     }
 
     public function data()

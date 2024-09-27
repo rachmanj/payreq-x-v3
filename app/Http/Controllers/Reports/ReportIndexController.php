@@ -110,16 +110,16 @@ class ReportIndexController extends Controller
                         'url' => route('reports.bilyet.index'),
                         'protector' => null,
                     ],
-                    [
-                        'name' => 'BG Jatuh Tempo dalam waktu dekat',
-                        'url' => route('reports.loan.index'),
-                        'protector' => null,
-                    ],
-                    [
-                        'name' => 'Loan Dashboard',
-                        'url' => route('reports.loan.dashboard'),
-                        'protector' => null,
-                    ],
+                    // [
+                    //     'name' => 'BG Jatuh Tempo dalam waktu dekat',
+                    //     'url' => route('reports.loan.index'),
+                    //     'protector' => null,
+                    // ],
+                    // [
+                    //     'name' => 'Loan Dashboard',
+                    //     'url' => route('reports.loan.dashboard'),
+                    //     'protector' => null,
+                    // ],
                 ],
             ],
             [
