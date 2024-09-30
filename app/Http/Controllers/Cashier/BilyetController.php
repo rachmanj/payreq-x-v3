@@ -114,10 +114,11 @@ class BilyetController extends Controller
         return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet deleted successfully.');
     }
 
-    public function import()
+    public function import(Request $request)
     {
         // get all data from bilyet_temp
         $bilyets = BilyetTemp::where('created_by', auth()->user()->id)->get();
+        $receive_date = $request->receive_date;
 
         // insert data to bilyet table
         foreach ($bilyets as $bilyet) {
@@ -134,6 +135,7 @@ class BilyetController extends Controller
                 'prefix' => $bilyet->prefix,
                 'nomor' => $bilyet->nomor,
                 'type' => $bilyet->type,
+                'receive_date' => $receive_date,
                 'bilyet_date' => $bilyet->bilyet_date,
                 'cair_date' => $bilyet->cair_date,
                 'amount' => $bilyet->amount,

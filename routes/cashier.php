@@ -84,7 +84,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::put('{id}', [BilyetController::class, 'update'])->name('update');
         Route::put('{id}/release', [BilyetController::class, 'release'])->name('release');
         Route::get('export', [BilyetController::class, 'export'])->name('export');
-        Route::get('import', [BilyetController::class, 'import'])->name('import'); // move data from bilyet_temp to bilyet
+        Route::post('import', [BilyetController::class, 'import'])->name('import'); // move data from bilyet_temp to bilyet
         Route::delete('{id}', [BilyetController::class, 'destroy'])->name('destroy');
         Route::post('update-many', [BilyetController::class, 'update_many'])->name('update_many');
     });
@@ -96,6 +96,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('upload', [BilyetTempController::class, 'upload'])->name('upload');
         Route::get('truncate', [BilyetTempController::class, 'truncate'])->name('truncate');
         Route::get('/{id}/destroy', [BilyetTempController::class, 'destroy'])->name('destroy');
+        Route::put('{id}', [BilyetTempController::class, 'update'])->name('update');
     });
 
     // MIGRASI

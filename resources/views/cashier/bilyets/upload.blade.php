@@ -20,7 +20,7 @@
         <a href="{{ route('cashier.bilyets.void_index') }}"> Void</a> |
         <a href="#" class="text-dark"> UPLOAD</a>
         <a href="{{ asset('file_upload/') . '/bilyet_template.xlsx' }}" class="btn btn-xs btn-success float-right" target=_blank>download template</a>
-        <a href="{{ route('cashier.bilyets.import') }}" class="btn btn-xs btn-warning float-right mx-2 {{ $import_button }}" onclick="return confirm('Are you sure you want to import to bilyets table?')"> Import</a>
+        <a href="{{ route('cashier.bilyets.import') }}" class="btn btn-xs btn-warning float-right mx-2 {{ $import_button }}" data-toggle="modal" data-target="#modal-import"> Import</a>
         <a href="{{ route('cashier.bilyet-temps.truncate') }}" class="btn btn-xs btn-danger float-right {{ $empty_button }}" onclick="return confirm('Are you sure you want to delete all data in table?')"> Empty Table</a>
         <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal" data-target="#modal-upload"> Upload</button>
       </div>  <!-- /.card-header -->
@@ -67,6 +67,34 @@
       <div class="modal-footer justify-content-between">
         <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
         <button type="submit" class="btn btn-sm btn-primary"> Upload</button>
+      </div>
+    </form>
+    </div>
+    <!-- /.modal-content -->
+  </div>
+  <!-- /.modal-dialog -->
+</div>
+
+<div class="modal fade" id="modal-import">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title"> Import Bilyets to DB</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form action="{{ route('cashier.bilyets.import') }}" method="POST">
+        @csrf
+      <div class="modal-body">
+          <label>Receive Date</label>
+          <div class="form-group">
+            <input type="date" name='receive_date' required class="form-control">
+          </div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-sm btn-primary"> Import</button>
       </div>
     </form>
     </div>

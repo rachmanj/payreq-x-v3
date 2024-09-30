@@ -7,6 +7,7 @@ use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
+use App\Models\Anggaran;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\VerificationJournal;
@@ -21,7 +22,8 @@ class TestController extends Controller
         // $test = app(SapSyncController::class)->chart_vj_postby();
         // $test = app(OngoingDashboardController::class)->dashboard_data('017C');
         // $test = app(UserAnggaranController::class)->progress(78);
-        $test = app(BilyetController::class)->dashboardData();
+        // $test = app(BilyetController::class)->dashboardData();
+        $test = $this->getDNCRabs();
 
         return $test;
     }
@@ -63,8 +65,6 @@ class TestController extends Controller
 
     public function get_realization()
     {
-        // get realization include with verification_journal and realization_details
-        // $realizations = Realization::select('id', 'nomor', 'created_at', 'verification_journal_id', 'status')
         $realizations = Realization::select('verification_journal_id')
             ->whereIn('id', $this->cek_realization_posted())
             ->where('status', 'verification-complete')
@@ -72,23 +72,19 @@ class TestController extends Controller
             ->orderBy('verification_journal_id', 'asc')
             ->get();
 
-        // foreach ($realizations as $realization) {
-        //     // $realization->status_before = $realization->status;
-
-        //     // $realization_after = Realization::where('id', $realization->id)->first()
-        //     //     ->update([
-        //     //         'status' => 'close'
-        //     //     ]);
-
-        //     // $realization->status_after = $realization_after;
-
-        //     $realization->verification_journal = VerificationJournal::select('id', 'sap_journal_no', 'sap_posting_date')->where('id', $realization->verification_journal_id)
-        //         ->first();
-        // }
-
         return [
             'realization_count' => $realizations->count(),
             'realizations' => $realizations
         ];
+    }
+
+    private function getDNCRabs()
+    {
+        $anggarans = Anggaran::select('id', 'rab_no', 'old_rab_id', 'created_by')
+            ->where('created_by', 23)
+            ->whereNotNull('old_rab_id')
+            ->get();
+
+        return $anggarans;
     }
 }

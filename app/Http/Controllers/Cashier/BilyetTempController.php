@@ -62,6 +62,23 @@ class BilyetTempController extends Controller
         return redirect()->route('cashier.bilyet-temps.index')->with('success', 'Bilyet truncated successfully.');
     }
 
+    public function update(Request $request, $id)
+    {
+        // return $request->all();
+        $bilyet = BilyetTemp::find($id);
+
+        $bilyet->update([
+            'prefix' => $request->prefix,
+            'nomor' => $request->nomor,
+            'bilyet_date' => $request->bilyet_date,
+            'cair_date' => $request->cair_date,
+            'amount' => $request->amount,
+            'remarks' => $request->remarks,
+        ]);
+
+        return redirect()->route('cashier.bilyet-temps.index')->with('success', 'Bilyet updated successfully.');
+    }
+
     public function destroy($id)
     {
         BilyetTemp::destroy($id);
