@@ -20,8 +20,8 @@
           <dl class="row">
             <dt class="col-sm-4">RAB No</dt>
             <dd class="col-sm-8">: {{ $anggaran->nomor }} {{ $anggaran->rab_no != null ? '| ' . $anggaran->rab_no : '' }}</b> @if ($anggaran->filename) <a href="{{ asset('file_upload/') . '/'. $anggaran->filename }}" class='btn btn-xs btn-success' target=_blank>Show RAB</a> @endif</dd>
-            <dt class="col-sm-4">Date</dt>
-            <dd class="col-sm-8">: {{ date('d-M-Y', strtotime($anggaran->date)) }}</dd>
+            <dt class="col-sm-4">Date | Periode</dt>
+            <dd class="col-sm-8">: {{ date('d-M-Y', strtotime($anggaran->date)) }} | {{ $anggaran->periode_anggaran !== null ? date('M-Y', strtotime($anggaran->periode_anggaran)) : '-' }}</dd>
             <dt class="col-sm-4">Description</dt>
             <dd class="col-sm-8">: {{ $anggaran->description }}</dd>
             <dt class="col-sm-4">For Project | Usage</dt>

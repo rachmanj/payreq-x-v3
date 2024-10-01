@@ -52,10 +52,21 @@
   <div class="col-12">
     <div class="form-group">
       <label>Remarks</label>
-      <textarea name="" cols="30" rows="2" class="form-control">{{ $payreq->remarks }}</textarea>
+      <textarea name="" cols="30" rows="2" class="form-control" readonly>{{ $payreq->remarks }}</textarea>
     </div>
   </div>
 </div>
+
+@if ($payreq->rab_id != null)
+    <div class="row">
+        <div class="col-12">
+            <div class="form-group">
+                <label for="anggaran">RAB</label>
+                <input type="text" class="form-control" value="No.{{ $payreq->anggaran->nomor }} {{ $payreq->anggaran->rab_no ? '| ' . $payreq->anggaran->rab_no : '' }} | {{ $payreq->anggaran->description }}" readonly>
+            </div>
+        </div>
+    </div>
+@endif
 
 @include('approvals-request.realizations.details_table')
 
