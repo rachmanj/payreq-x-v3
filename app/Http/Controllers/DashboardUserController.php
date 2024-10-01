@@ -42,63 +42,49 @@ class DashboardUserController extends Controller
             ->where('status', 'close')
             ->get();
 
-        $array_durations = [];
-        foreach ($payreqs_to_count as $payreq) {
-            $paid_date = Outgoing::select('outgoing_date')->where('payreq_id', $payreq->id)
-                ->orderby('outgoing_date', 'desc')
-                ->first();
+        $array_durations = $payreqs_to_count->map(function ($payreq) {
+            $paid_date = Outgoing::where('payreq_id', $payreq->id)
+                ->orderBy('outgoing_date', 'desc')
+                ->value('outgoing_date');
 
-            $duration = Carbon::parse($payreq->realization->approved_at)->diffInDays($paid_date->outgoing_date);
-
-            array_push($array_durations, $duration);
-        }
+            return Carbon::parse($payreq->realization->approved_at)->diffInDays($paid_date);
+        })->toArray();
 
         $sum_durations = array_sum($array_durations);
         $count_durations = count($array_durations);
 
-        if ($count_durations == 0 || $sum_durations == 0) {
-            $average_duration = 0;
-        } else {
-            $average_duration = $sum_durations / $count_durations;
-        }
-
-        return $average_duration;
+        return $count_durations ? $sum_durations / $count_durations : 0;
     }
 
     public function user_monthly_amount()
     {
         $user_id = auth()->user()->id;
+        $year = date('Y');
+        $monthly_amount = [];
 
-        $year = date('Y'); // Assign the current year to the variable
-        // get months in current year
-        $months = [];
-        for ($i = 1; $i <= 12; $i++) {
-            array_push($months, $i);
-        }
-
-        foreach ($months as $month) {
-            $payreqs = Payreq::select('id', 'user_id', 'nomor')->where('user_id', $user_id)
+        for ($month = 1; $month <= 12; $month++) {
+            $payreqs = Payreq::where('user_id', $user_id)
                 ->where('status', 'close')
-                // ->whereMonth('approved_at', $month)
-                // ->whereYear('approved_at', $year)
                 ->whereHas('outgoings', function ($query) use ($month, $year) {
                     $query->whereMonth('outgoing_date', $month)
                         ->whereYear('outgoing_date', $year);
                 })
                 ->get();
 
-            $realization_details = $payreqs->pluck('realization')->flatten()->pluck('realizationDetails')->flatten()->sum('amount');
-
-            $month_name = substr(date('F', mktime(0, 0, 0, $month, 10)), 0, 3);
+            $realization_details = $payreqs->sum(function ($payreq) {
+                if ($payreq->realization && $payreq->realization->realizationDetails) {
+                    return $payreq->realization->realizationDetails->sum('amount');
+                }
+                return 0;
+            });
 
             $monthly_amount[] = [
                 'month' => $month,
-                'month_name' => $month_name,
+                'month_name' => date('M', mktime(0, 0, 0, $month, 10)),
                 'amount' => $realization_details,
             ];
         }
 
-        // return $realization_details;
         return $monthly_amount;
     }
 }
