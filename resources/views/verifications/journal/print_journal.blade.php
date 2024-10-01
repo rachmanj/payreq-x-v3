@@ -58,7 +58,7 @@
                 <td>
                     {{ $item['account_code'] }} - {{ $item['account_name'] }}
                 </td>
-                <td>{{ $item['description'] }}</td>
+                <td>{{ $item['description'] }} <br><small>{{ $item['realization_no'] }} </small></td>
                 <td>{{ $item['project'] }}</td>
                 <td>{{ $item['cost_center'] }}</td>
                 @if ($item['debit_credit'] === 'debit')

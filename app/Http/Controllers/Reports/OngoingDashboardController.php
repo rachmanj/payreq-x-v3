@@ -137,52 +137,33 @@ class OngoingDashboardController extends Controller
         $users = $this->user_list($project);
 
         foreach ($users as $user) {
-            $payreq_belum_realisasi_amount = $this->payreqs_belum_realisasi_by_user_amount($user->id);
-            if ($payreq_belum_realisasi_amount > 0) {
-                $payreq_belum_realisasi_amount = number_format($payreq_belum_realisasi_amount, 2);
-            } else {
-                $payreq_belum_realisasi_amount = 0;
-            }
-
-            $realisasi_belum_verifikasi_by_user_amount = $this->realisasi_belum_verifikasi_by_user_amount($user->id);
-            if ($realisasi_belum_verifikasi_by_user_amount > 0) {
-                $realisasi_belum_verifikasi_amount = number_format($realisasi_belum_verifikasi_by_user_amount, 2);
-            } else {
-                $realisasi_belum_verifikasi_amount = 0;
-            }
-
-            $variance_realisasi_belum_incoming_amount = $this->variance_realisasi_belum_incoming_by_user_amount($user->id);
-            if ($variance_realisasi_belum_incoming_amount > 0) {
-                $variance_realisasi_belum_incoming_amount = number_format($variance_realisasi_belum_incoming_amount, 2);
-            } else {
-                $variance_realisasi_belum_incoming_amount = 0;
-            }
-
-            $variance_realisasi_belum_outgoing_amount = $this->variance_realisasi_belum_outgoing_by_user_amount($user->id);
-            if ($variance_realisasi_belum_outgoing_amount > 0) {
-                $variance_realisasi_belum_outgoing_amount = number_format($variance_realisasi_belum_outgoing_amount, 2);
-            } else {
-                $variance_realisasi_belum_outgoing_amount = 0;
-            }
-
-            $user->payreq_belum_realisasi_amount = $payreq_belum_realisasi_amount;
-            $user->realisasi_belum_verifikasi_amount = $realisasi_belum_verifikasi_amount;
-            $user->variance_realisasi_belum_incoming_amount = $variance_realisasi_belum_incoming_amount;
-            $user->variance_realisasi_belum_outgoing_amount = $variance_realisasi_belum_outgoing_amount;
+            $user->payreq_belum_realisasi_amount = $this->format_amount($this->payreqs_belum_realisasi_by_user_amount($user->id));
+            $user->realisasi_belum_verifikasi_amount = $this->format_amount($this->realisasi_belum_verifikasi_by_user_amount($user->id));
+            $user->variance_realisasi_belum_incoming_amount = $this->format_amount($this->variance_realisasi_belum_incoming_by_user_amount($user->id));
+            $user->variance_realisasi_belum_outgoing_amount = $this->format_amount($this->variance_realisasi_belum_outgoing_by_user_amount($user->id));
             $user->dana_belum_diselesaikan = $this->dana_belum_diselesaikan($user->id);
             $user->payreq_belum_realisasi_list = $this->get_payreqs_belum_realisasi_by_user($user->id);
             $user->realisasi_belum_verifikasi_list = $this->get_realisasi_belum_verifikasi_by_user($user->id);
             $user->variance_realisasi_belum_incoming_list = $this->get_variance_realisasi_belum_incoming_by_user($user->id);
             $user->variance_realisasi_belum_outgoing_list = $this->get_variance_realisasi_belum_outgoing_by_user($user->id);
-            $user->display = $this->payreqs_belum_realisasi_by_user_amount($user->id) + $this->realisasi_belum_verifikasi_by_user_amount($user->id) + $this->variance_realisasi_belum_incoming_by_user_amount($user->id) + $this->variance_realisasi_belum_outgoing_by_user_amount($user->id) > 0 ? true : false;
+            $user->display = $this->should_display_user($user->id);
         }
 
         return $users;
     }
 
+    private function format_amount($amount)
+    {
+        return $amount > 0 ? number_format($amount, 2) : 0;
+    }
 
-
-    // /////////////////////////
+    private function should_display_user($user_id)
+    {
+        return $this->payreqs_belum_realisasi_by_user_amount($user_id) +
+            $this->realisasi_belum_verifikasi_by_user_amount($user_id) +
+            $this->variance_realisasi_belum_incoming_by_user_amount($user_id) +
+            $this->variance_realisasi_belum_outgoing_by_user_amount($user_id) > 0;
+    }
 
     public function dana_belum_diselesaikan($user_id)
     {

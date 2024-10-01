@@ -74,7 +74,7 @@ accounting / sap-sync / show
                                     <small><b>{{ $item['account_name'] }}</b></small>
                                 @endif
                             </td>
-                            <td>{{ $item['description'] }}</td>
+                            <td>{{ $item['description'] }} <br><small>{{ $item['realization_no'] }}</small></td>
                             <td class="text-center">{{ $item['project'] }}</td>
                             <td class="text-center">{{ $item['cost_center'] }} <br> <small><b>{{ $item['dept_akronim'] }}</b></small></td>
                             @if ($item['debit_credit'] === 'debit')
