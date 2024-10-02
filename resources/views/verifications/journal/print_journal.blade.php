@@ -56,7 +56,7 @@
               <tr>
                 <td>{{ $key + 1 }}</td>
                 <td>
-                    {{ $item['account_code'] }} - {{ $item['account_name'] }}
+                    {{ $item['account_code'] }} - <small>{{ $item['account_name'] }}</small>
                 </td>
                 <td>{{ $item['description'] }} <br><small>{{ $item['realization_no'] }} </small></td>
                 <td>{{ $item['project'] }}</td>

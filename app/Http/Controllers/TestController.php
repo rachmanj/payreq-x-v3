@@ -23,7 +23,8 @@ class TestController extends Controller
         // $test = app(OngoingDashboardController::class)->dashboard_data('017C');
         // $test = app(UserAnggaranController::class)->progress(78);
         // $test = app(BilyetController::class)->dashboardData();
-        $test = $this->getDNCRabs();
+        $test = app(TeamController::class)->members_data();
+        // $test = $this->getDNCRabs();
 
         return $test;
     }

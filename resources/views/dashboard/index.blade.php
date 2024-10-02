@@ -33,6 +33,10 @@
     </div>
 
     <div class="row">
+        @include('dashboard.team')
+    </div>
+
+    <div class="row">
         @include('dashboard.chart')
     </div>
 

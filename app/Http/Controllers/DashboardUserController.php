@@ -23,6 +23,7 @@ class DashboardUserController extends Controller
         $monthly_chart = $this->user_monthly_amount();
         $vj_not_posted = app(SapSyncController::class)->vjNotPosted()->count();
         $chart_activites = app(SapSyncController::class)->chart_vj_postby();
+        $your_team = app(TeamController::class)->members_data();
 
         return view('dashboard.index', compact([
             'wait_approve',
@@ -32,6 +33,7 @@ class DashboardUserController extends Controller
             'monthly_chart',
             'vj_not_posted',
             'chart_activites',
+            'your_team',
         ]));
     }
 
