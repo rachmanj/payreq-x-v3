@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Reports\AnggaranController;
 use App\Http\Controllers\Reports\BilyetController;
+use App\Http\Controllers\Reports\CashierRekapAdvanceController;
 use App\Http\Controllers\Reports\EomController;
 use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
@@ -58,6 +59,10 @@ Route::prefix('reports')->name('reports.')->group(function () {
 
     Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/', [ReportCashierController::class, 'index'])->name('index');
+
+        Route::prefix('rekap-advance')->name('rekap-advance.')->group(function () {
+            Route::get('/', [CashierRekapAdvanceController::class, 'index'])->name('index');
+        });
     });
 
     Route::prefix('periode-anggaran')->name('periode-anggaran.')->group(function () {

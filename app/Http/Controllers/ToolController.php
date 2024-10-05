@@ -217,4 +217,15 @@ class ToolController extends Controller
 
         return $approvers_name;
     }
+
+    public function get_projects($project)
+    {
+        if ($project === '000H') {
+            $projects = ['000H', 'APS'];
+        } else {
+            $projects = [$project];
+        }
+
+        return $projects;
+    }
 }

@@ -62,11 +62,7 @@ class ReportIndexController extends Controller
                         'url' => route('reports.ongoing.payreq-aging.index'),
                         'protector' => 'akses_payreq_aging',
                     ],
-                    [
-                        'name' => 'EOM',
-                        'url' => route('reports.eom.index'),
-                        'protector' => 'akses_eom',
-                    ]
+
                 ],
             ],
             [
@@ -79,9 +75,39 @@ class ReportIndexController extends Controller
                         'protector' => 'akses_today_transaction',
                     ],
                     [
-                        'name' => 'Report 2.2',
-                        'url' => 'report2.2',
-                        'protector' => null,
+                        'name' => 'EOM',
+                        'url' => route('reports.eom.index'),
+                        'protector' => 'akses_eom',
+                    ],
+                    [
+                        'name' => 'Rekap Advance HO',
+                        'url' => route('reports.cashier.rekap-advance.index', ['project' => '000H']),
+                        'protector' => 'see_rekap_advance_ho',
+                    ],
+                    [
+                        'name' => 'Rekap Advance BO',
+                        'url' => route('reports.cashier.rekap-advance.index', ['project' => '001H']),
+                        'protector' => 'see_rekap_advance_bo',
+                    ],
+                    [
+                        'name' => 'Rekap Advance 017C',
+                        'url' => route('reports.cashier.rekap-advance.index', ['project' => '017C']),
+                        'protector' => 'see_rekap_advance_017',
+                    ],
+                    [
+                        'name' => 'Rekap Advance 021C',
+                        'url' => route('reports.cashier.rekap-advance.index', ['project' => '021C']),
+                        'protector' => 'see_rekap_advance_021',
+                    ],
+                    [
+                        'name' => 'Rekap Advance 022C',
+                        'url' => route('reports.cashier.rekap-advance.index', ['project' => '022C']),
+                        'protector' => 'see_rekap_advance_022',
+                    ],
+                    [
+                        'name' => 'Rekap Advance 023C',
+                        'url' => route('reports.cashier.rekap-advance.index', ['project' => '023C']),
+                        'protector' => 'see_rekap_advance_023',
                     ],
                 ],
             ],

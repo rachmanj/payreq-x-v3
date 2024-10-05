@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Reports\BilyetController;
+use App\Http\Controllers\Reports\CashierRekapAdvanceController;
+use App\Http\Controllers\Reports\EomController;
 use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
@@ -23,7 +25,10 @@ class TestController extends Controller
         // $test = app(OngoingDashboardController::class)->dashboard_data('017C');
         // $test = app(UserAnggaranController::class)->progress(78);
         // $test = app(BilyetController::class)->dashboardData();
-        $test = app(TeamController::class)->members_data();
+        // $test = app(TeamController::class)->members_data();
+        // $test = app(CashierRekapAdvanceController::class)->ongoing_documents_by_user('000H');
+        $test = app(CashierRekapAdvanceController::class)->advance_data('001H');
+        // $test = app(EomController::class)->eom_journal(['000H']);
         // $test = $this->getDNCRabs();
 
         return $test;
@@ -77,15 +82,5 @@ class TestController extends Controller
             'realization_count' => $realizations->count(),
             'realizations' => $realizations
         ];
-    }
-
-    private function getDNCRabs()
-    {
-        $anggarans = Anggaran::select('id', 'rab_no', 'old_rab_id', 'created_by')
-            ->where('created_by', 23)
-            ->whereNotNull('old_rab_id')
-            ->get();
-
-        return $anggarans;
     }
 }

@@ -21,7 +21,7 @@
                             @foreach ($member['ongoings'] as $payreq)
                                 <tr>
                                     <td class="pt-0" colspan="2"><small>{{ $payreq['description'] }}</small></td>
-                                    {{-- <td><small>{{ $payreq['status'] }}</small></td> --}}
+                                    <td class="pt-0"><small>[ {{ $payreq['status'] }} ]</small></td>
                                     <td class="pt-0 text-right"><small>Rp.{{ $payreq['amount'] }}</small></td>
                                     <td class="pt-0 text-right" style="width: 10%"><small>{{ $payreq['days'] }} days</small></td>
                                 </tr>
