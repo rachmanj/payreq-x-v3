@@ -24,10 +24,12 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/export', [SapSyncController::class, 'export'])->name('export');
         Route::get('/{id}/show', [SapSyncController::class, 'show'])->name('show');
         Route::get('/edit-vjdetail', [SapSyncController::class, 'edit_vjdetail_display'])->name('edit_vjdetail_display');
+        Route::post('/upload-journal', [SapSyncController::class, 'upload_sap_journal'])->name('upload_sap_journal');
         Route::post('/update-detail', [SapSyncController::class, 'update_detail'])->name('update_detail');
         Route::get('/edit-vjdetail/data', [SapSyncController::class, 'edit_vjdetail_data'])->name('edit_vjdetail_data');
         Route::post('/cancel_sap_info', [SapSyncController::class, 'cancel_sap_info'])->name('cancel_sap_info');
         Route::post('/update_sap_info', [SapSyncController::class, 'update_sap_info'])->name('update_sap_info');
+        Route::get('/print_sapj', [SapSyncController::class, 'print_sapj'])->name('print_sapj');
     });
 
     // ANGSURAN

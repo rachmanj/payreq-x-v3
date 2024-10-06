@@ -259,4 +259,33 @@ class SapSyncController extends Controller
             'activities' => $activities,
         ];
     }
+
+    public function upload_sap_journal(Request $request)
+    {
+        $this->validate($request, [
+            'sap_journal_file' => 'required|mimes:pdf'
+        ]);
+
+        $vj = VerificationJournal::find($request->verification_journal_id);
+
+        $file = $request->file('sap_journal_file');
+        $filename = 'sapj_' . rand() . '_' . $file->getClientOriginalName();
+        $file->move(public_path('file_upload'), $filename);
+        $vj->update([
+            'sap_filename' => $filename
+        ]);
+
+        return back()->with('success', 'SAP Journal Uploaded');
+        // return redirect()->route('accounting.sap-sync.show', $v_id)->with('success', 'SAP Journal Uploaded');
+    }
+
+    public function print_sapj()
+    {
+        $vj_id = request()->query('vj_id');
+        $vj = VerificationJournal::find($vj_id);
+
+        return view('accounting.sap-sync.print-sapj', [
+            'vj' => $vj
+        ]);
+    }
 }

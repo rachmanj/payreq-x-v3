@@ -47,16 +47,18 @@ accounting / sap-sync / show
                 
             </div>
             <div class="card-header">
+                <h3 class="card-title">Detail</h3>
                 <form action="{{ route('accounting.sap-sync.cancel_sap_info') }}" method="POST">
                     @csrf
                     <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
-                    <button class="btn btn-sm btn-danger float-right" {{ $vj->sap_journal_no ? '' : 'disabled' }} onclick="return confirm('Are You sure You want to cancel this SAP Info? This action cannot be undone')">Cancel SAP Info</button>
+                    <button class="btn btn-xs btn-danger float-right" {{ $vj->sap_journal_no ? '' : 'disabled' }} onclick="return confirm('Are You sure You want to cancel this SAP Info? This action cannot be undone')">Cancel SAP Info</button>
                 </form>
-                <button class="btn btn-sm btn-warning float-right mr-2" data-toggle="modal" data-target="#update-sap" style="color: black; font-weight: bold" {{ $vj->sap_journal_no ? 'disabled' : '' }}>Update SAP Info</button>
-                <a href="{{ route('accounting.sap-sync.export', ['vj_id' => $vj->id]) }}" class="btn btn-sm btn-warning float-right mr-2" style="color: black; font-weight: bold">Export to Excel</a>
-                <h3 class="card-title">Detail</h3>
+                <button class="btn btn-xs btn-warning float-right mr-2" data-toggle="modal" data-target="#update-sap" style="color: black; font-weight: bold" {{ $vj->sap_journal_no ? 'disabled' : '' }}>Update SAP Info</button>
+                <button class="btn btn-xs btn-warning float-right mr-2" data-toggle="modal" data-target="#upload-journal" style="color: black; font-weight: bold" {{ $vj->sap_journal_no ? '' : 'disabled' }}>Upload SAP Journal</button>
+                <a href="{{ route('accounting.sap-sync.export', ['vj_id' => $vj->id]) }}" class="btn btn-xs btn-warning float-right mr-2" style="color: black; font-weight: bold">Export to Excel</a>
+                <a href="{{ route('verifications.journal.print', $vj->id) }}" class="btn btn-xs float-right mr-2 btn-warning" style="color: black; font-weight: bold" target="_blank">Print Journal</a>
                 @if($vj->sap_journal_no === null)
-                <a href="{{ route('accounting.sap-sync.edit_vjdetail_display', ['vj_id' => $vj->id]) }}" class="btn btn-sm btn-warning float-right mr-2" style="color: black; font-weight: bold">Edit VJDetails</a>
+                <a href="{{ route('accounting.sap-sync.edit_vjdetail_display', ['vj_id' => $vj->id]) }}" class="btn btn-xs btn-warning float-right mr-2" style="color: black; font-weight: bold">Edit VJDetails</a>
                 @endif
             </div>
             <div class="card-body">
@@ -135,6 +137,34 @@ accounting / sap-sync / show
             <div class="modal-footer justify-content-between">
                 <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
                 <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- UPLOAD JOURNAL --}}
+<div class="modal fade" id="upload-journal">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload SAP Journal</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ route('accounting.sap-sync.upload_sap_journal') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+                <div class="form-group">
+                    <label for="sap_journal_file">Journal File</label>
+                    <input type="file" name="sap_journal_file" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-upload"></i> Upload</button>
             </div>
             </form>
         </div>
