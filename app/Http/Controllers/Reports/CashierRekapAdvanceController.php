@@ -55,7 +55,7 @@ class CashierRekapAdvanceController extends Controller
             return $carry;
         }, 0);
 
-        return $totalAmount > 0 ? number_format($totalAmount, 2) : 0;
+        return $totalAmount != 0 ? number_format($totalAmount, 2) : 0;
     }
 
     public function user_list($project)
@@ -183,7 +183,7 @@ class CashierRekapAdvanceController extends Controller
 
     private function format_amount($amount)
     {
-        return $amount > 0 ? number_format($amount, 2) : 0;
+        return $amount != 0 ? number_format($amount, 2) : 0;
     }
 
     private function should_display_user($user_id)
@@ -197,7 +197,7 @@ class CashierRekapAdvanceController extends Controller
     public function dana_belum_diselesaikan($user_id)
     {
         $total = $this->payreqs_belum_realisasi_by_user_amount($user_id) + $this->realisasi_belum_verifikasi_by_user_amount($user_id) + $this->variance_realisasi_belum_incoming_by_user_amount($user_id) - $this->variance_realisasi_belum_outgoing_by_user_amount($user_id);
-        return $total > 0 ? number_format($total, 2) : 0;
+        return $total != 0 ? number_format($total, 2) : 0;
     }
 
     public function payreqs_belum_realisasi_by_user_amount($user_id)
