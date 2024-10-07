@@ -9,8 +9,6 @@ class ReportIndexController extends Controller
 {
     public function index()
     {
-        // return $this->menuList;
-
         return view('reports.index', [
             'menuList' => $this->menuList(),
         ]);
@@ -23,10 +21,6 @@ class ReportIndexController extends Controller
                 'name' => 'Payment Request',
                 'protector' => null,
                 'subMenu' => [
-                    // [
-                    //     'name' => 'Ongoing Payment Request',
-                    //     'url' => route('reports.ongoing.index'),
-                    // ],
                     [
                         'name' => 'Dashboard 000H',
                         'url' => route('reports.ongoing.dashboard', ['project' => '000H']),
@@ -120,21 +114,16 @@ class ReportIndexController extends Controller
                         'url' => route('reports.equipment.index'),
                         'protector' => 'akses_sum_expense_by_equipment',
                     ],
-                    [
-                        'name' => 'Report 2.2',
-                        'url' => 'report2.2',
-                        'protector' => null,
-                    ],
                 ],
             ],
             [
                 'name' => 'Loan / Bilyet Related',
-                'protector' => 'akses_loan_report',
+                'protector' => null,
                 'subMenu' => [
                     [
                         'name' => 'Bilyet Dashboard',
                         'url' => route('reports.bilyet.index'),
-                        'protector' => null,
+                        'protector' => 'see_bilyet_dashboard',
                     ],
                     // [
                     //     'name' => 'BG Jatuh Tempo dalam waktu dekat',

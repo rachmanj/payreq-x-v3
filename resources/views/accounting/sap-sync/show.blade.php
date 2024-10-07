@@ -23,7 +23,7 @@ accounting / sap-sync / show
                             <dt class="col-sm-4">Verification Journal No</dt>
                             <dd class="col-sm-8">: {{ $vj->nomor }} </dd>
                             <dt class="col-sm-4">SAP Journal No</dt>
-                            <dd class="col-sm-8">: {{ $vj->sap_journal_no }} </dd>
+                            <dd class="col-sm-8">: {{ $vj->sap_journal_no }} @if ($vj->sap_filename) <a href="{{ asset('file_upload/') . '/'. $vj->sap_filename }}" class='btn btn-xs btn-success' target=_blank>SAP Journal</a> @endif</dd>
                             <dt class="col-sm-4">Project</dt>
                             <dd class="col-sm-8">: {{ $vj->project }}</dd>
                             <dt class="col-sm-4">Date</dt>
