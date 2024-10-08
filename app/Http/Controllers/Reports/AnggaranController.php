@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Models\Anggaran;
+use App\Models\Payreq;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -78,63 +79,14 @@ class AnggaranController extends Controller
     public function show($id)
     {
         $anggaran = Anggaran::find($id);
-        $progres_persen = app(UserAnggaranController::class)->progress($anggaran->id)['persen'];
-        $total_release = app(UserAnggaranController::class)->progress($anggaran->id)['amount'];
-        $statusColor = app(UserAnggaranController::class)->statusColor($progres_persen);
+        $progres_persen = $anggaran->persen;
+        $total_release = $anggaran->balance;
+        $statusColor = $this->statusColor($anggaran->persen);
 
         return view('reports.anggaran.show', compact('anggaran', 'progres_persen', 'statusColor', 'total_release'));
     }
 
     public function data()
-    {
-        $userRoles = app(UserController::class)->getUserRoles();
-
-        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
-            $anggarans = Anggaran::orderBy('date', 'desc')
-                ->where('status', 'approved')
-                ->limit(300)
-                ->get();
-        } else {
-            $anggarans = Anggaran::where('project', auth()->user()->project)
-                ->orderBy('date', 'desc')
-                ->where('status', 'approved')
-                ->limit(300)
-                ->get();
-        }
-
-        return datatables()->of($anggarans)
-            ->editColumn('nomor', function ($anggaran) {
-                $nomor = '<small>' . $anggaran->nomor . '</small>';
-                $rab_no = $anggaran->rab_no ? '<small>' . $anggaran->rab_no . ' <br></small>' : '';
-                return '<a href="' . route('reports.anggaran.show', $anggaran->id) . '">' . $nomor . '<br>' . $rab_no . '<small>' . date('d-M-Y', strtotime($anggaran->date)) . '</small></a>';
-            })
-            ->editColumn('description', function ($anggaran) {
-                return '<small>' . $anggaran->description . '</small>';
-            })
-            ->editColumn('budget', function ($anggaran) {
-                return number_format($anggaran->amount, 2);
-            })
-            ->addColumn('periode', function ($anggaran) {
-                $pa = $anggaran->periode_anggaran ? date('M Y', strtotime($anggaran->periode_anggaran)) : '-';
-                $radio = $anggaran->is_active == 1 ? '<span class="badge bg-success">1</span>' : '<span class="badge bg-danger">0</span>';
-                return '<small>' . $pa . '<br>' . date('M Y', strtotime($anggaran->periode_ofr)) . '</small>' . '<br>' . $radio;
-            })
-            ->editColumn('rab_project', function ($anggaran) {
-                $usage = $anggaran->usage == 'department' ? $anggaran->createdBy->department->akronim : ucfirst($anggaran->usage);
-                $content = '<small>' . $anggaran->rab_project . '<br>' . $usage . '<br>' . ucfirst($anggaran->type) . '</small>';
-                return $content;
-            })
-            ->addColumn('creator', function ($anggaran) {
-                $name = explode(' ', $anggaran->createdBy->name);
-                return '<small>' . $name[0] . '</small>';
-            })
-            ->addIndexColumn()
-            ->addColumn('action', 'reports.anggaran.action')
-            ->rawColumns(['action', 'nomor', 'description', 'rab_project', 'periode', 'radio', 'creator'])
-            ->toJson();
-    }
-
-    public function data_full()
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
@@ -162,13 +114,15 @@ class AnggaranController extends Controller
                 return number_format($anggaran->amount, 2);
             })
             ->editColumn('realisasi', function ($anggaran) {
-                return number_format(app(UserAnggaranController::class)->progress($anggaran->id)['amount'], 2);
+                return number_format($anggaran->balance, 2);
             })
             ->addColumn('progres', function ($anggaran) {
-                $progres = app(UserAnggaranController::class)->progress($anggaran->id)['persen'];
-                $statusColor = app(UserAnggaranController::class)->statusColor($progres);
-                $progres_bar = '<div class="progress" style="height: 20px;">
-                                    <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100">' . $progres . '%</div>
+                $progres = $anggaran->persen;
+                $statusColor = $this->statusColor($progres);
+                $progres_bar = '<div class="text-center"><small>' . $progres . '%</small>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
                                 </div>';
                 if ($anggaran->status === 'approved') {
                     return $progres > 0 ? $progres_bar : 'approved';
@@ -180,9 +134,75 @@ class AnggaranController extends Controller
                 $content = $anggaran->rab_project . '<br><small>' . ucfirst($anggaran->usage) . '</small>';
                 return $content;
             })
+            ->addColumn('creator', function ($anggaran) {
+                $name = explode(' ', $anggaran->createdBy->name);
+                return '<small>' . $name[0] . '</small>';
+            })
+            ->addColumn('periode', function ($anggaran) {
+                $pa = $anggaran->periode_anggaran ? date('M Y', strtotime($anggaran->periode_anggaran)) : '-';
+                $radio = $anggaran->is_active == 1 ? '<span class="badge bg-success">1</span>' : '<span class="badge bg-danger">0</span>';
+                return '<small>' . $pa . '<br>' . date('M Y', strtotime($anggaran->periode_ofr)) . '</small>' . '<br>' . $radio;
+            })
             ->addIndexColumn()
-            ->addColumn('action', 'reports.anggarans.action')
-            ->rawColumns(['action', 'nomor', 'description', 'progres', 'rab_project'])
+            ->addColumn('action', 'reports.anggaran.action')
+            ->rawColumns(['action', 'nomor', 'description', 'progres', 'rab_project', 'creator', 'periode'])
             ->toJson();
+    }
+
+    public function recalculate()
+    {
+        $anggarans = Anggaran::where('status', 'approved')
+            // ->where('is_active', 1)
+            ->get();
+
+        foreach ($anggarans as $anggaran) {
+            $total_release = $this->release_to_date($anggaran->id);
+            $persen = $total_release > 0 ? number_format((($total_release / $anggaran->amount) * 100), 2) : 0;
+
+            // $anggaran->persen = $persen;
+            // $anggaran->balance = $total_release;
+
+            $anggaran->update([
+                'balance' => $total_release,
+                'persen' => $persen,
+            ]);
+        }
+
+        return redirect()->route('reports.anggaran.index')->with('success', 'Release Anggaran berhasil diupdate');
+    }
+
+    public function release_to_date($id)
+    {
+        $anggaran = Anggaran::find($id);
+
+        // cek payreqs yg sudah outgoings
+        $payreqs = Payreq::where('rab_id', $anggaran->id)
+            ->whereHas('outgoings')
+            ->with(['realization.realizationDetails', 'outgoings'])
+            ->get();
+
+        $total_release = 0;
+
+        foreach ($payreqs as $payreq) {
+            if ($payreq->type === 'advance' && $payreq->realization && $payreq->realization->realizationDetails->count() > 0) {
+                $total_release += $payreq->realization->realizationDetails->sum('amount');
+            } else {
+                $total_release += $payreq->outgoings->sum('amount');
+            }
+        }
+
+        return $total_release;
+    }
+
+    public function statusColor($progress)
+    {
+        // if progress > 100 then red, if progress > 90 then yellow, else green
+        if ($progress > 100) {
+            return 'bg-danger';
+        } elseif ($progress > 90) {
+            return 'bg-warning';
+        } else {
+            return 'bg-success';
+        }
     }
 }

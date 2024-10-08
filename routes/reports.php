@@ -80,6 +80,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/{id}/show', [AnggaranController::class, 'show'])->name('show');
         Route::get('/{id}/edit', [AnggaranController::class, 'edit'])->name('edit');
         Route::post('/update', [AnggaranController::class, 'update'])->name('update');
+        Route::get('/recalculate', [AnggaranController::class, 'recalculate'])->name('recalculate');
     });
 
     Route::prefix('bilyet')->name('bilyet.')->group(function () {

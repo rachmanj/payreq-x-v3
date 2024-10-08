@@ -23,11 +23,11 @@ class TestController extends Controller
         // $test = app(EquipmentController::class)->km_array('VA 063');
         // $test = app(SapSyncController::class)->chart_vj_postby();
         // $test = app(OngoingDashboardController::class)->dashboard_data('017C');
-        // $test = app(UserAnggaranController::class)->progress(78);
+        $test = app(UserAnggaranController::class)->recalculate();
         // $test = app(BilyetController::class)->dashboardData();
         // $test = app(TeamController::class)->members_data();
         // $test = app(CashierRekapAdvanceController::class)->ongoing_documents_by_user('000H');
-        $test = app(CashierRekapAdvanceController::class)->advance_data('001H');
+        // $test = app(CashierRekapAdvanceController::class)->advance_data('001H');
         // $test = app(EomController::class)->eom_journal(['000H']);
         // $test = $this->getDNCRabs();
 

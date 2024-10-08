@@ -175,8 +175,8 @@ class UserAnggaranController extends Controller
     public function show($id)
     {
         $anggaran = Anggaran::find($id);
-        $progres_persen = $this->progress($anggaran->id)['persen'];
-        $total_release = $this->progress($anggaran->id)['amount'];
+        $progres_persen = $anggaran->persen;
+        $total_release = $anggaran->balance;
         $statusColor = $this->statusColor($progres_persen);
 
         return view('user-payreqs.anggarans.show', compact('anggaran', 'progres_persen', 'statusColor', 'total_release'));
@@ -211,15 +211,16 @@ class UserAnggaranController extends Controller
             ->editColumn('budget', function ($anggaran) {
                 return number_format($anggaran->amount, 2);
             })
-            // ->editColumn('realisasi', function ($anggaran) {
-            //     return number_format($this->progress($anggaran->id)['amount'], 2);
-            // })
+            ->editColumn('realisasi', function ($anggaran) {
+                return number_format($anggaran->balance, 2);
+            })
             ->addColumn('progres', function ($anggaran) {
-                $progres = $this->progress($anggaran->id)['persen'];
+                $progres = $anggaran->persen;
                 $statusColor = $this->statusColor($progres);
-                $text = $progres > 0 ? $progres . '%' : '0%';
-                $progres_bar = '<small>' . $text . '</small><br><div class="progress" style="height: 20px;">
-                                    <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100"></div>
+                $progres_bar = '<div class="text-center"><small>' . $progres . '%</small>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
                                 </div>';
                 if ($anggaran->status === 'approved') {
                     return $progres > 0 ? $progres_bar : 'approved';

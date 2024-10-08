@@ -16,7 +16,10 @@
       <div class="card-header">
         
         <h3 class="card-title">Anggaran List </h3>
-        <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
+        <a href="{{ route('reports.index') }}" class="btn btn-xs btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
+        @can('recalculate_release')
+        <a href="{{ route('reports.anggaran.recalculate') }}" class="btn btn-xs btn-warning float-right mr-2" onclick="return confirm('Are you sure you want to recalculate anggaran release?')">Recalc Release</a>
+        @endcan
        
       </div>  <!-- /.card-header -->
      
@@ -31,6 +34,7 @@
             <th>Description</th>
             <td><small>P Anggaran<br>P OFR<br>is active</small></td>
             <th>Budget IDR</th>
+            <th>Progres</th>
             <th></th>
           </tr>
           </thead>
@@ -71,6 +75,7 @@
           {data: 'description'},
           {data: 'periode'},
           {data: 'budget'},
+          {data: 'progres'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,
