@@ -92,6 +92,7 @@ class AnggaranController extends Controller
 
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $anggarans = Anggaran::orderBy('date', 'desc')
+                ->whereIn('status', ['approved'])
                 ->limit(300)
                 ->get();
         } else {
@@ -117,18 +118,13 @@ class AnggaranController extends Controller
                 return number_format($anggaran->balance, 2);
             })
             ->addColumn('progres', function ($anggaran) {
-                $progres = $anggaran->persen;
+                $progres = $anggaran->persen ? $anggaran->persen : 0;
                 $statusColor = $this->statusColor($progres);
-                $progres_bar = '<div class="text-center"><small>' . $progres . '%</small>
+                return '<div class="text-center"><small>' . $progres . '%</small>
                                     <div class="progress" style="height: 20px;">
                                         <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
                                 </div>';
-                if ($anggaran->status === 'approved') {
-                    return $progres > 0 ? $progres_bar : 'approved';
-                } else {
-                    return $anggaran->status;
-                }
             })
             ->editColumn('rab_project', function ($anggaran) {
                 $content = $anggaran->rab_project . '<br><small>' . ucfirst($anggaran->usage) . '</small>';
