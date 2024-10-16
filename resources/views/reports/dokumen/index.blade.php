@@ -56,7 +56,7 @@
                                         @if($month['status'] == false)
                                         <td class="text-center"><i class="fas fa-times" style="color: red"></i></td>
                                         @else
-                                        <td class="text-center"><i class="fas fa-check" style="color: green"></i></td>
+                                        <td class="text-center"><a href="{{ $month['filename1'] }}" target="_blank"><i class="fas fa-check" style="color: green"></i></a></td>
                                         @endif
 
                                     @endforeach

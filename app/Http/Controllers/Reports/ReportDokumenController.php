@@ -61,6 +61,7 @@ class ReportDokumenController extends Controller
                     $giro_data[] = [
                         'month' => $month,
                         'status' => $koran && $koran->filename1 !== null ? true : false,
+                        'filename1' => $koran && $koran->filename1 ? $koran->filename1 : null,
                     ];
                 }
 
