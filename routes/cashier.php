@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Cashier\BilyetController;
 use App\Http\Controllers\Cashier\BilyetTempController;
+use App\Http\Controllers\Cashier\CashierDokumenController;
 use App\Http\Controllers\Cashier\CashierModalController;
 use App\Http\Controllers\Cashier\TransaksiController;
 use Illuminate\Support\Facades\Route;
@@ -120,5 +121,12 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
             Route::get('/exec-migrasi-rab', [MigrasiBucController::class, 'migrasi_rab'])->name('migrasi_rab');
             Route::get('/exec-realisasi-rab', [MigrasiBucController::class, 'realisasi_rab'])->name('realisasi_rab');
         });
+    });
+
+    // DOKUMEN
+    Route::prefix('dokumen')->name('dokumen.')->group(function () {
+        Route::get('/data', [CashierDokumenController::class, 'data'])->name('data');
+        Route::get('/', [CashierDokumenController::class, 'index'])->name('index');
+        Route::post('/upload', [CashierDokumenController::class, 'upload'])->name('upload');
     });
 });

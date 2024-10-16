@@ -260,10 +260,12 @@ class UserAnggaranController extends Controller
         if ($anggaran->old_rab_id !== null) {
             $payreqs = Payreq::where('rab_id', $anggaran->old_rab_id)
                 ->whereHas('outgoings')
+                ->orderBy('created_at', 'desc')
                 ->get();
         } else {
             $payreqs = Payreq::where('rab_id', $anggaran->id)
                 ->whereHas('outgoings')
+                ->orderBy('created_at', 'desc')
                 ->get();
         }
 

@@ -29,7 +29,7 @@
             <dt class="col-sm-4">Department</dt>
             <dd class="col-sm-8">: {{ $anggaran->createdBy->department->department_name }}</dd>
             <dt class="col-sm-4">Periode: Anggaran | OFR</dt>
-            <dd class="col-sm-8">: {{ date('M Y', strtotime($anggaran->periode_anggaran)) }} | {{ date('M Y', strtotime($anggaran->periode_ofr)) }}</dd>
+            <dd class="col-sm-8">: {{ $anggaran->periode_anggaran != null ? date('M Y', strtotime($anggaran->periode_anggaran)) : '-' }} | {{ date('M Y', strtotime($anggaran->periode_ofr)) }}</dd>
             <dt class="col-sm-4">Budget</dt>
             <dd class="col-sm-8">: Rp.{{ number_format($anggaran->amount, 2) }}</dd>
             <dt class="col-sm-4">Release to Date</dt>

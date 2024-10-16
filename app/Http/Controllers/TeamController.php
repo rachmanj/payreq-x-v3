@@ -40,6 +40,10 @@ class TeamController extends Controller
             ->orderBy('outgoings.outgoing_date', 'asc')
             ->get();
 
+        $ongoings = $ongoings->unique('id')->sortByDesc('outgoing_date');
+
+        // return $ongoings;
+
         if ($ongoings->isEmpty()) {
             return collect();
         }

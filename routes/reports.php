@@ -11,6 +11,7 @@ use App\Http\Controllers\Reports\OngoingController;
 use App\Http\Controllers\Reports\PayreqAgingController;
 use App\Http\Controllers\Reports\PeriodeAnggaranController;
 use App\Http\Controllers\Reports\ReportCashierController;
+use App\Http\Controllers\Reports\ReportDokumenController;
 use App\Http\Controllers\Reports\ReportIndexController;
 use Illuminate\Support\Facades\Route;
 
@@ -85,5 +86,9 @@ Route::prefix('reports')->name('reports.')->group(function () {
 
     Route::prefix('bilyet')->name('bilyet.')->group(function () {
         Route::get('/', [BilyetController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('dokumen')->name('dokumen.')->group(function () {
+        Route::get('/', [ReportDokumenController::class, 'index'])->name('index');
     });
 });

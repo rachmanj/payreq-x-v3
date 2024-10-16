@@ -69,6 +69,16 @@ class ReportIndexController extends Controller
                         'protector' => 'akses_today_transaction',
                     ],
                     [
+                        'name' => 'Rekap Rekening Koran',
+                        'url' => route('reports.dokumen.index', ['type' => 'koran']),
+                        'protector' => 'report_dokumen_koran',
+                    ],
+                    [
+                        'name' => 'Rekap PCBC',
+                        'url' => route('reports.dokumen.index', ['type' => 'pcbc']),
+                        'protector' => 'report_dokumen_pcbc',
+                    ],
+                    [
                         'name' => 'EOM',
                         'url' => route('reports.eom.index'),
                         'protector' => 'akses_eom',
@@ -125,16 +135,6 @@ class ReportIndexController extends Controller
                         'url' => route('reports.bilyet.index'),
                         'protector' => 'see_bilyet_dashboard',
                     ],
-                    // [
-                    //     'name' => 'BG Jatuh Tempo dalam waktu dekat',
-                    //     'url' => route('reports.loan.index'),
-                    //     'protector' => null,
-                    // ],
-                    // [
-                    //     'name' => 'Loan Dashboard',
-                    //     'url' => route('reports.loan.dashboard'),
-                    //     'protector' => null,
-                    // ],
                 ],
             ],
             [
