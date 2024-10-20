@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Accounting\CustomerController;
 use App\Http\Controllers\Accounting\GiroController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use Illuminate\Support\Facades\Route;
@@ -62,4 +63,8 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::put('/{id}', [GiroController::class, 'update'])->name('update');
         Route::delete('/{id}', [GiroController::class, 'destroy'])->name('destroy');
     });
+
+    //CUSTOMERS
+    Route::resource('customers', CustomerController::class)->except(['show']);
+    Route::get('customers/data', [CustomerController::class, 'data'])->name('customers.data');
 });

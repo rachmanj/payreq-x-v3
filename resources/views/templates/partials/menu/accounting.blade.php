@@ -20,6 +20,7 @@
       
       @hasanyrole('superadmin|admin|cashier')
       <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
+      <li><a href="{{ route('accounting.customers.index') }}" class="dropdown-item">Customer List</a></li>
       @endhasanyrole
 
       @can('akses_loan_report')

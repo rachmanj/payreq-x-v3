@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserOngoingController;
+use App\Http\Controllers\UserPayreq\FakturController;
 // use App\Http\Controllers\PayreqReimburseController;
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Http\Controllers\UserPayreq\PayreqReimburseController;
@@ -78,6 +79,16 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::post('/store-detail', [PayreqReimburseController::class, 'store_detail'])->name('store_detail');
         Route::post('/delete-detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
         Route::post('/update-rab', [PayreqReimburseController::class, 'update_rab'])->name('update_rab');
+    });
+
+    //FAKTURS
+    Route::prefix('fakturs')->name('fakturs.')->group(function () {
+        Route::get('/index', [FakturController::class, 'index'])->name('index');
+        Route::get('/data', [FakturController::class, 'data'])->name('data');
+        Route::post('/store', [FakturController::class, 'store'])->name('store');
+        Route::delete('/{id}', [FakturController::class, 'destroy'])->name('destroy');
+        Route::put('/{id}', [FakturController::class, 'update_arinvoice'])->name('update_arinvoice');
+        Route::post('/update-faktur', [FakturController::class, 'update_faktur'])->name('update_faktur');
     });
 });
 

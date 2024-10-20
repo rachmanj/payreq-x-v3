@@ -68,16 +68,7 @@ class ReportIndexController extends Controller
                         'url' => route('reports.cashier.index'),
                         'protector' => 'akses_today_transaction',
                     ],
-                    [
-                        'name' => 'Rekap Rekening Koran',
-                        'url' => route('reports.dokumen.index', ['type' => 'koran']),
-                        'protector' => 'report_dokumen_koran',
-                    ],
-                    [
-                        'name' => 'Rekap PCBC',
-                        'url' => route('reports.dokumen.index', ['type' => 'pcbc']),
-                        'protector' => 'report_dokumen_pcbc',
-                    ],
+
                     [
                         'name' => 'EOM',
                         'url' => route('reports.eom.index'),
@@ -116,13 +107,18 @@ class ReportIndexController extends Controller
                 ],
             ],
             [
-                'name' => 'Equipment Related',
+                'name' => 'Dokumen Related',
                 'protector' => null,
                 'subMenu' => [
                     [
-                        'name' => 'Sum Expense by Equipment',
-                        'url' => route('reports.equipment.index'),
-                        'protector' => 'akses_sum_expense_by_equipment',
+                        'name' => 'Rekap Rekening Koran',
+                        'url' => route('reports.dokumen.index', ['type' => 'koran']),
+                        'protector' => 'report_dokumen_koran',
+                    ],
+                    [
+                        'name' => 'Rekap PCBC',
+                        'url' => route('reports.dokumen.index', ['type' => 'pcbc']),
+                        'protector' => 'report_dokumen_pcbc',
                     ],
                 ],
             ],
@@ -150,6 +146,17 @@ class ReportIndexController extends Controller
                         'name' => 'RAB List',
                         'url' => route('reports.anggaran.index'),
                         'protector' => 'akses_report_rab',
+                    ],
+                ],
+            ],
+            [
+                'name' => 'Equipment Related',
+                'protector' => null,
+                'subMenu' => [
+                    [
+                        'name' => 'Sum Expense by Equipment',
+                        'url' => route('reports.equipment.index'),
+                        'protector' => 'akses_sum_expense_by_equipment',
                     ],
                 ],
             ],

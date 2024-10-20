@@ -89,7 +89,7 @@ class ReportDokumenController extends Controller
         $query = Giro::select('id', 'acc_no', 'acc_name', 'project')
             ->whereNotIn('id', $giroIdsExlcude);
 
-        if (!array_intersect(['admin', 'superadmin'], $userRoles)) {
+        if (!array_intersect(['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo'], $userRoles)) {
             $query->where('project', auth()->user()->project);
         }
 

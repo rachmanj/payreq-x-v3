@@ -7,9 +7,10 @@
       <li><a href="{{ route('user-payreqs.anggarans.index') }}" class="dropdown-item">RAB</a></li>
       @endcan
       <li><a href="{{ route('user-payreqs.histories.index') }}" class="dropdown-item">Histories</a></li>
-
+      @canany(['request_faktur', 'update_faktur'])
+      <li><a href="{{ route('user-payreqs.fakturs.index') }}" class="dropdown-item">Faktur</a></li>
+      @endcan
       <li class="dropdown-divider"></li>
-
       @can('akses_reports')
       <li><a href="{{ route('reports.index') }}" class="dropdown-item">Reports</a></li>
       @endcan
