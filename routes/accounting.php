@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Accounting\CustomerController;
 use App\Http\Controllers\Accounting\GiroController;
+use App\Http\Controllers\Accounting\InvoiceCreationController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountingPayreqController;
@@ -67,4 +68,10 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
     //CUSTOMERS
     Route::resource('customers', CustomerController::class)->except(['show']);
     Route::get('customers/data', [CustomerController::class, 'data'])->name('customers.data');
+
+    //INVOICE CREATION
+    Route::prefix('invoice-creation')->name('invoice-creation.')->group(function () {
+        Route::get('/', [InvoiceCreationController::class, 'index'])->name('index');
+        Route::post('/upload', [InvoiceCreationController::class, 'upload'])->name('upload');
+    });
 });

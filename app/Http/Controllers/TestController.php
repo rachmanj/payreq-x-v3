@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Accounting\InvoiceCreationController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\CashierRekapAdvanceController;
@@ -31,7 +32,8 @@ class TestController extends Controller
         // $test = app(CashierRekapAdvanceController::class)->ongoing_documents_by_user('000H');
         // $test = app(CashierRekapAdvanceController::class)->advance_data('001H');
         // $test = app(EomController::class)->eom_journal(['000H']);
-        $test = app(ReportDokumenController::class)->koran_dashboard_data();
+        // $test = app(ReportDokumenController::class)->koran_dashboard_data();
+        $test = app(InvoiceCreationController::class)->dashboard_data();
         // $test = app(ReportDokumenController::class)->ninja();
         // $test = $this->getDNCRabs();
 

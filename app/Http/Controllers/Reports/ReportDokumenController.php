@@ -84,7 +84,7 @@ class ReportDokumenController extends Controller
     public function giroList()
     {
         $userRoles = app(UserController::class)->getUserRoles();
-        $giroIdsExlcude = [6, 7, 8, 9, 10];
+        $giroIdsExlcude = [10];
 
         $query = Giro::select('id', 'acc_no', 'acc_name', 'project')
             ->whereNotIn('id', $giroIdsExlcude);
