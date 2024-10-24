@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('user_code');
             $table->integer('batch_number');
             $table->foreignId('uploaded_by');
+            $table->boolean('will_delete')->default(false);
             $table->timestamps();
         });
     }

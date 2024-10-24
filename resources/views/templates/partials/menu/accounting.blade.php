@@ -23,7 +23,8 @@
         @hasanyrole('superadmin|admin|cashier')
             <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
             <li><a href="{{ route('accounting.customers.index') }}" class="dropdown-item">Customer List</a></li>
-            <li><a href="{{ route('accounting.invoice-creation.index') }}" class="dropdown-item">Invoice Daily Tx</a></li>
+            <li><a href="{{ route('accounting.invoice-creation.index') }}" class="dropdown-item">Invoice Creation Report</a>
+            </li>
         @endhasanyrole
 
         @can('akses_loan_report')

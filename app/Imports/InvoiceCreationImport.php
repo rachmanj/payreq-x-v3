@@ -26,6 +26,7 @@ class InvoiceCreationImport implements ToModel, WithHeadingRow
             'user_code' => $row['user_code'],
             'batch_number' => $this->batchNumber(),
             'uploaded_by' => auth()->id(),
+            'will_delete' => $this->calculateDuration($row['create_date'], $row['posting_date']) < 0 ? true : false,
         ]);
     }
 
@@ -40,7 +41,7 @@ class InvoiceCreationImport implements ToModel, WithHeadingRow
         return $this->batchNumber;
     }
 
-    public function convert_date($date)
+    private function convert_date($date)
     {
         if ($date) {
             $year = substr($date, 6, 4);
@@ -53,11 +54,12 @@ class InvoiceCreationImport implements ToModel, WithHeadingRow
         }
     }
 
-    public function calculateDuration($create_date, $posting_date)
+    private function calculateDuration($create_date, $posting_date)
     {
         $create_date = strtotime($this->convert_date($create_date));
         $posting_date = strtotime($this->convert_date($posting_date));
         $duration = ($create_date - $posting_date) / (60 * 60 * 24); // Convert seconds to days
+
         return $duration;
     }
 }

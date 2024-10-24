@@ -38,6 +38,12 @@ class InvoiceCreationController extends Controller
         // delete the file after importing
         unlink(public_path('invoices/' . $filename));
 
+        // run function deleteWhenTrue
+        $this->deleteWhenTrue();
+
+        // run function remove duplicate
+        $this->deleteDuplicate();
+
         // return to the index page with success message
         return redirect()->back()->with('success', 'File uploaded successfully');
     }
@@ -85,16 +91,15 @@ class InvoiceCreationController extends Controller
 
     private function get_invoice_data($month, $year)
     {
-        $query = InvoiceCreation::select('document_number', 'duration')
+        $query = InvoiceCreation::selectRaw('COUNT(DISTINCT document_number) as count, SUM(duration) as sum')
             ->whereMonth('create_date', $month)
             ->whereYear('create_date', $year)
-            ->whereIn('user_code', $this->include_user())
-            ->distinct('document_number');
+            ->whereIn('user_code', $this->include_user());
 
-        $uniqueDocs = $query->get();
+        $data = $query->first();
 
-        $count = $uniqueDocs->count();
-        $sum = $uniqueDocs->sum('duration');
+        $count = $data->count;
+        $sum = $data->sum;
         $average = $count > 0 ? number_format($sum / $count, 2) : 0;
 
         return compact('count', 'sum', 'average');
@@ -103,5 +108,33 @@ class InvoiceCreationController extends Controller
     private function include_user()
     {
         return ['accbpn1', 'accbpn2', 'accbpn3', 'accbpn4', 'accbpn5', 'accbpn6'];
+    }
+
+    private function deleteWhenTrue()
+    {
+        // delete record where will_delete is true
+        InvoiceCreation::where('will_delete', 1)->delete();
+
+        return true;
+    }
+
+    private function deleteDuplicate()
+    {
+        // Retrieve all document_numbers that have duplicates
+        $duplicates = InvoiceCreation::select('document_number')
+            ->groupBy('document_number')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('document_number');
+
+        foreach ($duplicates as $document_number) {
+            // Get all records with the same document_number
+            $records = InvoiceCreation::where('document_number', $document_number)->get();
+
+            // Keep the first record and delete the rest
+            $records->shift();
+            InvoiceCreation::whereIn('id', $records->pluck('id'))->delete();
+        }
+
+        return true;
     }
 }
