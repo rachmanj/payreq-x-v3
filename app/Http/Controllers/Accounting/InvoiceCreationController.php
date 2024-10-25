@@ -22,6 +22,13 @@ class InvoiceCreationController extends Controller
         return view('accounting.invoice-creation.detail');
     }
 
+    public function by_user()
+    {
+        $dashboard_data = $this->dashboard_data_by_user();
+
+        return view('accounting.invoice-creation.by_user', compact('dashboard_data'));
+    }
+
     public function upload(Request $request)
     {
         $request->validate([
@@ -146,10 +153,77 @@ class InvoiceCreationController extends Controller
     public function data()
     {
         $invoices = InvoiceCreation::select('document_number', 'create_date', 'posting_date', 'user_code', 'duration')
+            ->whereIn('user_code', $this->include_user())
             ->orderBy('create_date', 'desc')->orderBy('duration', 'desc')->get();
 
         return datatables()->of($invoices)
             ->addIndexColumn()
             ->toJson();
+    }
+
+    public function dashboard_data_by_user()
+    {
+        $months = [
+            '01' => 'Jan',
+            '02' => 'Feb',
+            '03' => 'Mar',
+            '04' => 'Apr',
+            '05' => 'May',
+            '06' => 'Jun',
+            '07' => 'Jul',
+            '08' => 'Aug',
+            '09' => 'Sep',
+            '10' => 'Oct',
+            '11' => 'Nov',
+            '12' => 'Dec'
+        ];
+        $years = [2024, 2025];
+        $result = [];
+
+        foreach ($years as $year) {
+            $year_data = [];
+
+            foreach ($this->include_user() as $user_code) {
+                $user_data = [];
+
+                foreach ($months as $month => $month_name) {
+                    $invoiceData = $this->get_invoice_data_by_user($month, $year, $user_code);
+                    $user_data[] = [
+                        'month' => $month_name,
+                        'invoice_count' => $invoiceData['count'],
+                        'sum_duration' => $invoiceData['sum'],
+                        'average_duration' => $invoiceData['average'],
+                    ];
+                }
+
+                $year_data[] = [
+                    'user_code' => $user_code,
+                    'data' => $user_data,
+                ];
+            }
+
+            $result[] = [
+                'year' => $year,
+                'data' => $year_data,
+            ];
+        }
+
+        return $result;
+    }
+
+    private function get_invoice_data_by_user($month, $year, $user_code)
+    {
+        $query = InvoiceCreation::selectRaw('COUNT(DISTINCT document_number) as count, SUM(duration) as sum')
+            ->whereMonth('create_date', $month)
+            ->whereYear('create_date', $year)
+            ->where('user_code', $user_code);
+
+        $data = $query->first();
+
+        $count = $data->count;
+        $sum = $data->sum;
+        $average = $count > 0 ? number_format($sum / $count, 2) : 0;
+
+        return compact('count', 'sum', 'average');
     }
 }

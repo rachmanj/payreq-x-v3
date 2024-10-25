@@ -14,10 +14,10 @@
 
             <div class="card">
                 <div class="card-header">
-                    <b>REKAP</b> | <a href="{{ route('accounting.invoice-creation.by_user') }}">By User</a> | <a
+                    <a href="{{ route('accounting.invoice-creation.index') }}">Rekap</a> | <b>By User</b> | <a
                         href="{{ route('accounting.invoice-creation.detail') }}">Data</a>
-                    <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
-                        data-target="#modal-upload"> Upload</button>
+                    {{-- <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
+                        data-target="#modal-upload"> Upload</button> --}}
                 </div>
             </div>
             <!-- /.card-header -->
@@ -32,7 +32,7 @@
                         <table class="table table-sm">
                             <thead>
                                 <tr>
-                                    <th>Description</th>
+                                    <th>User Code</th>
                                     <td class="text-right">Jan</td>
                                     <td class="text-right">Feb</td>
                                     <td class="text-right">Mar</td>
@@ -48,29 +48,26 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td><small>Invoice Count</small></td>
-                                    @foreach ($year_data['data'] as $item)
-                                        <td class="text-right"><small>{{ $item['invoice_count'] }}</small></td>
-                                    @endforeach
-                                </tr>
-                                {{-- <tr>
-                                    <td><small>Duration Sum</small></td>
-                                    @foreach ($year_data['data'] as $item)
-                                        <td class="text-right"><small>{{ $item['sum_duration'] }}</small></td>
-                                    @endforeach
-                                </tr> --}}
-                                <tr>
-                                    <td><small>Avarage</small></td>
-                                    @foreach ($year_data['data'] as $item)
-                                        <td class="text-right"><small>{{ $item['average_duration'] }}</small></td>
-                                    @endforeach
-                                </tr>
+                                @foreach ($year_data['data'] as $user)
+                                    <tr>
+                                        <th class="pl-3"><small><b>{{ $user['user_code'] }}</b></small></th>
+                                    <tr>
+                                        <td><small>Invoice Count</small></td>
+                                        @foreach ($user['data'] as $item)
+                                            <td class="text-right"><small>{{ $item['invoice_count'] }}</small></td>
+                                        @endforeach
+                                    </tr>
+                                    <tr>
+                                        <td><small>Average Duration</small></td>
+                                        @foreach ($user['data'] as $item)
+                                            <td class="text-right"><small>{{ $item['average_duration'] }}</small></td>
+                                        @endforeach
+                                    </tr>
+                                    </tr>
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
-
-
                 </div>
             @endforeach
 
