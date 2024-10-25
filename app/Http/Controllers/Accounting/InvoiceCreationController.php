@@ -17,6 +17,11 @@ class InvoiceCreationController extends Controller
         return view('accounting.invoice-creation.index', compact('dashboard_data'));
     }
 
+    public function detail()
+    {
+        return view('accounting.invoice-creation.detail');
+    }
+
     public function upload(Request $request)
     {
         $request->validate([
@@ -136,5 +141,15 @@ class InvoiceCreationController extends Controller
         }
 
         return true;
+    }
+
+    public function data()
+    {
+        $invoices = InvoiceCreation::select('document_number', 'create_date', 'posting_date', 'user_code', 'duration')
+            ->orderBy('create_date', 'desc')->orderBy('duration', 'desc')->get();
+
+        return datatables()->of($invoices)
+            ->addIndexColumn()
+            ->toJson();
     }
 }

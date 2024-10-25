@@ -71,7 +71,9 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
 
     //INVOICE CREATION
     Route::prefix('invoice-creation')->name('invoice-creation.')->group(function () {
+        Route::get('/data', [InvoiceCreationController::class, 'data'])->name('data');
         Route::get('/', [InvoiceCreationController::class, 'index'])->name('index');
+        Route::get('/detail', [InvoiceCreationController::class, 'detail'])->name('detail');
         Route::post('/upload', [InvoiceCreationController::class, 'upload'])->name('upload');
     });
 });
