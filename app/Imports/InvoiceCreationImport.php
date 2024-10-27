@@ -56,10 +56,26 @@ class InvoiceCreationImport implements ToModel, WithHeadingRow
 
     private function calculateDuration($create_date, $posting_date)
     {
-        $create_date = strtotime($this->convert_date($create_date));
-        $posting_date = strtotime($this->convert_date($posting_date));
-        $duration = ($create_date - $posting_date) / (60 * 60 * 24); // Convert seconds to days
+        $create_date = new \DateTime($this->convert_date($create_date));
+        $posting_date = new \DateTime($this->convert_date($posting_date));
 
-        return $duration;
+        // Ensure create_date is after or the same as posting_date
+        if ($create_date <= $posting_date) {
+            return 0;
+        }
+
+        $workdays = 0;
+
+        // Iterate through each day between the two dates
+        while ($create_date > $posting_date) {
+            // Check if the day is a weekday (Monday to Friday)
+            if ($create_date->format('N') < 6) {
+                $workdays++;
+            }
+            // Move to the next day
+            $create_date->modify('-1 day');
+        }
+
+        return $workdays;
     }
 }

@@ -1,6 +1,3 @@
--- find payreqs
-SELECT * FROM `payreqs` WHERE `user_id` = 23 AND `rab_id` = 186;
-
--- update record
-UPDATE `payreqs` SET `rab_id` = 34 WHERE `user_id` = 23 AND `rab_id` = 183;
+-- delete records from invoice_creations where created_date is october 2024
+DELETE FROM invoice_creations WHERE create_date BETWEEN '2024-09-01' AND '2024-09-30';
 

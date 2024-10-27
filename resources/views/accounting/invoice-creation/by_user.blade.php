@@ -14,7 +14,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <a href="{{ route('accounting.invoice-creation.index') }}">Rekap</a> | <b>By User</b> | <a
+                    <a href="{{ route('accounting.invoice-creation.index') }}">Rekap</a> | <b>BY USER</b> | <a
                         href="{{ route('accounting.invoice-creation.detail') }}">Data</a>
                     {{-- <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
                         data-target="#modal-upload"> Upload</button> --}}

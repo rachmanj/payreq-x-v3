@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    GIRO
+    AVERAGE INVOICE CREATION
 @endsection
 
 @section('breadcrumb_title')
-    giro
+    accounting / invoice daily tx
 @endsection
 
 @section('content')
@@ -14,7 +14,8 @@
 
             <div class="card">
                 <div class="card-header">
-                    <a href="{{ route('accounting.invoice-creation.index') }}">Rekap</a> | <b>DATA</b>
+                    <a href="{{ route('accounting.invoice-creation.index') }}">Rekap</a> | <a
+                        href="{{ route('accounting.invoice-creation.by_user') }}">By User</a> | <b>DATA</b>
                     <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
                         data-target="#modal-upload"> Upload</button>
                 </div> <!-- /.card-header -->
