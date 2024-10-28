@@ -45,6 +45,7 @@
                                     <td class="text-right">Oct</td>
                                     <td class="text-right">Nov</td>
                                     <td class="text-right">Dec</td>
+                                    <th class="text-right">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -53,6 +54,7 @@
                                     @foreach ($year_data['data'] as $item)
                                         <td class="text-right"><small>{{ $item['invoice_count'] }}</small></td>
                                     @endforeach
+                                    <td class="text-right"><small><b>{{ $year_data['invoice_count'] }}</b></small></td>
                                 </tr>
                                 {{-- <tr>
                                     <td><small>Duration Sum</small></td>
@@ -65,6 +67,7 @@
                                     @foreach ($year_data['data'] as $item)
                                         <td class="text-right"><small>{{ $item['average_duration'] }}</small></td>
                                     @endforeach
+                                    <td class="text-right"><small><b>{{ $year_data['average_duration'] }}</b></small></td>
                                 </tr>
                             </tbody>
                         </table>
