@@ -119,7 +119,7 @@ class InvoiceCreationController extends Controller
 
     private function include_user()
     {
-        return ['accbpn1', 'accbpn2', 'accbpn3', 'accbpn4', 'accbpn5', 'accbpn6'];
+        return ['accbpn2', 'accbpn3', 'accbpn5', 'accbpn6'];
     }
 
     private function deleteWhenTrue()
