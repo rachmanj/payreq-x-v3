@@ -18,5 +18,6 @@ yarn-error.log
 /.vscode
 /database/sql
 /public/file_upload
+/public/invoices
 
 
