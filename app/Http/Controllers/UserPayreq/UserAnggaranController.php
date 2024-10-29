@@ -34,40 +34,19 @@ class UserAnggaranController extends Controller
 
     public function proses(Request $request)
     {
-        if ($request->button_type === 'create') {
+        $response = null;
+        if (in_array($request->button_type, ['create', 'create_submit'])) {
             $response = $this->store($request);
-
-            if ($response) {
-                return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil dibuat sebagai draft');
-            } else {
-                return redirect()->back()->with('error', 'There is an error in the form');
-            }
-        } elseif ($request->button_type === 'edit') {
+        } elseif (in_array($request->button_type, ['edit', 'edit_submit'])) {
             $response = $this->update($request);
+        }
 
-            if ($response) {
-                return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diupdate sebagai draft');
-            } else {
-                return redirect()->back()->with('error', 'There is an error in the form');
-            }
-        } elseif ($request->button_type === 'create_submit') {
-            $response = $this->store($request);
-
-            if ($response) {
+        if ($response) {
+            if (in_array($request->button_type, ['create_submit', 'edit_submit'])) {
                 $this->submit($response->id);
                 return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diajukan');
-            } else {
-                return redirect()->back()->with('error', 'There is an error in the form');
             }
-        } elseif ($request->button_type === 'edit_submit') {
-            $response = $this->update($request);
-
-            if ($response) {
-                $this->submit($response->id);
-                return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diajukan');
-            } else {
-                return redirect()->back()->with('error', 'There is an error in the form');
-            }
+            return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil disimpan sebagai draft');
         } else {
             return redirect()->back()->with('error', 'There is an error in the form');
         }
@@ -95,18 +74,12 @@ class UserAnggaranController extends Controller
             'amount' => 'required',
         ]);
 
-        if ($data->file_upload) {
-            $file = $data->file('file_upload');
-            $filename = 'rab_' . rand() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('file_upload'), $filename);
-        } else {
-            $filename = null;
-        }
+        $filename = $this->handleFileUpload($data);
 
         $anggaran = Anggaran::create([
             'nomor' => $data->nomor,
             'rab_no' => $data->rab_no,
-            'date' => $data->date ? $data->date : date('Y-m-d'),
+            'date' => $data->date ?: date('Y-m-d'),
             'description' => $data->description,
             'project' => auth()->user()->project,
             'rab_project' => $data->project,
@@ -129,7 +102,7 @@ class UserAnggaranController extends Controller
 
         $anggaran->update([
             'rab_no' => $data->rab_no,
-            'date' => $data->date ? $data->date : date('Y-m-d'),
+            'date' => $data->date ?: date('Y-m-d'),
             'description' => $data->description,
             'rab_project' => $data->project,
             'type' => $data->rab_type,
@@ -140,36 +113,22 @@ class UserAnggaranController extends Controller
         ]);
 
         if ($data->file_upload) {
-            $file = $data->file('file_upload');
-            $filename = 'rab_' . rand() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('file_upload'), $filename);
-            $anggaran->update([
-                'filename' => $filename,
-            ]);
+            $filename = $this->handleFileUpload($data);
+            $anggaran->update(['filename' => $filename]);
         }
 
         return $anggaran;
     }
 
-    public function edit($id)
+    private function handleFileUpload($data)
     {
-        $anggaran = Anggaran::find($id);
-        $projects = Project::orderBy('code', 'asc')->get();
-
-        $periode_anggarans = PeriodeAnggaran::orderBy('periode', 'asc')
-            ->where('periode_type', 'anggaran')
-            ->where('project', auth()->user()->project)
-            ->where('is_active', 1)
-            ->get();
-
-        // rab_45654654654_filename.pdf convert this to filename.pdf
-        if ($anggaran->filename) {
-            $origin_filename = preg_replace('/^rab_\d+_/', '', $anggaran->filename); // this to convert to original filename
-        } else {
-            $origin_filename = null;
+        if ($data->file_upload) {
+            $file = $data->file('file_upload');
+            $filename = 'rab_' . rand() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('file_upload'), $filename);
+            return $filename;
         }
-
-        return view('user-payreqs.anggarans.edit', compact('anggaran', 'projects', 'periode_anggarans', 'origin_filename'));
+        return null;
     }
 
     public function show($id)
@@ -353,22 +312,22 @@ class UserAnggaranController extends Controller
             ->where('project', auth()->user()->project)
             ->whereIn('status', ['approved', 'close'])
             ->where('is_active', 1)
+            ->orderBy('date', 'desc')
             ->get();
 
         $department_rabs = Anggaran::where('usage', 'department')
             ->where('department_id', auth()->user()->department_id)
             ->whereIn('status', ['approved', 'close'])
             ->where('is_active', 1)
+            ->orderBy('date', 'desc')
             ->get();
 
         $user_rabs = Anggaran::where('usage', 'user')
             ->where('created_by', auth()->user()->id)
-            // ->where('is_active', 1)
+            ->orderBy('date', 'desc')
             ->limit(300)
             ->get();
 
-        $rabs = $project_rabs->merge($department_rabs)->merge($user_rabs);
-
-        return $rabs;
+        return $project_rabs->merge($department_rabs)->merge($user_rabs);
     }
 }
