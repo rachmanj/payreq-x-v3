@@ -20,11 +20,7 @@ class GiroController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'acc_no' => 'required',
-            'bank_id' => 'required',
-            'project' => 'required',
-        ]);
+        $this->validateRequest($request);
 
         if (Giro::where('acc_no', $request->acc_no)->exists()) {
             return redirect()->route('accounting.giros.index')->with('error', 'Giro already exists');
@@ -37,18 +33,13 @@ class GiroController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'acc_no' => 'required',
-            'bank_id' => 'required',
-            'project' => 'required',
-        ]);
+        $this->validateRequest($request);
 
         if (Giro::where('acc_no', $request->acc_no)->where('id', '!=', $id)->exists()) {
             return redirect()->route('accounting.giros.index')->with('error', 'Giro already exists');
         }
 
         $giro = Giro::findOrFail($id);
-
         $giro->update($request->all());
 
         return redirect()->route('accounting.giros.index')->with('success', 'Giro updated successfully');
@@ -56,19 +47,20 @@ class GiroController extends Controller
 
     public function destroy($id)
     {
-        // cek if giro has bilyet
-        if (Giro::findOrFail($id)->bilyets->count() > 0) {
+        $giro = Giro::with('bilyets')->findOrFail($id);
+
+        if ($giro->bilyets->count() > 0) {
             return redirect()->route('accounting.giros.index')->with('error', 'Giro already has bilyets');
         }
 
-        Giro::destroy($id);
+        $giro->delete();
 
         return redirect()->route('accounting.giros.index')->with('success', 'Giro deleted successfully');
     }
 
     public function data()
     {
-        $giros = Giro::all();
+        $giros = Giro::with('bank')->get();
 
         return datatables()->of($giros)
             ->addColumn('bank', function ($giro) {
@@ -77,9 +69,21 @@ class GiroController extends Controller
             ->editColumn('curr', function ($giro) {
                 return $giro->curr == 'IDR' ? 'IDR' : 'USD';
             })
+            ->editColumn('acc_no', function ($giro) {
+                return $giro->acc_no . ($giro->sap_account ? '<br><small>SAP: ' . $giro->sap_account . '</small>' : '');
+            })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.giros.action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'acc_no'])
             ->toJson();
+    }
+
+    private function validateRequest(Request $request)
+    {
+        $request->validate([
+            'acc_no' => 'required',
+            'bank_id' => 'required',
+            'project' => 'required',
+        ]);
     }
 }
