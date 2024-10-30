@@ -18,9 +18,11 @@
                         | <a href="{{ route('cashier.dokumen.index', ['page' => 'pcbc']) }}">PCBC</a>
                     @endcan
                     @can('upload_dokumen')
-                        <button href="#" class="btn btn-xs btn-success float-right mr-2" data-toggle="modal"
+                        <button href="#" class="btn btn-xs btn-success float-right" data-toggle="modal"
                             data-target="#modal-upload"><i class="fas fa-upload"></i> Upload RK</button>
                     @endcan
+                    <a href="{{ route('reports.dokumen.index', ['type' => 'koran', 'year' => date('Y')]) }}"
+                        class="float-right mr-2">Rek Koran Report</a>
                 </div> <!-- /.card-header -->
 
                 <div class="card-body">

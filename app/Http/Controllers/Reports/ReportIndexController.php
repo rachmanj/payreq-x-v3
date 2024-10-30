@@ -112,7 +112,7 @@ class ReportIndexController extends Controller
                 'subMenu' => [
                     [
                         'name' => 'Rekap Rekening Koran',
-                        'url' => route('reports.dokumen.index', ['type' => 'koran']),
+                        'url' => route('reports.dokumen.index', ['type' => 'koran', 'year' => date('Y')]),
                         'protector' => 'report_dokumen_koran',
                     ],
                     [

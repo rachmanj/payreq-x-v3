@@ -33,8 +33,8 @@ class TestController extends Controller
         // $test = app(CashierRekapAdvanceController::class)->advance_data('001H');
         // $test = app(EomController::class)->eom_journal(['000H']);
         // $test = app(ReportDokumenController::class)->koran_dashboard_data();
-        $test = app(InvoiceCreationController::class)->dashboard_data();
-        // $test = app(ReportDokumenController::class)->ninja();
+        // $test = app(InvoiceCreationController::class)->dashboard_data();
+        $test = app(ReportDokumenController::class)->check_koran_files(2024);
         // $test = $this->getDNCRabs();
 
         return $test;

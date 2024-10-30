@@ -14,11 +14,14 @@ class ReportDokumenController extends Controller
     public function index()
     {
         $page_type = request()->query('type');
+        $year = request()->query('year');
+        // return $year;
 
         if ($page_type == 'koran') {
 
-            $korans = $this->koran_dashboard_data();
-            return view('reports.dokumen.index', compact('korans'));
+            $korans = $this->check_koran_files($year);
+
+            return view('reports.dokumen.index', compact('korans', 'year'));
         } else {
             return view('reports.dokumen.pcbc');
         }
@@ -29,54 +32,46 @@ class ReportDokumenController extends Controller
         return redirect()->route('cashier.dokumen.index');
     }
 
-    public function koran_dashboard_data()
-    {
-        return $this->check_koran_files();
-    }
-
-    public function check_koran_files()
+    public function check_koran_files($year)
     {
         $giros = $this->giroList();
         $months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
-        $years = [2024, 2023];
         $result = [];
 
-        foreach ($years as $year) {
-            $year_data = [];
+        $year_data = [];
 
-            foreach ($giros as $giro) {
-                $giro_data = [];
+        foreach ($giros as $giro) {
+            $giro_data = [];
 
-                $korans = Dokumen::where('type', 'koran')
-                    ->where('giro_id', $giro->id)
-                    ->whereYear('periode', $year)
-                    ->whereIn(DB::raw('LPAD(MONTH(periode), 2, "0")'), $months)
-                    ->get()
-                    ->keyBy(function ($item) {
-                        return \Carbon\Carbon::parse($item->periode)->format('m');
-                    });
+            $korans = Dokumen::where('type', 'koran')
+                ->where('giro_id', $giro->id)
+                ->whereYear('periode', $year)
+                ->whereIn(DB::raw('LPAD(MONTH(periode), 2, "0")'), $months)
+                ->get()
+                ->keyBy(function ($item) {
+                    return \Carbon\Carbon::parse($item->periode)->format('m');
+                });
 
-                foreach ($months as $month) {
-                    $koran = $korans->get($month);
-                    $giro_data[] = [
-                        'month' => $month,
-                        'status' => $koran && $koran->filename1 !== null ? true : false,
-                        'filename1' => $koran && $koran->filename1 ? $koran->filename1 : null,
-                    ];
-                }
-
-                $year_data[] = [
-                    'giro_id' => $giro->id,
-                    'acc_name' => $giro->acc_no . ' - ' . $giro->acc_name,
-                    'data' => $giro_data,
+            foreach ($months as $month) {
+                $koran = $korans->get($month);
+                $giro_data[] = [
+                    'month' => $month,
+                    'status' => $koran && $koran->filename1 !== null ? true : false,
+                    'filename1' => $koran && $koran->filename1 ? $koran->filename1 : null,
                 ];
             }
 
-            $result[] = [
-                'year' => $year,
-                'giros' => $year_data,
+            $year_data[] = [
+                'giro_id' => $giro->id,
+                'acc_name' => $giro->acc_no . ' - ' . $giro->acc_name . ' - ' . $giro->project,
+                'data' => $giro_data,
             ];
         }
+
+        $result[] = [
+            'year' => $year,
+            'giros' => $year_data,
+        ];
 
         return $result;
     }
