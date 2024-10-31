@@ -114,8 +114,8 @@
                                 <div class="form-group">
                                     <label for="curr">Currency</label>
                                     <select name="curr" id="curr" class="form-control select2bs4">
-                                        <option value="idr">IDR</option>
-                                        <option value="usd">USD</option>
+                                        <option value="IDR">IDR</option>
+                                        <option value="USD">USD</option>
                                     </select>
                                 </div>
                             </div>

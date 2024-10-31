@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Imports\BilyetTempImport;
 use App\Models\BilyetTemp;
 use App\Models\Bilyet;
+use App\Models\Loan;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -111,9 +112,12 @@ class BilyetTempController extends Controller
 
                 return $duplikasi_warning && $duplikasi_bilyet_warning ? $duplikasi_warning . '<br>' . $duplikasi_bilyet_warning : ($duplikasi_warning ?: $duplikasi_bilyet_warning ?: '<span style="color: green;"><small><strong>OK</strong></small></span>');
             })
+            ->addColumn('loan', function ($bilyet) {
+                return $this->cekLoanId($bilyet->loan_id);
+            })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.bilyets.upload_action')
-            ->rawColumns(['action', 'giro_id', 'acc_no', 'status_duplikasi'])
+            ->rawColumns(['action', 'giro_id', 'acc_no', 'status_duplikasi', 'loan'])
             ->toJson();
     }
 
@@ -161,5 +165,11 @@ class BilyetTempController extends Controller
         }
 
         return $bilyet_temp;
+    }
+
+    private function cekLoanId($loan_id)
+    {
+        // if loan_id is not null, return loan_code. if not found, return 'NOT FOUND' with red text. if null, return null
+        return $loan_id == null ? null : (Loan::where('id', $loan_id)->exists() ? Loan::find($loan_id)->loan_code : '<span style="color: red;"><small><strong>NOT FOUND</strong></small></span>');
     }
 }

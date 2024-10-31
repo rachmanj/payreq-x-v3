@@ -90,7 +90,7 @@ class LoanController extends Controller
 
     public function data()
     {
-        $loans = Loan::get();
+        $loans = Loan::orderBy('created_at', 'desc')->get();
 
         return datatables()->of($loans)
             ->editColumn('start_date', function ($loan) {

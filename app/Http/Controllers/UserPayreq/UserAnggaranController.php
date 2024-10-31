@@ -96,6 +96,27 @@ class UserAnggaranController extends Controller
         return $anggaran;
     }
 
+    public function edit($id)
+    {
+        $anggaran = Anggaran::find($id);
+        $projects = Project::orderBy('code', 'asc')->get();
+
+        $periode_anggarans = PeriodeAnggaran::orderBy('periode', 'asc')
+            ->where('periode_type', 'anggaran')
+            ->where('project', auth()->user()->project)
+            // ->where('is_active', 1)
+            ->get();
+
+        // rab_45654654654_filename.pdf convert this to filename.pdf
+        if ($anggaran->filename) {
+            $origin_filename = preg_replace('/^rab_\d+_/', '', $anggaran->filename); // this to convert to original filename
+        } else {
+            $origin_filename = null;
+        }
+
+        return view('user-payreqs.anggarans.edit', compact('anggaran', 'projects', 'periode_anggarans', 'origin_filename'));
+    }
+
     public function update($data)
     {
         $anggaran = Anggaran::find($data->anggaran_id);

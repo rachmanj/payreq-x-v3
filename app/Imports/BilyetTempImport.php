@@ -21,6 +21,7 @@ class BilyetTempImport implements ToModel, WithHeadingRow
             'cair_date' => $this->convert_date($row['cair_date']),
             'amount' => $row['amount'],
             'remarks' => $row['remarks'],
+            'loan_id' => $row['loan_id'],
             'created_by' => auth()->id(),
             'project' => auth()->user()->project,
         ]);

@@ -140,6 +140,7 @@ class BilyetController extends Controller
                 'cair_date' => $bilyet->cair_date,
                 'amount' => $bilyet->amount,
                 'remarks' => $bilyet->remarks,
+                'loan_id' => $bilyet->loan_id,
                 'status' => $status,
                 'created_by' => $bilyet->created_by,
                 'project' => $bilyet->project,

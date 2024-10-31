@@ -15,7 +15,8 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">On Hand</h3>
-                    <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back to Index</a>
+                    <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i
+                            class="fas fa-arrow-left"></i> Back to Index</a>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body p-0">
@@ -32,14 +33,14 @@
                         </thead>
                         <tbody>
                             @foreach ($data['onhands'] as $index => $item)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $item['acc_no'] . ' - ' . $item['acc_name'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['cek'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['bg'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['loa'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['total'] }}</td>
-                            </tr>    
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $item['acc_no'] . ' - ' . $item['acc_name'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['cek'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['bg'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['loa'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['total'] }}</td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -60,21 +61,24 @@
                                 <th class="text-right">Cek</th>
                                 <th class="text-right">BG</th>
                                 <th class="text-right">LoA</th>
+                                <th class="text-right">Debit</th>
                                 <th class="text-right" style="width: 40px">Total</th>
                                 <th class="text-right" style="width: 40px">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($data['released'] as $index => $item)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $item['acc_no'] . ' - ' . $item['acc_name'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['cek'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['bg'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['loa'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['total'] }}</td>
-                                <td class="text-right" style="width: 15%">{{ number_format($item['amount'], 0, ',', '.') . ',-' }}</td>
-                            </tr>
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $item['acc_no'] . ' - ' . $item['acc_name'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['cek'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['bg'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['loa'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['debit'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['total'] }}</td>
+                                    <td class="text-right" style="width: 15%">
+                                        {{ number_format($item['amount'], 0, ',', '.') . ',-' }}</td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -95,21 +99,24 @@
                                 <th class="text-right">Cek</th>
                                 <th class="text-right">BG</th>
                                 <th class="text-right">LoA</th>
+                                <th class="text-right">Debit</th>
                                 <th class="text-right" style="width: 40px">Total</th>
                                 <th class="text-right" style="width: 40px">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($data['due_this_month'] as $index => $item)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $item['acc_no'] . ' - ' . $item['acc_name'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['cek'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['bg'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['loa'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['total'] }}</td>
-                                <td class="text-right" style="width: 15%">{{ number_format($item['amount'], 0, ',', '.') . ',-' }}</td>
-                            </tr>
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $item['acc_no'] . ' - ' . $item['acc_name'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['cek'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['bg'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['loa'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['debit'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['total'] }}</td>
+                                    <td class="text-right" style="width: 15%">
+                                        {{ number_format($item['amount'], 0, ',', '.') . ',-' }}</td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -135,20 +142,20 @@
                         </thead>
                         <tbody>
                             @foreach ($data['void'] as $index => $item)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $item['acc_no'] . ' - ' . $item['acc_name'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['cek'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['bg'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['loa'] }}</td>
-                                <td class="text-right" style="width: 10%">{{ $item['total'] }}</td>
-                            </tr>    
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $item['acc_no'] . ' - ' . $item['acc_name'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['cek'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['bg'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['loa'] }}</td>
+                                    <td class="text-right" style="width: 10%">{{ $item['total'] }}</td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div> <!-- /.card-body -->
             </div> <!-- /.card -->
-        
+
         </div> <!-- /.col -->
-    </div>  <!-- /.row -->
+    </div> <!-- /.row -->
 @endsection
