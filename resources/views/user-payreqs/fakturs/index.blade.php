@@ -27,8 +27,9 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Customer | Remarks</th>
-                                <th>AR Invoice</th>
+                                <th>Customer</th>
+                                <th>Remarks</th>
+                                <th>Invoice</th>
                                 <th>Faktur</th>
                                 <th>Amount <small>(IDR)</small></th>
                                 <th>Users</th>
@@ -148,6 +149,9 @@
                         data: 'customer'
                     },
                     {
+                        data: 'remarks'
+                    },
+                    {
                         data: 'invoice_info'
                     },
                     {
@@ -167,7 +171,7 @@
                 ],
                 fixedHeader: true,
                 columnDefs: [{
-                    "targets": [4],
+                    "targets": [5],
                     "className": "text-right"
                 }, {
                     "targets": [0],

@@ -80,6 +80,14 @@ class FakturController extends Controller
         return redirect()->route('user-payreqs.fakturs.index')->with('success', 'Faktur updated successfully.');
     }
 
+    public function destroy($id)
+    {
+        $faktur = Faktur::findOrFail($id);
+        $faktur->delete();
+
+        return redirect()->route('user-payreqs.fakturs.index')->with('success', 'Faktur deleted successfully.');
+    }
+
     public function data()
     {
         $getUserRoles = app(UserController::class)->getUserRoles();
@@ -93,7 +101,10 @@ class FakturController extends Controller
 
         return datatables()->of($fakturs)
             ->addColumn('customer', function ($faktur) {
-                return '<small>' . $faktur->customer_name . '</small><br><small>' . $faktur->remarks . '</small>';
+                return '<small>' . $faktur->customer_name . '</small>';
+            })
+            ->editColumn('remarks', function ($faktur) {
+                return '<small>' . $faktur->remarks . '</small></br><small>kurs: ' . $faktur->kurs . '</small>';
             })
             ->editColumn('amount', function ($faktur) {
                 return '<small>DPP: ' . number_format($faktur->dpp, 2) . '</small><br><small>PPN: ' . number_format($faktur->ppn, 2) . '</small>';
@@ -107,11 +118,13 @@ class FakturController extends Controller
                 return '<small>No. ' . $faktur->faktur_no . '</small><br><small>Date: ' . $faktur_date . '</small>';
             })
             ->addColumn('users', function ($faktur) {
-                return '<small>Request by: ' . $faktur->created_by_name . '</small><br><small>Response by: ' . $faktur->response_by_name . '</small>';
+                $createdByFirstName = explode(' ', $faktur->created_by_name)[0];
+                $responseByFirstName = explode(' ', $faktur->response_by_name)[0];
+                return '<small>Request by: ' . $createdByFirstName . '</small><br><small>Response by: ' . $responseByFirstName . '</small>';
             })
             ->addIndexColumn()
             ->addColumn('action', 'user-payreqs.fakturs.action')
-            ->rawColumns(['action', 'amount', 'customer', 'invoice_info', 'faktur_info', 'users'])
+            ->rawColumns(['action', 'amount', 'customer', 'invoice_info', 'faktur_info', 'users', 'remarks'])
             ->toJson();
     }
 

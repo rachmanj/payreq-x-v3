@@ -76,6 +76,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
 
     Route::prefix('anggaran')->name('anggaran.')->group(function () {
         Route::get('/', [AnggaranController::class, 'index'])->name('index');
+        Route::get('/inactive', [AnggaranController::class, 'inactive'])->name('inactive');
         Route::get('/data', [AnggaranController::class, 'data'])->name('data');
         Route::get('/data_full', [AnggaranController::class, 'data_full'])->name('data_full');
         Route::get('/{id}/show', [AnggaranController::class, 'show'])->name('show');

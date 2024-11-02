@@ -1,8 +1,11 @@
 <form action="{{ route('user-payreqs.fakturs.destroy', $model->id) }}" class="d-inline" method="POST">
     @csrf @method('DELETE')
     @if ($model->faktur_no == null && $model->created_by == auth()->user()->id)
-        <button type="submit" class="btn btn-xs btn-danger"
-            onclick="return confirm('Are you sure to delete this record?')">delete</button>
+        <form action="{{ route('user-payreqs.fakturs.destroy', $model->id) }}" method="POST">
+            @csrf @method('DELETE')
+            <button type="submit" class="btn btn-xs btn-danger"
+                onclick="return confirm('Are you sure to delete this record?')">delete</button>
+        </form>
         <button type="button" class="btn btn-xs btn-primary" data-toggle="modal"
             data-target="#editinvoice{{ $model->id }}">
             edit

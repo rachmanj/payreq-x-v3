@@ -15,7 +15,16 @@ class AnggaranController extends Controller
 {
     public function index()
     {
-        return view('reports.anggaran.index');
+        $status = request()->query('status');
+
+        switch ($status) {
+            case 'active':
+                return view('reports.anggaran.index');
+            case 'inactive':
+                return view('reports.anggaran.inactive');
+            default:
+                return view('reports.anggaran.index'); // Default view if no status or unknown status is provided
+        }
     }
 
     public function edit($id)
@@ -89,15 +98,24 @@ class AnggaranController extends Controller
     public function data()
     {
         $userRoles = app(UserController::class)->getUserRoles();
+        $get_status = request()->query('status');
+
+        if ($get_status == 'active') {
+            $status = 1;
+        } else {
+            $status = 0;
+        }
 
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $anggarans = Anggaran::orderBy('date', 'desc')
                 ->whereIn('status', ['approved'])
+                ->where('is_active', $status)
                 ->limit(300)
                 ->get();
         } else {
             $anggarans = Anggaran::where('project', auth()->user()->project)
                 ->orderBy('date', 'desc')
+                ->where('is_active', $status)
                 ->limit(300)
                 ->get();
         }

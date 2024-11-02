@@ -15,7 +15,8 @@
             <div class="card">
                 <div class="card-header">
 
-                    <b>ACTIVE</b> | <a href="{{ route('reports.anggaran.index', ['status' => 'inactive']) }}">In-active</a>
+                    <a href="{{ route('reports.anggaran.index', ['status' => 'active']) }}">Active</a> |
+                    <b>IN-ACTIVE</b>
                     <a href="{{ route('reports.index') }}" class="btn btn-xs btn-primary float-right"><i
                             class="fas fa-arrow-left"></i> Back to Index</a>
                     @can('recalculate_release')
@@ -69,7 +70,7 @@
             $("#anggarans").DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('reports.anggaran.data', ['status' => 'active']) }}',
+                ajax: '{{ route('reports.anggaran.data', ['status' => 'inactive']) }}',
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,
