@@ -55,6 +55,7 @@ class FakturController extends Controller
 
     public function update_faktur(Request $request)
     {
+        // return $request->all();
         // update faktur, field to update are faktur_no, faktur_date, ppn and upload attachment
         $faktur = Faktur::findOrFail($request->faktur_id);
 
@@ -62,7 +63,6 @@ class FakturController extends Controller
             'faktur_no' => 'required',
             'faktur_date' => 'required',
             'ppn' => 'required',
-            'attachment' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
         $validatedData['response_by'] = auth()->user()->id;
