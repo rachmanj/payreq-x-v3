@@ -56,7 +56,7 @@ class CashierDokumenController extends Controller
     {
         $type = request()->query('type');
 
-        $dokumens = Dokumen::where('type', $type)->get();
+        $dokumens = Dokumen::where('type', $type)->orderBy('periode', 'desc')->get();
 
         return datatables()->of($dokumens)
             ->editColumn('created_by', function ($dokumen) {

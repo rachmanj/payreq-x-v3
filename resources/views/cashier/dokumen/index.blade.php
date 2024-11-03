@@ -33,7 +33,7 @@
                                 <th>Bank Account</th>
                                 <th>Project</th>
                                 <th>Periode</th>
-                                <th>Reconciled</th>
+                                {{-- <th>Reconciled</th> --}}
                                 <th>Uploaded by</th>
                                 <th></th>
                             </tr>
@@ -153,9 +153,9 @@
                     {
                         data: 'periode'
                     },
-                    {
-                        data: 'reconciled'
-                    },
+                    // {
+                    //     data: 'reconciled'
+                    // },
                     {
                         data: 'created_by'
                     },
@@ -167,8 +167,8 @@
                 ],
                 fixedHeader: true,
                 columnDefs: [{
-                    "targets": [4],
-                    "className": "text-center"
+                    "targets": [0],
+                    "className": "text-right"
                 }]
             })
 
