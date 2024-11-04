@@ -94,11 +94,15 @@ class FakturController extends Controller
     public function data()
     {
         $getUserRoles = app(UserController::class)->getUserRoles();
-
-        if (array_intersect(['admin', 'superadmin'], $getUserRoles)) {
-            $fakturs = Faktur::orderBy('invoice_date', 'desc')->get();
+        if (array_intersect(['admin', 'superadmin', 'tax_Officer', 'sales', 'cashier'], $getUserRoles)) {
+            $fakturs = Faktur::orderBy('invoice_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get();
         } else {
             $fakturs = Faktur::orderBy('invoice_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->where('created_by', auth()->user()->id)
+                ->orWhere('response_by', auth()->user()->id)
                 ->get();
         }
 
