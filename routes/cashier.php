@@ -128,5 +128,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/data', [CashierDokumenController::class, 'data'])->name('data');
         Route::get('/', [CashierDokumenController::class, 'index'])->name('index');
         Route::post('/upload', [CashierDokumenController::class, 'upload'])->name('upload');
+        Route::delete('/{id}', [CashierDokumenController::class, 'destroy'])->name('destroy');
+        Route::put('/{id}', [CashierDokumenController::class, 'update'])->name('update');
     });
 });

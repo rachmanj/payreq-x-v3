@@ -29,6 +29,7 @@ class FakturController extends Controller
         $validatedData['remarks'] = $request->remarks;
         $validatedData['created_by'] = auth()->user()->id;
         $validatedData['submit_at'] = now();
+        $validatedData['kurs'] = $request->kurs;
 
         Faktur::create($validatedData);
 
@@ -37,6 +38,7 @@ class FakturController extends Controller
 
     public function update_arinvoice(Request $request, $id)
     {
+        // return $request->all();
         $faktur = Faktur::findOrFail($id);
 
         $validatedData = $request->validate([
@@ -47,6 +49,7 @@ class FakturController extends Controller
         ]);
 
         $validatedData['remarks'] = $request->remarks;
+        $validatedData['kurs'] = $request->kurs;
 
         $faktur->update($validatedData);
 

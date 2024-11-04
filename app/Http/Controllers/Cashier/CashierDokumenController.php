@@ -52,6 +52,57 @@ class CashierDokumenController extends Controller
         return redirect()->back()->with('success', $request->type == 'koran' ? 'Koran uploaded successfully.' : 'PCBC uploaded successfully.');
     }
 
+    public function update(Request $request, $id)
+    {
+        return $request->all();
+        $dokumen = Dokumen::findOrFail($id);
+
+        if ($request->hasFile('file_upload')) {
+            // Remove the old file from the server
+            $oldFilePath = public_path('file_upload/' . $dokumen->filename1);
+            if (file_exists($oldFilePath)) {
+                unlink($oldFilePath);
+            }
+
+            // Upload the new file
+            $file = $request->file('file_upload');
+            if ($request->type == 'koran') {
+                $filename = 'koran_' . rand() . '_' . $file->getClientOriginalName();
+            } else {
+                $filename = 'pcbc_' . rand() . '_' . $file->getClientOriginalName();
+            }
+            $file->move(public_path('file_upload'), $filename);
+            $dokumen->filename1 = $filename;
+        }
+
+        // Update the record
+        $dokumen->giro_id = $request->giro_id;
+        $dokumen->type = $request->type;
+        $dokumen->project = $request->project;
+        $dokumen->periode = $request->periode ? $request->periode . '-01' : null;
+        $dokumen->dokumen_date = $request->dokumen_date;
+        $dokumen->remarks = $request->remarks;
+        $dokumen->save();
+
+        return redirect()->back()->with('success', 'Document updated successfully.');
+    }
+
+    public function destroy($id)
+    {
+        $dokumen = Dokumen::findOrFail($id);
+
+        // Remove the file from the server
+        $filePath = public_path('file_upload/' . $dokumen->filename1);
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+
+        // Delete the record from the database
+        $dokumen->delete();
+
+        return redirect()->back()->with('success', 'Document deleted successfully.');
+    }
+
     public function data()
     {
         $type = request()->query('type');
