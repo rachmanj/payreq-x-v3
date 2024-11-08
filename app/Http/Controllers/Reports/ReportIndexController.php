@@ -9,14 +9,14 @@ class ReportIndexController extends Controller
 {
     public function index()
     {
-        return view('reports.index', [
-            'menuList' => $this->menuList(),
-        ]);
+        $menuList = $this->getMenuList();
+
+        return view('reports.index', compact('menuList'));
     }
 
-    public function menuList()
+    private function getMenuList()
     {
-        $menuList = [
+        return [
             [
                 'name' => 'Payment Request',
                 'protector' => null,
@@ -120,6 +120,16 @@ class ReportIndexController extends Controller
                         'url' => route('reports.dokumen.index', ['type' => 'pcbc']),
                         'protector' => 'report_dokumen_pcbc',
                     ],
+                    [
+                        'name' => 'Rekap Documents Creation HO',
+                        'url' => route('reports.document-creation.index', ['project' => '000H']),
+                        'protector' => 'rekap_dokumen_creation_ho',
+                    ],
+                    [
+                        'name' => 'Rekap Documents Creation BO',
+                        'url' => route('reports.document-creation.index', ['project' => '001H']),
+                        'protector' => 'rekap_dokumen_creation_bo',
+                    ],
                 ],
             ],
             [
@@ -161,8 +171,5 @@ class ReportIndexController extends Controller
                 ],
             ],
         ];
-
-        return $menuList;
     }
-    // private 
 }

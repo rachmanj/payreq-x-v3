@@ -3,6 +3,7 @@
 use App\Http\Controllers\Reports\AnggaranController;
 use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\CashierRekapAdvanceController;
+use App\Http\Controllers\Reports\DocumentCreationController;
 use App\Http\Controllers\Reports\EomController;
 use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
@@ -91,5 +92,12 @@ Route::prefix('reports')->name('reports.')->group(function () {
 
     Route::prefix('dokumen')->name('dokumen.')->group(function () {
         Route::get('/', [ReportDokumenController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('document-creation')->name('document-creation.')->group(function () {
+        Route::get('/', [DocumentCreationController::class, 'index'])->name('index');
+        Route::get('/data', [DocumentCreationController::class, 'data'])->name('data');
+        Route::get('/detail', [DocumentCreationController::class, 'detail'])->name('detail');
+        Route::get('/by-user', [DocumentCreationController::class, 'by_user'])->name('by_user');
     });
 });

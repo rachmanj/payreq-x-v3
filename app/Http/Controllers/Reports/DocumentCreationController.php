@@ -1,14 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Accounting;
+namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
-use App\Imports\InvoiceCreationImport;
 use App\Models\InvoiceCreation;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
 
-class InvoiceCreationController extends Controller
+class DocumentCreationController extends Controller
 {
     private $months = [
         '01' => 'Jan',
@@ -39,7 +37,7 @@ class InvoiceCreationController extends Controller
         if ($project == '000H') {
             $this->users = ['accbpn2', 'accbpn3', 'accbpn5', 'accbpn6'];
         } elseif ($project == '001H') {
-            $this->users = ['accjkt1', 'accjkt2', 'accjkt4', 'accjkt5'];
+            $this->users = ['accjkt1', 'accjkt2', 'accjkt3', 'accjkt4', 'accjkt5'];
         } else {
             $this->users = []; // Default to an empty array or handle other projects as needed
         }
@@ -50,38 +48,37 @@ class InvoiceCreationController extends Controller
         $dashboard_data = $this->dashboard_data();
         $project = request()->query('project');
 
-        return view('accounting.invoice-creation.index', compact('dashboard_data', 'project'));
+        if ($project == '000H') {
+            return view('reports.document-creation.000H.index', compact('dashboard_data', 'project'));
+        } elseif ($project == '001H') {
+            return view('reports.document-creation.001H.index', compact('dashboard_data', 'project'));
+        } else {
+            return view('reports.document-creation.index_default', compact('dashboard_data', 'project'));
+        }
     }
 
     public function detail()
     {
-        return view('accounting.invoice-creation.detail');
+        $project = request()->query('project');
+        if ($project == '000H') {
+            return view('reports.document-creation.000H.detail', compact('project'));
+        } elseif ($project == '001H') {
+            return view('reports.document-creation.001H.detail', compact('project'));
+        }
     }
 
     public function by_user()
     {
         $dashboard_data = $this->dashboard_data_by_user();
+        $project = request()->query('project');
 
-        return view('accounting.invoice-creation.by_user', compact('dashboard_data'));
-    }
-
-    public function upload(Request $request)
-    {
-        $request->validate([
-            'file_upload' => 'required|mimes:xls,xlsx',
-        ]);
-
-        $file = $request->file('file_upload');
-        $filename = 'inv-tx_' . uniqid() . '_' . $file->getClientOriginalName();
-        $file->move(public_path('invoices'), $filename);
-
-        Excel::import(new InvoiceCreationImport, public_path('invoices/' . $filename));
-        unlink(public_path('invoices/' . $filename));
-
-        $this->deleteWhenTrue();
-        $this->deleteDuplicate();
-
-        return redirect()->back()->with('success', 'File uploaded successfully');
+        if ($project == '000H') {
+            return view('reports.document-creation.000H.by_user', compact('dashboard_data', 'project'));
+        } elseif ($project == '001H') {
+            return view('reports.document-creation.001H.by_user', compact('dashboard_data', 'project'));
+        } else {
+            return view('reports.document-creation.000H.by_user', compact('dashboard_data', 'project'));
+        }
     }
 
     public function data()
@@ -99,10 +96,7 @@ class InvoiceCreationController extends Controller
 
     public function dashboard_data()
     {
-        $result = $this->generate_dashboard_data($this->years, $this->months, $this->users);
-
-
-        return $result;
+        return $this->generate_dashboard_data($this->years, $this->months, $this->users);
     }
 
     public function dashboard_data_by_user()
@@ -121,26 +115,24 @@ class InvoiceCreationController extends Controller
                 $invoiceData = $this->get_invoice_data($month, $year, $users);
                 $year_data[] = [
                     'month' => $month_name,
-                    'invoice_count' => $invoiceData['count'],
-                    'sum_duration' => $invoiceData['sum'],
-                    'average_duration' => $invoiceData['average'],
+                    'invoice_count' => $invoiceData['count'] ?? 0,
+                    'sum_duration' => $invoiceData['sum'] ?? 0,
+                    'average_duration' => $invoiceData['average'] ?? 0,
                 ];
             }
 
-            $currentYearData = $this->get_invoice_data_for_year($year, $this->users);
-
+            $year_summary = $this->get_invoice_data_for_year($year, $users);
             $result[] = [
                 'year' => $year,
-                'invoice_count' => $currentYearData['count'],
-                'average_duration' => $currentYearData['average'],
                 'data' => $year_data,
+                'year_summary' => $year_summary,
             ];
         }
 
         return $result;
     }
 
-    private function generate_dashboard_data_by_user($years, $months, $users)
+    public function generate_dashboard_data_by_user($years, $months, $users)
     {
         $result = [];
 
@@ -154,15 +146,17 @@ class InvoiceCreationController extends Controller
                     $invoiceData = $this->get_invoice_data_by_user($month, $year, $user_code);
                     $user_data[] = [
                         'month' => $month_name,
-                        'invoice_count' => $invoiceData['count'],
-                        'sum_duration' => $invoiceData['sum'],
-                        'average_duration' => $invoiceData['average'],
+                        'invoice_count' => $invoiceData['count'] ?? 0,
+                        'sum_duration' => $invoiceData['sum'] ?? 0,
+                        'average_duration' => $invoiceData['average'] ?? 0,
                     ];
                 }
 
+                $year_summary = $this->get_invoice_data_for_year_by_user($year, $user_code);
                 $year_data[] = [
                     'user_code' => $user_code,
                     'data' => $user_data,
+                    'year_summary' => $year_summary,
                 ];
             }
 
@@ -183,8 +177,8 @@ class InvoiceCreationController extends Controller
             ->whereIn('user_code', $users)
             ->first();
 
-        $count = $data->count;
-        $sum = $data->sum;
+        $count = $data->count ?? 0;
+        $sum = $data->sum ?? 0;
         $average = $count > 0 ? number_format($sum / $count, 2) : 0;
 
         return compact('count', 'sum', 'average');
@@ -198,8 +192,8 @@ class InvoiceCreationController extends Controller
             ->where('user_code', $user_code)
             ->first();
 
-        $count = $data->count;
-        $sum = $data->sum;
+        $count = $data->count ?? 0;
+        $sum = $data->sum ?? 0;
         $average = $count > 0 ? number_format($sum / $count, 2) : 0;
 
         return compact('count', 'sum', 'average');
@@ -212,29 +206,24 @@ class InvoiceCreationController extends Controller
             ->whereIn('user_code', $users)
             ->first();
 
-        $count = $data->count;
-        $sum = $data->sum;
+        $count = $data->count ?? 0;
+        $sum = $data->sum ?? 0;
         $average = $count > 0 ? number_format($sum / $count, 2) : 0;
 
         return compact('count', 'sum', 'average');
     }
 
-    private function deleteWhenTrue()
+    private function get_invoice_data_for_year_by_user($year, $user_code)
     {
-        InvoiceCreation::where('will_delete', 1)->delete();
-    }
+        $data = InvoiceCreation::selectRaw('COUNT(DISTINCT document_number) as count, SUM(duration) as sum')
+            ->whereYear('create_date', $year)
+            ->where('user_code', $user_code)
+            ->first();
 
-    private function deleteDuplicate()
-    {
-        $duplicates = InvoiceCreation::select('document_number')
-            ->groupBy('document_number')
-            ->havingRaw('COUNT(*) > 1')
-            ->pluck('document_number');
+        $count = $data->count ?? 0;
+        $sum = $data->sum ?? 0;
+        $average = $count > 0 ? number_format($sum / $count, 2) : 0;
 
-        foreach ($duplicates as $document_number) {
-            $records = InvoiceCreation::where('document_number', $document_number)->get();
-            $records->shift();
-            InvoiceCreation::whereIn('id', $records->pluck('id'))->delete();
-        }
+        return compact('count', 'sum', 'average');
     }
 }

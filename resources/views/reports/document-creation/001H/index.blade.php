@@ -5,7 +5,7 @@
 @endsection
 
 @section('breadcrumb_title')
-    accounting / documents-creation
+    reports / documents-creation
 @endsection
 
 @section('content')
@@ -14,14 +14,15 @@
             <div class="card">
                 <div class="card-header text-center">
                     <div class="text-left">
-                        <b>REKAP</b> | <a href="{{ route('accounting.invoice-creation.by_user') }}">By User</a> | <a
-                            href="{{ route('accounting.invoice-creation.detail') }}">Data</a>
+                        <b>REKAP</b> | <a href="{{ route('reports.document-creation.by_user', ['project' => '001H']) }}">By
+                            User</a> | <a
+                            href="{{ route('reports.document-creation.detail', ['project' => '001H']) }}">Data</a>
                     </div>
                     <div class="d-inline-block">
                         Project: <b>{{ $project }}</b>
                     </div>
-                    {{-- <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
-                        data-target="#modal-upload"> Upload</button> --}}
+                    <a href="{{ route('reports.index') }}" class="btn btn-xs btn-primary float-right"><i
+                            class="fas fa-arrow-left"></i> Back to Index</a>
                 </div>
             </div>
             <!-- /.card-header -->
@@ -58,7 +59,7 @@
                                     @foreach ($year_data['data'] as $item)
                                         <td class="text-right"><small>{{ $item['invoice_count'] }}</small></td>
                                     @endforeach
-                                    <td class="text-right"><small><b>{{ $year_data['invoice_count'] }}</b></small></td>
+                                    <td class="text-right"><small><b>{{ $year_data['year_summary']['count'] }}</b></small>
                                 </tr>
                                 {{-- <tr>
                                     <td><small>Duration Sum</small></td>
@@ -71,7 +72,7 @@
                                     @foreach ($year_data['data'] as $item)
                                         <td class="text-right"><small>{{ $item['average_duration'] }}</small></td>
                                     @endforeach
-                                    <td class="text-right"><small><b>{{ $year_data['average_duration'] }}</b></small></td>
+                                    <td class="text-right"><small><b>{{ $year_data['year_summary']['average'] }}</b></small>
                                 </tr>
                             </tbody>
                         </table>
@@ -85,7 +86,4 @@
 
         </div> <!-- /.col -->
     </div> <!-- /.row -->
-
-    {{-- modal upload --}}
-    @include('accounting.invoice-creation.modal-upload')
 @endsection

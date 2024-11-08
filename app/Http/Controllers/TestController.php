@@ -6,6 +6,7 @@ use App\Http\Controllers\Accounting\InvoiceCreationController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\CashierRekapAdvanceController;
+use App\Http\Controllers\Reports\DocumentCreationController;
 use App\Http\Controllers\Reports\EomController;
 use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
@@ -26,14 +27,14 @@ class TestController extends Controller
         // $test = app(SapSyncController::class)->chart_vj_postby();
         // $test = app(OngoingDashboardController::class)->dashboard_data('017C');
         // $test = app(UserAnggaranController::class)->recalculate();
-        $test = app(BilyetController::class)->dashboardData();
+        // $test = app(BilyetController::class)->dashboardData();
         // $test = app(TeamController::class)->members_data();
         // $test = app(TeamController::class)->getMemberOngoings(14);
         // $test = app(CashierRekapAdvanceController::class)->ongoing_documents_by_user('000H');
         // $test = app(CashierRekapAdvanceController::class)->advance_data('001H');
         // $test = app(EomController::class)->eom_journal(['000H']);
         // $test = app(ReportDokumenController::class)->koran_dashboard_data();
-        // $test = app(InvoiceCreationController::class)->dashboard_data();
+        $test = app(DocumentCreationController::class)->generate_dashboard_data_by_user(['2024'], ['08', '09', '10'], ['accjkt1', 'accjkt2', 'accjkt3', 'accjkt4', 'accjkt5']);
         // $test = app(ReportDokumenController::class)->check_koran_files(2024);
         // $test = $this->getDNCRabs();
 
