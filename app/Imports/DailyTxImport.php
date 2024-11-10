@@ -22,13 +22,13 @@ class DailyTxImport implements ToModel, WithHeadingRow
             'doc_num' => $row['doc_num'],
             'doc_type' => $row['doc_type'],
             'project' => $row['project_code'],
-            'department' => $row['department'],
             'account' => $row['account'],
             'debit' => $row['debit'],
             'credit' => $row['credit'],
             'remarks' => $row['remarks'],
             'user_code' => $row['user_code'],
-            'table_type' => $row['table_type'],
+            'will_delete' => $this->calculateDuration($row['create_date'], $row['posting_date']) < 0 ? true : false,
+            'uploaded_by' => auth()->user()->id,
         ]);
     }
 

@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    AVERAGE INVOICE CREATION
+    DAILY TX UPLOAD
 @endsection
 
 @section('breadcrumb_title')
-    accounting / invoice daily tx
+    accounting / daily tx
 @endsection
 
 @section('content')
@@ -14,8 +14,12 @@
 
             <div class="card">
                 <div class="card-header">
-                    <a href="{{ route('accounting.invoice-creation.index') }}">Rekap</a> | <a
-                        href="{{ route('accounting.invoice-creation.by_user') }}">By User</a> | <b>DATA</b>
+                    <a href="{{ route('accounting.daily-tx.truncate') }}" id="truncate-tbl"
+                        class="btn btn-xs btn-danger float-right mr-2"
+                        onclick="return confirm('Are you sure you want to truncate this table?')">Truncate</a>
+                    <a href="" class="btn btn-xs btn-success float-right mr-2">Import to DocCreat-table</a>
+                    <a href="{{ route('accounting.daily-tx.copyToWtax23') }}"
+                        class="btn btn-xs btn-success float-right mr-2">Copy to WTax23-table</a>
                     <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
                         data-target="#modal-upload"> Upload</button>
                 </div> <!-- /.card-header -->
@@ -28,6 +32,7 @@
                                 <th>DocNum</th>
                                 <th>CreateD</th>
                                 <th>PostD</th>
+                                <th>DocType</th>
                                 <th>Duration</th>
                                 <th>User</th>
                             </tr>
@@ -39,7 +44,7 @@
     </div> <!-- /.row -->
 
     {{-- modal upload --}}
-    @include('accounting.invoice-creation.modal-upload')
+    @include('accounting.daily-tx.modal-upload')
 @endsection
 
 @section('styles')
@@ -68,20 +73,23 @@
             $("#invoice-data").DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('accounting.invoice-creation.data') }}',
+                ajax: '{{ route('accounting.daily-tx.data') }}',
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,
                         searchable: false
                     },
                     {
-                        data: 'document_number'
+                        data: 'doc_num'
                     },
                     {
                         data: 'create_date'
                     },
                     {
                         data: 'posting_date'
+                    },
+                    {
+                        data: 'doc_type'
                     },
                     {
                         data: 'duration'
@@ -92,7 +100,7 @@
                 ],
                 fixedHeader: true,
                 columnDefs: [{
-                    "targets": [4],
+                    "targets": [5],
                     "className": "text-right"
                 }]
             })

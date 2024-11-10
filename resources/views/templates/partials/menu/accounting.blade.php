@@ -23,9 +23,12 @@
         @hasanyrole('superadmin|admin|cashier')
             <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
             <li><a href="{{ route('accounting.customers.index') }}" class="dropdown-item">Customer List</a></li>
-            <li><a href="{{ route('accounting.invoice-creation.index') }}" class="dropdown-item">Invoice Creation Report</a>
-            </li>
+            <li><a href="{{ route('accounting.daily-tx.index') }}" class="dropdown-item">Daily Tx Upload</a></li>
         @endhasanyrole
+
+        @can('akses_wtax23')
+            <li><a href="{{ route('accounting.wtax23.index') }}" class="dropdown-item">WTax 23</a></li>
+        @endcan
 
         @can('akses_loan_report')
             <li><a href="{{ route('accounting.loans.index') }}" class="dropdown-item">Loan List</a></li>

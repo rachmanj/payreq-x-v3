@@ -2,13 +2,12 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title"> Upload Invoice Tx</h4>
+                <h4 class="modal-title"> Upload Daily Tx</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route('accounting.invoice-creation.upload') }}" enctype="multipart/form-data"
-                method="POST">
+            <form action="{{ route('accounting.daily-tx.upload') }}" enctype="multipart/form-data" method="POST">
                 @csrf
                 <div class="modal-body">
                     <label>Pilih file excel</label>

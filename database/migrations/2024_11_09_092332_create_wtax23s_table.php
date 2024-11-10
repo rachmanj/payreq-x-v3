@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('daily_txes', function (Blueprint $table) {
+        Schema::create('wtax23s', function (Blueprint $table) {
             $table->id();
             $table->date('create_date')->nullable();
             $table->date('posting_date')->nullable();
@@ -20,13 +20,16 @@ return new class extends Migration
             $table->string('doc_type')->nullable();
             $table->string('project')->nullable();
             $table->string('account')->nullable();
-            $table->decimal('debit', 15, 2)->nullable();
-            $table->decimal('credit', 15, 2)->nullable();
+            $table->decimal('amount', 15, 2)->nullable();
             $table->text('remarks')->nullable();
             $table->string('user_code')->nullable();
-            $table->string('table_type')->nullable();
-            $table->boolean('will_delete')->default(false);
+            $table->string('bupot_no')->nullable();
+            $table->date('bupot_date')->nullable();
+            $table->string('bupot_by')->nullable();
+            $table->timestamp('bupot_at')->nullable();
+            $table->string('filename')->nullable();
             $table->foreignId('uploaded_by')->nullable();
+            $table->integer('batch_no')->nullable();
             $table->timestamps();
         });
     }
@@ -36,9 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('daily_txes');
+        Schema::dropIfExists('wtax23s');
     }
 };
-
-// **
-// create_date	posting_date	tx_num	doc_num	doc_type	project_code	department	account	debit	credit	fc_debit	fc_credit	remarks	user_code

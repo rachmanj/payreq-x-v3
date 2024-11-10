@@ -1,9 +1,10 @@
 <?php
 
 use App\Http\Controllers\Accounting\CustomerController;
+use App\Http\Controllers\Accounting\DailyTxController;
 use App\Http\Controllers\Accounting\GiroController;
-use App\Http\Controllers\Accounting\InvoiceCreationController;
 use App\Http\Controllers\Accounting\SapSyncController;
+use App\Http\Controllers\Accounting\Wtax23Controller;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountingPayreqController;
 use App\Http\Controllers\InstallmentController;
@@ -70,11 +71,20 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
     Route::get('customers/data', [CustomerController::class, 'data'])->name('customers.data');
 
     //INVOICE CREATION
-    Route::prefix('invoice-creation')->name('invoice-creation.')->group(function () {
-        Route::get('/data', [InvoiceCreationController::class, 'data'])->name('data');
-        Route::get('/', [InvoiceCreationController::class, 'index'])->name('index');
-        Route::get('/detail', [InvoiceCreationController::class, 'detail'])->name('detail');
-        Route::get('/by-user', [InvoiceCreationController::class, 'by_user'])->name('by_user');
-        Route::post('/upload', [InvoiceCreationController::class, 'upload'])->name('upload');
+    Route::prefix('daily-tx')->name('daily-tx.')->group(function () {
+        Route::get('/data', [DailyTxController::class, 'data'])->name('data');
+        Route::get('/', [DailyTxController::class, 'index'])->name('index');
+        Route::get('/detail', [DailyTxController::class, 'detail'])->name('detail');
+        Route::get('/by-user', [DailyTxController::class, 'by_user'])->name('by_user');
+        Route::post('/upload', [DailyTxController::class, 'upload'])->name('upload');
+        Route::get('/truncate', [DailyTxController::class, 'truncate'])->name('truncate');
+        Route::get('/copy-to-wtax23', [DailyTxController::class, 'copyToWtax23'])->name('copyToWtax23');
+    });
+
+    // Wtax23
+    Route::prefix('wtax23')->name('wtax23.')->group(function () {
+        Route::get('/data', [Wtax23Controller::class, 'data'])->name('data');
+        Route::get('/', [Wtax23Controller::class, 'index'])->name('index');
+        Route::put('/{id}/update', [Wtax23Controller::class, 'update'])->name('update');
     });
 });
