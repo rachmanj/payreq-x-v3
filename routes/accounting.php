@@ -79,6 +79,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::post('/upload', [DailyTxController::class, 'upload'])->name('upload');
         Route::get('/truncate', [DailyTxController::class, 'truncate'])->name('truncate');
         Route::get('/copy-to-wtax23', [DailyTxController::class, 'copyToWtax23'])->name('copyToWtax23');
+        Route::get('/copy-to-inv-creation', [DailyTxController::class, 'copyToInvoiceCreation'])->name('copyToInvoiceCreation');
     });
 
     // Wtax23

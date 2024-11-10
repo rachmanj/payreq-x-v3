@@ -84,7 +84,4 @@
 
         </div> <!-- /.col -->
     </div> <!-- /.row -->
-
-    {{-- modal upload --}}
-    @include('accounting.invoice-creation.modal-upload')
 @endsection

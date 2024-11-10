@@ -32,6 +32,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>DocNum</th>
+                                <th>DocType</th>
                                 <th>CreateD</th>
                                 <th>PostD</th>
                                 <th>Duration</th>
@@ -83,6 +84,9 @@
                         data: 'document_number'
                     },
                     {
+                        data: 'doc_type'
+                    },
+                    {
                         data: 'create_date'
                     },
                     {
@@ -97,7 +101,7 @@
                 ],
                 fixedHeader: true,
                 columnDefs: [{
-                    "targets": [4],
+                    "targets": [5],
                     "className": "text-right"
                 }]
             })

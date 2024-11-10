@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Accounting;
 use App\Http\Controllers\Controller;
 use App\Imports\DailyTxImport;
 use App\Models\DailyTx;
+use App\Models\InvoiceCreation;
 use App\Models\Wtax23;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -46,6 +47,9 @@ class DailyTxController extends Controller
             ->where('credit', '>', 0)
             ->get();
 
+        $lastBatchNumber = Wtax23::max('batch_no');
+        $batch_no = $lastBatchNumber + 1;
+
         $totalRecords = $documents->count();
         $copiedRecords = 0;
 
@@ -67,6 +71,7 @@ class DailyTxController extends Controller
                 'amount' => $document->credit,
                 'remarks' => $document->remarks,
                 'user_code' => $document->user_code,
+                'batch_no' => $batch_no,
             ]);
 
             $copiedRecords++;
@@ -84,5 +89,42 @@ class DailyTxController extends Controller
         return datatables()->of($documents)
             ->addIndexColumn()
             ->toJson();
+    }
+
+    public function copyToInvoiceCreation()
+    {
+        $documents = DailyTx::whereIn('doc_type', ['Outgoing Payments', 'AP Invoice'])
+            ->where('will_delete', 0)
+            ->get();
+
+        $lastBatchNumber = InvoiceCreation::max('batch_number');
+        $batch_no = $lastBatchNumber + 1;
+
+        $totalRecords = $documents->count();
+        $copiedRecords = 0;
+
+        foreach ($documents as $document) {
+
+            $exists = InvoiceCreation::where('document_number', $document->doc_num)->first();
+            if ($exists) {
+                continue;
+            }
+
+            InvoiceCreation::create([
+                'create_date' => $document->create_date,
+                'posting_date' => $document->posting_date,
+                'duration' => $document->duration,
+                'document_number' => $document->doc_num,
+                'doc_type' => $document->doc_type == 'Outgoing Payments' ? 'outgoing' : 'invoice',
+                'user_code' => $document->user_code,
+                'batch_number' => $batch_no,
+                'uploaded_by' => $document->uploaded_by,
+                'will_delete' => $document->will_delete,
+            ]);
+
+            $copiedRecords++;
+        }
+
+        return redirect()->back()->with('success', "$copiedRecords out of $totalRecords records copied successfully");
     }
 }

@@ -17,7 +17,8 @@
                     <a href="{{ route('accounting.daily-tx.truncate') }}" id="truncate-tbl"
                         class="btn btn-xs btn-danger float-right mr-2"
                         onclick="return confirm('Are you sure you want to truncate this table?')">Truncate</a>
-                    <a href="" class="btn btn-xs btn-success float-right mr-2">Import to DocCreat-table</a>
+                    <a href="{{ route('accounting.daily-tx.copyToInvoiceCreation') }}"
+                        class="btn btn-xs btn-success float-right mr-2">Copy to DocCreat-table</a>
                     <a href="{{ route('accounting.daily-tx.copyToWtax23') }}"
                         class="btn btn-xs btn-success float-right mr-2">Copy to WTax23-table</a>
                     <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"

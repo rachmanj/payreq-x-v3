@@ -83,7 +83,7 @@ class DocumentCreationController extends Controller
 
     public function data()
     {
-        $invoices = InvoiceCreation::select('document_number', 'create_date', 'posting_date', 'user_code', 'duration')
+        $invoices = InvoiceCreation::select('document_number', 'create_date', 'posting_date', 'user_code', 'duration', 'doc_type')
             ->whereIn('user_code', $this->users)
             ->orderBy('create_date', 'desc')
             ->orderBy('duration', 'desc')
