@@ -54,8 +54,7 @@ class Wtax23Controller extends Controller
                 ->get();
         } else {
             $documents = Wtax23::whereNull('bupot_no')
-                ->orderBy('create_date', 'desc')
-                ->orderBy('posting_date', 'desc')
+                ->orderBy('posting_date', 'asc')
                 ->get();
         }
 
