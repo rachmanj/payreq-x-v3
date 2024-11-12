@@ -59,7 +59,7 @@
                                     <tr>
                                         <th class="pl-3"><small><b>{{ $user['user_code'] }}</b></small></th>
                                     <tr>
-                                        <td><small>Invoice Count</small></td>
+                                        <td><small>Document Count</small></td>
                                         @foreach ($user['data'] as $item)
                                             <td class="text-right"><small>{{ $item['invoice_count'] }}</small></td>
                                         @endforeach

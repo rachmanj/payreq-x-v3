@@ -32,9 +32,9 @@ class CashierDokumenController extends Controller
 
         $file = $request->file('file_upload');
         if ($request->type == 'koran') {
-            $filename = 'koran_' . rand() . '_' . $file->getClientOriginalName();
+            $filename = 'koran_' . rand();
         } else {
-            $filename = 'pcbc_' . rand() . '_' . $file->getClientOriginalName();
+            $filename = 'pcbc_' . rand();
         }
         $file->move(public_path('file_upload'), $filename);
 

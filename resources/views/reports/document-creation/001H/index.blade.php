@@ -55,7 +55,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><small>Invoice Count</small></td>
+                                    <td><small>Document Count</small></td>
                                     @foreach ($year_data['data'] as $item)
                                         <td class="text-right"><small>{{ $item['invoice_count'] }}</small></td>
                                     @endforeach
