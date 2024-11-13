@@ -10,4 +10,9 @@ class Wtax23 extends Model
     use HasFactory;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'create_date' => 'date:Y-m-d',
+        'posting_date' => 'date:Y-m-d',
+    ];
 }

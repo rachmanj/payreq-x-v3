@@ -19,5 +19,7 @@ yarn-error.log
 /database/sql
 /public/file_upload
 /public/invoices
+/public/faktur
+/public/wtax
 
 

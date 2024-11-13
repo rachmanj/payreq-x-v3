@@ -35,6 +35,6 @@ class Faktur extends Model
 
     public function getAttachmentAttribute($value)
     {
-        return $value ? asset('file_upload/' . $value) : null;
+        return $value ? asset('faktur/' . $value) : null;
     }
 }

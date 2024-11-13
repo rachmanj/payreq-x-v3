@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
 use App\Imports\DailyTxImport;
+use App\Imports\Wtax23Import;
 use App\Models\DailyTx;
 use App\Models\InvoiceCreation;
 use App\Models\Wtax23;
@@ -14,7 +15,9 @@ class DailyTxController extends Controller
 {
     public function index()
     {
-        return view('accounting.daily-tx.index');
+        if (!request()->query('page')) return view('accounting.daily-tx.index');
+
+        return view('accounting.daily-tx.wtax23');
     }
 
     public function upload(Request $request)
@@ -80,6 +83,34 @@ class DailyTxController extends Controller
         return redirect()->back()->with('success', "$copiedRecords out of $totalRecords records copied successfully");
     }
 
+    public function uploadWtax23(Request $request)
+    {
+        $request->validate([
+            'file_upload' => 'required|mimes:xls,xlsx',
+        ]);
+
+        $file = $request->file('file_upload');
+        $filename = 'wtax23_' . uniqid() . '_' . $file->getClientOriginalName();
+        $file->move(public_path('invoices'), $filename);
+
+        Excel::import(new Wtax23Import, public_path('invoices/' . $filename));
+
+        // Check for duplicate doc_num and delete them
+        $importedRecords = Wtax23::where('batch_no', Wtax23::max('batch_no'))->get();
+        foreach ($importedRecords as $record) {
+            $exists = Wtax23::where('doc_num', $record->doc_num)->where('id', '!=', $record->id)->first();
+            if ($exists) {
+                $record->delete();
+            }
+        }
+
+        unlink(public_path('invoices/' . $filename));
+
+        $importedCount = $importedRecords->count();
+
+        return redirect()->back()->with('success', "File uploaded successfully. $importedCount records imported.");
+    }
+
     public function data()
     {
         $documents = DailyTx::orderBy('create_date', 'desc')
@@ -126,5 +157,15 @@ class DailyTxController extends Controller
         }
 
         return redirect()->back()->with('success', "$copiedRecords out of $totalRecords records copied successfully");
+    }
+
+    public function wtax23data()
+    {
+        $documents = Wtax23::orderBy('posting_date', 'desc')
+            ->get();
+
+        return datatables()->of($documents)
+            ->addIndexColumn()
+            ->toJson();
     }
 }

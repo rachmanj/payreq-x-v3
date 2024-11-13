@@ -73,12 +73,13 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
     //INVOICE CREATION
     Route::prefix('daily-tx')->name('daily-tx.')->group(function () {
         Route::get('/data', [DailyTxController::class, 'data'])->name('data');
+        Route::get('/wtax23-data', [DailyTxController::class, 'wtax23data'])->name('wtax23data');
         Route::get('/', [DailyTxController::class, 'index'])->name('index');
         Route::get('/detail', [DailyTxController::class, 'detail'])->name('detail');
         Route::get('/by-user', [DailyTxController::class, 'by_user'])->name('by_user');
         Route::post('/upload', [DailyTxController::class, 'upload'])->name('upload');
         Route::get('/truncate', [DailyTxController::class, 'truncate'])->name('truncate');
-        Route::get('/copy-to-wtax23', [DailyTxController::class, 'copyToWtax23'])->name('copyToWtax23');
+        Route::post('/upload-wtax23', [DailyTxController::class, 'uploadWtax23'])->name('uploadWtax23');
         Route::get('/copy-to-inv-creation', [DailyTxController::class, 'copyToInvoiceCreation'])->name('copyToInvoiceCreation');
     });
 

@@ -73,8 +73,9 @@ class FakturController extends Controller
 
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
-            $filename = 'faktur_' . rand() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('file_upload'), $filename);
+            $extension = $file->getClientOriginalExtension();
+            $filename = 'faktur_' . rand() . '.' . $extension;
+            $file->move(public_path('faktur'), $filename);
             $validatedData['attachment'] = $filename;
         }
 

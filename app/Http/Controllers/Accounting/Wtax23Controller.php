@@ -33,7 +33,8 @@ class Wtax23Controller extends Controller
 
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
-            $filename = 'wtax_' . uniqid() . $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $filename = 'wtax_' . uniqid() . '.' . $extension;
             $file->move(public_path('wtax'), $filename);
             $document->filename = $filename;
         }

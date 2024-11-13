@@ -14,27 +14,23 @@
 
             <div class="card">
                 <div class="card-header">
-                    <b>DAILY DOCUMENT CREATION</b> |
-                    <a href="{{ route('accounting.daily-tx.index', ['page' => 'wtax23']) }}">Daily WTax23</a>
-                    <a href="{{ route('accounting.daily-tx.truncate') }}" id="truncate-tbl"
-                        class="btn btn-xs btn-danger float-right mr-2"
-                        onclick="return confirm('Are you sure you want to truncate this table?')">Truncate</a>
-                    <a href="{{ route('accounting.daily-tx.copyToInvoiceCreation') }}"
-                        class="btn btn-xs btn-success float-right mr-2">Copy to DocCreat-table</a>
+                    <a href="{{ route('accounting.daily-tx.index') }}">Daily Document Creation</a> |
+                    <b>DAILY WTAX23</b>
                     <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
                         data-target="#modal-upload"> Upload</button>
                 </div> <!-- /.card-header -->
 
                 <div class="card-body">
-                    <table id="invoice-data" class="table table-bordered table-striped">
+                    <table id="wtax23-data" class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>DocNum</th>
                                 <th>CreateD</th>
                                 <th>PostD</th>
+                                <th>DocNum</th>
                                 <th>DocType</th>
-                                <th>Duration</th>
+                                <th>Amount</th>
+                                <th>Remarks</th>
                                 <th>User</th>
                             </tr>
                         </thead>
@@ -45,7 +41,7 @@
     </div> <!-- /.row -->
 
     {{-- modal upload --}}
-    @include('accounting.daily-tx.modal-upload')
+    @include('accounting.daily-tx.wtax23-upload')
 @endsection
 
 @section('styles')
@@ -71,17 +67,14 @@
 
     <script>
         $(function() {
-            $("#invoice-data").DataTable({
+            $("#wtax23-data").DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('accounting.daily-tx.data') }}',
+                ajax: '{{ route('accounting.daily-tx.wtax23data') }}',
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,
                         searchable: false
-                    },
-                    {
-                        data: 'doc_num'
                     },
                     {
                         data: 'create_date'
@@ -90,10 +83,16 @@
                         data: 'posting_date'
                     },
                     {
+                        data: 'doc_num'
+                    },
+                    {
                         data: 'doc_type'
                     },
                     {
-                        data: 'duration'
+                        data: 'amount'
+                    },
+                    {
+                        data: 'remarks'
                     },
                     {
                         data: 'user_code'

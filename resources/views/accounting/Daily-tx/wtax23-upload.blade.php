@@ -2,17 +2,17 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title"> Upload Daily Tx</h4>
+                <h4 class="modal-title"> Upload Daily WTax 23</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route('accounting.daily-tx.upload') }}" enctype="multipart/form-data" method="POST">
+            <form action="{{ route('accounting.daily-tx.uploadWtax23') }}" enctype="multipart/form-data" method="POST">
                 @csrf
                 <div class="modal-body">
                     <label>Pilih file excel</label>
                     <div class="form-group">
-                        <input type="hidden" name="form_type" value="dailydoc">
+                        <input type="hidden" name="form_type" value="wtax23">
                         <input type="file" name='file_upload' required class="form-control">
                     </div>
                 </div>

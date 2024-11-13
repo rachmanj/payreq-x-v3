@@ -31,10 +31,12 @@ class CashierDokumenController extends Controller
         ]);
 
         $file = $request->file('file_upload');
+        $extension = $file->getClientOriginalExtension();
+
         if ($request->type == 'koran') {
-            $filename = 'koran_' . rand();
+            $filename = 'koran_' . rand() . '.' . $extension;
         } else {
-            $filename = 'pcbc_' . rand();
+            $filename = 'pcbc_' . rand() . '.' . $extension;
         }
         $file->move(public_path('file_upload'), $filename);
 
