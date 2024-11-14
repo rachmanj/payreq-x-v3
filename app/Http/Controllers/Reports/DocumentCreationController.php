@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\UserController;
 use App\Models\InvoiceCreation;
 use Illuminate\Http\Request;
 
@@ -43,10 +44,20 @@ class DocumentCreationController extends Controller
         }
     }
 
+    private function determineProject()
+    {
+        $userRoles = app(UserController::class)->getUserRoles();
+        if (array_intersect(['superadmin', 'admin', 'cashier'], $userRoles)) {
+            return request()->query('project');
+        } else {
+            return auth()->user()->project;
+        }
+    }
+
     public function index()
     {
         $dashboard_data = $this->dashboard_data();
-        $project = request()->query('project');
+        $project = $this->determineProject();
 
         if ($project == '000H') {
             return view('reports.document-creation.000H.index', compact('dashboard_data', 'project'));
@@ -59,7 +70,8 @@ class DocumentCreationController extends Controller
 
     public function detail()
     {
-        $project = request()->query('project');
+        $project = $this->determineProject();
+
         if ($project == '000H') {
             return view('reports.document-creation.000H.detail', compact('project'));
         } elseif ($project == '001H') {
@@ -70,7 +82,7 @@ class DocumentCreationController extends Controller
     public function by_user()
     {
         $dashboard_data = $this->dashboard_data_by_user();
-        $project = request()->query('project');
+        $project = $this->determineProject();
 
         if ($project == '000H') {
             return view('reports.document-creation.000H.by_user', compact('dashboard_data', 'project'));
