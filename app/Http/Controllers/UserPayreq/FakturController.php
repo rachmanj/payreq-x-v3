@@ -115,7 +115,7 @@ class FakturController extends Controller
                 return '<small>' . $faktur->remarks . '</small></br><small>kurs: ' . $faktur->kurs . '</small>';
             })
             ->editColumn('amount', function ($faktur) {
-                return '<small>DPP: ' . number_format($faktur->dpp, 2) . '</small><br><small>PPN: ' . number_format($faktur->ppn, 2) . '</small>';
+                return '<small>' . number_format($faktur->dpp, 2) . '</small><br><small>' . number_format($faktur->ppn, 2) . '</small>';
             })
             ->addColumn('invoice_info', function ($faktur) {
                 $invoice_date = $faktur->invoice_date ? \Carbon\Carbon::parse($faktur->invoice_date)->format('d-M-Y') : null;
@@ -128,7 +128,7 @@ class FakturController extends Controller
             ->addColumn('users', function ($faktur) {
                 $createdByFirstName = explode(' ', $faktur->created_by_name)[0];
                 $responseByFirstName = explode(' ', $faktur->response_by_name)[0];
-                return '<small>Request by: ' . $createdByFirstName . '</small><br><small>Response by: ' . $responseByFirstName . '</small>';
+                return '<small>' . $createdByFirstName . '</small><br><small>' . $responseByFirstName . '</small>';
             })
             ->addIndexColumn()
             ->addColumn('action', 'user-payreqs.fakturs.action')

@@ -31,8 +31,8 @@
                                 <th>Remarks</th>
                                 <th>Invoice</th>
                                 <th>Faktur</th>
-                                <th>Amount <small>(IDR)</small></th>
-                                <th>Users</th>
+                                <th class="text-center">DPP | PPN <small>(IDR)</small></th>
+                                <th>Request | Respond</th>
                                 <th></th>
                             </tr>
                         </thead>
