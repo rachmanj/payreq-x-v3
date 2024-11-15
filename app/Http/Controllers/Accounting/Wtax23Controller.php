@@ -82,9 +82,12 @@ class Wtax23Controller extends Controller
                 $bupotAt = date('d-M-Y H:i', strtotime($document->bupot_at . ' +8 hours'));
                 return '<small>' . $document->bupot_by . '</small><br><small>at ' . $bupotAt . '</small>';
             })
+            ->addColumn('doc_date', function ($document) {
+                return date('d-M-Y', strtotime($document->create_date)) . '<br>' . date('d-M-Y', strtotime($document->posting_date));
+            })
             ->addColumn('action', $action_button)
             ->addIndexColumn()
-            ->rawColumns(['remarks', 'action', 'bupot_by'])
+            ->rawColumns(['remarks', 'action', 'bupot_by', 'doc_date'])
             ->toJson();
     }
 }

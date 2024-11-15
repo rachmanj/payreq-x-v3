@@ -24,8 +24,8 @@
                             <tr>
                                 <th>#</th>
                                 <th>DocNum</th>
-                                <th>CreateD</th>
-                                <th>PostD</th>
+                                <th>CreateD | PostD</th>
+                                <th>Bupot No</th>
                                 <th>Amount</th>
                                 <th>Remarks</th>
                                 <th>BupotBy</th>
@@ -75,10 +75,10 @@
                         data: 'doc_num'
                     },
                     {
-                        data: 'create_date'
+                        data: 'doc_date'
                     },
                     {
-                        data: 'posting_date'
+                        data: 'bupot_no'
                     },
                     {
                         data: 'amount'
@@ -99,6 +99,9 @@
                 columnDefs: [{
                     "targets": [4],
                     "className": "text-right"
+                }, {
+                    "targets": [2],
+                    "className": "text-center"
                 }]
             })
         });

@@ -1,9 +1,11 @@
 <!-- Button to trigger modal -->
-<button type="button" class="btn btn-warning btn-xs" data-toggle="modal" data-target="#updateModal-{{ $model->id }}">
-    Update
+<button type="button" class="btn btn-warning btn-xs" data-toggle="modal" data-target="#updateModal-{{ $model->id }}"
+    title="update bupot">
+    <i class="fas fa-edit"></i>
 </button>
 @if ($model->filename)
-    <a href="{{ asset('wtax/' . $model->filename) }}" class="btn btn-info btn-xs" target="_blank">show</a>
+    <a href="{{ asset('wtax/' . $model->filename) }}" class="btn btn-primary btn-xs" target="_blank" title="show bupot"><i
+            class="fas fa-file-pdf"></i></a>
 @endif
 
 <!-- Modal -->

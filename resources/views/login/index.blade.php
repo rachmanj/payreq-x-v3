@@ -19,7 +19,7 @@
 <body class="hold-transition login-page">
     <div class="login-box">
         <div class="login-logo">
-            <h2><b>Accounting</b> One<small> | v.3.1</small></h2>
+            <h2><b>Payreq</b> System<small> | v.3.1</small></h2>
         </div>
         <!-- /.login-logo -->
         <div class="card">
