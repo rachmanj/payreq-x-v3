@@ -172,8 +172,9 @@ class VerificationJournalController extends Controller
             ->addColumn('r_detail_rows', function ($realization) {
                 return $realization->realizationDetails->count() + 1;
             })
-            ->addColumn('action', 'verifications.journal.tocart-action')
             ->addIndexColumn()
+            ->addColumn('action', 'verifications.journal.tocart-action')
+            ->rawColumns(['action'])
             ->toJson();
     }
 
@@ -194,8 +195,9 @@ class VerificationJournalController extends Controller
             ->addColumn('r_detail_rows', function ($realization) {
                 return $realization->realizationDetails->count() + 1;
             })
-            ->addColumn('action', 'verifications.journal.incart-action')
             ->addIndexColumn()
+            ->addColumn('action', 'verifications.journal.incart-action')
+            ->rawColumns(['action'])
             ->toJson();
     }
 
@@ -275,6 +277,30 @@ class VerificationJournalController extends Controller
         $verification_journal->delete();
 
         return redirect()->route('verifications.journal.index')->with('success', 'Verification Journal deleted successfully');
+    }
+
+    public function moveSelectedToCart(Request $request)
+    {
+        $flag = 'VJTEMP' . auth()->user()->id; // JTEMP = Journal Temporary
+
+        $realizations = Realization::whereIn('id', $request->ids)->get();
+        foreach ($realizations as $realization) {
+            $realization->flag = $flag;
+            $realization->save();
+        }
+
+        return response()->json(['success' => 'Selected items moved to cart successfully.']);
+    }
+
+    public function removeSelectedFromCart(Request $request)
+    {
+        $realizations = Realization::whereIn('id', $request->ids)->get();
+        foreach ($realizations as $realization) {
+            $realization->flag = null;
+            $realization->save();
+        }
+
+        return response()->json(['success' => 'Selected items removed from cart successfully.']);
     }
 
     public function data()

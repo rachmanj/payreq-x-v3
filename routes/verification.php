@@ -28,5 +28,7 @@ Route::prefix('verifications')->name('verifications.')->group(function () {
         Route::get('/{id}/show', [VerificationJournalController::class, 'show'])->name('show');
         Route::get('/{id}/print', [VerificationJournalController::class, 'print'])->name('print');
         Route::delete('/{id}', [VerificationJournalController::class, 'destroy'])->name('destroy');
+        Route::post('/move_selected_to_cart', [VerificationJournalController::class, 'moveSelectedToCart'])->name('move_selected_to_cart');
+        Route::post('/remove_selected_from_cart', [VerificationJournalController::class, 'removeSelectedFromCart'])->name('remove_selected_from_cart');
     });
 });
