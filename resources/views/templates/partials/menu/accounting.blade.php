@@ -27,7 +27,8 @@
         @endhasanyrole
 
         @can('akses_wtax23')
-            <li><a href="{{ route('accounting.wtax23.index') }}" class="dropdown-item">WTax 23</a></li>
+            <li><a href="{{ route('accounting.wtax23.index', ['page' => 'dashboard']) }}" class="dropdown-item">WTax 23</a>
+            </li>
         @endcan
 
         @can('akses_loan_report')

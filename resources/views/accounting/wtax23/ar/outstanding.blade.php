@@ -5,21 +5,22 @@
 @endsection
 
 @section('breadcrumb_title')
-    accounting / PPh23
+    accounting / wtax23
 @endsection
 
 @section('content')
     <div class="row">
         <div class="col-12">
 
+            <x-dashboard-links page="sales" status="outstanding" />
+
             <div class="card">
                 <div class="card-header">
-                    <b>Outstanding</b> |
-                    <a href="{{ route('accounting.wtax23.index', ['status' => 'paid']) }}">Paid</a>
-                </div> <!-- /.card-header -->
-
+                    <b>OUTSTANDING</b> | <a
+                        href="{{ route('accounting.wtax23.index', ['page' => 'sales', 'status' => 'complete']) }}">Complete</a>
+                </div>
                 <div class="card-body">
-                    <table id="invoice-data" class="table table-bordered table-striped">
+                    <table id="sales-outs" class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -48,6 +49,13 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    <style>
+        .card-header .active {
+            font-weight: bold;
+            color: black;
+            text-transform: uppercase;
+        }
+    </style>
 @endsection
 
 @section('scripts')
@@ -62,10 +70,16 @@
 
     <script>
         $(function() {
-            $("#invoice-data").DataTable({
+            $("#sales-outs").DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('accounting.wtax23.data') }}',
+                ajax: {
+                    url: "{{ route('accounting.wtax23.data') }}",
+                    data: {
+                        page: 'sales',
+                        status: 'outstanding'
+                    }
+                },
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,

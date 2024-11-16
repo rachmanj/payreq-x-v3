@@ -85,7 +85,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
 
     // Wtax23
     Route::prefix('wtax23')->name('wtax23.')->group(function () {
-        Route::get('/data', [Wtax23Controller::class, 'data'])->name('data');
+        Route::get('data', [Wtax23Controller::class, 'data'])->name('data');
         Route::get('/', [Wtax23Controller::class, 'index'])->name('index');
         Route::put('/{id}/update', [Wtax23Controller::class, 'update'])->name('update');
     });

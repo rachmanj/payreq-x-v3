@@ -4,18 +4,23 @@ namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
 use App\Models\Wtax23;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class Wtax23Controller extends Controller
 {
     public function index()
     {
+        $page = request('page');
         $status = request('status');
-        if ($status == 'paid') {
-            return view('accounting.wtax23.paid');
-        } else {
-            return view('accounting.wtax23.index');
-        }
+
+        $views = [
+            'dashboard' => 'accounting.wtax23.dashboard',
+            'purchase' => $status == 'outstanding' ? 'accounting.wtax23.ap.outstanding' : 'accounting.wtax23.ap.complete',
+            'default' => $status == 'outstanding' ? 'accounting.wtax23.ar.outstanding' : 'accounting.wtax23.ar.complete'
+        ];
+
+        return view($views[$page] ?? $views['default']);
     }
 
     public function update(Request $request, $id)
@@ -46,18 +51,26 @@ class Wtax23Controller extends Controller
 
     public function data()
     {
-        $status = request('status');
-        $action_button = $status == 'paid' ? 'accounting.wtax23.action_paid' : 'accounting.wtax23.action';
+        $page = request()->query('page');
+        $status = request()->query('status');
 
-        if ($status == 'paid') {
-            $documents = Wtax23::whereNotNull('bupot_no')
-                ->orderBy('updated_at', 'desc')
-                ->get();
+        $query = Wtax23::query();
+
+        if ($page === 'purchase') {
+            $query->where('doc_type', 'out');
+            $action_button = $status === 'outstanding' ? 'accounting.wtax23.ap.action' : 'accounting.wtax23.ap.action_complete';
         } else {
-            $documents = Wtax23::whereNull('bupot_no')
-                ->orderBy('posting_date', 'asc')
-                ->get();
+            $query->where('doc_type', 'in');
+            $action_button = $status === 'outstanding' ? 'accounting.wtax23.ar.action' : 'accounting.wtax23.ar.action_complete';
         }
+
+        if ($status === 'outstanding') {
+            $query->whereNull('bupot_no')->orderBy('posting_date', 'asc');
+        } else {
+            $query->whereNotNull('bupot_no')->orderBy('updated_at', 'desc');
+        }
+
+        $documents = $query->get();
 
         return datatables()->of($documents)
             ->editColumn('amount', function ($document) {
@@ -79,11 +92,13 @@ class Wtax23Controller extends Controller
                 return $diff->format('%a');
             })
             ->editColumn('bupot_by', function ($document) {
-                $bupotAt = date('d-M-Y H:i', strtotime($document->bupot_at . ' +8 hours'));
+                $bupotAt = Carbon::parse($document->bupot_at)->addHours(8)->format('d-M-Y H:i');
                 return '<small>' . $document->bupot_by . '</small><br><small>at ' . $bupotAt . '</small>';
             })
             ->addColumn('doc_date', function ($document) {
-                return date('d-M-Y', strtotime($document->create_date)) . '<br>' . date('d-M-Y', strtotime($document->posting_date));
+                $createDate = Carbon::parse($document->create_date)->format('d-M-Y');
+                $postingDate = Carbon::parse($document->posting_date)->format('d-M-Y');
+                return $createDate . '<br>' . $postingDate;
             })
             ->addColumn('action', $action_button)
             ->addIndexColumn()
