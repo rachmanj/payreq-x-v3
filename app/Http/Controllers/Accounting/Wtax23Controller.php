@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Wtax23;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class Wtax23Controller extends Controller
 {
@@ -14,11 +15,18 @@ class Wtax23Controller extends Controller
         $page = request('page');
         $status = request('status');
 
+        $amount_data = $this->generate_amount_data();
+        $count_data = $this->generate_count_data();
+
         $views = [
             'dashboard' => 'accounting.wtax23.dashboard',
             'purchase' => $status == 'outstanding' ? 'accounting.wtax23.ap.outstanding' : 'accounting.wtax23.ap.complete',
             'default' => $status == 'outstanding' ? 'accounting.wtax23.ar.outstanding' : 'accounting.wtax23.ar.complete'
         ];
+
+        if ($page === 'dashboard') {
+            return view($views[$page], compact('amount_data', 'count_data'));
+        }
 
         return view($views[$page] ?? $views['default']);
     }
@@ -104,5 +112,168 @@ class Wtax23Controller extends Controller
             ->addIndexColumn()
             ->rawColumns(['remarks', 'action', 'bupot_by', 'doc_date'])
             ->toJson();
+    }
+
+    public function generate_amount_data()
+    {
+        $years = DB::table('wtax23s')
+            ->select(DB::raw('DISTINCT YEAR(posting_date) as year'))
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        $months = [
+            '01' => 'Jan',
+            '02' => 'Feb',
+            '03' => 'Mar',
+            '04' => 'Apr',
+            '05' => 'May',
+            '06' => 'Jun',
+            '07' => 'Jul',
+            '08' => 'Aug',
+            '09' => 'Sep',
+            '10' => 'Oct',
+            '11' => 'Nov',
+            '12' => 'Dec'
+        ];
+
+        $data = [];
+
+        foreach ($years as $year) {
+            $yearData = [
+                'year' => $year,
+                'in' => 0,
+                'out' => 0,
+                'data' => []
+            ];
+
+            foreach ($months as $month => $monthName) {
+
+                $monthData = [
+                    'month' => $month,
+                    'month_name' => $monthName,
+                    'in' => number_format($this->sum_amount_monthly($year, $month, 'in') / 1000, 2),
+                    'out' => number_format($this->sum_amount_monthly($year, $month, 'out') / 1000, 2)
+                ];
+
+                $yearData['data'][] = $monthData;
+            }
+
+            // Format jumlah tahunan
+            $yearData['in'] = number_format($this->sum_amount_yearly($year, 'in') / 1000, 2);
+            $yearData['out'] = number_format($this->sum_amount_yearly($year, 'out') / 1000, 2);
+
+            $data[] = $yearData;
+        }
+
+        return $data;
+    }
+
+    public function generate_count_data()
+    {
+        $years = DB::table('wtax23s')
+            ->select(DB::raw('DISTINCT YEAR(create_date) as year'))
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        $months = [
+            '01' => 'Jan',
+            '02' => 'Feb',
+            '03' => 'Mar',
+            '04' => 'Apr',
+            '05' => 'May',
+            '06' => 'Jun',
+            '07' => 'Jul',
+            '08' => 'Aug',
+            '09' => 'Sep',
+            '10' => 'Oct',
+            '11' => 'Nov',
+            '12' => 'Dec'
+        ];
+
+        $data = [];
+
+        foreach ($years as $year) {
+            $yearData = [
+                'year' => $year,
+                'in' => 0,
+                'out' => 0,
+                'data' => []
+            ];
+
+            foreach ($months as $month => $monthName) {
+
+                $out_outstanding = $this->count_outstanding_monthly($year, $month, 'out');
+                $out_complete = $this->count_complete_monthly($year, $month, 'out');
+                $in_outstanding = $this->count_outstanding_monthly($year, $month, 'in');
+                $in_complete = $this->count_complete_monthly($year, $month, 'in');
+
+                $monthData = [
+                    'month' => $month,
+                    'month_name' => $monthName,
+                    'in' => [
+                        'outstanding' => $in_outstanding,
+                        'complete' => $in_complete
+                    ],
+                    'out' => [
+                        'outstanding' => $out_outstanding,
+                        'complete' => $out_complete
+                    ]
+                ];
+
+                $yearData['data'][] = $monthData;
+
+                // Tambahkan jumlah bulanan ke jumlah tahunan
+                $yearData['in'] = $yearData['in'] + $in_outstanding + $in_complete;
+                $yearData['out'] = $yearData['out'] + $out_outstanding + $out_complete;
+            }
+
+            $data[] = $yearData;
+        }
+
+        return $data;
+    }
+
+    public function test_count()
+    {
+        $result = Wtax23::where('doc_type', 'out')
+            ->whereYear('posting_date', 2024)
+            ->sum('amount');
+
+        return number_format($result, 2);
+    }
+
+    private function sum_amount_monthly($year, $month, $doc_type)
+    {
+        return Wtax23::whereYear('posting_date', $year)
+            ->whereMonth('posting_date', $month)
+            ->where('doc_type', $doc_type)
+            ->sum('amount');
+    }
+
+    private function sum_amount_yearly($year, $doc_type)
+    {
+        return Wtax23::whereYear('posting_date', $year)
+            ->where('doc_type', $doc_type)
+            ->sum('amount');
+    }
+
+    private function count_complete_monthly($year, $month, $doc_type)
+    {
+        return Wtax23::whereYear('create_date', $year)
+            ->whereMonth('create_date', $month)
+            ->where('doc_type', $doc_type)
+            ->whereNotNull('bupot_no')
+            ->count();
+    }
+
+    private function count_outstanding_monthly($year, $month, $doc_type)
+    {
+        return Wtax23::whereYear('create_date', $year)
+            ->whereMonth('create_date', $month)
+            ->where('doc_type', $doc_type)
+            ->whereNull('bupot_no')
+            ->count();
     }
 }

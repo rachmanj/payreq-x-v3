@@ -14,12 +14,18 @@
 
             <x-dashboard-links page="purchase" status="outstanding" />
 
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">DASHBOARD</h4>
+            <div class="row">
+                <div class="col-12">
+                    @include('accounting.wtax23.count')
                 </div>
-
             </div>
+
+            <div class="row">
+                <div class="col-12">
+                    @include('accounting.wtax23.amount')
+                </div>
+            </div>
+
         </div>
     </div>
 @endsection
