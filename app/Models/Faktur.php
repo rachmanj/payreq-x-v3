@@ -37,4 +37,13 @@ class Faktur extends Model
     {
         return $value ? asset('faktur/' . $value) : null;
     }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class)->withDefault(
+            [
+                'name' => 'n/a'
+            ]
+        );
+    }
 }

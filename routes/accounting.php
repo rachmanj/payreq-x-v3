@@ -4,6 +4,7 @@ use App\Http\Controllers\Accounting\CustomerController;
 use App\Http\Controllers\Accounting\DailyTxController;
 use App\Http\Controllers\Accounting\GiroController;
 use App\Http\Controllers\Accounting\SapSyncController;
+use App\Http\Controllers\Accounting\VatController;
 use App\Http\Controllers\Accounting\Wtax23Controller;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountingPayreqController;
@@ -81,6 +82,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/truncate', [DailyTxController::class, 'truncate'])->name('truncate');
         Route::post('/upload-wtax23', [DailyTxController::class, 'uploadWtax23'])->name('uploadWtax23');
         Route::get('/copy-to-inv-creation', [DailyTxController::class, 'copyToInvoiceCreation'])->name('copyToInvoiceCreation');
+        Route::get('/copy-to-fakturs', [DailyTxController::class, 'copyToFakturs'])->name('copyToFakturs');
     });
 
     // Wtax23
@@ -88,5 +90,12 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('data', [Wtax23Controller::class, 'data'])->name('data');
         Route::get('/', [Wtax23Controller::class, 'index'])->name('index');
         Route::put('/{id}/update', [Wtax23Controller::class, 'update'])->name('update');
+    });
+
+    Route::prefix('vat')->name('vat.')->group(function () {
+        Route::get('data', [VatController::class, 'data'])->name('data');
+        Route::get('/', [VatController::class, 'index'])->name('index');
+        Route::put('/{id}/purchase-update', [VatController::class, 'purchase_update'])->name('purchase_update');
+        Route::put('/{id}/sales-update', [VatController::class, 'sales_update'])->name('sales_update');
     });
 });

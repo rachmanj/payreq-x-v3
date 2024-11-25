@@ -27,6 +27,8 @@
         @endhasanyrole
 
         @can('akses_wtax23')
+            <li><a href="{{ route('accounting.vat.index', ['page' => 'dashboard']) }}" class="dropdown-item">VAT</a>
+            </li>
             <li><a href="{{ route('accounting.wtax23.index', ['page' => 'dashboard']) }}" class="dropdown-item">WTax 23</a>
             </li>
         @endcan

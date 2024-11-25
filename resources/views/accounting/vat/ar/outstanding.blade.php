@@ -1,43 +1,36 @@
 @extends('templates.main')
 
 @section('title_page')
-    DAILY TX UPLOAD
+    VAT
 @endsection
 
 @section('breadcrumb_title')
-    accounting / daily tx
+    accounting / vat
 @endsection
 
 @section('content')
     <div class="row">
         <div class="col-12">
 
+            <x-vat-links page="purchase" status="outstanding" />
+
             <div class="card">
                 <div class="card-header">
-                    DAILY DOCUMENT CREATION |
-                    <a href="{{ route('accounting.daily-tx.index', ['page' => 'wtax23']) }}">Daily WTax23</a>
-                    <a href="{{ route('accounting.daily-tx.truncate') }}" id="truncate-tbl"
-                        class="btn btn-xs btn-danger float-right mr-2"
-                        onclick="return confirm('Are you sure you want to truncate this table?')">Truncate</a>
-                    <a href="{{ route('accounting.daily-tx.copyToInvoiceCreation') }}"
-                        class="btn btn-xs btn-success float-right mr-2">Copy to DocCreat-table</a>
-                    <a href="{{ route('accounting.daily-tx.copyToFakturs') }}"
-                        class="btn btn-xs btn-success float-right mr-2">Copy to Faktur-table</a>
-                    <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
-                        data-target="#modal-upload"> Upload</button>
-                </div> <!-- /.card-header -->
-
+                    OUTSTANDING | <a
+                        href="{{ route('accounting.vat.index', ['page' => 'sales', 'status' => 'complete']) }}">Complete</a>
+                </div>
                 <div class="card-body">
-                    <table id="invoice-data" class="table table-bordered table-striped">
+                    <table id="sales-outs" class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>DocNum</th>
-                                <th>CreateD</th>
-                                <th>PostD</th>
-                                <th>DocType</th>
-                                <th>Duration</th>
-                                <th>User</th>
+                                <th>Customer</th>
+                                <th>Invoice</th>
+                                <th>Faktur</th>
+                                <th>IDR</th>
+                                <th>Remarks</th>
+                                <th>Days</th>
+                                <td></td>
                             </tr>
                         </thead>
                     </table>
@@ -45,9 +38,6 @@
             </div> <!-- /.card -->
         </div> <!-- /.col -->
     </div> <!-- /.row -->
-
-    {{-- modal upload --}}
-    @include('accounting.daily-tx.modal-upload')
 @endsection
 
 @section('styles')
@@ -59,6 +49,13 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    <style>
+        .card-header .active {
+            /* font-weight: bold; */
+            color: black;
+            text-transform: uppercase;
+        }
+    </style>
 @endsection
 
 @section('scripts')
@@ -73,37 +70,48 @@
 
     <script>
         $(function() {
-            $("#invoice-data").DataTable({
+            $("#sales-outs").DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('accounting.daily-tx.data') }}',
+                ajax: {
+                    url: "{{ route('accounting.vat.data') }}",
+                    data: {
+                        page: 'sales',
+                        status: 'outstanding'
+                    }
+                },
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,
                         searchable: false
                     },
                     {
-                        data: 'doc_num'
+                        data: 'customer'
                     },
                     {
-                        data: 'create_date'
+                        data: 'invoice'
                     },
                     {
-                        data: 'posting_date'
+                        data: 'faktur'
                     },
                     {
-                        data: 'doc_type'
+                        data: 'amount'
                     },
                     {
-                        data: 'duration'
+                        data: 'remarks'
                     },
                     {
-                        data: 'user_code'
+                        data: 'sales_days'
                     },
+                    {
+                        data: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
                 ],
                 fixedHeader: true,
                 columnDefs: [{
-                    "targets": [5],
+                    "targets": [6],
                     "className": "text-right"
                 }]
             })

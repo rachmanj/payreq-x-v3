@@ -15,7 +15,7 @@
             <div class="card">
                 <div class="card-header">
                     <a href="{{ route('accounting.daily-tx.index') }}">Daily Document Creation</a> |
-                    <b>DAILY WTAX23</b>
+                    DAILY WTAX23
                     <button href="#" class="btn btn-xs btn-primary float-right mr-2" data-toggle="modal"
                         data-target="#modal-upload"> Upload</button>
                 </div> <!-- /.card-header -->

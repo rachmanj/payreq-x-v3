@@ -20,7 +20,8 @@
 @endcan
 
 @if ($model->faktur_no != null)
-    <a href="{{ $model->attachment }}" class="btn btn-xs btn-success" target="_blank">show faktur</a>
+    <a href="{{ $model->attachment }}" class="btn btn-xs btn-success" target="_blank" title="show faktur"><i
+            class="fas fa-file-pdf"></i></a>
 @endif
 
 <!-- Modal Edit AR Invoice -->

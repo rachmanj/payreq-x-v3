@@ -12,7 +12,7 @@ class FakturController extends Controller
 {
     public function index()
     {
-        $customers = Customer::orderBy('name', 'asc')->get();
+        $customers = Customer::orderBy('name', 'asc')->where('type', 'customer')->get();
 
         return view('user-payreqs.fakturs.index', compact('customers'));
     }
@@ -29,6 +29,8 @@ class FakturController extends Controller
         $validatedData['remarks'] = $request->remarks;
         $validatedData['created_by'] = auth()->user()->id;
         $validatedData['submit_at'] = now();
+        $validatedData['create_date'] = now()->format('Y-m-d');
+        $validatedData['type'] = 'sales';
         $validatedData['kurs'] = $request->kurs;
 
         Faktur::create($validatedData);
@@ -58,8 +60,6 @@ class FakturController extends Controller
 
     public function update_faktur(Request $request)
     {
-        // return $request->all();
-        // update faktur, field to update are faktur_no, faktur_date, ppn and upload attachment
         $faktur = Faktur::findOrFail($request->faktur_id);
 
         $validatedData = $request->validate([
@@ -96,11 +96,13 @@ class FakturController extends Controller
     {
         $getUserRoles = app(UserController::class)->getUserRoles();
         if (array_intersect(['admin', 'superadmin', 'tax_Officer', 'sales', 'cashier'], $getUserRoles)) {
-            $fakturs = Faktur::orderBy('invoice_date', 'desc')
+            $fakturs = Faktur::where('type', 'sales')
+                ->orderBy('invoice_date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
-            $fakturs = Faktur::orderBy('invoice_date', 'desc')
+            $fakturs = Faktur::where('type', 'sales')
+                ->orderBy('invoice_date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->where('created_by', auth()->user()->id)
                 ->orWhere('response_by', auth()->user()->id)
@@ -122,7 +124,7 @@ class FakturController extends Controller
                 return '<small>No. ' . $faktur->invoice_no . '</small><br><small>Date: ' . $invoice_date . '</small>';
             })
             ->addColumn('faktur_info', function ($faktur) {
-                $faktur_date = $faktur->faktur_date ? \Carbon\Carbon::parse($faktur->faktur_date)->format('d-M-Y') : null;
+                $faktur_date = $faktur->faktur_date ? \Carbon\Carbon::parse($faktur->faktur_date)->format('d-M-Y') : '-';
                 return '<small>No. ' . $faktur->faktur_no . '</small><br><small>Date: ' . $faktur_date . '</small>';
             })
             ->addColumn('users', function ($faktur) {

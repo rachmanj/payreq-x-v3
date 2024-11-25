@@ -34,19 +34,19 @@
                     <tr>
                         <td><small>Purchase</small></td>
                         @foreach ($item['data'] as $sub_item)
-                            <td class="text-right"><small>{{ $sub_item['out']['outstanding'] }}</small>
-                            <td class="text-right"><small>{{ $sub_item['out']['complete'] }}</small>
+                            <td class="text-right"><small>{{ $sub_item['purchase']['outstanding'] }}</small>
+                            <td class="text-right"><small>{{ $sub_item['purchase']['complete'] }}</small>
                             </td>
                         @endforeach
-                        <td class="text-right"><small>{{ $item['out'] }}</small></td>
+                        <td class="text-right"><small>{{ $item['purchase'] }}</small></td>
                     </tr>
                     <tr>
                         <td><small>Sales</small></td>
                         @foreach ($item['data'] as $sub_item)
-                            <td class="text-right"><small>{{ $sub_item['in']['outstanding'] }}</small></td>
-                            <td class="text-right"><small>{{ $sub_item['in']['complete'] }}</small></td>
+                            <td class="text-right"><small>{{ $sub_item['sales']['outstanding'] }}</small></td>
+                            <td class="text-right"><small>{{ $sub_item['sales']['complete'] }}</small></td>
                         @endforeach
-                        <td class="text-right"><small>{{ $item['in'] }}</small></td>
+                        <td class="text-right"><small>{{ $item['sales'] }}</small></td>
                     </tr>
                 </tbody>
             </table>

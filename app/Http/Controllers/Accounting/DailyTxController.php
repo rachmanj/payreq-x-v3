@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Accounting;
 use App\Http\Controllers\Controller;
 use App\Imports\DailyTxImport;
 use App\Imports\Wtax23Import;
+use App\Models\Customer;
 use App\Models\DailyTx;
+use App\Models\Faktur;
 use App\Models\InvoiceCreation;
 use App\Models\Wtax23;
 use Illuminate\Http\Request;
@@ -167,5 +169,58 @@ class DailyTxController extends Controller
         return datatables()->of($documents)
             ->addIndexColumn()
             ->toJson();
+    }
+
+    public function copyToFakturs()
+    {
+        $documents = DailyTx::where('account', '11603001')
+            ->where('debit', '>', 0)
+            ->where('will_delete', 0)
+            ->get();
+
+        $totalRecords = $documents->count();
+        $copiedRecords = 0;
+        $createdVendors = 0;
+        $batch_no = Faktur::max('batch_no') + 1;
+
+        foreach ($documents as $document) {
+            $exists = Faktur::where('doc_num', $document->doc_num)->first();
+            if ($exists) {
+                continue;
+            }
+
+            $vendor = Customer::firstOrCreate([
+                'code' => $document->vendor_code,
+            ], [
+                'name' => $document->vendor_name,
+                'type' => 'vendor',
+            ]);
+
+            // Check if the vendor was newly created
+            if ($vendor->wasRecentlyCreated) {
+                $createdVendors++;
+            }
+
+            Faktur::create([
+                'customer_id' => $vendor->id,
+                'create_date' => $document->create_date,
+                'posting_date' => $document->posting_date,
+                'doc_num' => $document->doc_num,
+                'type' => 'purchase',
+                'account' => '11603001',
+                'faktur_no' => $document->faktur_no,
+                'faktur_date' => $document->faktur_date,
+                'dpp' => $document->debit / 0.11,
+                'ppn' => $document->debit,
+                'remarks' => $document->remarks,
+                'user_code' => $document->user_code,
+                'batch_no' => $batch_no,
+                'uploaded_by' => $document->uploaded_by,
+            ]);
+
+            $copiedRecords++;
+        }
+
+        return redirect()->back()->with('success', "$copiedRecords out of $totalRecords records copied successfully. $createdVendors new vendor records created.");
     }
 }
