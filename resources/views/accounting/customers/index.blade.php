@@ -27,7 +27,9 @@
                         <thead>
                             <tr>
                                 <th>#</th>
+                                <th>Code</th>
                                 <th>Name</th>
+                                <th>Type</th>
                                 <th>Project</th>
                                 <th></th>
                             </tr>
@@ -131,7 +133,13 @@
                         searchable: false
                     },
                     {
+                        data: 'code'
+                    },
+                    {
                         data: 'name'
+                    },
+                    {
+                        data: 'type'
                     },
                     {
                         data: 'project'

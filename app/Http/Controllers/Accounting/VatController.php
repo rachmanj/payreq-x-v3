@@ -190,8 +190,8 @@ class VatController extends Controller
 
                 $purchase_outstanding = $this->count_outstanding_monthly($year, $month, 'purchase');
                 $purchase_complete = $this->count_complete_monthly($year, $month, 'purchase');
-                $sales_outstanding = $this->count_outstanding_monthly($year, $month, 'sales');
-                $sales_complete = $this->count_complete_monthly($year, $month, 'sales');
+                $sales_outstanding = $this->count_outstanding_sales_monthly($year, $month, 'sales');
+                $sales_complete = $this->count_complete_sales_monthly($year, $month, 'sales');
 
                 $monthData = [
                     'month' => $month,
@@ -291,7 +291,7 @@ class VatController extends Controller
     {
         $sales = $this->sum_amount_monthly($year, $month, 'sales');
         $purchase = $this->sum_amount_monthly($year, $month, 'purchase');
-        return $sales - $purchase;
+        return $purchase - $sales;
     }
 
     private function sum_amount_yearly($year, $type)
@@ -305,7 +305,7 @@ class VatController extends Controller
     {
         $sales = $this->sum_amount_yearly($year, 'sales');
         $purchase = $this->sum_amount_yearly($year, 'purchase');
-        return $sales - $purchase;
+        return $purchase - $sales;
     }
 
     private function count_complete_monthly($year, $month, $type)
@@ -323,6 +323,24 @@ class VatController extends Controller
             ->whereMonth('create_date', $month)
             ->where('type', $type)
             ->whereNull('attachment')
+            ->count();
+    }
+
+    private function count_outstanding_sales_monthly($year, $month, $type)
+    {
+        return Faktur::whereYear('create_date', $year)
+            ->whereMonth('create_date', $month)
+            ->where('type', $type)
+            ->whereNull('doc_num')
+            ->count();
+    }
+
+    private function count_complete_sales_monthly($year, $month, $type)
+    {
+        return Faktur::whereYear('create_date', $year)
+            ->whereMonth('create_date', $month)
+            ->where('type', $type)
+            ->whereNotNull('doc_num')
             ->count();
     }
 }

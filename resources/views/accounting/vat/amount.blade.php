@@ -22,21 +22,21 @@
                 </thead>
                 <tbody>
                     <tr style="border-top: 3px solid #000;">
-                        <td><small>Sales</small></td>
-                        @foreach ($item['data'] as $sub_item)
-                            <td class="text-right"><small>{{ $sub_item['sales'] }}</small></td>
-                        @endforeach
-                        <td class="text-right"><small>{{ $item['sales'] }}</small></td>
-                    </tr>
-                    <tr>
                         <td><small>Purchase</small></td>
                         @foreach ($item['data'] as $sub_item)
                             <td class="text-right"><small>{{ $sub_item['purchase'] }}</small></td>
                         @endforeach
                         <td class="text-right"><small>{{ $item['purchase'] }}</small></td>
                     </tr>
+                    <tr>
+                        <td><small>Sales</small></td>
+                        @foreach ($item['data'] as $sub_item)
+                            <td class="text-right"><small>{{ $sub_item['sales'] }}</small></td>
+                        @endforeach
+                        <td class="text-right"><small>{{ $item['sales'] }}</small></td>
+                    </tr>
                     <tr style="border-top: 3px solid #000;">
-                        <td><small>Difference</small></td>
+                        <td><small>Variance</small></td>
                         @foreach ($item['data'] as $sub_item)
                             <td class="text-right"><small>{{ $sub_item['difference'] }}</small></td>
                         @endforeach
