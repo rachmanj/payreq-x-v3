@@ -1,28 +1,25 @@
 @extends('templates.main')
 
 @section('title_page')
-    REKENING KORAN
+    Rekening Koran
 @endsection
 
 @section('breadcrumb_title')
-    cashier / rek koran
+    cashier / koran / upload
 @endsection
 
 @section('content')
     <div class="row">
         <div class="col-12">
 
+            <x-koran-links page="dashboard" />
+
             <div class="card">
                 <div class="card-header">
-                    <a href="#" class="text-dark">REKENING KORAN</a> @can('upload_pcbc')
-                        | <a href="{{ route('cashier.dokumen.index', ['page' => 'pcbc']) }}">PCBC</a>
-                    @endcan
                     @can('upload_dokumen')
                         <button href="#" class="btn btn-xs btn-success float-right" data-toggle="modal"
                             data-target="#modal-upload"><i class="fas fa-upload"></i> Upload RK</button>
                     @endcan
-                    <a href="{{ route('reports.dokumen.index', ['type' => 'koran', 'year' => date('Y')]) }}"
-                        class="float-right mr-2">Rek Koran Report</a>
                 </div> <!-- /.card-header -->
 
                 <div class="card-body">
@@ -42,9 +39,8 @@
                 </div> <!-- /.card-body -->
             </div> <!-- /.card -->
 
-
-        </div> <!-- /.col -->
-    </div> <!-- /.row -->
+        </div>
+    </div>
 
     {{-- Modal create --}}
     <div class="modal fade" id="modal-upload">
@@ -56,7 +52,7 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form action="{{ route('cashier.dokumen.upload') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('cashier.koran.upload') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
 
@@ -114,6 +110,14 @@
     </div>
 @endsection
 
+<style>
+    .card-header .active {
+        /* font-weight: bold; */
+        color: black;
+        text-transform: uppercase;
+    }
+</style>
+
 @section('styles')
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
@@ -140,7 +144,7 @@
             $("#koran").DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('cashier.dokumen.data') . '?type=koran' }}',
+                ajax: '{{ route('cashier.koran.data') }}',
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,

@@ -1,33 +1,26 @@
 @extends('templates.main')
 
 @section('title_page')
-    REKENING KORAN
+    Rekening Koran
 @endsection
 
 @section('breadcrumb_title')
-    report / rek-koran
+    cashier / koran / dashboard
 @endsection
 
 @section('content')
     <div class="row">
         <div class="col-12">
 
-            <div class="card">
-                <div class="card-header">
-                    <a href="{{ route('reports.index') }}" class="btn btn-xs btn-primary float-right ml-2"><i
-                            class="fas fa-arrow-left"></i> Back to Index</a>
-                    {{-- <a href="{{ route('cashier.dokumen.index') }}" class="btn btn-xs btn-success float-right"> Upload
-                        Dokumen</a> --}}
-                </div>
-            </div>
+            <x-koran-links page="dashboard" />
 
             <div class="card">
                 <div class="card-header text-center">
                     <h3 class="card-title"><b>{{ $year }}</b></h3>
                     <a
-                        href="{{ route('reports.dokumen.index', ['type' => 'koran', 'year' => date('Y')]) }}">{{ date('Y') }}</a>
+                        href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => date('Y')]) }}">{{ date('Y') }}</a>
                     |
-                    <a href="{{ route('reports.dokumen.index', ['type' => 'koran', 'year' => 2023]) }}">2023</a>
+                    <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => 2023]) }}">2023</a>
                 </div>
 
                 <div class="card-body p-0">
@@ -78,3 +71,11 @@
         </div> <!-- /.col -->
     </div> <!-- /.row -->
 @endsection
+
+<style>
+    .card-header .active {
+        /* font-weight: bold; */
+        color: black;
+        text-transform: uppercase;
+    }
+</style>

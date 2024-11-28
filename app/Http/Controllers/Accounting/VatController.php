@@ -16,7 +16,6 @@ class VatController extends Controller
         $status = request('status');
 
         $count_data = $this->generate_count_data();
-        // $amount_data = 0;
         $amount_data = $this->generate_amount_data();
 
         $views = [
