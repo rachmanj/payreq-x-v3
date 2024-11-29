@@ -21,7 +21,7 @@
             <li><a href="{{ route('cash-journals.index') }}" class="dropdown-item">Cash Journal</a></li>
         @endcan
         @can('akses_pcbc')
-            <li><a href="{{ route('cashier.pcbc.index') }}" class="dropdown-item">PCBC</a></li>
+            <li><a href="{{ route('cashier.pcbc.index', ['page' => 'dashboard']) }}" class="dropdown-item">PCBC</a></li>
         @endcan
         @can('akses_koran')
             <li><a href="{{ route('cashier.koran.index', ['page' => 'dashboard']) }}" class="dropdown-item">Rekening

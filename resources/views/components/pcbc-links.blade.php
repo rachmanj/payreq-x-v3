@@ -8,5 +8,8 @@
             class="{{ request()->get('page') == 'upload' ? 'active' : '' }}">
             Upload
         </a> |
+        <a href="#" class="{{ request()->get('page') == 'form' ? 'active' : '' }}">
+            Form
+        </a>
     </div> <!-- /.card-header -->
 </div> <!-- /.card -->

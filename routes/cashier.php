@@ -5,6 +5,7 @@ use App\Http\Controllers\Cashier\BilyetTempController;
 use App\Http\Controllers\Cashier\CashierDokumenController;
 use App\Http\Controllers\Cashier\CashierModalController;
 use App\Http\Controllers\Cashier\KoranController;
+use App\Http\Controllers\Cashier\PcbcController;
 use App\Http\Controllers\Cashier\TransaksiController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CashierApprovedController;
@@ -64,10 +65,12 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
     // PCBC
     Route::prefix('pcbc')->name('pcbc.')->group(function () {
-        Route::get('/data', [CashOpnameController::class, 'data'])->name('data');
-        Route::get('/{id}/print', [CashOpnameController::class, 'print'])->name('print');
+        Route::get('/data', [PcbcController::class, 'data'])->name('data');
+        Route::get('/', [PcbcController::class, 'index'])->name('index');
+        Route::post('/upload', [PcbcController::class, 'upload'])->name('upload');
+        Route::delete('/{id}/destroy', [PcbcController::class, 'destroy'])->name('destroy');
+        Route::put('/{id}/update', [PcbcController::class, 'update'])->name('update');
     });
-    Route::resource('pcbc', CashOpnameController::class);
 
     // REKENING KORAN
     Route::prefix('koran')->name('koran.')->group(function () {

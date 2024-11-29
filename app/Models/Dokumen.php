@@ -23,7 +23,7 @@ class Dokumen extends Model
 
     public function getFilename1Attribute($value)
     {
-        return asset('file_upload/' . $value);
+        return asset('dokumens/' . $value);
     }
 
     public function getFilename2Attribute($value)

@@ -6,6 +6,8 @@ use App\Http\Controllers\Accounting\InvoiceCreationController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Accounting\VatController;
 use App\Http\Controllers\Accounting\Wtax23Controller;
+use App\Http\Controllers\Cashier\KoranController;
+use App\Http\Controllers\Cashier\PcbcController;
 use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\CashierRekapAdvanceController;
 use App\Http\Controllers\Reports\DocumentCreationController;
@@ -38,7 +40,9 @@ class TestController extends Controller
         // $test = app(ReportDokumenController::class)->koran_dashboard_data();
         // $test = app(DocumentCreationController::class)->generate_dashboard_data_by_user(['2024'], ['08', '09', '10'], ['accjkt1', 'accjkt2', 'accjkt3', 'accjkt4', 'accjkt5']);
         // $test = app(ReportDokumenController::class)->check_koran_files(2024);
-        $test = app(VatController::class)->generate_amount_data();
+        $test = app(PcbcController::class)->check_pcbc_files(2024);
+        // $test = app(PcbcController::class)->getProjects(['superadmin']);
+        // $test = app(KoranController::class)->check_koran_files('2024');
         // $test2 = app(Wtax23Controller::class)->test_count();
         // $test = $this->getDNCRabs();
 

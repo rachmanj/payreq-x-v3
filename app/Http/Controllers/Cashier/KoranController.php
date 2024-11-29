@@ -68,7 +68,7 @@ class KoranController extends Controller
     {
         $extension = $file->getClientOriginalExtension();
         $filename = 'koran_' . rand() . '.' . $extension;
-        $file->move(public_path('file_upload'), $filename);
+        $file->move(public_path('dokumens'), $filename);
         return $filename;
     }
 

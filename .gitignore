@@ -21,4 +21,5 @@ yarn-error.log
 /public/invoices
 /public/faktur
 /public/wtax
+/public/dokumens
 /database/seeders/sql
