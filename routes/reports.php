@@ -83,6 +83,8 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/{id}/show', [AnggaranController::class, 'show'])->name('show');
         Route::get('/{id}/edit', [AnggaranController::class, 'edit'])->name('edit');
         Route::post('/update', [AnggaranController::class, 'update'])->name('update');
+        Route::post('/update_many', [AnggaranController::class, 'update_many'])->name('update_many');
+        Route::post('/activate_many', [AnggaranController::class, 'activate_many'])->name('activate_many'); // Tambahkan route ini
         Route::get('/recalculate', [AnggaranController::class, 'recalculate'])->name('recalculate');
     });
 

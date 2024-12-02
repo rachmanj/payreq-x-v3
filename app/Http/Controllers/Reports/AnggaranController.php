@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Models\Anggaran;
 use App\Models\Payreq;
 use App\Models\PeriodeAnggaran;
@@ -121,6 +120,9 @@ class AnggaranController extends Controller
         }
 
         return datatables()->of($anggarans)
+            ->addColumn('checkbox', function ($anggaran) {
+                return '<input type="checkbox" name="id[]" value="' . $anggaran->id . '">';
+            })
             ->editColumn('nomor', function ($anggaran) {
                 $nomor = '<a href="' . route('reports.anggaran.show', $anggaran->id) . '"><small>' . $anggaran->nomor . '</small></a>';
                 $rab_no = $anggaran->rab_no ? '<a href="' . route('reports.anggaran.show', $anggaran->id) . '"><small>' . $anggaran->rab_no . ' <br> ' . date('d-M-Y', strtotime($anggaran->date)) . '</small></a>' : '-';
@@ -159,7 +161,7 @@ class AnggaranController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'reports.anggaran.action')
-            ->rawColumns(['action', 'nomor', 'description', 'progres', 'rab_project', 'creator', 'periode'])
+            ->rawColumns(['checkbox', 'action', 'nomor', 'description', 'progres', 'rab_project', 'creator', 'periode'])
             ->toJson();
     }
 
@@ -218,5 +220,27 @@ class AnggaranController extends Controller
         } else {
             return 'bg-success';
         }
+    }
+
+    public function update_many(Request $request)
+    {
+        $ids = $request->input('id', []);
+
+        if (count($ids) > 0) {
+            Anggaran::whereIn('id', $ids)->update(['is_active' => 0]);
+        }
+
+        return redirect()->back()->with('success', 'Selected records have been inactivated.');
+    }
+
+    public function activate_many(Request $request)
+    {
+        $ids = $request->input('id', []);
+
+        if (count($ids) > 0) {
+            Anggaran::whereIn('id', $ids)->update(['is_active' => 1]);
+        }
+
+        return redirect()->back()->with('success', 'Selected records have been activated.');
     }
 }

@@ -1,51 +1,55 @@
 @extends('templates.main')
 
 @section('title_page')
-    RAB
+    Anggaran
 @endsection
 
 @section('breadcrumb_title')
-    payreqs / rab
+    reports / anggaran
 @endsection
 
 @section('content')
     <div class="row">
         <div class="col-12">
-
             <div class="card">
                 <div class="card-header">
-
                     <b>ACTIVE</b> | <a href="{{ route('reports.anggaran.index', ['status' => 'inactive']) }}">In-active</a>
                     <a href="{{ route('reports.index') }}" class="btn btn-xs btn-primary float-right"><i
                             class="fas fa-arrow-left"></i> Back to Index</a>
                     @can('recalculate_release')
-                        <a href="{{ route('reports.anggaran.recalculate') }}" class="btn btn-xs btn-warning float-right mr-2"
+                        <a href="{{ route('reports.anggaran.recalculate') }}" class="btn btn-xs btn-warning float-right mx-2"
                             onclick="return confirm('Are you sure you want to recalculate anggaran release?')">Recalc
                             Release</a>
                     @endcan
-
-                </div> <!-- /.card-header -->
-
+                    <button id="inactivate-many" class="btn btn-warning btn-xs float-right">Inactivate Many</button>
+                </div>
                 <div class="card-body">
-                    <table id="anggarans" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Nomor</th>
-                                <th><small>Creator</small></th>
-                                <td><small>For<br>Usage<br>Type</small></td>
-                                <th>Description</th>
-                                <td><small>P Anggaran<br>P OFR<br>is active</small></td>
-                                <th>Budget IDR</th>
-                                <th>Progres</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                    </table>
-                </div> <!-- /.card-body -->
-            </div> <!-- /.card -->
-        </div> <!-- /.col -->
-    </div> <!-- /.row -->
+                    <form id="form-inactivate-many" action="{{ route('reports.anggaran.update_many') }}" method="POST">
+                        @csrf
+                        <table id="anggarans" class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="select-all"></th>
+                                    <th>No</th>
+                                    <th>Nomor</th>
+                                    <th>Creator</th>
+                                    <th>RAB Project</th>
+                                    <th>Description</th>
+                                    <th>Periode</th>
+                                    <th>Budget</th>
+                                    <th>Progres</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- DataTables will populate this -->
+                            </tbody>
+                        </table>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('styles')
@@ -66,11 +70,19 @@
 
     <script>
         $(function() {
-            $("#anggarans").DataTable({
+            var table = $("#anggarans").DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: '{{ route('reports.anggaran.data', ['status' => 'active']) }}',
                 columns: [{
+                        data: 'checkbox',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, full, meta) {
+                            return '<input type="checkbox" name="id[]" value="' + full.id + '">';
+                        }
+                    },
+                    {
                         data: 'DT_RowIndex',
                         orderable: false,
                         searchable: false
@@ -103,11 +115,45 @@
                     },
                 ],
                 fixedHeader: true,
-                columnDefs: [{
-                    "targets": [0, 6],
-                    "className": "text-right"
-                }, ]
-            })
+                order: [
+                    [1, 'asc']
+                ]
+            });
+
+            // Handle click on "Select all" control
+            $('#select-all').on('click', function() {
+                // Check/uncheck all checkboxes in the table
+                var rows = table.rows({
+                    'search': 'applied'
+                }).nodes();
+                $('input[type="checkbox"]', rows).prop('checked', this.checked);
+            });
+
+            // Handle click on checkbox to set state of "Select all" control
+            $('#anggarans tbody').on('change', 'input[type="checkbox"]', function() {
+                // If checkbox is not checked
+                if (!this.checked) {
+                    var el = $('#select-all').get(0);
+                    // If "Select all" control is checked and has 'indeterminate' property
+                    if (el && el.checked && ('indeterminate' in el)) {
+                        // Set visual state of "Select all" control
+                        // as 'indeterminate'
+                        el.indeterminate = true;
+                    }
+                }
+            });
+
+            // Handle click on "Inactivate Many" button
+            $('#inactivate-many').on('click', function() {
+                if (!confirm('Apakah yakin akan merubah status anggaran terpilih?')) {
+                    return false;
+                }
+
+                var form = $('#form-inactivate-many');
+
+                // Submit form
+                form.submit();
+            });
         });
     </script>
 @endsection
