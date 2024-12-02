@@ -78,7 +78,8 @@
                                 <label for="giro_id">Giro</label>
                                 <select name="giro_id" id="giro_id" class="form-control select2bs4">
                                     @foreach ($giros as $giro)
-                                        <option value="{{ $giro->id }}">{{ $giro->acc_no . ' - ' . $giro->acc_name }}
+                                        <option value="{{ $giro->id }}">
+                                            {{ $giro->acc_no . ' - ' . $giro->project . ' - ' . $giro->acc_name }}
                                         </option>
                                     @endforeach
                                 </select>
