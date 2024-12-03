@@ -163,7 +163,7 @@ class DailyTxController extends Controller
 
     public function wtax23data()
     {
-        $documents = Wtax23::orderBy('posting_date', 'desc')
+        $documents = Wtax23::orderBy('create_date', 'desc')
             ->get();
 
         return datatables()->of($documents)

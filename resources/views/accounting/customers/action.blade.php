@@ -12,7 +12,7 @@
 
 {{-- Modal create --}}
 <div class="modal fade" id="modal-edit-{{ $model->id }}">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title"> Update Customer Account</h4>
@@ -32,6 +32,34 @@
                                     class="form-control @error('customer_name') is-invalid @enderror"
                                     value="{{ old('customer_name', $model->name) }}">
                                 @error('customer_name')
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label for="type">Type</label>
+                                <select name="type" id="type" class="form-control">
+                                    <option value="vendor"
+                                        {{ old('type', $model->type) == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                    <option value="customer"
+                                        {{ old('type', $model->type) == 'customer' ? 'selected' : '' }}>Customer
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label for="sap_code">SAP Code</label>
+                                <input name="sap_code" id="sap_code"
+                                    class="form-control @error('sap_code') is-invalid @enderror"
+                                    value="{{ old('sap_code', $model->code) }}">
+                                @error('sap_code')
                                     <div class="invalid-feedback">
                                         {{ $message }}
                                     </div>

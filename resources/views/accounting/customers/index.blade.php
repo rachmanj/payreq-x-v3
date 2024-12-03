@@ -59,8 +59,33 @@
                                 <div class="form-group">
                                     <label for="name">Customer Name</label>
                                     <input name="name" id="name"
-                                        class="form-control @error('name') is-invalid @enderror">
+                                        class="form-control @error('name') is-invalid @enderror"
+                                        value="{{ old('name') }}">
                                     @error('name')
+                                        <div class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="type">Type</label>
+                                    <select name="type" id="type" class="form-control">
+                                        <option value="customer">Customer</option>
+                                        <option value="vendor">Vendor</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="sap_code">SAP Code</label>
+                                    <input name="sap_code" id="sap_code"
+                                        class="form-control @error('sap_code') is-invalid @enderror">
+                                    @error('sap_code')
                                         <div class="invalid-feedback">
                                             {{ $message }}
                                         </div>
@@ -77,10 +102,12 @@
                                         class="form-control select2bs4 @error('project') is-invalid @enderror">
                                         <option value="">Select Project</option>
                                         @foreach (App\Models\Project::orderBy('code', 'asc')->get() as $project)
-                                            <option value="{{ $project->code }}">{{ $project->code }}</option>
+                                            <option value="{{ $project->code }}"
+                                                {{ old('project') == $project->code ? 'selected' : '' }}>
+                                                {{ $project->code }}</option>
                                         @endforeach
                                     </select>
-                                    @error('project_id')
+                                    @error('project')
                                         <div class="invalid-feedback">
                                             {{ $message }}
                                         </div>

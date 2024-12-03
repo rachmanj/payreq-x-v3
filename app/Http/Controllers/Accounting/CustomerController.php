@@ -18,11 +18,14 @@ class CustomerController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'project' => 'required|string|max:255',
+            'sap_code' => 'required|string|max:255|unique:customers,code',
         ]);
 
         Customer::create([
             'name' => $request->name,
             'project' => $request->project,
+            'code' => $request->sap_code,
+            'type' => $request->type,
         ]);
 
         return redirect()->route('accounting.customers.index')->with('success', 'Customer created successfully.');
@@ -33,12 +36,15 @@ class CustomerController extends Controller
         $request->validate([
             'customer_name' => 'required|string|max:255',
             'project' => 'required|string|max:255',
+            'sap_code' => 'required|string|max:255|unique:customers,code,' . $id,
         ]);
 
         $customer = Customer::findOrFail($id);
         $customer->update([
             'name' => $request->customer_name,
             'project' => $request->project,
+            'code' => $request->sap_code,
+            'type' => $request->type,
         ]);
 
         return redirect()->route('accounting.customers.index')->with('success', 'Customer updated successfully.');
