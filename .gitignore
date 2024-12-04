@@ -23,3 +23,5 @@ yarn-error.log
 /public/wtax
 /public/dokumens
 /database/seeders/sql
+api.rest
+
