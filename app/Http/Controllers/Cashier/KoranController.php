@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class KoranController extends Controller
 {
-    protected $allowedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo'];
+    protected $allowedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo', 'corsec'];
 
     public function index()
     {
@@ -116,7 +116,7 @@ class KoranController extends Controller
     {
         $userRoles = app(UserController::class)->getUserRoles();
         $giroIdsExlcude = [];
-        $allowedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo'];
+        $allowedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo', 'corsec'];
 
         $query = Giro::select('id', 'acc_no', 'acc_name', 'project')
             ->whereNotIn('id', $giroIdsExlcude);

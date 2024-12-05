@@ -13,7 +13,8 @@
         @endcan
         <li class="dropdown-divider"></li>
         @can('akses_dokumen_upload')
-            <li><a href="{{ route('cashier.dokumen.index') }}" class="dropdown-item">Upload Dokumen</a></li>
+            <li><a href="{{ route('cashier.koran.index', ['page' => 'dashboard']) }}" class="dropdown-item">Rekening
+                    Koran</a></li>
         @endcan
         @can('akses_reports')
             <li><a href="{{ route('reports.index') }}" class="dropdown-item">Reports</a></li>
