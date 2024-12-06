@@ -20,8 +20,8 @@
                         <a href="{{ route('reports.anggaran.recalculate') }}" class="btn btn-xs btn-warning float-right mx-2"
                             onclick="return confirm('Are you sure you want to recalculate anggaran release?')">Recalc
                             Release</a>
+                        <button id="inactivate-many" class="btn btn-warning btn-xs float-right">Inactivate Many</button>
                     @endcan
-                    <button id="inactivate-many" class="btn btn-warning btn-xs float-right">Inactivate Many</button>
                 </div>
                 <div class="card-body">
                     <form id="form-inactivate-many" action="{{ route('reports.anggaran.update_many') }}" method="POST">
