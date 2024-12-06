@@ -28,7 +28,7 @@ class BilyetTempController extends Controller
         $import_button = !$exist || $giro_id_null > 0 || !empty($duplikasi) || !empty($duplikasi_bilyet) ? 'disabled' : null;
         $empty_button = $exist ? null : 'disabled';
 
-        return view('cashier.bilyets.upload', compact('import_button', 'empty_button'));
+        return view('cashier.bilyets.index', compact('import_button', 'empty_button'));
     }
 
     public function upload(Request $request)
@@ -53,14 +53,14 @@ class BilyetTempController extends Controller
         unlink(public_path('file_upload/' . $filename));
 
         // return to the index page with success message
-        return redirect()->route('cashier.bilyet-temps.index')->with('success', 'Bilyet uploaded successfully.');
+        return redirect()->route('cashier.bilyets.index', ['page' => 'upload'])->with('success', 'Bilyet uploaded successfully.');
     }
 
     public function truncate()
     {
         BilyetTemp::where('created_by', auth()->user()->id)->delete();
 
-        return redirect()->route('cashier.bilyet-temps.index')->with('success', 'Bilyet truncated successfully.');
+        return redirect()->route('cashier.bilyets.index', ['page' => 'upload'])->with('success', 'Bilyet truncated successfully.');
     }
 
     public function update(Request $request, $id)
@@ -77,14 +77,14 @@ class BilyetTempController extends Controller
             'remarks' => $request->remarks,
         ]);
 
-        return redirect()->route('cashier.bilyet-temps.index')->with('success', 'Bilyet updated successfully.');
+        return redirect()->route('cashier.bilyets.index', ['page' => 'upload'])->with('success', 'Bilyet updated successfully.');
     }
 
     public function destroy($id)
     {
         BilyetTemp::destroy($id);
 
-        return redirect()->route('cashier.bilyet-temps.index')->with('success', 'Bilyet deleted successfully.');
+        return redirect()->route('cashier.bilyets.index', ['page' => 'upload'])->with('success', 'Bilyet deleted successfully.');
     }
 
     public function data()

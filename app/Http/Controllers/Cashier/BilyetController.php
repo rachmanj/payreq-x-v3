@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cashier;
 
 use App\Exports\BilyetTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Reports\BilyetController as ReportsBilyetController;
 use App\Http\Controllers\UserController;
 use App\Models\Bilyet;
 use App\Models\BilyetTemp;
@@ -13,8 +14,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class BilyetController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $page = $request->query('page', 'dashboard');
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (array_intersect(['admin', 'superadmin'], $userRoles)) {
@@ -23,24 +25,40 @@ class BilyetController extends Controller
             $giros = Giro::where('project', auth()->user()->project)->get();
         }
 
-        $onhands = Bilyet::where('status', 'onhand')->orderBy('prefix', 'asc')->orderBy('nomor', 'asc')->get();
+        $views = [
+            'dashboard' => 'cashier.bilyets.dashboard',
+            'onhand' => 'cashier.bilyets.onhand',
+            'release' => 'cashier.bilyets.release',
+            'cair' => 'cashier.bilyets.cair',
+            'void' => 'cashier.bilyets.void',
+            'upload' => 'cashier.bilyets.upload',
+        ];
 
-        return view('cashier.bilyets.index', compact('giros', 'onhands'));
-    }
+        if ($page === 'dashboard') {
+            $data = app(ReportsBilyetController::class)->dashboardData();
+            return view($views[$page], compact('data'));
+        } elseif ($page === 'onhand') {
+            $onhands = Bilyet::where('status', 'onhand')->orderBy('prefix', 'asc')->orderBy('nomor', 'asc')->get();
+            return view($views[$page], compact('giros', 'onhands'));
+        } elseif ($page === 'upload') {
+            // count giro_id that is null
+            $giro_id_null = BilyetTemp::where('giro_id', null)->where('created_by', auth()->user()->id)->count();
 
-    public function release_index()
-    {
-        return view('cashier.bilyets.release');
-    }
+            // cek data exist atau ngga
+            $exist = BilyetTemp::where('created_by', auth()->user()->id)->exists();
 
-    public function cair_index()
-    {
-        return view('cashier.bilyets.cair');
-    }
+            // cek duplikasi dan duplikasi tabel tujuan
+            $duplikasi = app(BilyetTempController::class)->cekDuplikasi();
+            $duplikasi_bilyet = app(BilyetTempController::class)->cekDuplikasiTabelTujuan();
 
-    public function void_index()
-    {
-        return view('cashier.bilyets.void');
+            // jika ada giro_id yang null atau duplikasi, disable button import
+            $import_button = !$exist || $giro_id_null > 0 || !empty($duplikasi) || !empty($duplikasi_bilyet) ? 'disabled' : null;
+            $empty_button = $exist ? null : 'disabled';
+
+            return view($views[$page], compact('giros', 'import_button', 'empty_button', 'duplikasi', 'duplikasi_bilyet'));
+        } else {
+            return view($views[$page], compact('giros'));
+        }
     }
 
     public function store(Request $request)
@@ -57,7 +75,7 @@ class BilyetController extends Controller
 
         Bilyet::create($request->all());
 
-        return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet created successfully.');
+        return redirect()->back()->with('success', 'Bilyet created successfully.');
     }
 
     public function update(Request $request, $id)
@@ -90,16 +108,7 @@ class BilyetController extends Controller
             ]);
         }
 
-        // redirect route
-        if ($request->from_page == 'release') {
-            return redirect()->route('cashier.bilyets.release_index')->with('success', 'Bilyet updated successfully.');
-        } elseif ($request->from_page == 'cair') {
-            return redirect()->route('cashier.bilyets.cair_index')->with('success', 'Bilyet updated successfully.');
-        } elseif ($request->from_page == 'void') {
-            return redirect()->route('cashier.bilyets.void_index')->with('success', 'Bilyet updated successfully.');
-        } else {
-            return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet updated successfully.');
-        }
+        return redirect()->back()->with('success', 'Bilyet updated successfully.');
     }
 
     public function export()
@@ -111,7 +120,7 @@ class BilyetController extends Controller
     {
         Bilyet::destroy($id);
 
-        return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet deleted successfully.');
+        return redirect()->back()->with('success', 'Bilyet deleted successfully.');
     }
 
     public function import(Request $request)
@@ -151,7 +160,7 @@ class BilyetController extends Controller
         BilyetTemp::where('created_by', auth()->user()->id)->delete();
 
         // return to the index page with success message
-        return redirect()->route('cashier.bilyet-temps.index')->with('success', 'Bilyet imported successfully.');
+        return redirect()->back()->with('success', 'Bilyet imported successfully.');
     }
 
     public function update_many(Request $request)

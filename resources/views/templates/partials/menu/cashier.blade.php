@@ -12,7 +12,8 @@
         @endcan
         <li class="dropdown-divider">EOD</li>
         @can('akses_bilyet')
-            <li><a href="{{ route('cashier.bilyets.index') }}" class="dropdown-item">Administrasi Bilyet</a></li>
+            <li><a href="{{ route('cashier.bilyets.index', ['page' => 'dashboard']) }}" class="dropdown-item">Administrasi
+                    Bilyet</a></li>
         @endcan
         @can('akses_cashier_modal')
             <li><a href="{{ route('cashier.modal.index') }}" class="dropdown-item">Serah/Terima Modal</a></li>

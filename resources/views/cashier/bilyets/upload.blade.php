@@ -12,15 +12,13 @@
     <div class="row">
         <div class="col-12">
 
+            <x-bilyet-links page='upload' />
+
             <div class="card">
                 <div class="card-header">
-                    <a href="{{ route('cashier.bilyets.index') }}">On hand</a> |
-                    <a href="{{ route('cashier.bilyets.release_index') }}"> Released</a> |
-                    <a href="{{ route('cashier.bilyets.cair_index') }}"> Cair</a> |
-                    <a href="{{ route('cashier.bilyets.void_index') }}"> Void</a> |
-                    <a href="#" class="text-dark"> UPLOAD</a>
-                    <a href="{{ asset('file_upload/') . '/bilyet_template.xlsx' }}"
-                        class="btn btn-xs btn-success float-right" target=_blank>download template</a>
+                    <h3 class="card-title">Upload Bilyets</h3>
+                    <a href="{{ asset('file_upload/') . '/bilyet_template.xlsx' }}" class="btn btn-xs btn-success float-right"
+                        target=_blank>download template</a>
                     <a href="{{ route('cashier.bilyets.import') }}"
                         class="btn btn-xs btn-warning float-right mx-2 {{ $import_button }}" data-toggle="modal"
                         data-target="#modal-import"> Import</a>
@@ -120,6 +118,12 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    <style>
+        .card-header .active {
+            color: black;
+            text-transform: uppercase;
+        }
+    </style>
 @endsection
 
 @section('scripts')
