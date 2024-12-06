@@ -58,9 +58,9 @@ class KoranController extends Controller
     private function getGiros($userRoles)
     {
         if (array_intersect($this->allowedRoles, $userRoles)) {
-            return Giro::all();
+            return Giro::orderBy('bank_id', 'asc')->get();
         } else {
-            return Giro::where('project', auth()->user()->project)->get();
+            return Giro::where('project', auth()->user()->project)->orderBy('bank_id', 'asc')->get();
         }
     }
 
@@ -110,22 +110,6 @@ class KoranController extends Controller
         ];
 
         return $result;
-    }
-
-    public function giroList()
-    {
-        $userRoles = app(UserController::class)->getUserRoles();
-        $giroIdsExlcude = [];
-        $allowedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo', 'corsec'];
-
-        $query = Giro::select('id', 'acc_no', 'acc_name', 'project')
-            ->whereNotIn('id', $giroIdsExlcude);
-
-        if (!array_intersect($allowedRoles, $userRoles)) {
-            $query->where('project', auth()->user()->project);
-        }
-
-        return $query->get();
     }
 
     public function data()
