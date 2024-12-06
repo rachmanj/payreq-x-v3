@@ -16,7 +16,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    OUTSTANDING | <a
+                    INCOMPLETE | <a
                         href="{{ route('accounting.vat.index', ['page' => 'purchase', 'status' => 'complete']) }}">Complete</a>
                 </div>
                 <div class="card-body">

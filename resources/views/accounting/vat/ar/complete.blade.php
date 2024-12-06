@@ -17,8 +17,8 @@
             <div class="card">
                 <div class="card-header">
                     <a
-                        href="{{ route('accounting.vat.index', ['page' => 'sales', 'status' => 'outstanding']) }}">Outstanding</a>
-                    | POSTED
+                        href="{{ route('accounting.vat.index', ['page' => 'sales', 'status' => 'outstanding']) }}">Incomplete</a>
+                    | COMPLETE
                 </div>
                 <div class="card-body">
                     <table id="sales-complete" class="table table-bordered table-striped">

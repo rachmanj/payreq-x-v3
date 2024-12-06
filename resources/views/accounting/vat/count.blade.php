@@ -9,7 +9,7 @@
         <div class="card-header">
             <h3 class="card-title">{{ $item['year'] }}</h3>
             <small class="float-right">
-                <i class="fas fa-times" style="color: red"></i> = Outstanding |
+                <i class="fas fa-times" style="color: red"></i> = Incomplete |
                 <i class="fas fa-check" style="color: green"></i> = Complete
             </small>
         </div>

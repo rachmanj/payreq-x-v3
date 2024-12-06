@@ -16,7 +16,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <b>OUTSTANDING</b> | <a
+                    <b>IN-COMPLETE</b> | <a
                         href="{{ route('accounting.wtax23.index', ['page' => 'purchase', 'status' => 'complete']) }}">Complete</a>
                 </div>
                 <div class="card-body">
