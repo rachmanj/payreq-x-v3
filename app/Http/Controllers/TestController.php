@@ -40,7 +40,7 @@ class TestController extends Controller
         // $test = app(ReportDokumenController::class)->koran_dashboard_data();
         // $test = app(DocumentCreationController::class)->generate_dashboard_data_by_user(['2024'], ['08', '09', '10'], ['accjkt1', 'accjkt2', 'accjkt3', 'accjkt4', 'accjkt5']);
         // $test = app(ReportDokumenController::class)->check_koran_files(2024);
-        $test = app(PcbcController::class)->check_pcbc_files(2024);
+        $test = app(Wtax23Controller::class)->generate_count_data();
         // $test = app(PcbcController::class)->getProjects(['superadmin']);
         // $test = app(KoranController::class)->check_koran_files('2024');
         // $test2 = app(Wtax23Controller::class)->test_count();

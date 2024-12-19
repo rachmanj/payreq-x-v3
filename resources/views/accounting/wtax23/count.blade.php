@@ -21,13 +21,15 @@
                         @foreach ($item['data'] as $sub_item)
                             <td class="text-center" colspan="2"><small>{{ $sub_item['month_name'] }}</small></td>
                         @endforeach
-                        <th rowspan="2" class="text-right align-middle">Total</th>
+                        <th colspan="2" class="text-center align-middle">Total</th>
                     </tr>
                     <tr>
                         @foreach ($item['data'] as $sub_item)
                             <td class="text-right"><small><i class="fas fa-times" style="color: red"></i></small></td>
                             <td class="text-right"><small><i class="fas fa-check" style="color: green"></i></small></td>
                         @endforeach
+                        <td class="text-right"><small>count</small></td>
+                        <td class="text-center"><small><i class="fas fa-check" style="color: green"></i></small></td>
                     </tr>
                 </thead>
                 <tbody>
@@ -38,7 +40,8 @@
                             <td class="text-right"><small>{{ $sub_item['out']['complete'] }}</small>
                             </td>
                         @endforeach
-                        <td class="text-right"><small>{{ $item['out'] }}</small></td>
+                        <td class="text-right"><small>{{ $item['out']['total'] }}</small></td>
+                        <td class="text-right"><small>{{ $item['out']['percent_complete'] }} %</small></td>
                     </tr>
                     <tr>
                         <td><small>Sales</small></td>
@@ -46,7 +49,8 @@
                             <td class="text-right"><small>{{ $sub_item['in']['outstanding'] }}</small></td>
                             <td class="text-right"><small>{{ $sub_item['in']['complete'] }}</small></td>
                         @endforeach
-                        <td class="text-right"><small>{{ $item['in'] }}</small></td>
+                        <td class="text-right"><small>{{ $item['in']['total'] }}</small></td>
+                        <td class="text-right"><small>{{ $item['in']['percent_complete'] }} %</small></td>
                     </tr>
                 </tbody>
             </table>

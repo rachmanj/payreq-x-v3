@@ -180,10 +180,25 @@ class VatController extends Controller
         foreach ($years as $year) {
             $yearData = [
                 'year' => $year,
-                'purchase' => 0,
-                'sales' => 0,
+                'purchase' => [
+                    'total' => 0,
+                    'percent_complete' => 0,
+                    'outstanding' => 0,
+                    'complete' => 0
+                ],
+                'sales' => [
+                    'total' => 0,
+                    'percent_complete' => 0,
+                    'outstanding' => 0,
+                    'complete' => 0
+                ],
                 'data' => []
             ];
+
+            $total_purchase_outstanding = 0;
+            $total_purchase_complete = 0;
+            $total_sales_outstanding = 0;
+            $total_sales_complete = 0;
 
             foreach ($months as $month => $monthName) {
 
@@ -197,20 +212,38 @@ class VatController extends Controller
                     'month_name' => $monthName,
                     'purchase' => [
                         'outstanding' => $purchase_outstanding,
-                        'complete' => $purchase_complete
+                        'complete' => $purchase_complete,
+                        'percent' => $purchase_outstanding + $purchase_complete > 0 ? number_format($purchase_complete / ($purchase_outstanding + $purchase_complete) * 100, 1) : 0
                     ],
                     'sales' => [
                         'outstanding' => $sales_outstanding,
-                        'complete' => $sales_complete
+                        'complete' => $sales_complete,
+                        'percent' => $sales_outstanding + $sales_complete > 0 ? number_format($sales_complete / ($sales_outstanding + $sales_complete) * 100, 1) : 0
                     ]
                 ];
 
                 $yearData['data'][] = $monthData;
 
                 // Tambahkan jumlah bulanan ke jumlah tahunan
-                $yearData['purchase'] = $yearData['purchase'] + $purchase_outstanding + $purchase_complete;
-                $yearData['sales'] = $yearData['sales'] + $sales_outstanding + $sales_complete;
+                $yearData['purchase']['total'] += $purchase_outstanding + $purchase_complete;
+                $yearData['sales']['total'] += $sales_outstanding + $sales_complete;
+
+                // Tambahkan ke total tahunan
+                $total_purchase_outstanding += $purchase_outstanding;
+                $total_purchase_complete += $purchase_complete;
+                $total_sales_outstanding += $sales_outstanding;
+                $total_sales_complete += $sales_complete;
             }
+
+            // Hitung persentase penyelesaian pembelian tahunan
+            $yearData['purchase']['outstanding'] = $total_purchase_outstanding;
+            $yearData['purchase']['complete'] = $total_purchase_complete;
+            $yearData['purchase']['percent_complete'] = $total_purchase_outstanding + $total_purchase_complete > 0 ? number_format($total_purchase_complete / ($total_purchase_outstanding + $total_purchase_complete) * 100, 1) : 0;
+
+            // Hitung persentase penyelesaian penjualan tahunan
+            $yearData['sales']['outstanding'] = $total_sales_outstanding;
+            $yearData['sales']['complete'] = $total_sales_complete;
+            $yearData['sales']['percent_complete'] = $total_sales_outstanding + $total_sales_complete > 0 ? number_format($total_sales_complete / ($total_sales_outstanding + $total_sales_complete) * 100, 1) : 0;
 
             $data[] = $yearData;
         }

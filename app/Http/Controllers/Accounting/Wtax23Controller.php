@@ -197,37 +197,69 @@ class Wtax23Controller extends Controller
         foreach ($years as $year) {
             $yearData = [
                 'year' => $year,
-                'in' => 0,
-                'out' => 0,
+                'in' => [
+                    'total' => 0,
+                    'percent_complete' => 0,
+                    'outstanding' => 0,
+                    'complete' => 0
+                ],
+                'out' => [
+                    'total' => 0,
+                    'percent_complete' => 0,
+                    'outstanding' => 0,
+                    'complete' => 0
+                ],
                 'data' => []
             ];
 
+            $total_in_outstanding = 0;
+            $total_in_complete = 0;
+            $total_out_outstanding = 0;
+            $total_out_complete = 0;
+
             foreach ($months as $month => $monthName) {
 
-                $out_outstanding = $this->count_outstanding_monthly($year, $month, 'out');
-                $out_complete = $this->count_complete_monthly($year, $month, 'out');
                 $in_outstanding = $this->count_outstanding_monthly($year, $month, 'in');
                 $in_complete = $this->count_complete_monthly($year, $month, 'in');
+                $out_outstanding = $this->count_outstanding_monthly($year, $month, 'out');
+                $out_complete = $this->count_complete_monthly($year, $month, 'out');
 
                 $monthData = [
                     'month' => $month,
                     'month_name' => $monthName,
                     'in' => [
                         'outstanding' => $in_outstanding,
-                        'complete' => $in_complete
+                        'complete' => $in_complete,
+                        'percent' => $in_outstanding + $in_complete > 0 ? number_format($in_complete / ($in_outstanding + $in_complete) * 100, 1) : 0
                     ],
                     'out' => [
                         'outstanding' => $out_outstanding,
-                        'complete' => $out_complete
+                        'complete' => $out_complete,
+                        'percent' => $out_outstanding + $out_complete > 0 ? number_format($out_complete / ($out_outstanding + $out_complete) * 100, 1) : 0
                     ]
                 ];
 
                 $yearData['data'][] = $monthData;
 
                 // Tambahkan jumlah bulanan ke jumlah tahunan
-                $yearData['in'] = $yearData['in'] + $in_outstanding + $in_complete;
-                $yearData['out'] = $yearData['out'] + $out_outstanding + $out_complete;
+                $yearData['in']['total'] += $in_outstanding + $in_complete;
+                $yearData['out']['total'] += $out_outstanding + $out_complete;
+
+                // Tambahkan ke total tahunan
+                $total_in_outstanding += $in_outstanding;
+                $total_in_complete += $in_complete;
+                $total_out_outstanding += $out_outstanding;
+                $total_out_complete += $out_complete;
             }
+
+            // Hitung persentase penyelesaian tahunan
+            $yearData['in']['outstanding'] = $total_in_outstanding;
+            $yearData['in']['complete'] = $total_in_complete;
+            $yearData['in']['percent_complete'] = $total_in_outstanding + $total_in_complete > 0 ? number_format($total_in_complete / ($total_in_outstanding + $total_in_complete) * 100, 1) : 0;
+
+            $yearData['out']['outstanding'] = $total_out_outstanding;
+            $yearData['out']['complete'] = $total_out_complete;
+            $yearData['out']['percent_complete'] = $total_out_outstanding + $total_out_complete > 0 ? number_format($total_out_complete / ($total_out_outstanding + $total_out_complete) * 100, 1) : 0;
 
             $data[] = $yearData;
         }
