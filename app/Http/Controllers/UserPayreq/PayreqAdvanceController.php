@@ -31,9 +31,10 @@ class PayreqAdvanceController extends Controller
 
     public function proses(Request $request)
     {
+
         $request->validate([
             'remarks' => 'required',
-            'amount' => 'required|numeric',
+            'amount' => 'required',
         ]);
 
         if ($request->button_type === 'create') {

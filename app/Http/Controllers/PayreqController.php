@@ -12,7 +12,7 @@ class PayreqController extends Controller
     {
         $payreq = Payreq::create([
             'remarks' => $data->remarks,
-            'amount' => $data->amount,
+            'amount' => $data->amount ? str_replace(',', '', $data->amount) : null,
             'project' => $data->project,
             'department_id' => $data->department_id,
             'nomor' => $data->payreq_no,
@@ -29,8 +29,10 @@ class PayreqController extends Controller
     {
         $validated = $data->validate([
             'remarks' => 'required',
-            'amount' => 'required|numeric',
+            'amount' => 'required',
         ]);
+
+        $validated['amount'] = str_replace(',', '', $validated['amount']);
 
         $payreq = Payreq::findOrFail($data->payreq_id);
         $payreq->update(array_merge($validated, [

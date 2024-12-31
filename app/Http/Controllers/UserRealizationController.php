@@ -213,7 +213,7 @@ class UserRealizationController extends Controller
     {
         $this->validate($request, [
             'description' => 'required',
-            'amount' => 'required|numeric',
+            'amount' => 'required',
         ]);
 
         $realization = Realization::findOrFail($request->realization_id);
@@ -229,7 +229,7 @@ class UserRealizationController extends Controller
 
         $realization->realizationDetails()->create([
             'description' => $request->description,
-            'amount' => $request->amount,
+            'amount' => str_replace(',', '', $request->amount),
             'project' => $realization->project,
             'department_id' => $realization->department_id,
             'unit_no' => $request->unit_no,
