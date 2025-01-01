@@ -1,7 +1,7 @@
 @extends('templates.main')
 
 @section('title_page')
-    PPh 23
+    WTax23
 @endsection
 
 @section('breadcrumb_title')

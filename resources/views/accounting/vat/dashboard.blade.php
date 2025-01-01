@@ -1,7 +1,7 @@
 @extends('templates.main')
 
 @section('title_page')
-    VAT Monitoring
+    VAT
 @endsection
 
 @section('breadcrumb_title')

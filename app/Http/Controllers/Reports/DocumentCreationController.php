@@ -24,7 +24,7 @@ class DocumentCreationController extends Controller
         '12' => 'Dec'
     ];
 
-    private $years = [2024, 2025];
+    private $years = [2025, 2024];
 
     private $users;
 

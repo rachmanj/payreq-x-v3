@@ -20,7 +20,7 @@
                     <a
                         href="{{ route('cashier.pcbc.index', ['page' => 'dashboard', 'year' => date('Y')]) }}">{{ date('Y') }}</a>
                     |
-                    <a href="{{ route('cashier.pcbc.index', ['page' => 'dashboard', 'year' => 2025]) }}">2025</a>
+                    <a href="{{ route('cashier.pcbc.index', ['page' => 'dashboard', 'year' => 2024]) }}">2024</a>
                 </div>
 
                 <div class="card-body p-0">
