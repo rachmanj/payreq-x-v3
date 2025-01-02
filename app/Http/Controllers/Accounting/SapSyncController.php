@@ -243,7 +243,7 @@ class SapSyncController extends Controller
             'posted_by',
             DB::raw("(COUNT(*)) as total_count")
         )
-            ->whereYear('created_at', Carbon::now())
+            ->whereYear('updated_at', Carbon::now())
             ->groupBy(DB::raw("posted_by"))
             ->get();
 
