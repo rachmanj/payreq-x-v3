@@ -244,6 +244,7 @@ class SapSyncController extends Controller
             DB::raw("(COUNT(*)) as total_count")
         )
             ->whereYear('updated_at', Carbon::now())
+            ->whereNotNull('sap_journal_no') // Added filter for sap_journal_no not null
             ->groupBy(DB::raw("posted_by"))
             ->get();
 
