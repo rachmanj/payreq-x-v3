@@ -12,7 +12,7 @@
     <div class="row">
         <div class="col-12">
 
-            <x-sync-links page="023C" />
+            <x-sync-links page="000H" />
 
             <div class="card">
                 <div class="card-body">
@@ -65,7 +65,7 @@
             $("#verifications").DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('accounting.sap-sync.data', ['project' => '023C']) }}',
+                ajax: '{{ route('accounting.sap-sync.data', ['project' => 'HO']) }}',
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,

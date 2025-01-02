@@ -20,13 +20,19 @@ class SapSyncController extends Controller
 {
     public function index()
     {
-        $project = request()->query('project');
+        $page = request()->query('page', 'dashboard');
 
-        if ($project === '000H' || $project === 'APS') {
-            return view('accounting.sap-sync.index');
-        } else {
-            return view('accounting.sap-sync.' . $project);
-        }
+        $views = [
+            'dashboard' => 'accounting.sap-sync.dashboard',
+            '000H' => 'accounting.sap-sync.000H',
+            '001H' => 'accounting.sap-sync.001H',
+            '017C' => 'accounting.sap-sync.017C',
+            '021C' => 'accounting.sap-sync.021C',
+            '022C' => 'accounting.sap-sync.022C',
+            '023C' => 'accounting.sap-sync.023C',
+        ];
+
+        return view($views[$page]);
     }
 
     public function show($id)
@@ -124,10 +130,10 @@ class SapSyncController extends Controller
         } else {
             $project = [$query];
         }
-
         $verification_journals = VerificationJournal::whereIn('project', $project)
             ->orderByRaw('sap_journal_no IS NULL DESC')
             ->orderBy('date', 'desc')
+            ->limit(300)
             ->get();
 
 
