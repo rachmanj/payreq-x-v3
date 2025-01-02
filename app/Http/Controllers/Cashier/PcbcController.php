@@ -154,7 +154,14 @@ class PcbcController extends Controller
 
     public function data()
     {
-        $dokumens = Dokumen::where('type', 'pcbc')->orderBy('dokumen_date', 'desc')->get();
+        $userRoles = app(UserController::class)->getUserRoles();
+        $query = Dokumen::where('type', 'pcbc')->orderBy('dokumen_date', 'desc');
+
+        if (!array_intersect($userRoles, ['superadmin', 'admin', 'cashier'])) {
+            $query->where('project', auth()->user()->project);
+        }
+
+        $dokumens = $query->get();
 
         return datatables()->of($dokumens)
             ->editColumn('created_by', function ($dokumen) {

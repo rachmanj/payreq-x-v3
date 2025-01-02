@@ -112,7 +112,9 @@ class BilyetController extends Controller
 
     private function getBilyetDataReleaseThisMonth()
     {
-        $giros = Giro::orderBy('id', 'asc')->get();
+        $userRoles = app(UserController::class)->getUserRoles();
+        $giros = $this->getGirosBasedOnUserRoles($userRoles);
+        // $giros = Giro::orderBy('id', 'asc')->get();
         $bilyetTypes = ['cek', 'bg', 'loa', 'debit'];
         $result = [];
 

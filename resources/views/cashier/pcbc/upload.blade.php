@@ -17,7 +17,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">PCBC</h3>
-                    @can('upload_dokumen')
+                    @can('upload_pcbc')
                         <button href="#" class="btn btn-xs btn-success float-right mr-2" data-toggle="modal"
                             data-target="#modal-upload"><i class="fas fa-upload"></i> Upload PCBC</button>
                     @endcan
@@ -110,14 +110,6 @@
     </div>
 @endsection
 
-<style>
-    .card-header .active {
-        /* font-weight: bold; */
-        color: black;
-        text-transform: uppercase;
-    }
-</style>
-
 @section('styles')
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
@@ -127,6 +119,13 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    <style>
+        .card-header .active {
+            /* font-weight: bold; */
+            color: black;
+            text-transform: uppercase;
+        }
+    </style>
 @endsection
 
 @section('scripts')

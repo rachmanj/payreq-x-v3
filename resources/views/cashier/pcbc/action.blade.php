@@ -1,7 +1,8 @@
-<!-- Button to trigger modal -->
-<button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editModal-{{ $model->id }}"
-    title="edit"><i class="fas fa-edit"></i>
-</button>
+@if (auth()->user()->hasAnyRole(['superadmin', 'admin', 'cashier']) || auth()->user()->id == $model->created_by)
+    <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editModal-{{ $model->id }}"
+        title="edit"><i class="fas fa-edit"></i>
+    </button>
+@endif
 
 <a href="{{ $model->filename1 }}" class="btn btn-xs btn-info" target="_blank" title="show pcbc"><i
         class="fas fa-file-pdf"></i></a>

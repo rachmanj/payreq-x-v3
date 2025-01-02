@@ -1,5 +1,5 @@
 <!-- Navbar -->
-<nav class="main-header navbar navbar-expand-md navbar-light navbar-dark layout-fixed">
+<nav class="main-header navbar navbar-expand-md navbar-light navbar-dark layout-fixed py-1">
     <div class="container">
         <a href="{{ route('dashboard.index') }}"class="navbar-brand">
             {{-- <img src="{{ asset('adminlte/dist/img/AdminLTELogo.png') }}" alt="AdminLTE Logo"

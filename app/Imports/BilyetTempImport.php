@@ -23,7 +23,7 @@ class BilyetTempImport implements ToModel, WithHeadingRow
             'remarks' => $row['remarks'],
             'loan_id' => $row['loan_id'],
             'created_by' => auth()->id(),
-            'project' => auth()->user()->project,
+            'project' => $this->giro_project($row['acc_no']),
         ]);
     }
 
@@ -48,5 +48,11 @@ class BilyetTempImport implements ToModel, WithHeadingRow
         } else {
             return null;
         }
+    }
+
+    public function giro_project($acc_no)
+    {
+        $giro = Giro::where('acc_no', $acc_no)->first();
+        return $giro ? $giro->project : null;
     }
 }

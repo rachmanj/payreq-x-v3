@@ -66,9 +66,11 @@
     </div> <!-- /.row -->
 @endsection
 
-<style>
-    .card-header .active {
-        color: black;
-        text-transform: uppercase;
-    }
-</style>
+@section('styles')
+    <style>
+        .card-header .active {
+            color: black;
+            text-transform: uppercase;
+        }
+    </style>
+@endsection

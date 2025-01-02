@@ -27,7 +27,7 @@
                     <a
                         href="{{ route('reports.dokumen.index', ['type' => 'koran', 'year' => date('Y')]) }}">{{ date('Y') }}</a>
                     |
-                    <a href="{{ route('reports.dokumen.index', ['type' => 'koran', 'year' => 2023]) }}">2023</a>
+                    <a href="{{ route('reports.dokumen.index', ['type' => 'koran', 'year' => 2024]) }}">2024</a>
                 </div>
 
                 <div class="card-body p-0">

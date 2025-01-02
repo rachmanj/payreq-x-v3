@@ -72,10 +72,12 @@
     </div> <!-- /.row -->
 @endsection
 
-<style>
-    .card-header .active {
-        /* font-weight: bold; */
-        color: black;
-        text-transform: uppercase;
-    }
-</style>
+@section('styles')
+    <style>
+        .card-header .active {
+            /* font-weight: bold; */
+            color: black;
+            text-transform: uppercase;
+        }
+    </style>
+@endsection
