@@ -32,6 +32,11 @@ class SapSyncController extends Controller
             '023C' => 'accounting.sap-sync.023C',
         ];
 
+        if ($page == 'dashboard') {
+            $data = $this->generate_dashboard_data();
+            return view($views[$page], compact('data'));
+        }
+
         return view($views[$page]);
     }
 
@@ -294,5 +299,101 @@ class SapSyncController extends Controller
         return view('accounting.sap-sync.print-sapj', [
             'vj' => $vj
         ]);
+    }
+
+    public function generate_dashboard_data()
+    {
+        return [
+            'count_by_user' => $this->monhtly_count_by_user(),
+        ];
+    }
+
+    public function monhtly_count_by_user()
+    {
+        // Get counts grouped by year, month, and user
+        $counts = DB::table('verification_journals')
+            ->select(
+                DB::raw('YEAR(updated_at) as year'),
+                DB::raw('MONTH(updated_at) as month'),
+                'posted_by',
+                DB::raw('COUNT(*) as count')
+            )
+            ->whereNotNull('posted_by')
+            ->whereNotNull('sap_journal_no')
+            ->groupBy('year', 'month', 'posted_by')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'asc')
+            ->get();
+
+        // Get all users who have posted journals
+        $users = User::whereIn('id', $counts->pluck('posted_by')->unique())
+            ->get()
+            ->keyBy('id');
+
+        // Get unique years
+        $years = $counts->pluck('year')->unique()->sortDesc()->values();
+
+        $data = [];
+
+        // Initialize data structure
+        foreach ($years as $year) {
+            $yearArray = [
+                'year' => $year,
+                'month_data' => [],
+                'user_totals' => [] // Add array for user totals
+            ];
+
+            // Initialize user totals
+            foreach ($users as $user) {
+                $yearArray['user_totals'][$user->id] = [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'total_count' => 0
+                ];
+            }
+
+            // Initialize months with all users
+            for ($month = 1; $month <= 12; $month++) {
+                $monthData = [
+                    'month' => str_pad($month, 2, '0', STR_PAD_LEFT),
+                    'month_name' => date('M', mktime(0, 0, 0, $month, 1)),
+                    'users' => []
+                ];
+
+                // Add all users with zero count by default
+                foreach ($users as $user) {
+                    $monthData['users'][] = [
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                        'count' => 0
+                    ];
+                }
+
+                $yearArray['month_data'][$month] = $monthData;
+            }
+
+            // Fill in the actual counts
+            foreach ($counts as $count) {
+                if ($count->year == $year) {
+                    $userName = $users[$count->posted_by]->name ?? 'Unknown User';
+                    // Find and update the user count in the month data
+                    foreach ($yearArray['month_data'][$count->month]['users'] as &$userData) {
+                        if ($userData['user_id'] == $count->posted_by) {
+                            $userData['count'] = $count->count;
+                            // Add to user's yearly total
+                            $yearArray['user_totals'][$count->posted_by]['total_count'] += $count->count;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Convert month_data and user_totals to array values
+            $yearArray['month_data'] = array_values($yearArray['month_data']);
+            $yearArray['user_totals'] = array_values($yearArray['user_totals']);
+            $data[] = $yearArray;
+        }
+
+        return $data;
     }
 }
