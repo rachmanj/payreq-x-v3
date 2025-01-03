@@ -1,10 +1,10 @@
-@foreach ($data['count_by_user'] as $yearData)
-    <div class="card">
-        <div class="card-header">
-            <h6 class="float-left">Count by User</h6>
-            <h6 class="float-right">Year: {{ $yearData['year'] }}</h6>
-        </div>
+<div class="card">
+    <div class="card-header">
+        <h6 class="float-left">Count by User</h6>
+    </div>
+    @foreach ($data['count_by_user'] as $yearData)
         <div class="card-body p-0">
+            <h6 class="px-2 pt-2">Year: {{ $yearData['year'] }}</h6>
             <div class="mb-4">
                 @php
                     $yearTotal = collect($yearData['user_totals'])->sum('total_count');
@@ -63,5 +63,5 @@
                 </table>
             </div>
         </div>
-    </div>
-@endforeach
+    @endforeach
+</div>

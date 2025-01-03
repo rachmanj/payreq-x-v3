@@ -33,7 +33,9 @@ class SapSyncController extends Controller
         ];
 
         if ($page == 'dashboard') {
-            $data = $this->generate_dashboard_data();
+            $data['count_by_user'] = $this->monhtly_count_by_user();
+            $data['count_by_project'] = $this->monthly_count_by_project();
+
             return view($views[$page], compact('data'));
         }
 
@@ -301,13 +303,6 @@ class SapSyncController extends Controller
         ]);
     }
 
-    public function generate_dashboard_data()
-    {
-        return [
-            'count_by_user' => $this->monhtly_count_by_user(),
-        ];
-    }
-
     public function monhtly_count_by_user()
     {
         // Get counts grouped by year, month, and user
@@ -391,6 +386,93 @@ class SapSyncController extends Controller
             // Convert month_data and user_totals to array values
             $yearArray['month_data'] = array_values($yearArray['month_data']);
             $yearArray['user_totals'] = array_values($yearArray['user_totals']);
+            $data[] = $yearArray;
+        }
+
+        return $data;
+    }
+
+    public function monthly_count_by_project()
+    {
+        // Get counts grouped by year, month, and project
+        $counts = DB::table('verification_journals')
+            ->select(
+                DB::raw('YEAR(created_at) as year'),
+                DB::raw('MONTH(created_at) as month'),
+                'project',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(amount) as total_amount')
+            )
+            ->groupBy('year', 'month', 'project')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'asc')
+            ->get();
+
+        // Get all unique projects
+        $projects = $counts->pluck('project')->unique()->values();
+
+        // Get unique years
+        $years = $counts->pluck('year')->unique()->sortDesc()->values();
+
+        $data = [];
+
+        // Initialize data structure
+        foreach ($years as $year) {
+            $yearArray = [
+                'year' => $year,
+                'month_data' => [],
+                'project_totals' => [] // Add array for project totals
+            ];
+
+            // Initialize project totals
+            foreach ($projects as $project) {
+                $yearArray['project_totals'][$project] = [
+                    'project' => $project,
+                    'total_count' => 0,
+                    'total_amount' => 0
+                ];
+            }
+
+            // Initialize months with all projects
+            for ($month = 1; $month <= 12; $month++) {
+                $monthData = [
+                    'month' => str_pad($month, 2, '0', STR_PAD_LEFT),
+                    'month_name' => date('M', mktime(0, 0, 0, $month, 1)),
+                    'projects' => []
+                ];
+
+                // Add all projects with zero count by default
+                foreach ($projects as $project) {
+                    $monthData['projects'][] = [
+                        'project' => $project,
+                        'count' => 0,
+                        'amount' => 0
+                    ];
+                }
+
+                $yearArray['month_data'][$month] = $monthData;
+            }
+
+            // Fill in the actual counts
+            foreach ($counts as $count) {
+                if ($count->year == $year) {
+                    // Find and update the project count in the month data
+                    foreach ($yearArray['month_data'][$count->month]['projects'] as &$projectData) {
+                        if ($projectData['project'] == $count->project) {
+                            $projectData['count'] = $count->count;
+                            $projectData['amount'] = $count->total_amount;
+                            // Add to project's yearly total
+                            $yearArray['project_totals'][$count->project]['total_count'] += $count->count;
+                            $yearArray['project_totals'][$count->project]['total_amount'] += $count->total_amount;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Convert month_data and project_totals to array values
+            $yearArray['month_data'] = array_values($yearArray['month_data']);
+            $yearArray['project_totals'] = array_values($yearArray['project_totals']);
             $data[] = $yearArray;
         }
 

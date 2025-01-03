@@ -16,6 +16,8 @@
 
             @include('accounting.sap-sync._count-by-user')
 
+            @include('accounting.sap-sync._count-by-project')
+
         </div>
     </div>
 @endsection
