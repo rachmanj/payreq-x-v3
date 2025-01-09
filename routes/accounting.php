@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Accounting\CustomerController;
 use App\Http\Controllers\Accounting\DailyTxController;
+use App\Http\Controllers\Accounting\DeliveryController;
 use App\Http\Controllers\Accounting\GiroController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Accounting\VatController;
@@ -97,5 +98,17 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/', [VatController::class, 'index'])->name('index');
         Route::put('/{id}/purchase-update', [VatController::class, 'purchase_update'])->name('purchase_update');
         Route::put('/{id}/sales-update', [VatController::class, 'sales_update'])->name('sales_update');
+    });
+
+    // DELIVERY
+    Route::prefix('deliveries')->name('deliveries.')->group(function () {
+        Route::get('/data', [DeliveryController::class, 'data'])->name('data');
+        Route::get('/receive-data', [DeliveryController::class, 'receive_data'])->name('receive_data');
+        Route::resource('/', DeliveryController::class)->parameters(['' => 'delivery']);
+        Route::get('/{id}/print', [DeliveryController::class, 'print'])->name('print');
+        Route::post('/{id}/send', [DeliveryController::class, 'send'])->name('send');
+        Route::get('/{id}/receive', [DeliveryController::class, 'receive_show'])->name('receive_show');
+        Route::put('/{id}/receive-update', [DeliveryController::class, 'updateReceiveInfo'])->name('receive_update');
+        Route::get('/dashboard-data', [DeliveryController::class, 'dashboard_data'])->name('dashboard-data');
     });
 });

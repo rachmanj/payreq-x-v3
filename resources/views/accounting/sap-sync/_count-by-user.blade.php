@@ -57,7 +57,7 @@
                                 <td class="text-right"><small><b>{{ $monthTotal }}</b></small></td>
                             @endforeach
                             <td class="text-right"><small><b>{{ $yearTotal }}</b></small></td>
-                            <td class="text-right"><small><b>100%</b></small></td>
+                            <td class="text-right"><small><b>100.0%</b></small></td>
                         </tr>
                     </tbody>
                 </table>

@@ -31,11 +31,3 @@
         }
     </style>
 @endsection
-
-@section('scripts')
-    <script>
-        $(function() {
-            // 
-        });
-    </script>
-@endsection

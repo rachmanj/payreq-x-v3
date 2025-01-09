@@ -34,6 +34,11 @@
             </li>
         @endcan
 
+        @can('akses_delivery')
+            <li><a href="{{ route('accounting.deliveries.index', ['page' => 'dashboard']) }}"
+                    class="dropdown-item">Delivery</a></li>
+        @endcan
+
         @can('akses_loan_report')
             <li><a href="{{ route('accounting.loans.index') }}" class="dropdown-item">Loan List</a></li>
         @endcan

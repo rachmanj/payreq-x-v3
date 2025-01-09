@@ -4,9 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Accounting\InvoiceCreationController;
 use App\Http\Controllers\Accounting\SapSyncController;
-use App\Http\Controllers\Accounting\VatController;
-use App\Http\Controllers\Accounting\Wtax23Controller;
-use App\Http\Controllers\Cashier\KoranController;
 use App\Http\Controllers\Cashier\PcbcController;
 use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\CashierRekapAdvanceController;
@@ -16,6 +13,7 @@ use App\Http\Controllers\Reports\EquipmentController;
 use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\ReportDokumenController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
+use App\Http\Controllers\Accounting\DeliveryController;
 use App\Models\Anggaran;
 use App\Models\Payreq;
 use App\Models\Realization;
@@ -40,7 +38,8 @@ class TestController extends Controller
         // $test = app(ReportDokumenController::class)->koran_dashboard_data();
         // $test = app(DocumentCreationController::class)->generate_dashboard_data_by_user(['2024'], ['08', '09', '10'], ['accjkt1', 'accjkt2', 'accjkt3', 'accjkt4', 'accjkt5']);
         // $test = app(ReportDokumenController::class)->check_koran_files(2024);
-        $test = app(SapSyncController::class)->monthly_count_by_project();
+        // $test = app(SapSyncController::class)->monthly_count_by_project();
+        $test = app(DeliveryController::class)->generate_dashboard_data();
         // $test = app(PcbcController::class)->getProjects(['superadmin']);
         // $test = app(KoranController::class)->check_koran_files('2024');
         // $test2 = app(Wtax23Controller::class)->test_count();

@@ -35,11 +35,6 @@ class Realization extends Model
         return $this->belongsTo(Department::class);
     }
 
-    public function verification()
-    {
-        return $this->hasOne(Verification::class);
-    }
-
     public function journal()
     {
         return $this->belogsTo(Journal::class);

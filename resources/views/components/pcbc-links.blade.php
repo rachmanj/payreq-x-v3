@@ -8,8 +8,9 @@
             class="{{ request()->get('page') == 'upload' ? 'active' : '' }}">
             Upload
         </a> |
-        <a href="#" class="{{ request()->get('page') == 'form' ? 'active' : '' }}">
-            Form
+        <a href="{{ route('cashier.pcbc.index', ['page' => 'list']) }}"
+            class="{{ request()->get('page') == 'list' ? 'active' : '' }}">
+            List
         </a>
     </div> <!-- /.card-header -->
 </div> <!-- /.card -->

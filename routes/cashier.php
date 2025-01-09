@@ -66,10 +66,12 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     // PCBC
     Route::prefix('pcbc')->name('pcbc.')->group(function () {
         Route::get('/data', [PcbcController::class, 'data'])->name('data');
-        Route::get('/', [PcbcController::class, 'index'])->name('index');
+        Route::get('/your-data', [PcbcController::class, 'your_data'])->name('your_data');
+        Route::get('/{id}/print', [PcbcController::class, 'print'])->name('print');
+        Route::put('/{id}/update-pcbc', [PcbcController::class, 'update_pcbc'])->name('update_pcbc');
+        Route::delete('/{id}/destroy-pcbc', [PcbcController::class, 'destroy_pcbc'])->name('destroy_pcbc');
         Route::post('/upload', [PcbcController::class, 'upload'])->name('upload');
-        Route::delete('/{id}/destroy', [PcbcController::class, 'destroy'])->name('destroy');
-        Route::put('/{id}/update', [PcbcController::class, 'update'])->name('update');
+        Route::resource('/', PcbcController::class)->parameters(['' => 'pcbc']);
     });
 
     // REKENING KORAN

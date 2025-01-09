@@ -32,4 +32,14 @@ class VerificationJournal extends Model
             'name' => 'N/A'
         ]);
     }
+
+    public function realizations()
+    {
+        return $this->hasMany(Realization::class);
+    }
+
+    public function delivery()
+    {
+        return $this->belongsTo(Delivery::class);
+    }
 }
