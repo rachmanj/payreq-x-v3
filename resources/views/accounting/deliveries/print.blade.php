@@ -30,6 +30,7 @@
                             <td rowspan="2">
                                 <h3><b>Delivery Document</b></h3>
                                 <h4>No. {{ $delivery->delivery_number }}</h4>
+                                <h6>Document Date: {{ date('d F Y', strtotime($delivery->document_date)) }}</h4>
                             </td>
                             {{-- <td class="text-right">ARKA/ACC/IV/01.01</td> --}}
                         </tr>
@@ -65,7 +66,7 @@
             <div class="row">
                 <div class="col-12">
                     <p>
-                        <strong>Delivery Date:</strong> {{ date('d F Y', strtotime($delivery->delivery_date)) }}<br>
+                        {{-- <strong>Delivery Date:</strong> {{ date('d F Y', strtotime($delivery->delivery_date)) }}<br> --}}
                     </p>
                 </div>
             </div>
@@ -82,10 +83,10 @@
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th style="padding: 5px 0;" class="text-center">No</th>
-                                <th style="padding: 5px 0;" class="text-center">Verification Journal No.</th>
-                                <th style="padding: 5px 0;" class="text-center">Date</th>
-                                <th style="padding: 5px 0;" class="text-center">SAP Journal No</th>
+                                <th style="padding: 5px 0;">No</th>
+                                <th style="padding: 5px 0;">Verification Journal No.</th>
+                                <th style="padding: 5px 0;">Date</th>
+                                <th style="padding: 5px 0;">SAP Journal No</th>
                                 <th class="text-right" style="padding: 5px 0;">Amount</th>
                             </tr>
                         </thead>
@@ -141,7 +142,7 @@
                     <td></td>
                 </tr>
                 <tr>
-                    <td>(____________________)</td>
+                    <td>({{ $journal->createdBy->name }})</td>
                     <td>(____________________)</td>
                     <td>(____________________)</td>
                 </tr>
