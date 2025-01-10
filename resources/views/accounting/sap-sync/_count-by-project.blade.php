@@ -1,11 +1,11 @@
-<div class="card">
-    <div class="card-header">
+<div class="card card-info">
+    <div class="card-header pl-2 py-1">
         <h6>Count & Amount by Project</h6>
     </div>
     <div class="card-body p-0">
         @foreach ($data['count_by_project'] as $yearData)
             <div class="mb-4">
-                <h6 class="px-2 pt-2">Year: {{ $yearData['year'] }}</h6>
+                <h6 class="px-2 pt-2 text-center">{{ $yearData['year'] }}</h6>
                 @php
                     $yearTotalCount = collect($yearData['project_totals'])->sum('total_count');
                     $yearTotalAmount = collect($yearData['project_totals'])->sum('total_amount');

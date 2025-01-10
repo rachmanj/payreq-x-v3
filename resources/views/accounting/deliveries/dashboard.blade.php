@@ -13,8 +13,8 @@
         <div class="col-12">
             <x-delivery-links page="dashboard" />
 
-            <div class="card">
-                <div class="card-header">
+            <div class="card card-info">
+                <div class="card-header pl-2 py-1">
                     <h6 class="mb-0">Delivery Summary</h6>
                 </div>
                 @foreach ($data as $yearData)
