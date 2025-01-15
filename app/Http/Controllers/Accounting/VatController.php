@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
 use App\Models\Faktur;
+use App\Models\Customer;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,17 +13,23 @@ class VatController extends Controller
 {
     public function index()
     {
-        $page = request('page');
-        $status = request('status');
+        $page = request()->query('page', 'dashboard');
+        $status = request()->query('status');
 
         $count_data = $this->generate_count_data();
         $amount_data = $this->generate_amount_data();
 
         $views = [
             'dashboard' => 'accounting.vat.dashboard',
-            'purchase' => $status == 'outstanding' ? 'accounting.vat.ap.outstanding' : 'accounting.vat.ap.complete',
-            'default' => $status == 'outstanding' ? 'accounting.vat.ar.outstanding' : 'accounting.vat.ar.complete'
+            'search' => 'accounting.vat.search',
+            'purchase' => $status == 'incomplete' ? 'accounting.vat.ap.incomplete' : 'accounting.vat.ap.complete',
+            'sales' => $status == 'incomplete' ? 'accounting.vat.ar.incomplete' : 'accounting.vat.ar.complete',
         ];
+
+        if ($page === 'search') {
+            $customers = Customer::orderBy('name')->get();
+            return view($views[$page], compact('customers'));
+        }
 
         if ($page === 'dashboard') {
             return view($views[$page], compact('amount_data', 'count_data'));
@@ -309,7 +316,74 @@ class VatController extends Controller
         return $data;
     }
 
+    public function search_data()
+    {
+        // Return empty data if search hasn't been clicked
+        if (!request('search_clicked')) {
+            return datatables()->of([])->addIndexColumn()->toJson();
+        }
 
+        $query = Faktur::query()
+            ->with('customer');
+
+        if (request('faktur_no')) {
+            $query->where('faktur_no', 'like', '%' . request('faktur_no') . '%');
+        }
+
+        if (request('type')) {
+            $query->where('type', request('type'));
+        }
+
+        if (request('invoice_no')) {
+            $query->where('invoice_no', 'like', '%' . request('invoice_no') . '%');
+        }
+
+        if (request('customer_name')) {
+            $query->where('customer_id', request('customer_name'));
+        }
+
+        if (request('doc_num')) {
+            $query->where('doc_num', 'like', '%' . request('doc_num') . '%');
+        }
+
+        return datatables()->of($query)
+            ->addColumn('amount', function ($document) {
+                $dpp = number_format($document->dpp, 2);
+                $ppn = number_format($document->ppn, 2);
+                return '<small>DPP: ' . $dpp . '</small><br><small>PPN: ' . $ppn . '</small>';
+            })
+            ->editColumn('create_date', function ($document) {
+                return date('d-M-Y', strtotime($document->create_date));
+            })
+            ->addColumn('invoice', function ($document) {
+                if (is_null($document->invoice_no)) {
+                    return '<small>No. - </small>';
+                }
+                return '<small>No.' . $document->invoice_no . '</small><br><small>Tgl.' . date('d-M-Y', strtotime($document->invoice_date)) . '</small>';
+            })
+            ->addColumn('faktur', function ($document) {
+                if (is_null($document->faktur_date)) {
+                    return '<small>No.' . $document->faktur_no . '</small><br><small>Tgl. - </small>';
+                }
+                return '<small>No.' . $document->faktur_no . '</small><br><small>Tgl.' . date('d-M-Y', strtotime($document->faktur_date)) . '</small>';
+            })
+            ->addColumn('customer', function ($document) {
+                return '<small>' . $document->customer->name . '</small>';
+            })
+            ->addColumn('action', function ($document) {
+                $showButton = '<a href="' . route('accounting.vat.show', $document->id) . '" class="btn btn-xs btn-success">show</a>';
+
+                $attachmentButton = '';
+                if ($document->attachment) {
+                    $attachmentButton = ' <a href="' . $document->attachment . '" target="_blank" class="btn btn-xs btn-info"><i class="fas fa-paperclip"></i></a>';
+                }
+
+                return $showButton . $attachmentButton;
+            })
+            ->addIndexColumn()
+            ->rawColumns(['amount', 'invoice', 'customer', 'faktur', 'action'])
+            ->toJson();
+    }
 
     private function sum_amount_monthly($year, $month, $type)
     {
@@ -374,5 +448,54 @@ class VatController extends Controller
             ->where('type', $type)
             ->whereNotNull('doc_num')
             ->count();
+    }
+
+    public function show(Faktur $faktur)
+    {
+        return view('accounting.vat.show', compact('faktur'));
+    }
+
+    public function update(Request $request, Faktur $faktur)
+    {
+        try {
+            if ($faktur->type === 'purchase') {
+                if ($request->hasFile('attachment')) {
+                    $file = $request->file('attachment');
+                    $extension = $file->getClientOriginalExtension();
+                    $filename = 'faktur_' . uniqid() . '.' . $extension;
+                    $file->move(public_path('faktur'), $filename);
+
+                    $faktur->attachment = $filename;
+                    $faktur->response_by = auth()->user()->id;
+                    $faktur->response_at = now();
+                    $faktur->save();
+
+                    return redirect()->back()->with('success', 'File uploaded successfully');
+                }
+                return redirect()->back()->with('error', 'No file uploaded');
+            } else {
+                // For sales type
+                $request->validate([
+                    'doc_num' => 'required|string|max:255',
+                ]);
+
+                // Check if doc_num already exists
+                $existingFaktur = Faktur::where('doc_num', $request->doc_num)
+                    ->where('id', '!=', $faktur->id)
+                    ->first();
+
+                if ($existingFaktur) {
+                    return redirect()->back()->with('error', 'Document number already exists');
+                }
+
+                $faktur->doc_num = $request->doc_num;
+                $faktur->user_code = auth()->user()->username;
+                $faktur->save();
+
+                return redirect()->back()->with('success', 'Document number updated successfully');
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'An error occurred while updating the record');
+        }
     }
 }

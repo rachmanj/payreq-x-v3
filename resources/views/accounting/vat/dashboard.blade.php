@@ -12,17 +12,17 @@
     <div class="row">
         <div class="col-12">
 
-            <x-vat-links page="purchase" status="outstanding" />
+            <x-vat-links page="dashboard" status="complete" />
 
             <div class="row">
                 <div class="col-12">
-                    @include('accounting.vat.count')
+                    @include('accounting.vat.dashboard.count')
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-12">
-                    @include('accounting.vat.amount')
+                    @include('accounting.vat.dashboard.amount')
                 </div>
             </div>
 

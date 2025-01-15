@@ -12,7 +12,7 @@
     <div class="row">
         <div class="col-12">
 
-            <x-vat-links page="purchase" status="outstanding" />
+            <x-vat-links page="purchase" status="incomplete" />
 
             <div class="card">
                 <div class="card-header">
@@ -78,7 +78,7 @@
                     url: "{{ route('accounting.vat.data') }}",
                     data: {
                         page: 'purchase',
-                        status: 'outstanding'
+                        status: 'incomplete'
                     }
                 },
                 columns: [{

@@ -12,12 +12,12 @@
     <div class="row">
         <div class="col-12">
 
-            <x-vat-links page="purchase" status="outstanding" />
+            <x-vat-links page="sales" status="complete" />
 
             <div class="card">
                 <div class="card-header">
                     <a
-                        href="{{ route('accounting.vat.index', ['page' => 'sales', 'status' => 'outstanding']) }}">Incomplete</a>
+                        href="{{ route('accounting.vat.index', ['page' => 'sales', 'status' => 'incomplete']) }}">Incomplete</a>
                     | COMPLETE
                 </div>
                 <div class="card-body">

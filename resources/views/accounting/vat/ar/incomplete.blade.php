@@ -5,14 +5,14 @@
 @endsection
 
 @section('breadcrumb_title')
-    accounting / vat
+    accounting / vat / sales / incomplete
 @endsection
 
 @section('content')
     <div class="row">
         <div class="col-12">
 
-            <x-vat-links page="purchase" status="outstanding" />
+            <x-vat-links page="sales" status="incomplete" />
 
             <div class="card">
                 <div class="card-header">
@@ -77,7 +77,7 @@
                     url: "{{ route('accounting.vat.data') }}",
                     data: {
                         page: 'sales',
-                        status: 'outstanding'
+                        status: 'incomplete'
                     }
                 },
                 columns: [{

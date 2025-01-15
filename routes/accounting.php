@@ -98,6 +98,9 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/', [VatController::class, 'index'])->name('index');
         Route::put('/{id}/purchase-update', [VatController::class, 'purchase_update'])->name('purchase_update');
         Route::put('/{id}/sales-update', [VatController::class, 'sales_update'])->name('sales_update');
+        Route::get('/search/data', [VatController::class, 'search_data'])->name('search.data');
+        Route::get('show/{faktur}', [VatController::class, 'show'])->name('show');
+        Route::put('update/{faktur}', [VatController::class, 'update'])->name('update');
     });
 
     // DELIVERY

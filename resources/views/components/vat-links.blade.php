@@ -4,6 +4,10 @@
             class="{{ request()->get('page') == 'dashboard' ? 'active' : '' }}">
             Dashboard
         </a> |
+        <a href="{{ route('accounting.vat.index', ['page' => 'search', 'status' => $status]) }}"
+            class="{{ request()->get('page') == 'search' ? 'active' : '' }}">
+            Search
+        </a> |
         <a href="{{ route('accounting.vat.index', ['page' => 'purchase', 'status' => $status]) }}"
             class="{{ request()->get('page') == 'purchase' ? 'active' : '' }}">
             Purchase
