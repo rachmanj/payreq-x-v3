@@ -82,18 +82,18 @@ class VatController extends Controller
 
         if ($page === 'purchase') {
             $query->where('type', 'purchase');
-            $action_button = $status === 'outstanding' ? 'accounting.vat.ap.action' : 'accounting.vat.ap.action_complete';
+            $action_button = $status === 'incomplete' ? 'accounting.vat.ap.action' : 'accounting.vat.ap.action_complete';
 
-            if ($status === 'outstanding') {
+            if ($status === 'incomplete') {
                 $query->whereNull('attachment');
             } else {
                 $query->whereNotNull('attachment');
             }
         } else {
             $query->where('type', 'sales');
-            $action_button = $status === 'outstanding' ? 'accounting.vat.ar.action' : 'accounting.vat.ar.action_complete';
+            $action_button = $status === 'incomplete' ? 'accounting.vat.ar.action' : 'accounting.vat.ar.action_complete';
 
-            if ($status === 'outstanding') {
+            if ($status === 'incomplete') {
                 $query->where(function ($query) {
                     $query->whereNull('doc_num')
                         ->orWhereNull('faktur_no');

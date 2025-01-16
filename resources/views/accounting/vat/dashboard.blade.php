@@ -12,7 +12,7 @@
     <div class="row">
         <div class="col-12">
 
-            <x-vat-links page="dashboard" status="complete" />
+            <x-vat-links page="dashboard" status="incomplete" />
 
             <div class="row">
                 <div class="col-12">

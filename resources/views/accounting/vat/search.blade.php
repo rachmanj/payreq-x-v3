@@ -12,7 +12,7 @@
     <div class="row">
         <div class="col-12">
 
-            <x-vat-links page="search" status="complete" />
+            <x-vat-links page="search" status="incomplete" />
 
             <div class="card">
                 <div class="card-header">
