@@ -22,6 +22,7 @@ class Wtax23Import implements ToModel, WithHeadingRow
             'create_date' => $this->convertDate($row['create_date']),
             'posting_date' => $this->convertDate($row['posting_date']),
             'doc_num' => $row['invoice_no'],
+            'invoice_no' => $row['vendor_ref'],
             'doc_type' => $row['doc_type'],
             'account' => $row['doc_type'] === 'out' ? '21701005' : '11603005',
             'amount' => $row['wtax_amount'],

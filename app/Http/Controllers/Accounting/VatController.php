@@ -357,7 +357,10 @@ class VatController extends Controller
             })
             ->addColumn('invoice', function ($document) {
                 if (is_null($document->invoice_no)) {
-                    return '<small>No. - </small>';
+                    return '<small>No. - </small><br><small>Tgl. - </small>';
+                }
+                if (is_null($document->invoice_date)) {
+                    return '<small>No.' . $document->invoice_no . '</small><br><small>Tgl. - </small>';
                 }
                 return '<small>No.' . $document->invoice_no . '</small><br><small>Tgl.' . date('d-M-Y', strtotime($document->invoice_date)) . '</small>';
             })

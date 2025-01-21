@@ -22,6 +22,7 @@ class DailyTxImport implements ToModel, WithHeadingRow
             'vendor_code' => $row['vendor_code'],
             'vendor_name' => $row['vendor_name'],
             'doc_num' => $row['doc_num'],
+            'invoice_no' => $row['vendor_ref_no'],
             'doc_type' => $row['doc_type'],
             'project' => $row['project_code'],
             'account' => $row['account_code'],

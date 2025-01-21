@@ -27,6 +27,7 @@
                                 <th>DocNum</th>
                                 <th>CreateD</th>
                                 <th>PostD</th>
+                                <th>InvoiceNo</th>
                                 <th>Amount</th>
                                 <th>Remarks</th>
                                 <th>Days</th>
@@ -95,6 +96,9 @@
                         data: 'posting_date'
                     },
                     {
+                        data: 'invoice_no'
+                    },
+                    {
                         data: 'amount'
                     },
                     {
@@ -111,7 +115,7 @@
                 ],
                 fixedHeader: true,
                 columnDefs: [{
-                    "targets": [4, 6],
+                    "targets": [5, 7],
                     "className": "text-right"
                 }]
             })

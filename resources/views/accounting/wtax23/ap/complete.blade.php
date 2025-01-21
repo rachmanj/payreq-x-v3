@@ -28,6 +28,7 @@
                                 <th>DocNum</th>
                                 <th>CreateD | PostD</th>
                                 <th>Bupot No</th>
+                                <th>InvoiceNo</th>
                                 <th>Amount</th>
                                 <th>Remarks</th>
                                 <th>BupotBy</th>
@@ -96,6 +97,9 @@
                         data: 'bupot_no'
                     },
                     {
+                        data: 'invoice_no'
+                    },
+                    {
                         data: 'amount'
                     },
                     {
@@ -112,7 +116,7 @@
                 ],
                 fixedHeader: true,
                 columnDefs: [{
-                    "targets": [4],
+                    "targets": [5],
                     "className": "text-right"
                 }, {
                     "targets": [2],

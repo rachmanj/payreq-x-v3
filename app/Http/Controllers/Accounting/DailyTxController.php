@@ -206,6 +206,7 @@ class DailyTxController extends Controller
                 'create_date' => $document->create_date,
                 'posting_date' => $document->posting_date,
                 'doc_num' => $document->doc_num,
+                'invoice_no' => $document->invoice_no,
                 'type' => 'purchase',
                 'account' => '11603001',
                 'faktur_no' => $document->faktur_no,

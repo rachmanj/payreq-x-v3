@@ -35,6 +35,7 @@
                                 <th>DocNum</th>
                                 <th>CreateD</th>
                                 <th>PostD</th>
+                                <th>InvoiceNo</th>
                                 <th>DocType</th>
                                 <th>Duration</th>
                                 <th>User</th>
@@ -90,6 +91,9 @@
                     },
                     {
                         data: 'posting_date'
+                    },
+                    {
+                        data: 'invoice_no'
                     },
                     {
                         data: 'doc_type'
