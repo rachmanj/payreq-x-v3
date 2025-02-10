@@ -198,4 +198,45 @@ class AccountController extends Controller
 
         return response()->json($account_name);
     }
+
+    public function getList()
+    {
+        try {
+            if (auth()->user()->project == '000H') {
+                $accounts = Account::select('account_number', 'account_name')
+                    ->orderBy('account_number', 'asc')
+                    ->distinct()
+                    ->get();
+            } else {
+                $project_includes = ['all-site', auth()->user()->project];
+                $accounts = Account::select('account_number', 'account_name')
+                    ->whereIn('project', $project_includes)
+                    ->where('is_hidden', 0)
+                    ->orderBy('account_number', 'asc')
+                    ->distinct()
+                    ->get();
+            }
+
+            // Convert to array to ensure consistent format
+            $accounts = $accounts->map(function($account) {
+                return [
+                    'account_number' => $account->account_number,
+                    'account_name' => $account->account_name
+                ];
+            })->unique('account_number')->values();
+
+            // Debug the final count
+            \Log::info('Accounts fetched:', [
+                'count' => $accounts->count(),
+                'first_few' => $accounts->take(3)
+            ]);
+
+            return response()->json($accounts);
+        } catch (\Exception $e) {
+            \Log::error('Account List Error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch accounts: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

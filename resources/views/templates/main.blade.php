@@ -1,47 +1,59 @@
 <!DOCTYPE html>
 
 <html lang="en">
-  @include('templates.partials.head')
+@include('templates.partials.head')
+
+<head>
+    @stack('styles')
+</head>
+
 <body class="hold-transition layout-top-nav layout-navbar-fixed">
-<div class="wrapper">
+    <div class="wrapper">
 
-  @include('templates.partials.navbar')
-  @include('sweetalert::alert')
+        @include('templates.partials.navbar')
+        @include('sweetalert::alert')
 
-  <!-- Content Wrapper. Contains page content -->
-  <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0">@yield('title_page')</small></h1>
-          </div><!-- /.col -->
-          @include('templates.partials.breadcrumb')
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            <!-- Content Header (Page header) -->
+            <div class="content-header">
+                <div class="container">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">@yield('title_page')</small></h1>
+                        </div><!-- /.col -->
+                        @include('templates.partials.breadcrumb')
+                    </div><!-- /.row -->
+                </div><!-- /.container-fluid -->
+            </div>
+            <!-- /.content-header -->
+
+            <!-- Main content -->
+            <div class="content">
+                <div class="container">
+
+                    @yield('content')
+
+                </div><!-- /.container-fluid -->
+            </div>
+            <!-- /.content -->
+        </div>
+        <!-- /.content-wrapper -->
+
+        @include('templates.partials.footer')
+
     </div>
-    <!-- /.content-header -->
+    <!-- ./wrapper -->
 
-    <!-- Main content -->
-    <div class="content">
-      <div class="container">
-        
-        @yield('content')
+    <!-- REQUIRED SCRIPTS -->
+    @include('templates.partials.script')
 
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content -->
-  </div>
-  <!-- /.content-wrapper -->
-  
-  @include('templates.partials.footer')
+    <!-- Modals -->
+    @yield('modals')
 
-</div>
-<!-- ./wrapper -->
-
-<!-- REQUIRED SCRIPTS -->
-@include('templates.partials.script')
+    <!-- Additional Scripts -->
+    @stack('scripts')
 
 </body>
+
 </html>

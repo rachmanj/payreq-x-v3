@@ -124,6 +124,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('accounts')->name('accounts.')->group(function () {
         Route::get('/data', [AccountController::class, 'data'])->name('data');
         Route::post('/upload', [AccountController::class, 'upload'])->name('upload');
+        Route::get('/list', [AccountController::class, 'getList'])->name('list');
     });
     Route::resource('accounts', AccountController::class);
 
@@ -169,3 +170,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/get_account_name', [AccountController::class, 'get_account_name'])->name('get_account_name');
+
+// Remove or comment out this line if it exists
+// Route::get('/accounts/list', [AccountController::class, 'getList'])->name('accounts.list');
