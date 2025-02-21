@@ -9,9 +9,9 @@
 @endsection
 
 @section('content')
-
     <div class="row">
         {{-- <h3>Welcome to Payreq Sytem, {{ auth()->user()->name }} ... </h3> --}}
+        @include('dashboard.run-text')
     </div>
 
     <div class="row">
@@ -39,13 +39,9 @@
     <div class="row">
         @include('dashboard.chart')
     </div>
-
-    
-
-    
 @endsection
 
 @section('scripts')
-<script src="{{ asset('adminlte/plugins/chart.js/Chart.min.js') }}"></script>
-@include('dashboard.chart-script')
+    <script src="{{ asset('adminlte/plugins/chart.js/Chart.min.js') }}"></script>
+    @include('dashboard.chart-script')
 @endsection
