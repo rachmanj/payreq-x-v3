@@ -1,6 +1,6 @@
 <div class="col-md-12">
     <div class="card">
-        <div class="card-body">
+        <div class="card-body p-0">
             {{-- <h5 class="card-title">Run Text</h5> --}}
             <div class="currency-ticker">
                 <marquee behavior="scroll" direction="left" id="currency-marquee">
