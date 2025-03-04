@@ -41,9 +41,6 @@
                                     <th>Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- DataTables will populate this -->
-                            </tbody>
                         </table>
                     </form>
                 </div>
@@ -56,8 +53,6 @@
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}" />
 @endsection
 
 @section('scripts')
@@ -65,22 +60,43 @@
     <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables/datatables.min.js') }}"></script>
 
     <script>
         $(function() {
+            // Debounce function to limit how often a function can be called
+            function debounce(func, wait) {
+                let timeout;
+                return function() {
+                    const context = this;
+                    const args = arguments;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(function() {
+                        func.apply(context, args);
+                    }, wait);
+                };
+            }
+
+            // Initialize DataTable with optimized settings
             var table = $("#anggarans").DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route('reports.anggaran.data', ['status' => 'active']) }}',
+                deferRender: true,
+                pageLength: 25,
+                stateSave: true, // Save user's state (pagination, filtering, etc.)
+                ajax: {
+                    url: '{{ route('reports.anggaran.data', ['status' => 'active']) }}',
+                    type: 'GET',
+                    cache: true,
+                    error: function(xhr, error, thrown) {
+                        console.log('DataTables error: ' + error + ' - ' + thrown);
+                        console.log(xhr.responseText);
+                        alert('An error occurred while loading data. Please try refreshing the page.');
+                    }
+                },
                 columns: [{
                         data: 'checkbox',
                         orderable: false,
-                        searchable: false,
-                        render: function(data, type, full, meta) {
-                            return '<input type="checkbox" name="id[]" value="' + full.id + '">';
-                        }
+                        searchable: false
                     },
                     {
                         data: 'DT_RowIndex',
@@ -114,45 +130,48 @@
                         searchable: false
                     },
                 ],
-                fixedHeader: true,
                 order: [
                     [1, 'asc']
-                ]
-            });
-
-            // Handle click on "Select all" control
-            $('#select-all').on('click', function() {
-                // Check/uncheck all checkboxes in the table
-                var rows = table.rows({
-                    'search': 'applied'
-                }).nodes();
-                $('input[type="checkbox"]', rows).prop('checked', this.checked);
-            });
-
-            // Handle click on checkbox to set state of "Select all" control
-            $('#anggarans tbody').on('change', 'input[type="checkbox"]', function() {
-                // If checkbox is not checked
-                if (!this.checked) {
-                    var el = $('#select-all').get(0);
-                    // If "Select all" control is checked and has 'indeterminate' property
-                    if (el && el.checked && ('indeterminate' in el)) {
-                        // Set visual state of "Select all" control
-                        // as 'indeterminate'
-                        el.indeterminate = true;
-                    }
+                ],
+                responsive: true,
+                language: {
+                    processing: '<i class="fa fa-spinner fa-spin fa-2x fa-fw"></i><span class="sr-only">Loading...</span>'
+                },
+                drawCallback: function() {
+                    // Lazy load images when table is drawn
+                    lazyLoadImages();
+                },
+                initComplete: function() {
+                    // Add debounced search for better performance
+                    var searchInput = $('.dataTables_filter input');
+                    searchInput.unbind();
+                    searchInput.bind('input', debounce(function(e) {
+                        table.search(this.value).draw();
+                    }, 500));
                 }
             });
 
-            // Handle click on "Inactivate Many" button
-            $('#inactivate-many').on('click', function() {
+            // Lazy load images function
+            function lazyLoadImages() {
+                $('img[data-src]').each(function() {
+                    var img = $(this);
+                    img.attr('src', img.data('src'));
+                    img.removeAttr('data-src');
+                });
+            }
+
+            // Handle click on "Select all" control with optimized event delegation
+            $('#select-all').on('click', function() {
+                $('input[type="checkbox"]', table.rows().nodes()).prop('checked', this.checked);
+            });
+
+            // Handle click on "Inactivate Many" button with confirmation
+            $('#inactivate-many').on('click', function(e) {
+                e.preventDefault();
                 if (!confirm('Apakah yakin akan merubah status anggaran terpilih?')) {
                     return false;
                 }
-
-                var form = $('#form-inactivate-many');
-
-                // Submit form
-                form.submit();
+                $('#form-inactivate-many').submit();
             });
         });
     </script>

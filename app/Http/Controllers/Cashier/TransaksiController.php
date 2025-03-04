@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Transaksi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TransaksiController extends Controller
 {
@@ -51,14 +52,31 @@ class TransaksiController extends Controller
     public function data()
     {
         $account_id = request()->query('account_id');
+        
+        // Get the first transaction to use as a starting point for balance calculation
+        $first_transaction = Transaksi::where('account_id', $account_id)
+            ->orderBy('id', 'asc')
+            ->first();
+            
+        $initial_balance = $first_transaction ? $first_transaction->balance : 0;
+        
+        // Use query builder for better performance with DataTables
+        $query = Transaksi::query()
+            ->where('account_id', $account_id)
+            ->select([
+                'id',
+                'created_at',
+                'posting_date',
+                'document_type',
+                'description',
+                'debit',
+                'credit',
+                'balance',
+                DB::raw('(SELECT SUM(t2.debit) FROM transaksis as t2 WHERE t2.account_id = transaksis.account_id AND t2.id <= transaksis.id) as cumulative_debit'),
+                DB::raw('(SELECT SUM(t2.credit) FROM transaksis as t2 WHERE t2.account_id = transaksis.account_id AND t2.id <= transaksis.id) as cumulative_credit')
+            ]);
 
-        $transaksis = Transaksi::where('account_id', $account_id)->orderBy('id', 'asc')->get();
-        // add index column
-        $transaksis->map(function ($transaksi, $key) {
-            $transaksi->index = $key + 1;
-        });
-
-        return datatables()->of($transaksis)
+        return datatables()->of($query)
             ->editColumn('created_at', function ($transaksi) {
                 //add 8 hours to match with Jakarta timezone
                 return '<small>' . date('d-M-Y H:i:s', strtotime($transaksi->created_at . '+8 hours')) . '</small>';
@@ -72,22 +90,10 @@ class TransaksiController extends Controller
             ->editColumn('credit', function ($transaksi) {
                 return $transaksi->credit ? number_format($transaksi->credit, 2) : '-';
             })
-            ->addColumn('row_balance', function ($transaksi) use ($transaksis) {
-                $first_row = $transaksis->where('index', 1)->first();
-
-                if ($transaksi->index == 1) {
-                    return number_format($first_row->balance, 2);
-                } else {
-                    $previous_sum_of_debit = $transaksis->where('index', '<=', $transaksi->index)
-                        ->sum('debit') + $first_row->debit;
-                    $previous_sum_of_credit = $transaksis->where('index', '<=', $transaksi->index)
-                        ->sum('credit') - $first_row->credit;
-
-                    return number_format($first_row->balance + $previous_sum_of_debit - $previous_sum_of_credit, 2);
-                }
+            ->addColumn('row_balance', function ($transaksi) {
+                // Use the pre-calculated balance from the database
+                return number_format($transaksi->balance, 2);
             })
-            ->addIndexColumn()
-            // ->addColumn('action', 'transaksi.action')
             ->rawColumns(['created_at'])
             ->toJson();
     }

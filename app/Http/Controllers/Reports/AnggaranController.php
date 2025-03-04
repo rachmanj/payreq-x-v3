@@ -9,6 +9,7 @@ use App\Models\Payreq;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AnggaranController extends Controller
 {
@@ -80,6 +81,9 @@ class AnggaranController extends Controller
                 'filename' => $filename,
             ]);
         }
+        
+        // Clear all anggaran caches
+        $this->clearAnggaranCaches();
 
         return view('reports.anggaran.index');
     }
@@ -98,28 +102,31 @@ class AnggaranController extends Controller
     {
         $userRoles = app(UserController::class)->getUserRoles();
         $get_status = request()->query('status');
-
+        $project = auth()->user()->project;
+        
+        // Build the query
+        $query = Anggaran::query()
+            ->with(['createdBy:id,name'])
+            ->select(['id', 'nomor', 'rab_no', 'date', 'description', 'amount', 'balance', 'persen', 
+                     'rab_project', 'usage', 'created_by', 'periode_anggaran', 'periode_ofr', 'is_active', 'status']);
+        
+        // Apply status filter
         if ($get_status == 'active') {
-            $status = 1;
+            $query->where('is_active', 1);
         } else {
-            $status = 0;
+            $query->where('is_active', 0);
         }
-
+        
+        // Apply role-based filters
+        if (!array_intersect(['superadmin', 'admin'], $userRoles)) {
+            $query->where('project', $project);
+        }
+        
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
-            $anggarans = Anggaran::orderBy('date', 'desc')
-                ->whereIn('status', ['approved'])
-                ->where('is_active', $status)
-                ->limit(300)
-                ->get();
-        } else {
-            $anggarans = Anggaran::where('project', auth()->user()->project)
-                ->orderBy('date', 'desc')
-                ->where('is_active', $status)
-                ->limit(300)
-                ->get();
+            $query->whereIn('status', ['approved']);
         }
-
-        return datatables()->of($anggarans)
+        
+        return datatables()->of($query)
             ->addColumn('checkbox', function ($anggaran) {
                 return '<input type="checkbox" name="id[]" value="' . $anggaran->id . '">';
             })
@@ -134,17 +141,14 @@ class AnggaranController extends Controller
             ->editColumn('budget', function ($anggaran) {
                 return number_format($anggaran->amount, 2);
             })
-            ->editColumn('realisasi', function ($anggaran) {
-                return number_format($anggaran->balance, 2);
-            })
             ->addColumn('progres', function ($anggaran) {
                 $progres = $anggaran->persen ? $anggaran->persen : 0;
                 $statusColor = $this->statusColor($progres);
                 return '<div class="text-center"><small>' . $progres . '%</small>
-                                    <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </div>';
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>';
             })
             ->editColumn('rab_project', function ($anggaran) {
                 $content = $anggaran->rab_project . '<br><small>' . ucfirst($anggaran->usage) . '</small>';
@@ -183,6 +187,9 @@ class AnggaranController extends Controller
                 'persen' => $persen,
             ]);
         }
+        
+        // Clear all anggaran caches
+        $this->clearAnggaranCaches();
 
         return redirect()->route('reports.anggaran.index')->with('success', 'Release Anggaran berhasil diupdate');
     }
@@ -228,6 +235,9 @@ class AnggaranController extends Controller
 
         if (count($ids) > 0) {
             Anggaran::whereIn('id', $ids)->update(['is_active' => 0]);
+            
+            // Clear all anggaran caches
+            $this->clearAnggaranCaches();
         }
 
         return redirect()->back()->with('success', 'Selected records have been inactivated.');
@@ -239,8 +249,31 @@ class AnggaranController extends Controller
 
         if (count($ids) > 0) {
             Anggaran::whereIn('id', $ids)->update(['is_active' => 1]);
+            
+            // Clear all anggaran caches
+            $this->clearAnggaranCaches();
         }
 
         return redirect()->back()->with('success', 'Selected records have been activated.');
+    }
+
+    /**
+     * Clear all anggaran caches
+     */
+    private function clearAnggaranCaches()
+    {
+        // Clear specific cache keys related to anggarans
+        $projects = Project::pluck('code')->toArray();
+        $userRoles = ['superadmin', 'admin', 'user'];
+        
+        foreach ($projects as $project) {
+            foreach (['active', 'inactive'] as $status) {
+                $cacheKey = 'anggarans_' . $status . '_' . $project . '_' . implode('_', $userRoles);
+                Cache::forget($cacheKey);
+                
+                $cacheKey = 'anggarans_' . $status . '_' . $project . '_user';
+                Cache::forget($cacheKey);
+            }
+        }
     }
 }

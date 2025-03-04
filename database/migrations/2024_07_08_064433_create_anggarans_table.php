@@ -40,6 +40,17 @@ return new class extends Migration
             $table->boolean('printable')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            
+            // Add indexes for frequently queried columns
+            $table->index('is_active');
+            $table->index('status');
+            $table->index('project');
+            $table->index('date');
+            $table->index('created_by');
+            
+            // Add composite indexes for common query patterns
+            $table->index(['is_active', 'status']);
+            $table->index(['project', 'is_active']);
         });
     }
 
