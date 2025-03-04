@@ -10,10 +10,28 @@ use App\Models\Realization;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
+/**
+ * ApprovalPlanController
+ * 
+ * This controller handles the approval workflow for various document types
+ * including payment requests (payreq), realizations, and budget plans (rab).
+ */
 class ApprovalPlanController extends Controller
 {
+    /**
+     * Create approval plans for a document
+     * 
+     * This function creates approval plans for a specific document based on its type.
+     * It identifies the appropriate approvers from the ApprovalStage model and
+     * creates an approval plan entry for each approver.
+     * 
+     * @param string $document_type Type of document ('payreq', 'realization', 'rab')
+     * @param int $document_id ID of the document
+     * @return int|bool Number of approvers created or false if failed
+     */
     public function create_approval_plan($document_type, $document_id)
     {
+        // Retrieve the document based on its type
         if ($document_type == 'payreq') {
             $document = Payreq::findOrFail($document_id);
         } elseif ($document_type == 'realization') {
@@ -21,16 +39,18 @@ class ApprovalPlanController extends Controller
         } elseif ($document_type == 'rab') {
             $document = Anggaran::findOrFail($document_id);
         } else {
-            return false;
+            return false; // Invalid document type
         }
 
+        // Get all approvers for this document type, project and department
         $approvers = ApprovalStage::where('project', $document->project)
             ->where('department_id', $document->department_id)
             ->where('document_type', $document_type)
             ->get();
 
-        // if success or count > 0
+        // If approvers exist, create approval plans
         if ($approvers->count() > 0) {
+            // Create an approval plan for each approver
             foreach ($approvers as $approver) {
                 ApprovalPlan::create([
                     'document_id' => $document_id,
@@ -39,68 +59,83 @@ class ApprovalPlanController extends Controller
                 ]);
             }
 
+            // Update document to mark it as submitted and no longer editable
             $document->submit_at = Carbon::now();
             $document->editable = 0;
             $document->deletable = 0;
             $document->save();
 
-            return $approvers->count();
+            return $approvers->count(); // Return number of approvers
         }
 
-        // if false
+        // Return false if no approvers found
         return false;
     }
 
-    /* this function is to give approval decision to approval plan
-    * update approval decision: 1 = approved, 2 = revise, 3 = reject
-    */
+    /**
+     * Update approval decision
+     * 
+     * This function processes an approval decision (approve, revise, reject)
+     * and updates both the approval plan and the associated document.
+     * 
+     * Approval status codes:
+     * 0 = Pending
+     * 1 = Approved
+     * 2 = Revise
+     * 3 = Reject
+     * 4 = Canceled
+     * 
+     * @param Request $request The HTTP request containing approval data
+     * @param int $id The ID of the approval plan to update
+     * @return \Illuminate\Http\RedirectResponse Redirect to appropriate page
+     */
     public function update(Request $request, $id)
     {
-        // update approval plan
+        // Find and update the approval plan with the decision
         $approval_plan = ApprovalPlan::findOrFail($id);
         $approval_plan->update([
             'status' => $request->status,
             'remarks' => $request->remarks,
-            'is_read' => $request->remarks ? 0 : 1,
+            'is_read' => $request->remarks ? 0 : 1, // Mark as unread if there are remarks
         ]);
 
-        // update document status
+        // Get document type and retrieve the associated document
         $document_type = $approval_plan->document_type;
 
         if ($document_type == 'payreq') {
             $document = Payreq::where('id', $approval_plan->document_id)->first();
-            // $nomor = app(DocumentNumberController::class)->generate_document_number('payreq', auth()->user()->project);
         } elseif ($document_type == 'realization') {
             $document = Realization::findOrFail($approval_plan->document_id);
-            // $nomor = app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project);
         } elseif ($document_type == 'rab') {
             $document = Anggaran::findOrFail($approval_plan->document_id);
         } else {
-            return false;
+            return false; // Invalid document type
         }
 
-        // update status to approved if all approvers approved
+        // Get all active approval plans for this document
         $approval_plans = ApprovalPlan::where('document_id', $document->id)
             ->where('document_type', $document_type)
             ->where('is_open', 1)
             ->get();
 
-        // if there is at least one rejected or revise than status is rejected or revise
+        // Count different approval decisions
         $rejected_count = 0;
         $revised_count = 0;
         $approved_count = 0;
+        
         foreach ($approval_plans as $approval_plan) {
-            if ($approval_plan->status == 3) { // rejected
+            if ($approval_plan->status == 3) { // Rejected
                 $rejected_count++;
             }
-            if ($approval_plan->status == 2) { // revised
+            if ($approval_plan->status == 2) { // Revised
                 $revised_count++;
             }
-            if ($approval_plan->status == 1) {  // approved
+            if ($approval_plan->status == 1) { // Approved
                 $approved_count++;
             }
         }
 
+        // Handle document revision request
         if ($revised_count > 0) {
             $document->update([
                 'status' => 'revise',
@@ -108,21 +143,24 @@ class ApprovalPlanController extends Controller
                 'deletable' => 1,
             ]);
 
-            $this->cekExistingAndDisableOpen($document_type, $document->id);
+            // Close all open approval plans for this document
+            $this->closeOpenApprovalPlans($document_type, $document->id);
         }
 
+        // Handle document rejection
         if ($rejected_count > 0) {
             $document->update([
                 'status' => 'rejected',
                 'deletable' => 1,
             ]);
 
-            $this->cekExistingAndDisableOpen($document_type, $document->id);
+            // Close all open approval plans for this document
+            $this->closeOpenApprovalPlans($document_type, $document->id);
         }
 
-        // jika semua approver menyetujui
+        // Handle document approval (when all approvers have approved)
         if ($approved_count === $approval_plans->count()) {
-            // update fields of document, so all documents must have these fields
+            // Update document status to approved and generate official document number
             $document->update([
                 'status' => 'approved',
                 'draft_no' => $document->nomor,
@@ -132,8 +170,8 @@ class ApprovalPlanController extends Controller
                 'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
             ]);
 
+            // Special handling for reimbursement type payment requests
             if ($request->document_type === 'payreq') {
-                // jika payreq jenis reimburse, maka update dulu realization status menjadi approved-reimburse trus redirect ke index payreqs
                 if ($document->type === 'reimburse') {
                     $realization = Realization::where('payreq_id', $document->id)->first();
                     $realization->update([
@@ -144,20 +182,20 @@ class ApprovalPlanController extends Controller
                 }
             }
 
-            // additional action for realization when document is approved
+            // Special handling for realization documents
             if ($request->document_type === 'realization') {
-                // update field due_date of realization
+                // Set due date for realization (3 days from now)
                 $realization = Realization::findOrFail($document->id);
                 $realization->update([
                     'due_date' => Carbon::now()->addDays(3),
                 ]);
-                // check the variance between payreq and realization
+                
+                // Check variance between payment request and realization amounts
                 app(UserRealizationController::class)->check_realization_amount($document->id);
             }
 
-            // additional action for anggaran when document is approved
+            // Special handling for budget (RAB) documents
             if ($request->document_type === 'rab') {
-                // update field periode_ofr of anggaran
                 $document->update([
                     'periode_ofr' => $request->periode_ofr,
                     'usage' => $request->usage,
@@ -166,7 +204,7 @@ class ApprovalPlanController extends Controller
             }
         }
 
-        // redirect base on document type
+        // Redirect to appropriate page based on document type
         if ($request->document_type === 'payreq') {
             return redirect()->route('approvals.request.payreqs.index')->with('success', 'Approval Request updated');
         } elseif ($request->document_type === 'realization') {
@@ -174,10 +212,17 @@ class ApprovalPlanController extends Controller
         } elseif ($request->document_type === 'rab') {
             return redirect()->route('approvals.request.anggarans.index')->with('success', 'Approval Request updated');
         } else {
-            return false;
+            return false; // Invalid document type
         }
     }
 
+    /**
+     * Get approval status descriptions
+     * 
+     * Returns an array mapping status codes to their text descriptions
+     * 
+     * @return array Array of approval status descriptions
+     */
     public function approvalStatus()
     {
         return [
@@ -189,19 +234,37 @@ class ApprovalPlanController extends Controller
         ];
     }
 
-    public function cekExistingAndDisableOpen($document_type, $document_id)
+    /**
+     * Close all open approval plans for a document
+     * 
+     * This function is called when a document is rejected or needs revision.
+     * It marks all open approval plans for the document as closed (is_open = 0).
+     * 
+     * @param string $document_type Type of document
+     * @param int $document_id ID of the document
+     * @return void
+     */
+    public function closeOpenApprovalPlans($document_type, $document_id)
     {
-        // cek if there are approval plans still open (is_open = 1) for the document
+        // Find all open approval plans for this document
         $approval_plans = ApprovalPlan::where('document_id', $document_id)
             ->where('document_type', $document_type)
             ->where('is_open', 1)
             ->get();
 
-        // if there is approval plan for this document then change is_open to false / 0
+        // Close all open approval plans
         if ($approval_plans->count() > 0) {
             foreach ($approval_plans as $approval_plan) {
                 $approval_plan->update(['is_open' => 0]);
             }
         }
+    }
+
+    /**
+     * @deprecated Use closeOpenApprovalPlans() instead
+     */
+    public function cekExistingAndDisableOpen($document_type, $document_id)
+    {
+        return $this->closeOpenApprovalPlans($document_type, $document_id);
     }
 }
