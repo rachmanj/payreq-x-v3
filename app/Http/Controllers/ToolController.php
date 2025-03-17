@@ -156,6 +156,27 @@ class ToolController extends Controller
         return $equipments;
     }
 
+    /**
+     * Get approval document counts for API
+     * 
+     * Returns the count of pending approval documents as JSON
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function approval_documents_count_api()
+    {
+        $document_count = $this->approval_documents_count();
+
+        return response()->json($document_count);
+    }
+
+    /**
+     * Get approval document counts
+     * 
+     * Returns the count of pending approval documents
+     * 
+     * @return array
+     */
     public function approval_documents_count()
     {
         $approval_request_for_payreqs = ApprovalPlan::where('is_open', 1)

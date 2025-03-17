@@ -38,6 +38,9 @@ class ApprovalRequestPayreqController extends Controller
             ->get();
 
         return datatables()->of($approval_requests)
+            ->addColumn('id', function ($approval_request) {
+                return $approval_request->id;
+            })
             ->addColumn('nomor', function ($approval_request) {
                 return $approval_request->payreq->nomor;
             })

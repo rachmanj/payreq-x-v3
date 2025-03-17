@@ -288,4 +288,134 @@ class ApprovalPlanController extends Controller
     {
         return $this->closeOpenApprovalPlans($document_type, $document_id);
     }
+
+    /**
+     * Bulk approve multiple documents
+     * 
+     * This method allows approving multiple documents at once.
+     * 
+     * @param Request $request The HTTP request containing the IDs of documents to approve
+     * @return \Illuminate\Http\JsonResponse JSON response with success/error message
+     */
+    public function bulkApprove(Request $request)
+    {
+        // Validate request
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer',
+            'document_type' => 'required|string|in:payreq,realization,rab',
+            'remarks' => 'nullable|string',
+        ]);
+
+        $successCount = 0;
+        $failCount = 0;
+        $document_type = $request->document_type;
+
+        // Process each approval plan
+        foreach ($request->ids as $id) {
+            $approval_plan = ApprovalPlan::findOrFail($id);
+
+            // Skip if not the correct document type or already processed
+            if ($approval_plan->document_type !== $document_type || $approval_plan->status !== 0 || $approval_plan->is_open !== 1) {
+                $failCount++;
+                continue;
+            }
+
+            // Update the approval plan
+            $approval_plan->update([
+                'status' => 1, // Approved
+                'remarks' => $request->remarks,
+                'is_read' => $request->remarks ? 0 : 1,
+            ]);
+
+            // Get the document
+            if ($document_type == 'payreq') {
+                $document = Payreq::where('id', $approval_plan->document_id)->first();
+            } elseif ($document_type == 'realization') {
+                $document = Realization::findOrFail($approval_plan->document_id);
+            } elseif ($document_type == 'rab') {
+                $document = Anggaran::findOrFail($approval_plan->document_id);
+            } else {
+                $failCount++;
+                continue;
+            }
+
+            // Get all active approval plans for this document
+            $approval_plans = ApprovalPlan::where('document_id', $document->id)
+                ->where('document_type', $document_type)
+                ->where('is_open', 1)
+                ->get();
+
+            // Count approved plans
+            $approved_count = $approval_plans->where('status', 1)->count();
+
+            // Check if all approvers have approved
+            if ($approved_count === $approval_plans->count()) {
+                // Update document status to approved and generate official document number
+                $document->update([
+                    'status' => 'approved',
+                    'draft_no' => $document->nomor,
+                    'printable' => 1,
+                    'editable' => 0,
+                    'approved_at' => now(),
+                    'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
+                ]);
+
+                // Special handling for reimbursement type payment requests
+                if ($document_type === 'payreq') {
+                    if ($document->type === 'reimburse') {
+                        $realization = Realization::where('payreq_id', $document->id)->first();
+                        $realization->update([
+                            'status' => 'reimburse-approved',
+                            'approved_at' => now(),
+                            'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
+                        ]);
+                    }
+                }
+
+                // Special handling for realization documents
+                if ($document_type === 'realization') {
+                    // Set due date for realization (3 days from now)
+                    $realization = Realization::findOrFail($document->id);
+                    $realization->update([
+                        'due_date' => Carbon::now()->addDays(3),
+                    ]);
+
+                    // Check variance between payment request and realization amounts
+                    app(UserRealizationController::class)->check_realization_amount($document->id);
+                }
+
+                // Special handling for budget (RAB) documents
+                if ($document_type === 'rab') {
+                    $document->update([
+                        'periode_ofr' => $request->periode_ofr,
+                        'usage' => $request->usage,
+                        'periode_anggaran' => $request->periode_anggaran,
+                    ]);
+                }
+            }
+
+            $successCount++;
+        }
+
+        // Return response
+        if ($successCount > 0) {
+            $documentTypeLabel = ucfirst($document_type);
+            if ($document_type === 'payreq') {
+                $documentTypeLabel = 'Payment Request';
+            } elseif ($document_type === 'rab') {
+                $documentTypeLabel = 'Budget (RAB)';
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $successCount . ' ' . $documentTypeLabel . ($successCount > 1 ? 's' : '') . ' have been approved successfully' . ($failCount > 0 ? ' (' . $failCount . ' failed)' : ''),
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to approve any documents',
+            ], 422);
+        }
+    }
 }

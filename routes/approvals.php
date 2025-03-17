@@ -6,10 +6,13 @@ use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\ApprovalRequestAnggaranController;
 use App\Http\Controllers\ApprovalRequestPayreqController;
 use App\Http\Controllers\ApprovalRequestRealizationController;
+use App\Http\Controllers\ToolController;
 
 
 Route::prefix('approvals')->name('approvals.')->group(function () {
     Route::prefix('request')->name('request.')->group(function () {
+        Route::get('/document-count', [ToolController::class, 'approval_documents_count_api'])->name('document-count');
+
         Route::prefix('payreqs')->name('payreqs.')->group(function () {
             Route::get('/data', [ApprovalRequestPayreqController::class, 'data'])->name('data'); // 'approvals.request.payreqs.data'
             Route::get('/', [ApprovalRequestPayreqController::class, 'index'])->name('index'); // 'approvals.request.payreqs.index'
@@ -27,6 +30,7 @@ Route::prefix('approvals')->name('approvals.')->group(function () {
     });
     Route::prefix('plan')->name('plan.')->group(function () {
         Route::put('/{id}/update', [ApprovalPlanController::class, 'update'])->name('update');
+        Route::post('/bulk-approve', [ApprovalPlanController::class, 'bulkApprove'])->name('bulk-approve');
     });
 });
 
