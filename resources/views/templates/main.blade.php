@@ -4,6 +4,8 @@
 @include('templates.partials.head')
 
 <head>
+    <!-- Toastr CSS -->
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
     @stack('styles')
 </head>
 
@@ -11,7 +13,8 @@
     <div class="wrapper">
 
         @include('templates.partials.navbar')
-        @include('sweetalert::alert')
+        {{-- Removed SweetAlert include to prevent duplicate notifications --}}
+        {{-- @include('sweetalert::alert') --}}
 
         <!-- Content Wrapper. Contains page content -->
         <div class="content-wrapper">
@@ -47,6 +50,47 @@
 
     <!-- REQUIRED SCRIPTS -->
     @include('templates.partials.script')
+
+    <!-- Toastr JS -->
+    <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
+
+    <!-- Toastr Notifications -->
+    <script>
+        // Configure Toastr options
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
+
+        @if (Session::has('success'))
+            toastr.success("{{ Session::get('success') }}");
+        @endif
+
+        @if (Session::has('error'))
+            toastr.error("{{ Session::get('error') }}");
+        @endif
+
+        @if (Session::has('info'))
+            toastr.info("{{ Session::get('info') }}");
+        @endif
+
+        @if (Session::has('warning'))
+            toastr.warning("{{ Session::get('warning') }}");
+        @endif
+    </script>
 
     <!-- Modals -->
     @yield('modals')

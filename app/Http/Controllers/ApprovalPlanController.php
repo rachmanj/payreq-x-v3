@@ -122,7 +122,7 @@ class ApprovalPlanController extends Controller
         $rejected_count = 0;
         $revised_count = 0;
         $approved_count = 0;
-        
+
         foreach ($approval_plans as $approval_plan) {
             if ($approval_plan->status == 3) { // Rejected
                 $rejected_count++;
@@ -189,7 +189,7 @@ class ApprovalPlanController extends Controller
                 $realization->update([
                     'due_date' => Carbon::now()->addDays(3),
                 ]);
-                
+
                 // Check variance between payment request and realization amounts
                 app(UserRealizationController::class)->check_realization_amount($document->id);
             }
@@ -204,13 +204,34 @@ class ApprovalPlanController extends Controller
             }
         }
 
-        // Redirect to appropriate page based on document type
+        // Determine the appropriate success message based on the approval status
+        $status_text = '';
+        if ($request->status == 1) {
+            $status_text = 'approved';
+        } elseif ($request->status == 2) {
+            $status_text = 'sent back for revision';
+        } elseif ($request->status == 3) {
+            $status_text = 'rejected';
+        } else {
+            $status_text = 'updated';
+        }
+
+        // Check if the request is AJAX
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => ucfirst($document_type) . ' has been ' . $status_text,
+                'document_type' => $document_type
+            ]);
+        }
+
+        // Redirect to appropriate page based on document type for non-AJAX requests
         if ($request->document_type === 'payreq') {
-            return redirect()->route('approvals.request.payreqs.index')->with('success', 'Approval Request updated');
+            return redirect()->route('approvals.request.payreqs.index')->with('success', 'Payment Request has been ' . $status_text);
         } elseif ($request->document_type === 'realization') {
-            return redirect()->route('approvals.request.realizations.index')->with('success', 'Approval Request updated');
+            return redirect()->route('approvals.request.realizations.index')->with('success', 'Realization has been ' . $status_text);
         } elseif ($request->document_type === 'rab') {
-            return redirect()->route('approvals.request.anggarans.index')->with('success', 'Approval Request updated');
+            return redirect()->route('approvals.request.anggarans.index')->with('success', 'Budget (RAB) has been ' . $status_text);
         } else {
             return false; // Invalid document type
         }
