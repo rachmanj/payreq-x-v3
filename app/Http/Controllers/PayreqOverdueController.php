@@ -22,6 +22,21 @@ class PayreqOverdueController extends Controller
         return redirect()->route('document-overdue.payreq.index')->with('success', 'Payreq extended successfully.');
     }
 
+    public function bulkExtend(Request $request)
+    {
+        $request->validate([
+            'payreq_ids' => 'required|array',
+            'payreq_ids.*' => 'exists:payreqs,id',
+            'new_due_date' => 'required|date'
+        ]);
+
+        $count = Payreq::whereIn('id', $request->payreq_ids)
+            ->update(['due_date' => $request->new_due_date]);
+
+        return redirect()->route('document-overdue.payreq.index')
+            ->with('success', $count . ' payment requests have been updated successfully.');
+    }
+
     public function data()
     {
         $status_include = ['paid'];
@@ -31,6 +46,9 @@ class PayreqOverdueController extends Controller
             ->get();
 
         return datatables()->of($payreqs)
+            ->addColumn('checkbox', function ($payreq) {
+                return '<input type="checkbox" name="payreq_ids[]" class="payreq-checkbox" value="' . $payreq->id . '">';
+            })
             ->addColumn(('employee'), function ($payreq) {
                 return $payreq->requestor->name;
             })
@@ -49,7 +67,7 @@ class PayreqOverdueController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'document-overdue.payreq.action')
-            ->rawColumns(['action', 'nomor'])
+            ->rawColumns(['action', 'nomor', 'checkbox'])
             ->toJson();
     }
 }

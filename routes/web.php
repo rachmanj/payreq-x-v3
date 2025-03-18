@@ -78,19 +78,17 @@ Route::middleware('auth')->group(function () {
 
     // USERS OVERDUE
     Route::prefix('document-overdue')->name('document-overdue.')->group(function () {
-        // payreq
-        Route::prefix('payreq')->name('payreq.')->group(function () {
-            Route::get('/data', [PayreqOverdueController::class, 'data'])->name('data');
-            Route::get('/', [PayreqOverdueController::class, 'index'])->name('index');
-            Route::post('/extend', [PayreqOverdueController::class, 'extend'])->name('extend');
-        });
+        // Payreq Overdue
+        Route::get('payreq', [PayreqOverdueController::class, 'index'])->name('payreq.index');
+        Route::get('payreq/data', [PayreqOverdueController::class, 'data'])->name('payreq.data');
+        Route::post('payreq/extend', [PayreqOverdueController::class, 'extend'])->name('payreq.extend');
+        Route::post('payreq/bulk-extend', [PayreqOverdueController::class, 'bulkExtend'])->name('payreq.bulk-extend');
 
-        // realizations
-        Route::prefix('realization')->name('realization.')->group(function () {
-            Route::get('/data', [RealizationOverdueController::class, 'data'])->name('data');
-            Route::get('/', [RealizationOverdueController::class, 'index'])->name('index');
-            Route::post('/extend', [RealizationOverdueController::class, 'extend'])->name('extend');
-        });
+        // Realization Overdue
+        Route::get('realization', [RealizationOverdueController::class, 'index'])->name('realization.index');
+        Route::get('realization/data', [RealizationOverdueController::class, 'data'])->name('realization.data');
+        Route::post('realization/extend', [RealizationOverdueController::class, 'extend'])->name('realization.extend');
+        Route::post('realization/bulk-extend', [RealizationOverdueController::class, 'bulkExtend'])->name('realization.bulk-extend');
     });
 
     // JOURNALS
