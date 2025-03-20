@@ -5,17 +5,17 @@
                 <h4 class="card-title">Form</h4>
                 <a href="{{ route('user-payreqs.realizations.index') }}" class="btn btn-sm btn-info float-right"><i
                         class="fas fa-arrow-left"></i> Back</a>
-                <form action="{{ route('user-payreqs.realizations.submit_realization') }}" method="POST">
+                <form id="submit-realization-form" action="{{ route('user-payreqs.realizations.submit_realization') }}"
+                    method="POST">
                     @csrf
-                    @if ($realization_details->count() > 0)
-                        <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                        <button type="submit" class="btn btn-sm btn-warning float-right mx-2"
-                            onclick="return confirm('Are you sure you want to submit this realization?')">Submit
-                            Realization</button>
-                    @endif
+                    <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+                    <button type="button" id="btn-submit-realization" class="btn btn-sm btn-warning float-right mx-2"
+                        {{ $realization_details->count() == 0 ? 'disabled' : '' }}>
+                        Submit Realization
+                    </button>
                 </form>
             </div>
-            <form action="{{ route('user-payreqs.realizations.store_detail') }}" method="POST">
+            <form id="add-detail-form" method="POST" action="{{ route('user-payreqs.realizations.store_detail') }}">
                 @csrf
                 <input type="hidden" name="realization_id" value="{{ $realization->id }}">
                 <div class="card-body">
@@ -25,11 +25,7 @@
                                 <label for="description">Description</label>
                                 <input type="text" name="description" value="{{ old('description') }}"
                                     id="description" class="form-control @error('description') is-invalid @enderror">
-                                @error('description')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
+                                <div class="invalid-feedback" id="description-error"></div>
                             </div>
                         </div>
                         <div class="col-4">
@@ -37,28 +33,8 @@
                                 <label for="amount">Amount</label>
                                 <input type="text" name="amount" id="amount" class="form-control"
                                     value="{{ old('amount') }}" onkeyup="formatNumber(this)">
-                                @error('amount')
-                                    <div class="text-danger">{{ $message }}</div>
-                                @enderror
+                                <div class="text-danger" id="amount-error"></div>
                             </div>
-                            <script>
-                                function formatNumber(input) {
-                                    // Remove any non-digit characters except dots
-                                    let value = input.value.replace(/[^\d.]/g, '');
-
-                                    // Ensure only one decimal point
-                                    let parts = value.split('.');
-                                    if (parts.length > 2) {
-                                        parts = [parts[0], parts.slice(1).join('')];
-                                    }
-
-                                    // Add thousand separators
-                                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-                                    // Join with decimal part if exists
-                                    input.value = parts.join('.');
-                                }
-                            </script>
                         </div>
                     </div>
                     <div class="row">
@@ -74,6 +50,7 @@
                                             {{ $item->nomor_polisi }}</option>
                                     @endforeach
                                 </select>
+                                <div class="text-danger" id="unit_no-error"></div>
                             </div>
                         </div>
 
@@ -82,6 +59,7 @@
                                 <label for="nopol">No Polisi <small>(optional)</small></label>
                                 <input type="text" name="nopol" value="{{ old('nopol') }}" id="nopol"
                                     class="form-control">
+                                <div class="text-danger" id="nopol-error"></div>
                             </div>
                         </div>
 
@@ -89,12 +67,14 @@
                             <div class="form-group">
                                 <label for="qty">Qty</label>
                                 <input id="qty" name="qty" class="form-control">
+                                <div class="text-danger" id="qty-error"></div>
                             </div>
                         </div>
                         <div class="col-1">
                             <div class="form-group">
                                 <label for="km_position">HM</label>
                                 <input id="km_position" name="km_position" class="form-control">
+                                <div class="text-danger" id="km_position-error"></div>
                             </div>
                         </div>
 
@@ -108,6 +88,7 @@
                                     <option value="tax">STNK / Tax</option>
                                     <option value="other">Others</option>
                                 </select>
+                                <div class="text-danger" id="type-error"></div>
                             </div>
                         </div>
 
@@ -119,16 +100,119 @@
                                     <option value="liter">liter</option>
                                     <option value="each">Each</option>
                                 </select>
+                                <div class="text-danger" id="uom-error"></div>
                             </div>
                         </div>
 
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button type="submit" class="btn btn-sm btn-success btn-block"><i class="fas fa-save"></i> ADD
-                        DETAIL</button>
+                    <button type="button" id="btn-add-detail" class="btn btn-sm btn-success btn-block">
+                        <i class="fas fa-save"></i> ADD DETAIL
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        // Add Detail Form Submission
+        $('#btn-add-detail').click(function(e) {
+            e.preventDefault();
+
+            // Clear previous error messages
+            $('.invalid-feedback, .text-danger').empty();
+            $('.is-invalid').removeClass('is-invalid');
+
+            // Get form data
+            let formData = $('#add-detail-form').serialize();
+
+            // Convert amount to number format (remove commas)
+            let amount = $('#amount').val().replace(/,/g, '');
+            formData = formData.replace('amount=' + $('#amount').val(), 'amount=' + amount);
+
+            $.ajax({
+                url: "{{ route('user-payreqs.realizations.store_detail') }}",
+                type: "POST",
+                data: formData,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    console.log("Success response:", response);
+                    // Show success message
+                    showAlert(response.message || 'Detail added successfully', 'success');
+
+                    // Refresh the table
+                    refreshDetailsTable();
+
+                    // Reset form
+                    $('#add-detail-form')[0].reset();
+                    $('.select2bs4').val('').trigger('change');
+
+                    // Enable submit button if we have details
+                    $('#btn-submit-realization').prop('disabled', false);
+                },
+                error: function(xhr) {
+                    console.log("Error response:", xhr);
+                    if (xhr.status === 422) {
+                        const errors = xhr.responseJSON.errors;
+                        // Display validation errors
+                        $.each(errors, function(field, messages) {
+                            $('#' + field + '-error').text(messages[0]);
+                            $('#' + field).addClass('is-invalid');
+                        });
+                    } else {
+                        showAlert('Error: ' + (xhr.responseJSON?.message ||
+                            'An error occurred'), 'danger');
+                    }
+                }
+            });
+        });
+
+        // Submit Realization
+        $('#btn-submit-realization').click(function() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You are about to submit this realization",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, submit it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('user-payreqs.realizations.submit_realization') }}",
+                        type: "POST",
+                        data: $('#submit-realization-form').serialize(),
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            Swal.fire(
+                                'Submitted!',
+                                response.message ||
+                                'Realization submitted successfully',
+                                'success'
+                            ).then(() => {
+                                window.location.href =
+                                    "{{ route('user-payreqs.realizations.index') }}";
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire(
+                                'Error!',
+                                xhr.responseJSON?.message ||
+                                'An error occurred',
+                                'error'
+                            );
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>

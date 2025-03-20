@@ -49,6 +49,11 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::get('/{realization_id}/print', [UserRealizationController::class, 'print'])->name('print');
         Route::put('/{realization_id}/void', [UserRealizationController::class, 'void'])->name('void');
         Route::delete('/{realization_id}/cancel', [UserRealizationController::class, 'cancel'])->name('cancel');
+
+        // New AJAX routes for realization details
+        Route::get('/get_details/{realization}', [UserRealizationController::class, 'getDetails'])->name('get_details');
+        Route::get('/get_detail/{detail}', [UserRealizationController::class, 'getDetail'])->name('get_detail');
+        Route::post('/update_detail/{detail}', [UserRealizationController::class, 'updateDetail'])->name('update_detail');
     });
     Route::resource('realizations', UserRealizationController::class);
 

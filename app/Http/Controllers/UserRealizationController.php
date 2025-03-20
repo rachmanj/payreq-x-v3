@@ -394,4 +394,73 @@ class UserRealizationController extends Controller
 
         return $result;
     }
+
+    /**
+     * Get all details for a realization.
+     *
+     * @param  \App\Models\Realization  $realization
+     * @return \Illuminate\Http\Response
+     */
+    public function getDetails($realization_id)
+    {
+        $details = RealizationDetail::where('realization_id', $realization_id)->get();
+
+        return response()->json([
+            'success' => true,
+            'details' => $details
+        ]);
+    }
+
+    /**
+     * Get a specific detail.
+     *
+     * @param  \App\Models\RealizationDetail  $detail
+     * @return \Illuminate\Http\Response
+     */
+    public function getDetail($detail_id)
+    {
+        $detail = RealizationDetail::findOrFail($detail_id);
+        return response()->json($detail);
+    }
+
+    /**
+     * Update a specific detail.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\RealizationDetail  $detail
+     * @return \Illuminate\Http\Response
+     */
+    public function updateDetail(Request $request, $detail_id)
+    {
+        $request->validate([
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'unit_no' => 'nullable|string|max:50',
+            'nopol' => 'nullable|string|max:50',
+            'qty' => 'nullable|numeric',
+            'km_position' => 'nullable|numeric',
+            'type' => 'nullable|string|max:50',
+            'uom' => 'nullable|string|max:50',
+        ]);
+
+        $detail = RealizationDetail::findOrFail($detail_id);
+
+        // Update the detail
+        $detail->update([
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'unit_no' => $request->unit_no,
+            'nopol' => $request->nopol,
+            'qty' => $request->qty,
+            'km_position' => $request->km_position,
+            'type' => $request->type,
+            'uom' => $request->uom,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail updated successfully',
+            'detail' => $detail
+        ]);
+    }
 }
