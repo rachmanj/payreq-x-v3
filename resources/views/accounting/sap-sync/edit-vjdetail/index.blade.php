@@ -125,6 +125,16 @@
             color: #dc3545;
             font-weight: bold;
         }
+
+        /* Description additional info styling */
+        .additional-info {
+            display: block;
+            color: #6c757d;
+            font-style: italic;
+            border-top: 1px dashed #dee2e6;
+            padding-top: 3px;
+            margin-top: 3px;
+        }
     </style>
 @endsection
 
@@ -173,13 +183,32 @@
                         data: 'akun'
                     },
                     {
-                        data: 'description'
+                        data: 'description',
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                // Check if description contains additional info (indicated by \n)
+                                if (data && data.includes('\n')) {
+                                    let parts = data.split('\n');
+                                    let mainDesc = parts[0];
+                                    let additionalInfo = parts[1].replace(/\[|\]/g,
+                                        ''); // Remove brackets
+
+                                    return mainDesc + '<small class="additional-info">' +
+                                        additionalInfo + '</small>';
+                                }
+                                return data;
+                            }
+                            return data;
+                        }
                     },
                     {
                         data: 'project'
                     },
                     {
-                        data: 'cost_center'
+                        data: 'cost_center',
+                        render: function(data, type, row) {
+                            return data; // Already formatted with HTML in controller
+                        }
                     },
                     {
                         data: 'amount',
@@ -206,9 +235,14 @@
                 responsive: true,
                 autoWidth: false,
                 columnDefs: [{
-                    "targets": [0, 3, 4, 5, 6],
-                    "className": "text-center"
-                }],
+                        "targets": [0, 3, 4, 5, 6],
+                        "className": "text-center"
+                    },
+                    {
+                        "targets": [2],
+                        "className": "text-wrap"
+                    }
+                ],
                 language: {
                     processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span>'
                 }
