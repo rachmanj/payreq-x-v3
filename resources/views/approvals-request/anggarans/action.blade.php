@@ -5,6 +5,12 @@
         ->where('project', auth()->user()->project)
         ->where('is_active', 1)
         ->get();
+
+    $periode_anggarans = \App\Models\PeriodeAnggaran::orderBy('periode', 'asc')
+        ->where('periode_type', 'anggaran')
+        ->where('project', auth()->user()->project)
+        ->where('is_active', 1)
+        ->get();
 @endphp
 
 
@@ -85,6 +91,21 @@
 
                                         <option value="{{ $periode_ofr->periode }}">
                                             {{ \Carbon\Carbon::parse($periode_ofr->periode)->format('F Y') }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="periode_anggaran">Periode Anggaran</label>
+                                <select name="periode_anggaran" id="periode_anggaran" class="form-control">
+                                    @foreach ($periode_anggarans as $periode_anggaran)
+                                        <option value="{{ $periode_anggaran->periode }}">
+                                            {{ \Carbon\Carbon::parse($periode_anggaran->periode)->format('F Y') }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>

@@ -76,22 +76,122 @@
 
     <!-- Bulk Approval Modal -->
     <div class="modal fade" id="bulk-approval-modal">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-md">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">Bulk Approval</h4>
+                    <h4 class="modal-title">Bulk Approval for Selected RABs</h4>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
                     <p>Are you sure you want to approve the selected RABs?</p>
-                    <div class="form-group">
-                        <label for="bulk-remarks">Remarks (optional)</label>
-                        <textarea id="bulk-remarks" class="form-control" rows="2"></textarea>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="bulk-status">Approval Status</label>
+                                <select id="bulk-status" class="form-control">
+                                    <option value="">-- change status --</option>
+                                    <option value="1" selected>Approved</option>
+                                    <option value="2">Revise</option>
+                                    <option value="3">Reject</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label for="bulk-periode-anggaran">Periode Anggaran</label>
+                                <select id="bulk-periode-anggaran" class="form-control">
+                                    @php
+                                        $periode_anggarans = \App\Models\PeriodeAnggaran::orderBy('periode', 'asc')
+                                            ->where('periode_type', 'anggaran')
+                                            ->where('project', auth()->user()->project)
+                                            ->where('is_active', 1)
+                                            ->get();
+                                    @endphp
+                                    @foreach ($periode_anggarans as $periode_anggaran)
+                                        <option value="{{ $periode_anggaran->periode }}">
+                                            {{ \Carbon\Carbon::parse($periode_anggaran->periode)->format('F Y') }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label for="bulk-periode-ofr">Periode OFR</label>
+                                <select id="bulk-periode-ofr" class="form-control">
+                                    @php
+                                        $periode_ofrs = \App\Models\PeriodeAnggaran::orderBy('periode', 'asc')
+                                            ->where('periode_type', 'ofr')
+                                            ->where('project', auth()->user()->project)
+                                            ->where('is_active', 1)
+                                            ->get();
+                                    @endphp
+                                    @foreach ($periode_ofrs as $periode_ofr)
+                                        <option value="{{ $periode_ofr->periode }}">
+                                            {{ \Carbon\Carbon::parse($periode_ofr->periode)->format('F Y') }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="bulk-type">Anggaran Type</label>
+                            <div class="form-group">
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="periode" name="bulk-type" checked>
+                                    <label class="form-check-label">Periode</label>
+                                </div>
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="event" name="bulk-type">
+                                    <label class="form-check-label">Event</label>
+                                </div>
+                                <div class="form-check d-inline">
+                                    <input class="form-check-input" type="radio" value="buc" name="bulk-type">
+                                    <label class="form-check-label">BUC</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="bulk-usage">Usage</label>
+                            <div class="form-group">
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="user" name="bulk-usage">
+                                    <label class="form-check-label">User</label>
+                                </div>
+                                <div class="form-check d-inline mr-4">
+                                    <input class="form-check-input" type="radio" value="department" name="bulk-usage">
+                                    <label class="form-check-label">Department</label>
+                                </div>
+                                <div class="form-check d-inline">
+                                    <input class="form-check-input" type="radio" value="project" name="bulk-usage"
+                                        checked>
+                                    <label class="form-check-label">Project</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="bulk-remarks">Note</label>
+                                <textarea id="bulk-remarks" class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                    <button type="button" id="confirm-bulk-approve" class="btn btn-success">Approve</button>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" id="confirm-bulk-approve" class="btn btn-sm btn-primary"><i
+                            class="fas fa-save"></i> Save</button>
                 </div>
             </div>
         </div>
@@ -101,7 +201,8 @@
 @section('styles')
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+    <link rel="stylesheet"
+        href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}" />
 @endsection
@@ -218,7 +319,22 @@
                     selectedIds.push($(this).data('id'));
                 });
 
+                var status = $('#bulk-status').val();
+                var periode_anggaran = $('#bulk-periode-anggaran').val();
+                var periode_ofr = $('#bulk-periode-ofr').val();
+                var type = $('input[name="bulk-type"]:checked').val();
+                var usage = $('input[name="bulk-usage"]:checked').val();
                 var remarks = $('#bulk-remarks').val();
+
+                if (!status) {
+                    toastr.error('Please select an approval status');
+                    return;
+                }
+
+                if (!usage) {
+                    toastr.error('Please select a usage type');
+                    return;
+                }
 
                 $.ajax({
                     url: '{{ route('approvals.plan.bulk-approve') }}',
@@ -226,6 +342,11 @@
                     data: {
                         _token: '{{ csrf_token() }}',
                         ids: selectedIds,
+                        status: status,
+                        periode_anggaran: periode_anggaran,
+                        periode_ofr: periode_ofr,
+                        type: type,
+                        usage: usage,
                         remarks: remarks,
                         document_type: 'rab'
                     },
@@ -239,8 +360,12 @@
                         // Refresh the table
                         table.ajax.reload();
 
-                        // Reset checkboxes
+                        // Reset checkboxes and form fields
                         $('#select-all-checkbox').prop('checked', false);
+                        $('#bulk-status').val('1');
+                        $('input[name="bulk-type"][value="periode"]').prop('checked', true);
+                        $('input[name="bulk-usage"][value="project"]').prop('checked', true);
+                        $('#bulk-remarks').val('');
                         updateBulkActionButtons();
 
                         // Update document count badges
@@ -253,6 +378,14 @@
                         toastr.error(errorMessage);
                     }
                 });
+            });
+
+            // Clear form fields when modal is closed/canceled
+            $('#bulk-approval-modal').on('hidden.bs.modal', function() {
+                $('#bulk-status').val('1');
+                $('input[name="bulk-type"][value="periode"]').prop('checked', true);
+                $('input[name="bulk-usage"][value="project"]').prop('checked', true);
+                $('#bulk-remarks').val('');
             });
 
             // Handle AJAX form submission for approval forms
