@@ -24,6 +24,66 @@
                     @endcan
                 </div>
                 <div class="card-body">
+                    <!-- Custom Search Form -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <div class="card card-outline card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title">Search</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <form id="custom-search-form">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="search-nomor">Nomor/RAB No</label>
+                                                    <input type="text" class="form-control" id="search-nomor"
+                                                        placeholder="Search by nomor">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="search-creator">Creator</label>
+                                                    <input type="text" class="form-control" id="search-creator"
+                                                        placeholder="Search by creator">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="search-project">RAB Project</label>
+                                                    <input type="text" class="form-control" id="search-project"
+                                                        placeholder="Search by project">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="search-description">Description</label>
+                                                    <input type="text" class="form-control" id="search-description"
+                                                        placeholder="Search by description">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12 text-right">
+                                                <button type="button" id="btn-search" class="btn btn-primary">
+                                                    <i class="fas fa-search"></i> Search
+                                                </button>
+                                                <button type="button" id="btn-reset" class="btn btn-default">
+                                                    <i class="fas fa-times"></i> Reset
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <form id="form-inactivate-many" action="{{ route('reports.anggaran.update_many') }}" method="POST">
                         @csrf
                         <table id="anggarans" class="table table-bordered table-hover">
@@ -41,6 +101,9 @@
                                     <th>Action</th>
                                 </tr>
                             </thead>
+                            <tbody>
+                                <!-- DataTables will populate this -->
+                            </tbody>
                         </table>
                     </form>
                 </div>
@@ -63,69 +126,80 @@
 
     <script>
         $(function() {
-            // Debounce function to limit how often a function can be called
-            function debounce(func, wait) {
-                let timeout;
-                return function() {
-                    const context = this;
-                    const args = arguments;
-                    clearTimeout(timeout);
-                    timeout = setTimeout(function() {
-                        func.apply(context, args);
-                    }, wait);
-                };
-            }
-
             // Initialize DataTable with optimized settings
             var table = $("#anggarans").DataTable({
                 processing: true,
                 serverSide: true,
                 deferRender: true,
                 pageLength: 25,
-                stateSave: true, // Save user's state (pagination, filtering, etc.)
                 ajax: {
                     url: '{{ route('reports.anggaran.data', ['status' => 'active']) }}',
                     type: 'GET',
-                    cache: true,
-                    error: function(xhr, error, thrown) {
-                        console.log('DataTables error: ' + error + ' - ' + thrown);
-                        console.log(xhr.responseText);
-                        alert('An error occurred while loading data. Please try refreshing the page.');
+                    data: function(d) {
+                        // Add custom search parameters
+                        d.custom_search = true;
+                        d.search_nomor = $('#search-nomor').val();
+                        d.search_creator = $('#search-creator').val();
+                        d.search_project = $('#search-project').val();
+                        d.search_description = $('#search-description').val();
+
+                        // Clear DataTables search
+                        d.search = {
+                            value: "",
+                            regex: false
+                        };
+                        return d;
                     }
                 },
                 columns: [{
                         data: 'checkbox',
+                        name: 'checkbox',
                         orderable: false,
                         searchable: false
                     },
                     {
                         data: 'DT_RowIndex',
+                        name: 'DT_RowIndex',
                         orderable: false,
                         searchable: false
                     },
                     {
-                        data: 'nomor'
+                        data: 'nomor',
+                        name: 'nomor'
                     },
                     {
-                        data: 'creator'
+                        data: 'creator',
+                        name: 'creator',
+                        orderable: false,
+                        searchable: false
                     },
                     {
-                        data: 'rab_project'
+                        data: 'rab_project',
+                        name: 'rab_project'
                     },
                     {
-                        data: 'description'
+                        data: 'description',
+                        name: 'description'
                     },
                     {
-                        data: 'periode'
+                        data: 'periode',
+                        name: 'periode',
+                        orderable: false,
+                        searchable: false
                     },
                     {
-                        data: 'budget'
+                        data: 'amount',
+                        name: 'amount'
                     },
                     {
-                        data: 'progres'
+                        data: 'progres',
+                        name: 'progres',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'action',
+                        name: 'action',
                         orderable: false,
                         searchable: false
                     },
@@ -141,13 +215,32 @@
                     // Lazy load images when table is drawn
                     lazyLoadImages();
                 },
-                initComplete: function() {
-                    // Add debounced search for better performance
-                    var searchInput = $('.dataTables_filter input');
-                    searchInput.unbind();
-                    searchInput.bind('input', debounce(function(e) {
-                        table.search(this.value).draw();
-                    }, 500));
+                dom: '<"row"<"col-md-6"l><"col-md-6">>rtip', // Remove default search box
+                lengthMenu: [
+                    [10, 25, 50, -1],
+                    [10, 25, 50, "All"]
+                ]
+            });
+
+            // Search button click handler
+            $('#btn-search').on('click', function() {
+                table.ajax.reload();
+            });
+
+            // Reset button click handler
+            $('#btn-reset').on('click', function() {
+                $('#search-nomor').val('');
+                $('#search-creator').val('');
+                $('#search-project').val('');
+                $('#search-description').val('');
+                table.ajax.reload();
+            });
+
+            // Allow pressing Enter to search
+            $('#custom-search-form input').on('keypress', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    $('#btn-search').click();
                 }
             });
 
@@ -160,13 +253,13 @@
                 });
             }
 
-            // Handle click on "Select all" control with optimized event delegation
-            $('#select-all').on('click', function() {
+            // Use event delegation for better performance
+            $(document).on('click', '#select-all', function() {
                 $('input[type="checkbox"]', table.rows().nodes()).prop('checked', this.checked);
             });
 
             // Handle click on "Inactivate Many" button with confirmation
-            $('#inactivate-many').on('click', function(e) {
+            $(document).on('click', '#inactivate-many', function(e) {
                 e.preventDefault();
                 if (!confirm('Apakah yakin akan merubah status anggaran terpilih?')) {
                     return false;
