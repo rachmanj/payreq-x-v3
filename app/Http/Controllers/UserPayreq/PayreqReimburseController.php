@@ -66,7 +66,7 @@ class PayreqReimburseController extends Controller
 
         $realization = Realization::findOrFail($request->realization_id);
 
-        $realization->realizationDetails()->create([
+        $detail = $realization->realizationDetails()->create([
             'description' => $request->description,
             'amount' => str_replace(',', '', $request->amount),
             'project' => $realization->project,
@@ -84,6 +84,16 @@ class PayreqReimburseController extends Controller
         $payreq->update([
             'amount' => $realization->realizationDetails()->sum('amount'),
         ]);
+
+        // Check if this is an AJAX request
+        if ($request->ajax()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Detail added successfully',
+                'total' => $realization->realizationDetails()->sum('amount'),
+                'detail' => $detail,
+            ]);
+        }
 
         return $this->edit($realization->payreq_id);
     }
@@ -139,6 +149,56 @@ class PayreqReimburseController extends Controller
         $payreq->update([
             'amount' => $realization->realizationDetails()->sum('amount'),
         ]);
+
+        // Check if this is an AJAX request
+        if ($request->ajax()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Detail deleted successfully',
+                'total' => $realization->realizationDetails()->sum('amount'),
+            ]);
+        }
+
+        return $this->edit($realization->payreq_id);
+    }
+
+    public function update_detail(Request $request)
+    {
+        $this->validate($request, [
+            'realization_detail_id' => 'required',
+            'description' => 'required',
+            'amount' => 'required',
+        ]);
+
+        $detail = RealizationDetail::findOrFail($request->realization_detail_id);
+        $realization = Realization::findOrFail($detail->realization_id);
+
+        $detail->update([
+            'description' => $request->description,
+            'amount' => str_replace(',', '', $request->amount),
+            'unit_no' => $request->unit_no,
+            'nopol' => $request->nopol,
+            'type' => $request->type,
+            'qty' => $request->qty,
+            'uom' => $request->uom,
+            'km_position' => $request->km_position,
+        ]);
+
+        // update payreq amount is sum of realization details amount
+        $payreq = Payreq::findOrFail($realization->payreq_id);
+        $payreq->update([
+            'amount' => $realization->realizationDetails()->sum('amount'),
+        ]);
+
+        // Check if this is an AJAX request
+        if ($request->ajax()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Detail updated successfully',
+                'total' => $realization->realizationDetails()->sum('amount'),
+                'detail' => $detail,
+            ]);
+        }
 
         return $this->edit($realization->payreq_id);
     }
