@@ -54,9 +54,103 @@
     <!-- /.row -->
 
     {{-- DETAILS SECTION --}}
-    @include('user-payreqs.realizations.add_details_form')
-
-    @include('user-payreqs.realizations.add_details_table')
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card card-info">
+                <div class="card-header">
+                    <h4 class="card-title">Realization Details</h4>
+                    <a href="{{ route('user-payreqs.realizations.index') }}" class="btn btn-sm btn-info float-right">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                    <form id="submit-realization-form" action="{{ route('user-payreqs.realizations.submit_realization') }}"
+                        method="POST" class="d-inline">
+                        @csrf
+                        <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+                        <button type="button" id="btn-submit-realization" class="btn btn-sm btn-warning float-right mx-2"
+                            {{ $realization_details->count() == 0 ? 'disabled' : '' }}>
+                            Submit Realization
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-success float-right mr-2" data-toggle="modal"
+                        data-target="#add-detail-modal">
+                        <i class="fas fa-plus"></i> Add Detail
+                    </button>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover text-nowrap" id="details-table">
+                        <thead>
+                            <tr>
+                                <th width="5%">No</th>
+                                <th>Description</th>
+                                <th class="text-right" width="20%">Amount</th>
+                                <th width="15%">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if ($realization_details->count() > 0)
+                                @foreach ($realization_details as $index => $detail)
+                                    <tr id="detail-row-{{ $detail->id }}">
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>
+                                            {{ $detail->description }}
+                                            @if ($detail->nopol || $detail->unit_no)
+                                                <br />
+                                                @if ($detail->type == 'fuel')
+                                                    <small>{{ $detail->unit_no ?? '' }}, {{ $detail->nopol ?? '' }},
+                                                        {{ $detail->type ?? '' }} {{ $detail->qty ?? '' }}
+                                                        {{ $detail->uom ?? '' }}. HM:
+                                                        {{ $detail->km_position ?? '' }}</small>
+                                                @else
+                                                    <small>{{ $detail->type ?? '' }}, HM:
+                                                        {{ $detail->km_position ?? '' }}</small>
+                                                @endif
+                                            @endif
+                                        </td>
+                                        <td class="text-right">{{ number_format($detail->amount, 2) }}</td>
+                                        <td>
+                                            <button type="button" class="btn btn-xs btn-info btn-edit"
+                                                data-id="{{ $detail->id }}">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <a href="javascript:void(0)" onclick="confirmDelete({{ $detail->id }})"
+                                                class="btn btn-xs btn-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @else
+                                <tr id="no-data-row">
+                                    <td colspan="4" class="text-center">No Data Found</td>
+                                </tr>
+                            @endif
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="2" class="text-right">Total:</th>
+                                <th class="text-right" id="total-amount">
+                                    {{ number_format($realization_details->sum('amount'), 2) }}</th>
+                                <th></th>
+                            </tr>
+                            <tr>
+                                <th colspan="2" class="text-right">Payreq Amount:</th>
+                                <th class="text-right" id="payreq-amount">
+                                    {{ number_format($realization->payreq->amount, 2) }}</th>
+                                <th></th>
+                            </tr>
+                            <tr>
+                                <th colspan="2" class="text-right">Variance:</th>
+                                <th class="text-right" id="variance-amount">
+                                    {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}
+                                </th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
     {{-- END DETAILS SECTION --}}
 
     <!-- Delete form for non-AJAX submission -->
@@ -64,6 +158,117 @@
         @csrf
         @method('DELETE')
     </form>
+
+    <!-- Add Detail Modal -->
+    <div class="modal fade" id="add-detail-modal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info">
+                    <h5 class="modal-title" id="addModalLabel">Add Realization Detail</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-detail-form" method="POST"
+                        action="{{ route('user-payreqs.realizations.store_detail') }}">
+                        @csrf
+                        <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+                        <div class="row">
+                            <div class="col-8">
+                                <div class="form-group">
+                                    <label for="description">Description</label>
+                                    <input type="text" name="description" value="{{ old('description') }}"
+                                        id="description" class="form-control @error('description') is-invalid @enderror">
+                                    <div class="invalid-feedback" id="description-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="form-group">
+                                    <label for="amount">Amount</label>
+                                    <input type="text" name="amount" id="amount" class="form-control"
+                                        value="{{ old('amount') }}" onkeyup="formatNumber(this)">
+                                    <div class="text-danger" id="amount-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="form-group">
+                                    <label for="unit_no">Unit No</label>
+                                    <select id="unit_no" name="unit_no" class="form-control select2bs4">
+                                        <option value="">-- select unit no --</option>
+                                        @foreach ($equipments as $item)
+                                            <option value="{{ $item->unit_code }}">{{ $item->unit_code }} -
+                                                {{ $item->project }} - {{ $item->plant_group }} -
+                                                {{ $item->nomor_polisi }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="text-danger" id="unit_no-error"></div>
+                                </div>
+                            </div>
+
+                            <div class="col-2">
+                                <div class="form-group">
+                                    <label for="nopol">No Polisi <small>(optional)</small></label>
+                                    <input type="text" name="nopol" value="{{ old('nopol') }}" id="nopol"
+                                        class="form-control">
+                                    <div class="text-danger" id="nopol-error"></div>
+                                </div>
+                            </div>
+
+                            <div class="col-1">
+                                <div class="form-group">
+                                    <label for="qty">Qty</label>
+                                    <input id="qty" name="qty" class="form-control">
+                                    <div class="text-danger" id="qty-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-1">
+                                <div class="form-group">
+                                    <label for="km_position">HM</label>
+                                    <input id="km_position" name="km_position" class="form-control">
+                                    <div class="text-danger" id="km_position-error"></div>
+                                </div>
+                            </div>
+
+                            <div class="col-2">
+                                <div class="form-group">
+                                    <label for="type">Type</label>
+                                    <select id="type" name="type" class="form-control select2bs4">
+                                        <option value="">-- type --</option>
+                                        <option value="fuel">Fuel</option>
+                                        <option value="service">Service</option>
+                                        <option value="tax">STNK / Tax</option>
+                                        <option value="other">Others</option>
+                                    </select>
+                                    <div class="text-danger" id="type-error"></div>
+                                </div>
+                            </div>
+
+                            <div class="col-2">
+                                <div class="form-group">
+                                    <label for="uom">UOM</label>
+                                    <select id="uom" name="uom" class="form-control select2bs4">
+                                        <option value="">-- uom --</option>
+                                        <option value="liter">liter</option>
+                                        <option value="each">Each</option>
+                                    </select>
+                                    <div class="text-danger" id="uom-error"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" id="btn-add-detail" class="btn btn-success">Add Detail</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Add Detail Modal -->
 
     <!-- Edit Modal -->
     <div class="modal fade" id="edit-detail-modal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel"
@@ -398,9 +603,94 @@
             // Log an initialization message
             console.log("Initializing page...");
 
-            // Initialize Select2
+            // Initialize Select2 with better search functionality
             $('.select2bs4').select2({
-                theme: 'bootstrap4'
+                theme: 'bootstrap4',
+                width: '100%',
+                allowClear: true,
+                placeholder: function() {
+                    return $(this).data('placeholder') || '-- select an option --';
+                },
+                // Enable searching
+                minimumResultsForSearch: 1
+            });
+
+            // Specifically enhance unit_no dropdown with advanced search
+            $('#unit_no, #edit-unit_no').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                allowClear: true,
+                placeholder: '-- select unit no --',
+                minimumInputLength: 1, // Require at least 1 character to start searching
+                // Enable searching by any part of the text
+                matcher: function(params, data) {
+                    // If there are no search terms, return all of the data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Search term in lowercase
+                    var term = params.term.toLowerCase();
+
+                    // `data.text` should be the text that is displayed for the data object
+                    var dataText = data.text.toLowerCase();
+
+                    // Check if the text contains the term
+                    if (dataText.indexOf(term) > -1) {
+                        return data;
+                    }
+
+                    // Return null if the term should not be displayed
+                    return null;
+                }
+            });
+
+            // Fix Select2 in Bootstrap modal
+            $(document).on('shown.bs.modal', '.modal', function() {
+                $(this).find('.select2bs4').each(function() {
+                    var dropdownParent = $(this).closest('.modal');
+
+                    // Special handling for unit_no in modal
+                    if ($(this).attr('id') === 'unit_no') {
+                        $(this).select2({
+                            theme: 'bootstrap4',
+                            dropdownParent: dropdownParent,
+                            width: '100%',
+                            allowClear: true,
+                            placeholder: '-- select unit no --',
+                            minimumInputLength: 1,
+                            // Enable searching by any part of the text
+                            matcher: function(params, data) {
+                                // If there are no search terms, return all of the data
+                                if ($.trim(params.term) === '') {
+                                    return data;
+                                }
+
+                                // Search term in lowercase
+                                var term = params.term.toLowerCase();
+
+                                // `data.text` should be the text that is displayed for the data object
+                                var dataText = data.text.toLowerCase();
+
+                                // Check if the text contains the term
+                                if (dataText.indexOf(term) > -1) {
+                                    return data;
+                                }
+
+                                // Return null if the term should not be displayed
+                                return null;
+                            }
+                        });
+                    } else {
+                        $(this).select2({
+                            theme: 'bootstrap4',
+                            dropdownParent: dropdownParent,
+                            width: '100%',
+                            allowClear: true,
+                            minimumResultsForSearch: 1
+                        });
+                    }
+                });
             });
 
             // CSRF token for ajax requests
@@ -450,6 +740,9 @@
                         console.log("Success response:", response);
                         // Show success message
                         showAlert('Detail added successfully', 'success');
+
+                        // Close the modal
+                        $('#add-detail-modal').modal('hide');
 
                         // Refresh the table
                         refreshDetailsTable();

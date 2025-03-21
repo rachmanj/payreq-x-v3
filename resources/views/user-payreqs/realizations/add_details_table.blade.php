@@ -1,73 +1,80 @@
 <div class="row">
     <div class="col-12">
-        <div class="card card-info">
+        <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Details</h3>
-                <div id="summary-section" class="card-title float-right">
-                    Payreq Amount: IDR <span
-                        id="payreq-amount">{{ number_format($realization->payreq->amount, 2) }}</span> |
-                    Variance: IDR <span
-                        id="variance-amount">{{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}</span>
-                </div>
+                <h3 class="card-title">Realization Details</h3>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped" id="details-table">
-                        <thead>
-                            <tr>
-                                <th width="5%">#</th>
-                                <th width="50%">Description</th>
-                                <th width="20%" class="text-right">Amount (IDR)</th>
-                                <th width="25%">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if ($realization_details->count() > 0)
-                                @foreach ($realization_details as $item)
-                                    <tr id="detail-row-{{ $item->id }}">
-                                        <td>{{ $loop->iteration }}</td>
-                                        <td>{{ $item->description }}
-                                            @if ($item->nopol !== null || $item->unit_no !== null)
-                                                <br />
-                                                @if ($item->type === 'fuel')
-                                                    <small>{{ $item->unit_no }}, {{ $item->nopol }},
-                                                        {{ $item->type }} {{ $item->qty }} {{ $item->uom }}. HM:
-                                                        {{ $item->km_position }}</small>
-                                                @else
-                                                    <small>{{ $item->type }}, HM: {{ $item->km_position }}</small>
-                                                @endif
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap" id="details-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">No</th>
+                            <th>Description</th>
+                            <th class="text-right" width="20%">Amount</th>
+                            <th width="15%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if ($realization_details->count() > 0)
+                            @foreach ($realization_details as $index => $detail)
+                                <tr id="detail-row-{{ $detail->id }}">
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>
+                                        {{ $detail->description }}
+                                        @if ($detail->nopol || $detail->unit_no)
+                                            <br />
+                                            @if ($detail->type == 'fuel')
+                                                <small>{{ $detail->unit_no ?? '' }}, {{ $detail->nopol ?? '' }},
+                                                    {{ $detail->type ?? '' }} {{ $detail->qty ?? '' }}
+                                                    {{ $detail->uom ?? '' }}. HM:
+                                                    {{ $detail->km_position ?? '' }}</small>
+                                            @else
+                                                <small>{{ $detail->type ?? '' }}, HM:
+                                                    {{ $detail->km_position ?? '' }}</small>
                                             @endif
-                                        </td>
-                                        <td class="text-right">{{ number_format($item->amount, 2) }}</td>
-                                        <td>
-                                            <button type="button" class="btn btn-xs btn-info btn-edit"
-                                                data-id="{{ $item->id }}">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                            <button type="button" class="btn btn-xs btn-danger btn-delete"
-                                                data-id="{{ $item->id }}">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            @else
-                                <tr id="no-data-row">
-                                    <td colspan="4" class="text-center">No Data Found</td>
+                                        @endif
+                                    </td>
+                                    <td class="text-right">{{ number_format($detail->amount, 2) }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-xs btn-info btn-edit"
+                                            data-id="{{ $detail->id }}">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <a href="javascript:void(0)" onclick="confirmDelete({{ $detail->id }})"
+                                            class="btn btn-xs btn-danger">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </a>
+                                    </td>
                                 </tr>
-                            @endif
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="2" class="text-right">Total</td>
-                                <td class="text-right"><b
-                                        id="total-amount">{{ number_format($realization_details->sum('amount'), 2) }}</b>
-                                </td>
-                                <td></td>
+                            @endforeach
+                        @else
+                            <tr id="no-data-row">
+                                <td colspan="4" class="text-center">No Data Found</td>
                             </tr>
-                        </tfoot>
-                    </table>
-                </div>
+                        @endif
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="2" class="text-right">Total:</th>
+                            <th class="text-right" id="total-amount">
+                                {{ number_format($realization_details->sum('amount'), 2) }}</th>
+                            <th></th>
+                        </tr>
+                        <tr>
+                            <th colspan="2" class="text-right">Payreq Amount:</th>
+                            <th class="text-right" id="payreq-amount">
+                                {{ number_format($realization->payreq->amount, 2) }}</th>
+                            <th></th>
+                        </tr>
+                        <tr>
+                            <th colspan="2" class="text-right">Variance:</th>
+                            <th class="text-right" id="variance-amount">
+                                {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}
+                            </th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
     </div>
@@ -117,9 +124,9 @@
                                     <button type="button" class="btn btn-xs btn-info btn-edit" data-id="${item.id}">
                                         <i class="fas fa-edit"></i> Edit
                                     </button>
-                                    <button type="button" class="btn btn-xs btn-danger btn-delete" data-id="${item.id}">
+                                    <a href="javascript:void(0)" onclick="confirmDelete(${item.id})" class="btn btn-xs btn-danger">
                                         <i class="fas fa-trash"></i> Delete
-                                    </button>
+                                    </a>
                                 </td>
                             </tr>
                         `;
