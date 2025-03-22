@@ -61,7 +61,7 @@ class RealizationOverdueController extends Controller
                 return Carbon::parse($realization->due_date)->diffInDays(now()); // Days from due date
             })
             ->editColumn('amount', function ($realization) {
-                return number_format($realization->amount, 2);
+                return number_format($realization->realizationDetails->sum('amount'), 2);
             })
             ->addIndexColumn()
             ->addColumn('action', 'document-overdue.realization.action')
