@@ -19,6 +19,9 @@
     <!-- Toastr -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
 
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <style>
         .overlay {
             position: relative;
@@ -131,13 +134,13 @@
             <div class="card card-info">
                 <div class="card-header">
                     <h3 class="card-title">Reimbursement Details</h3>
-                    <form action="{{ route('user-payreqs.reimburse.submit_payreq') }}" method="POST" class="d-inline">
+                    <form id="submit-payreq-form" action="{{ route('user-payreqs.reimburse.submit_payreq') }}"
+                        method="POST" class="d-inline">
                         @csrf
                         @if ($realization->realizationDetails->count() > 0)
                             <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                            <button type="submit" class="btn btn-sm btn-warning float-right mx-2"
-                                onclick="return confirm('Are you sure you want to submit this realization?')">
-                                <b>Submit Payreq</b>
+                            <button type="button" id="btn-submit-payreq" class="btn btn-sm btn-warning float-right mx-2">
+                                <i class="fas fa-paper-plane"></i> <b>Submit Payreq</b>
                             </button>
                         @endif
                     </form>
@@ -604,9 +607,9 @@
                     <td>${detail.description}
                         ${(detail.nopol || detail.unit_no) ? 
                             `<br/>${detail.type === 'fuel' ? 
-                                            `<small>${detail.unit_no}, ${detail.nopol}, ${detail.type} ${detail.qty} ${detail.uom}. HM: ${detail.km_position}</small>` : 
-                                            `<small>${detail.type}, HM: ${detail.km_position}</small>`
-                                        }` : 
+                                                                                                        `<small>${detail.unit_no}, ${detail.nopol}, ${detail.type} ${detail.qty} ${detail.uom}. HM: ${detail.km_position}</small>` : 
+                                                                                                        `<small>${detail.type}, HM: ${detail.km_position}</small>`
+                                                                                                    }` : 
                             ''
                         }
                     </td>
@@ -649,9 +652,9 @@
                 <td>${detail.description}
                     ${(detail.nopol || detail.unit_no) ? 
                         `<br/>${detail.type === 'fuel' ? 
-                                        `<small>${detail.unit_no}, ${detail.nopol}, ${detail.type} ${detail.qty} ${detail.uom}. HM: ${detail.km_position}</small>` : 
-                                        `<small>${detail.type}, HM: ${detail.km_position}</small>`
-                                    }` : 
+                                                                                                    `<small>${detail.unit_no}, ${detail.nopol}, ${detail.type} ${detail.qty} ${detail.uom}. HM: ${detail.km_position}</small>` : 
+                                                                                                    `<small>${detail.type}, HM: ${detail.km_position}</small>`
+                                                                                                }` : 
                         ''
                     }
                 </td>
@@ -715,6 +718,40 @@
 
                 // Show the modal
                 $('#edit-detail-modal').modal('show');
+            });
+
+            // Attach handler to submit payreq button
+            attachSubmitPayreqHandler();
+        }
+
+        // Function to attach handler to submit payreq button
+        function attachSubmitPayreqHandler() {
+            $('#btn-submit-payreq').off('click').on('click', function() {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You are about to submit this payreq. This action cannot be undone!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, submit it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading state
+                        Swal.fire({
+                            title: 'Processing...',
+                            html: 'Please wait while we submit your payreq.',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Change the button to a submit type and trigger native form submission
+                        $('#btn-submit-payreq').attr('type', 'submit').click();
+                    }
+                });
             });
         }
 
@@ -905,6 +942,30 @@
 
                             // Show success message
                             showAlert('Detail added successfully', 'success');
+
+                            // Enable the submit button if it was disabled
+                            if ($('#btn-submit-payreq').length === 0) {
+                                // Create the submit button if it doesn't exist
+                                let submitBtn = `
+                                    @csrf
+                                    <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+                                    <button type="button" id="btn-submit-payreq" class="btn btn-sm btn-warning float-right mx-2">
+                                        <i class="fas fa-paper-plane"></i> <b>Submit Payreq</b>
+                                    </button>
+                                `;
+                                $('#submit-payreq-form').html(submitBtn);
+
+                                // Attach the click event to the new button
+                                attachSubmitPayreqHandler();
+
+                                // Ensure the form is properly initialized with CSRF token
+                                if ($('#submit-payreq-form input[name="_token"]').length ===
+                                    0) {
+                                    $('#submit-payreq-form').prepend(
+                                        '<input type="hidden" name="_token" value="{{ csrf_token() }}">'
+                                    );
+                                }
+                            }
                         } else {
                             showAlert('Error adding detail', 'error');
                         }
@@ -1032,37 +1093,6 @@
 
             // Initial attachment of event handlers
             attachEventHandlers();
-
-            // Add SweetAlert confirmation to Submit Payreq button
-            $('form[action="{{ route('user-payreqs.reimburse.submit_payreq') }}"]').on('submit', function(e) {
-                e.preventDefault();
-
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: "You are about to submit this payreq. This action cannot be undone!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Yes, submit it!'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Show loading state
-                        Swal.fire({
-                            title: 'Processing...',
-                            html: 'Please wait while we submit your payreq.',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-
-                        // Submit the form
-                        this.submit();
-                    }
-                });
-            });
         });
     </script>
 @endsection
