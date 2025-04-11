@@ -16,6 +16,7 @@ use App\Http\Controllers\CashOpnameController;
 use App\Http\Controllers\Migrasi\MigrasiBucController;
 use App\Http\Controllers\Migrasi\MigrasiIndexController;
 use App\Http\Controllers\Migrasi\MigrasiPayreqController;
+use App\Http\Controllers\Cashier\SapTransactionController;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
@@ -144,5 +145,10 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/upload', [CashierDokumenController::class, 'upload'])->name('upload');
         Route::delete('/{id}', [CashierDokumenController::class, 'destroy'])->name('destroy');
         Route::put('/{id}', [CashierDokumenController::class, 'update'])->name('update');
+    });
+
+    Route::prefix('sap-transactions')->name('sap-transactions.')->group(function () {
+        Route::get('/', [SapTransactionController::class, 'index'])->name('index');
+        Route::post('/data', [SapTransactionController::class, 'data'])->name('data');
     });
 });

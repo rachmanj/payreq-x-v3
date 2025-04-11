@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-];
+    'gl' => [
+    'url' => env('GL_URL'),
+    'api_key' => env('GL_API_KEY'),
+    ],
+
+];  
