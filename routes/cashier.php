@@ -17,7 +17,7 @@ use App\Http\Controllers\Migrasi\MigrasiBucController;
 use App\Http\Controllers\Migrasi\MigrasiIndexController;
 use App\Http\Controllers\Migrasi\MigrasiPayreqController;
 use App\Http\Controllers\Cashier\SapTransactionController;
-
+use App\Http\Controllers\Cashier\CashOnHandTransactionController;
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
     Route::prefix('approveds')->name('approveds.')->group(function () {
@@ -51,6 +51,15 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
             Route::get('/', [CashierIncomingController::class, 'received_index'])->name('index');
             Route::put('/{id}/edit_receive_date', [CashierIncomingController::class, 'edit_received_date'])->name('edit_received_date');
         });
+    });
+
+    Route::prefix('cashonhand-transactions')->name('cashonhand-transactions.')->group(function () {
+        Route::get('/', [CashOnHandTransactionController::class, 'index'])->name('index');
+        Route::post('/data', [CashOnHandTransactionController::class, 'getData'])->name('data');
+        Route::post('/generate', [CashOnHandTransactionController::class, 'generate'])->name('generate');
+        Route::post('/export-excel', [CashOnHandTransactionController::class, 'exportExcel'])->name('export-excel');
+        Route::post('/incomings', [CashOnHandTransactionController::class, 'getIncomings'])->name('incomings');
+        Route::post('/outgoings', [CashOnHandTransactionController::class, 'getOutgoings'])->name('outgoings');
     });
 
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
