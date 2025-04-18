@@ -10,7 +10,7 @@
             <li><a href="{{ route('cashier.cashonhand-transactions.index') }}" class="dropdown-item">Cash On-Hand
                     Transaction <span class="badge badge-success">Beta</span></a></li>
             {{-- <li><a href="{{ route('cashier.transaksis.index') }}" class="dropdown-item">Account History</a></li> --}}
-            <li><a href="{{ route('cashier.outgoings.index') }}" class="dropdown-item">Outgoing List</a></li>
+            {{-- <li><a href="{{ route('cashier.outgoings.index') }}" class="dropdown-item">Outgoing List</a></li> --}}
             <li><a href="{{ route('cashier.incomings.index') }}" class="dropdown-item">Incoming List</a></li>
         @endcan
         @can('akses_verification_journal')

@@ -13,11 +13,6 @@
         <div class="col-12">
             <div class="card card-outline card-primary">
                 <div class="card-header p-2">
-                    {{-- <div class="alert alert-info py-2 mb-2">
-                        <i class="fas fa-info-circle"></i> Halaman ini menampilkan transaksi dari tanggal 1 Januari 2025
-                        sampai dengan kemarin.
-                    </div> --}}
-
                     <!-- Tabs navigation -->
                     <ul class="nav nav-tabs" id="cashTabs" role="tablist">
                         <li class="nav-item">
@@ -53,15 +48,13 @@
                                 <div class="col-md-3">
                                     <div class="form-group mb-2">
                                         <label class="small font-weight-bold">Start Date</label>
-                                        <input type="date" class="form-control form-control-sm" id="start_date"
-                                            min="2025-01-01">
+                                        <input type="date" class="form-control form-control-sm" id="start_date">
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group mb-2">
                                         <label class="small font-weight-bold">End Date</label>
-                                        <input type="date" class="form-control form-control-sm" id="end_date"
-                                            min="2025-01-01">
+                                        <input type="date" class="form-control form-control-sm" id="end_date">
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -73,30 +66,6 @@
                                     </div>
                                 </div>
                             </div>
-                            {{-- <div class="row">
-                                <div class="col-md-12">
-                                    <form action="{{ route('cashier.cashonhand-transactions.generate') }}" method="POST"
-                                        class="mt-2">
-                                        @csrf
-                                        <input type="hidden" name="account_id" value="{{ $cash_account->id }}">
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <input type="date" name="start_date" class="form-control form-control-sm"
-                                                    required>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <input type="date" name="end_date" class="form-control form-control-sm"
-                                                    required>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <button type="submit" class="btn btn-sm btn-success">
-                                                    <i class="fas fa-print"></i> Generate Printable Statement
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div> --}}
                             <div class="row mb-2 mt-3">
                                 <div class="col-md-6">
                                     <div class="account-info bg-light p-2 rounded">
@@ -144,18 +113,11 @@
                         <!-- Incomings Tab -->
                         <div class="tab-pane fade" id="incomings" role="tabpanel" aria-labelledby="incomings-tab">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-8">
                                     <div class="form-group mb-2">
-                                        <label class="small font-weight-bold">Start Date</label>
-                                        <input type="date" class="form-control form-control-sm"
-                                            id="incomings_start_date" min="2025-01-01">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group mb-2">
-                                        <label class="small font-weight-bold">End Date</label>
-                                        <input type="date" class="form-control form-control-sm"
-                                            id="incomings_end_date" min="2025-01-01">
+                                        <label class="small font-weight-bold">Month</label>
+                                        <input type="month" class="form-control form-control-sm"
+                                            id="incomings_month_year">
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -173,11 +135,13 @@
                                     <thead class="bg-light">
                                         <tr>
                                             <th class="text-center" width="3%">#</th>
-                                            <th class="text-center" width="10%">Date</th>
-                                            <th class="text-center" width="15%">Document No</th>
-                                            <th class="text-center" width="47%">Description</th>
-                                            <th class="text-center" width="10%">Project</th>
-                                            <th class="text-center" width="15%">Amount</th>
+                                            <th class="text-center" width="8%">Date</th>
+                                            <th class="text-center" width="10%">Document No</th>
+                                            <th class="text-center" width="29%">Description</th>
+                                            <th class="text-center" width="8%">Project</th>
+                                            <th class="text-center" width="12%">Amount</th>
+                                            <th class="text-left" width="15%">Cashier</th>
+                                            <th class="text-left" width="15%">From</th>
                                         </tr>
                                     </thead>
                                     <tbody class="small">
@@ -189,18 +153,11 @@
                         <!-- Outgoings Tab -->
                         <div class="tab-pane fade" id="outgoings" role="tabpanel" aria-labelledby="outgoings-tab">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-8">
                                     <div class="form-group mb-2">
-                                        <label class="small font-weight-bold">Start Date</label>
-                                        <input type="date" class="form-control form-control-sm"
-                                            id="outgoings_start_date" min="2025-01-01">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group mb-2">
-                                        <label class="small font-weight-bold">End Date</label>
-                                        <input type="date" class="form-control form-control-sm"
-                                            id="outgoings_end_date" min="2025-01-01">
+                                        <label class="small font-weight-bold">Month</label>
+                                        <input type="month" class="form-control form-control-sm"
+                                            id="outgoings_month_year">
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -218,11 +175,13 @@
                                     <thead class="bg-light">
                                         <tr>
                                             <th class="text-center" width="3%">#</th>
-                                            <th class="text-center" width="10%">Date</th>
-                                            <th class="text-center" width="15%">Payreq No</th>
-                                            <th class="text-center" width="47%">Description</th>
-                                            <th class="text-center" width="10%">Project</th>
-                                            <th class="text-center" width="15%">Amount</th>
+                                            <th class="text-center" width="8%">Date</th>
+                                            <th class="text-center" width="10%">Payreq No</th>
+                                            <th class="text-center" width="29%">Description</th>
+                                            <th class="text-center" width="8%">Project</th>
+                                            <th class="text-center" width="12%">Amount</th>
+                                            <th class="text-left" width="15%">Cashier</th>
+                                            <th class="text-left" width="15%">To</th>
                                         </tr>
                                     </thead>
                                     <tbody class="small">
@@ -308,24 +267,25 @@
         }
 
         $(function() {
-            // Set default dates for all date fields
-            const setDefaultDates = function() {
-                const startDate = new Date('2025-01-01');
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
+            // Set default month for month inputs to current month
+            const setDefaultMonth = function() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0'); // JavaScript months are 0-indexed
+                const monthYear = `${year}-${month}`;
 
-                // Set start dates to Jan 1, 2025
-                $('#start_date, #incomings_start_date, #outgoings_start_date').val('2025-01-01');
+                $('#incomings_month_year, #outgoings_month_year').val(monthYear);
 
-                // Set end dates to yesterday or Jan 1, 2025 if we're before that date
-                const endDateValue = yesterday >= startDate ?
-                    yesterday.toISOString().split('T')[0] : '2025-01-01';
+                // Also set default dates for statement tab
+                const firstDayOfMonth = `${year}-${month}-01`;
+                const lastDay = new Date(year, month, 0).getDate();
+                const lastDayOfMonth = `${year}-${month}-${lastDay}`;
 
-                $('#end_date, #incomings_end_date, #outgoings_end_date').val(endDateValue);
+                $('#start_date').val(firstDayOfMonth);
+                $('#end_date').val(lastDayOfMonth);
             };
 
-            setDefaultDates();
+            setDefaultMonth();
 
             // Statement table
             let statementTable = $('#statement-table').DataTable({
@@ -386,7 +346,8 @@
                 serverSide: false,
                 searching: false,
                 lengthChange: false,
-                pageLength: 15,
+                pageLength: 100,
+                paging: true,
                 data: [],
                 columns: [{
                         data: null,
@@ -423,10 +384,18 @@
                                 maximumFractionDigits: 2
                             }).format(data);
                         }
+                    },
+                    {
+                        data: 'cashier',
+                        className: 'text-left'
+                    },
+                    {
+                        data: 'from_user',
+                        className: 'text-left'
                     }
                 ],
                 order: [
-                    [1, 'desc']
+                    [1, 'asc'] // Order by date ascending
                 ]
             });
 
@@ -436,7 +405,8 @@
                 serverSide: false,
                 searching: false,
                 lengthChange: false,
-                pageLength: 15,
+                pageLength: 100,
+                paging: true,
                 data: [],
                 columns: [{
                         data: null,
@@ -473,18 +443,41 @@
                                 maximumFractionDigits: 2
                             }).format(data);
                         }
+                    },
+                    {
+                        data: 'cashier',
+                        className: 'text-left'
+                    },
+                    {
+                        data: 'to_user',
+                        className: 'text-left'
                     }
                 ],
                 order: [
-                    [1, 'desc']
+                    [1, 'asc'] // Order by date ascending
                 ]
             });
 
             // Search Statement
             $('#search').click(function() {
-                // Validate account selection
+                // Validate required fields
                 if (!$('#account_number').val()) {
                     alert('Silahkan pilih Account terlebih dahulu');
+                    return;
+                }
+
+                // Validate date range
+                const startDate = $('#start_date').val();
+                const endDate = $('#end_date').val();
+
+                if (!startDate || !endDate) {
+                    alert('Silahkan pilih rentang tanggal (Start Date dan End Date) terlebih dahulu');
+                    return;
+                }
+
+                // Check if start date is after end date
+                if (new Date(startDate) > new Date(endDate)) {
+                    alert('Start Date tidak boleh lebih besar dari End Date');
                     return;
                 }
 
@@ -500,8 +493,8 @@
                     },
                     data: {
                         account_number: $('#account_number').val(),
-                        start_date: $('#start_date').val(),
-                        end_date: $('#end_date').val(),
+                        start_date: startDate,
+                        end_date: endDate,
                         draw: 1
                     },
                     success: function(response) {
@@ -518,8 +511,8 @@
 
                             // Show export button and update form fields
                             $('#export-excel').show();
-                            $('#export-start-date').val($('#start_date').val());
-                            $('#export-end-date').val($('#end_date').val());
+                            $('#export-start-date').val(startDate);
+                            $('#export-end-date').val(endDate);
                         } else {
                             $('#export-excel').hide();
                         }
@@ -527,7 +520,20 @@
                     },
                     error: function(xhr, status, error) {
                         console.error('Error:', error);
-                        alert('Terjadi kesalahan: ' + (xhr.responseJSON?.error || error));
+                        let errorMessage = 'Terjadi kesalahan: ';
+
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            const errors = xhr.responseJSON.errors;
+                            for (const field in errors) {
+                                errorMessage += errors[field].join(', ');
+                            }
+                        } else if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMessage += xhr.responseJSON.error;
+                        } else {
+                            errorMessage += error;
+                        }
+
+                        alert(errorMessage);
                         statementTable.clear().draw();
                         $('#export-excel').hide();
                     },
@@ -544,6 +550,17 @@
                 // Disable search button and show loading state
                 $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
 
+                // Get selected month-year
+                const monthYearValue = $('#incomings_month_year').val();
+                if (!monthYearValue) {
+                    alert('Please select a month and year');
+                    $(this).prop('disabled', false).html('<i class="fas fa-search"></i> Search');
+                    return;
+                }
+
+                // Parse month and year from the input (format: "YYYY-MM")
+                const [year, month] = monthYearValue.split('-');
+
                 // Make ajax request to get incomings
                 $.ajax({
                     url: '{{ route('cashier.cashonhand-transactions.incomings') }}',
@@ -552,8 +569,8 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     data: {
-                        start_date: $('#incomings_start_date').val(),
-                        end_date: $('#incomings_end_date').val()
+                        month: month,
+                        year: year
                     },
                     success: function(response) {
                         // Clear and add new data
@@ -565,7 +582,18 @@
                     },
                     error: function(xhr, status, error) {
                         console.error('Error:', error);
-                        alert('Terjadi kesalahan: ' + (xhr.responseJSON?.error || error));
+                        let errorMessage = 'Terjadi kesalahan: ';
+
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            const errors = xhr.responseJSON.errors;
+                            for (const field in errors) {
+                                errorMessage += errors[field].join(', ');
+                            }
+                        } else {
+                            errorMessage += error;
+                        }
+
+                        alert(errorMessage);
                         incomingsTable.clear().draw();
                     },
                     complete: function() {
@@ -581,6 +609,17 @@
                 // Disable search button and show loading state
                 $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
 
+                // Get selected month-year
+                const monthYearValue = $('#outgoings_month_year').val();
+                if (!monthYearValue) {
+                    alert('Please select a month and year');
+                    $(this).prop('disabled', false).html('<i class="fas fa-search"></i> Search');
+                    return;
+                }
+
+                // Parse month and year from the input (format: "YYYY-MM")
+                const [year, month] = monthYearValue.split('-');
+
                 // Make ajax request to get outgoings
                 $.ajax({
                     url: '{{ route('cashier.cashonhand-transactions.outgoings') }}',
@@ -589,8 +628,8 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     data: {
-                        start_date: $('#outgoings_start_date').val(),
-                        end_date: $('#outgoings_end_date').val()
+                        month: month,
+                        year: year
                     },
                     success: function(response) {
                         // Clear and add new data
@@ -602,7 +641,18 @@
                     },
                     error: function(xhr, status, error) {
                         console.error('Error:', error);
-                        alert('Terjadi kesalahan: ' + (xhr.responseJSON?.error || error));
+                        let errorMessage = 'Terjadi kesalahan: ';
+
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            const errors = xhr.responseJSON.errors;
+                            for (const field in errors) {
+                                errorMessage += errors[field].join(', ');
+                            }
+                        } else {
+                            errorMessage += error;
+                        }
+
+                        alert(errorMessage);
                         outgoingsTable.clear().draw();
                     },
                     complete: function() {

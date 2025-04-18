@@ -46,16 +46,40 @@ class CashOnHandTransactionController extends Controller
     public function getIncomings(Request $request)
     {
         $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date'
+            'month' => 'required|string',
+            'year' => 'required|string'
         ]);
 
+        // Convert month and year to integers
+        $month = (int) $request->month;
+        $year = (int) $request->year;
+        
         $project = auth()->user()->project;
         
-        $incomings = Incoming::whereBetween('receive_date', [$request->start_date, $request->end_date])
+        // Calculate first and last day of the month
+        $startDate = "{$year}-{$month}-01";
+        $lastDay = date('t', strtotime($startDate)); // Get number of days in month
+        $endDate = "{$year}-{$month}-{$lastDay}";
+        
+        $incomings = Incoming::with(['cashier', 'realization.requestor'])
+            ->whereBetween('receive_date', [$startDate, $endDate])
             ->where('project', $project)
             ->whereNotNull('receive_date') // Only include received incomings
-            ->get();
+            ->get()
+            ->map(function($incoming) {
+                return [
+                    'id' => $incoming->id,
+                    'receive_date' => $incoming->receive_date,
+                    'nomor' => $incoming->nomor,
+                    'description' => $incoming->description,
+                    'project' => $incoming->project,
+                    'amount' => $incoming->amount,
+                    'cashier' => $incoming->cashier->name ?? 'N/A',
+                    'from_user' => $incoming->realization && $incoming->realization->requestor 
+                        ? $incoming->realization->requestor->name 
+                        : 'N/A'
+                ];
+            });
             
         return response()->json([
             'data' => $incomings
@@ -68,14 +92,23 @@ class CashOnHandTransactionController extends Controller
     public function getOutgoings(Request $request)
     {
         $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date'
+            'month' => 'required|string',
+            'year' => 'required|string'
         ]);
 
+        // Convert month and year to integers
+        $month = (int) $request->month;
+        $year = (int) $request->year;
+        
         $project = auth()->user()->project;
         
-        $outgoings = Outgoing::with('payreq')
-            ->whereBetween('outgoing_date', [$request->start_date, $request->end_date])
+        // Calculate first and last day of the month
+        $startDate = "{$year}-{$month}-01";
+        $lastDay = date('t', strtotime($startDate)); // Get number of days in month
+        $endDate = "{$year}-{$month}-{$lastDay}";
+        
+        $outgoings = Outgoing::with(['payreq.requestor', 'cashier'])
+            ->whereBetween('outgoing_date', [$startDate, $endDate])
             ->where('project', $project)
             ->whereNotNull('outgoing_date') // Only include paid outgoings
             ->get()
@@ -88,7 +121,11 @@ class CashOnHandTransactionController extends Controller
                     'description' => $outgoing->full_description,
                     'project' => $outgoing->project,
                     'amount' => $outgoing->amount,
-                    'sap_journal_no' => $outgoing->sap_journal_no
+                    'sap_journal_no' => $outgoing->sap_journal_no,
+                    'cashier' => $outgoing->cashier->name ?? 'N/A',
+                    'to_user' => $outgoing->payreq && $outgoing->payreq->requestor 
+                        ? $outgoing->payreq->requestor->name 
+                        : 'N/A'
                 ];
             });
             
@@ -406,9 +443,17 @@ class CashOnHandTransactionController extends Controller
             ->whereNotNull('outgoing_date') // Ensure outgoing_date is not null
             ->get()
             ->map(function($outgoing) {
+                // Safely access payreq.nomor with fallback
+                $documentNumber = 'N/A';
+                if ($outgoing->payreq) {
+                    $documentNumber = $outgoing->payreq->nomor ?? (string)$outgoing->payreq_id;
+                } else if ($outgoing->payreq_id) {
+                    $documentNumber = (string)$outgoing->payreq_id;
+                }
+                
                 return [
                     'id' => $outgoing->id,
-                    'document_number' => $outgoing->payreq->nomor ?? $outgoing->payreq_id,
+                    'document_number' => $documentNumber,
                     'transaction_date' => $outgoing->outgoing_date,
                     'amount' => $outgoing->amount,
                     'description' => $outgoing->full_description,
