@@ -18,6 +18,8 @@ use App\Http\Controllers\Migrasi\MigrasiIndexController;
 use App\Http\Controllers\Migrasi\MigrasiPayreqController;
 use App\Http\Controllers\Cashier\SapTransactionController;
 use App\Http\Controllers\Cashier\CashOnHandTransactionController;
+use App\Http\Controllers\Cashier\BankTransactionController;
+
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
     Route::prefix('approveds')->name('approveds.')->group(function () {
@@ -159,5 +161,17 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::prefix('sap-transactions')->name('sap-transactions.')->group(function () {
         Route::get('/', [SapTransactionController::class, 'index'])->name('index');
         Route::post('/data', [SapTransactionController::class, 'data'])->name('data');
+    });
+
+    Route::prefix('bank-transactions')->name('bank-transactions.')->group(function () {
+        Route::get('/', [BankTransactionController::class, 'index'])->name('index');
+        Route::get('/data', [BankTransactionController::class, 'data'])->name('data');
+        Route::get('/create', [BankTransactionController::class, 'create'])->name('create');
+        Route::post('/', [BankTransactionController::class, 'store'])->name('store');
+        Route::get('/{id}', [BankTransactionController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [BankTransactionController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [BankTransactionController::class, 'update'])->name('update');
+        Route::delete('/{id}', [BankTransactionController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/submit', [BankTransactionController::class, 'submit'])->name('submit');
     });
 });

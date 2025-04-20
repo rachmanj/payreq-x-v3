@@ -123,6 +123,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/data', [AccountController::class, 'data'])->name('data');
         Route::post('/upload', [AccountController::class, 'upload'])->name('upload');
         Route::get('/list', [AccountController::class, 'getList'])->name('list');
+        Route::get('/bank-list', [AccountController::class, 'getBankAccounts'])->name('bank_list');
     });
     Route::resource('accounts', AccountController::class);
 

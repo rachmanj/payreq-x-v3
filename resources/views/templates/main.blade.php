@@ -6,6 +6,47 @@
 <head>
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
+    <style>
+        /* Global SweetAlert2 styles to ensure proper positioning */
+        .swal2-container {
+            z-index: 9999 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 10px !important;
+            background-color: rgba(0, 0, 0, 0.4) !important;
+            box-sizing: border-box !important;
+        }
+
+        .swal2-popup {
+            position: relative !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+        }
+
+        body.swal2-shown {
+            padding-right: 0 !important;
+            overflow-y: hidden !important;
+            /* Prevent background scrolling */
+        }
+
+        body.swal2-height-auto {
+            height: 100% !important;
+        }
+
+        /* Make sure footer doesn't overlap with modal */
+        body.swal2-shown .main-footer {
+            z-index: 1 !important;
+        }
+    </style>
     @stack('styles')
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>

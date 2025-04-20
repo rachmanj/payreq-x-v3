@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Cashier\TransaksiController;
 use App\Models\Incoming;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CashierIncomingController extends Controller
 {
@@ -20,19 +21,27 @@ class CashierIncomingController extends Controller
 
     public function receive(Request $request)
     {
-        // update incomings table
-        $incoming = Incoming::findOrFail($request->incoming_id);
-        $incoming->receive_date = $request->receive_date;
-        $incoming->cashier_id = auth()->user()->id;
-        $incoming->save();
+        DB::beginTransaction();
 
-        // update app_balance in accounts table
-        app(AccountController::class)->incoming($incoming->amount);
+        try {
+            // update incomings table
+            $incoming = Incoming::findOrFail($request->incoming_id);
+            $incoming->receive_date = $request->receive_date;
+            $incoming->cashier_id = auth()->user()->id;
+            $incoming->save();
 
-        // create transaksi
-        app(TransaksiController::class)->store('incoming', $incoming);
+            // update app_balance in accounts table
+            app(AccountController::class)->incoming($incoming->amount);
 
-        return redirect()->back()->with('success', 'Incoming has been received');
+            // create transaksi
+            app(TransaksiController::class)->store('incoming', $incoming);
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Incoming has been received');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Failed to receive incoming: ' . $e->getMessage());
+        }
     }
 
     public function create()
@@ -134,36 +143,38 @@ class CashierIncomingController extends Controller
     public function received_data()
     {
         $userRoles = app(UserController::class)->getUserRoles();
+        
+        // Start building the query
+        $query = Incoming::with([
+            'realization.requestor.department', 
+            'realization.payreq', 
+            'cashier', 
+            'account'
+        ])
+        ->whereNotNull('receive_date');
+        
+        // Apply role-based filtering
         if (in_array(['superadmin', 'admin'], $userRoles)) {
-            $incomings = Incoming::where('receive_date', '!=', null)
-                ->orderBy('created_at', 'desc')
-                ->get();
+            // No additional filters for admin
         } elseif (in_array('cashier', $userRoles)) {
-            $incomings = Incoming::where('receive_date', '!=', null)
-                ->whereIn('project', ['000H', 'APS'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $query->whereIn('project', ['000H', 'APS']);
         } else {
-            $incomings = Incoming::where('receive_date', '!=', null)
-                ->where('project', auth()->user()->project)
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $query->where('project', auth()->user()->project);
         }
-
-        return datatables()->of($incomings)
+        
+        // Order and prepare for datatables
+        $query->orderBy('created_at', 'desc');
+        
+        return datatables()->of($query)
             ->addColumn('employee', function ($incoming) {
-                if ($incoming->realization_id !== null) {
-                    return $incoming->realization->requestor->name;
-                } else {
-                    return $incoming->cashier->name;
-                }
+                return $incoming->realization_id !== null 
+                    ? $incoming->realization->requestor->name 
+                    : $incoming->cashier->name;
             })
             ->addColumn('dept', function ($incoming) {
-                if ($incoming->realization_id !== null) {
-                    return $incoming->realization->requestor->department->akronim;
-                } else {
-                    return $incoming->cashier->name;
-                }
+                return $incoming->realization_id !== null 
+                    ? $incoming->realization->requestor->department->akronim 
+                    : $incoming->cashier->name;
             })
             ->addColumn('realization_no', function ($incoming) {
                 if ($incoming->realization_id !== null) {
@@ -175,12 +186,13 @@ class CashierIncomingController extends Controller
             ->editColumn('receive_date', function ($incoming) {
                 return $incoming->receive_date ? date('d-M-Y', strtotime($incoming->receive_date)) : '-';
             })
-
             ->editColumn('amount', function ($incoming) {
                 return number_format($incoming->amount, 2);
             })
             ->addColumn('account', function ($incoming) {
-                return $incoming->account_id ? $incoming->account->account_number . ' - ' . $incoming->account->account_name : '-';
+                return $incoming->account_id 
+                    ? $incoming->account->account_number . ' - ' . $incoming->account->account_name 
+                    : '-';
             })
             ->addColumn('status', function ($incoming) {
                 if ($incoming->receive_date == null) {

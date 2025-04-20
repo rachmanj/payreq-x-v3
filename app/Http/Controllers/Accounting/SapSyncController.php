@@ -30,6 +30,7 @@ class SapSyncController extends Controller
             '021C' => 'accounting.sap-sync.021C',
             '022C' => 'accounting.sap-sync.022C',
             '023C' => 'accounting.sap-sync.023C',
+            '025C' => 'accounting.sap-sync.025C',
         ];
 
         if ($page == 'dashboard') {
@@ -64,35 +65,72 @@ class SapSyncController extends Controller
 
     public function update_sap_info(Request $request)
     {
-        // update sap_journal_no and sap_posting_date on verification_journals table
-        $verification_journal = VerificationJournal::find($request->verification_journal_id);
-        $verification_journal->sap_journal_no = $request->sap_journal_no;
-        $verification_journal->sap_posting_date = $request->sap_posting_date;
-        $verification_journal->posted_by = auth()->user()->id;
-        $verification_journal->save();
+        try {
+            // Begin database transaction
+            DB::beginTransaction();
+            
+            // Get the verification journal
+            $verification_journal = VerificationJournal::findOrFail($request->verification_journal_id);
+            
+            // Update verification journal SAP info
+            $verification_journal->sap_journal_no = $request->sap_journal_no;
+            $verification_journal->sap_posting_date = $request->sap_posting_date;
+            $verification_journal->posted_by = auth()->user()->id;
+            $verification_journal->save();
 
-        // update sap_journal_no on verification_journal_details table
-        $verification_journal_details = VerificationJournalDetail::where('verification_journal_id', $request->verification_journal_id)->get();
-        foreach ($verification_journal_details as $detail) {
-            $detail->sap_journal_no = $request->sap_journal_no;
-            $detail->save();
+            // Get all verification journal details
+            $verification_journal_details = VerificationJournalDetail::where('verification_journal_id', $request->verification_journal_id)->get();
+            
+            // Update SAP info for each detail and account balances
+            foreach ($verification_journal_details as $detail) {
+                $detail->sap_journal_no = $request->sap_journal_no;
+                $detail->save();
 
-            // update sap_balance on accounts table
-            $account = Account::where('account_number', $detail->account_code)->first();
-            $account->sap_balance = $account->sap_balance - $detail->amount;
-            $account->save();
+                // Update SAP balance on accounts table
+                $account = Account::where('account_number', $detail->account_code)->first();
+                if ($account) {
+                    $account->sap_balance = $account->sap_balance - $detail->amount;
+                    $account->save();
+                }
+            }
+
+            // Handle bank type verification journals specially
+            if ($verification_journal->type === 'bank') {
+                // Update incoming record if exists
+                $incoming = \App\Models\Incoming::where('nomor', $verification_journal->nomor)->first();
+                if ($incoming) {
+                    $incoming->sap_journal_no = $request->sap_journal_no;
+                    $incoming->save();
+                }
+
+                // Update verification journal status to posted
+                $verification_journal->status = 'posted';
+                $verification_journal->save();
+            }
+
+            // Get and update realizations
+            $realizations = Realization::whereIn('nomor', $verification_journal_details->pluck('realization_no')->toArray())->get();
+            foreach ($realizations as $realization) {
+                $realization->status = 'close';
+                $realization->save();
+            }
+
+            // Commit the transaction
+            DB::commit();
+
+            return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)
+                ->with('success', 'SAP Info Updated Successfully');
+                
+        } catch (\Exception $e) {
+            // Rollback the transaction in case of error
+            DB::rollBack();
+            
+            // Log the error
+            \Log::error('Error updating SAP info: ' . $e->getMessage());
+            
+            return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)
+                ->with('error', 'Failed to update SAP Info. Please try again.');
         }
-
-        // get realizations
-        $realizations = Realization::whereIn('nomor', $verification_journal_details->pluck('realization_no')->toArray())->get();
-
-        // update realization status to close
-        foreach ($realizations as $realization) {
-            $realization->status = 'close';
-            $realization->save();
-        }
-
-        return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)->with('success', 'SAP Info Updated');
     }
 
     public function cancel_sap_info(Request $request)
@@ -174,6 +212,7 @@ class SapSyncController extends Controller
     public function export()
     {
         $vj_id = request()->query('vj_id');
+        $vj = VerificationJournal::find($vj_id);
 
         $journal_details = VerificationJournalDetail::select(
             'verification_journal_id',
@@ -187,17 +226,50 @@ class SapSyncController extends Controller
             'realization_no'
         )->where('verification_journal_id', $vj_id)->get();
 
-        // add payreq number to journal_details
-        foreach ($journal_details as $detail) {
-            $realization = Realization::where('nomor', $detail->realization_no)->first();
-            $payreq_no = $realization->payreq()->first()->nomor;
-            $detail->payreq_no = $payreq_no;
-            $detail->vj_no = VerificationJournal::where('id', $detail->verification_journal_id)->first()->nomor;
+        // Process journal details based on verification journal type
+        if ($vj && $vj->type === 'bank') {
+            $this->processBankTransactionDetails($journal_details, $vj);
+            return Excel::download(new \App\Exports\BankTransactionExport($journal_details), 'bank_transaction.xlsx');
         }
 
-        // return $journal_details;
+        // Process regular realization journal details
+        $this->processRealizationDetails($journal_details);
 
+        // Default export for other types
         return Excel::download(new VerificationJournalExport($journal_details), 'journal.xlsx');
+    }
+
+    /**
+     * Process details for bank transaction exports
+     * 
+     * @param \Illuminate\Database\Eloquent\Collection $journal_details
+     * @param \App\Models\VerificationJournal $vj
+     * @return void
+     */
+    private function processBankTransactionDetails($journal_details, $vj)
+    {
+        foreach ($journal_details as $detail) {
+            $detail->vj_no = $vj->nomor;
+            // Add bank-specific data processing here
+        }
+    }
+
+    /**
+     * Process details for realization-based exports
+     * 
+     * @param \Illuminate\Database\Eloquent\Collection $journal_details
+     * @return void
+     */
+    private function processRealizationDetails($journal_details)
+    {
+        foreach ($journal_details as $detail) {
+            $realization = Realization::where('nomor', $detail->realization_no)->first();
+            if ($realization) {
+                $payreq = $realization->payreq()->first();
+                $detail->payreq_no = $payreq ? $payreq->nomor : null;
+            }
+            $detail->vj_no = VerificationJournal::where('id', $detail->verification_journal_id)->first()->nomor;
+        }
     }
 
     public function edit_vjdetail_display()

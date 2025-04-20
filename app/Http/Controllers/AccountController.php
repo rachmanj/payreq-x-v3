@@ -233,9 +233,49 @@ class AccountController extends Controller
 
             return response()->json($accounts);
         } catch (\Exception $e) {
-            \Log::error('Account List Error: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Failed to fetch accounts: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getBankAccounts()
+    {
+        try {
+            if (auth()->user()->project == '000H') {
+                $accounts = Account::select('account_number', 'account_name', 'type')
+                    ->where('type', 'bank')
+                    ->orderBy('account_number', 'asc')
+                    ->get();
+            } else {
+                $project_includes = ['all-site', auth()->user()->project];
+                $accounts = Account::select('account_number', 'account_name', 'type')
+                    ->whereIn('project', $project_includes)
+                    ->where('type', 'bank')
+                    ->where('is_hidden', 0)
+                    ->orderBy('account_number', 'asc')
+                    ->get();
+            }
+
+            // Convert to array to ensure consistent format
+            $accounts = $accounts->map(function($account) {
+                return [
+                    'account_number' => $account->account_number,
+                    'account_name' => $account->account_name,
+                    'type' => $account->type
+                ];
+            })->unique('account_number')->values();
+
+            // Debug the final count
+            \Log::info('Bank accounts fetched:', [
+                'count' => $accounts->count(),
+                'first_few' => $accounts->take(3)
+            ]);
+
+            return response()->json($accounts);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch bank accounts: ' . $e->getMessage()
             ], 500);
         }
     }

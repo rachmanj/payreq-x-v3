@@ -103,6 +103,13 @@ class DocumentNumberController extends Controller
     {
         $year = date('Y');
 
+        // Ensure project is a string by converting from array if needed
+        if (is_array($project)) {
+            $project = isset($project[0]) ? strval($project[0]) : '';
+        } else {
+            $project = strval($project);
+        }
+
         $document = DocumentNumber::where('document_type', $document_type)
             ->where('project', $project)
             ->where('year', $year)
@@ -125,6 +132,13 @@ class DocumentNumberController extends Controller
     {
         $year = date('Y');
 
+        // Ensure project is a string by converting from array if needed
+        if (is_array($project)) {
+            $project = isset($project[0]) ? strval($project[0]) : '';
+        } else {
+            $project = strval($project);
+        }
+
         $document = DocumentNumber::where('document_type', 'draft')
             ->where('project', $project)
             ->where('year', $year)
@@ -136,7 +150,7 @@ class DocumentNumberController extends Controller
 
         $document->increment('last_number');
 
-        $nomor = Carbon::now()->format('y') . 'Q' . substr(auth()->user()->project, 1, 2)  . str_pad($document->last_number, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y') . 'Q' . substr($project, 1, 2)  . str_pad($document->last_number, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }
