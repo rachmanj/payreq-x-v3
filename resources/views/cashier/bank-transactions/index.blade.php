@@ -11,38 +11,58 @@
 @section('styles')
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
+    <style>
+        .table th,
+        .table td {
+            padding: 0.4rem;
+            font-size: 0.85rem;
+        }
+
+        .table thead th {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .dataTables_info,
+        .dataTables_paginate {
+            font-size: 0.85rem;
+            margin-top: 0.5rem !important;
+        }
+    </style>
 @endsection
 
 @section('content')
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
+            <div class="card card-outline card-primary">
+                <div class="card-header p-2">
                     <h3 class="card-title">Bank Transactions Data</h3>
                     <a href="{{ route('cashier.bank-transactions.create') }}" class="btn btn-sm btn-primary float-right">
                         <i class="fas fa-plus"></i> Create New
                     </a>
                 </div>
-                <div class="card-body">
-                    <table id="bank-transactions-table" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Date</th>
-                                <th>Journal #</th>
-                                <th>SAP Journal #</th>
-                                <th>Project</th>
-                                <th>Description</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Created By</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- DataTables will fill this -->
-                        </tbody>
-                    </table>
+                <div class="card-body p-2">
+                    <div class="table-responsive">
+                        <table id="bank-transactions-table" class="table table-sm table-bordered table-striped table-hover">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="text-center" width="3%">#</th>
+                                    <th class="text-center" width="8%">Date</th>
+                                    <th class="text-center" width="10%">Journal #</th>
+                                    <th class="text-center" width="10%">SAP Journal #</th>
+                                    <th class="text-center" width="7%">Project</th>
+                                    <th class="text-center" width="25%">Description</th>
+                                    <th class="text-center" width="10%">Amount</th>
+                                    <th class="text-center" width="7%">Status</th>
+                                    <th class="text-center" width="10%">Created By</th>
+                                    <th class="text-center" width="10%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small">
+                                <!-- DataTables will fill this -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

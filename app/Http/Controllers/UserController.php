@@ -26,22 +26,13 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $this->validate($request, [
-            'name'          => 'required|min:3|max:255',
-            'username'      => 'required|min:3|max:20|unique:users',
-            'password'      => 'min:6',
-            'password_confirmation' => 'required_with:password|same:password|min:6'
-        ]);
+        $this->validateUserCreation($request);
 
         $user = new User();
-        $user->name = $request->name;
-        $user->username = $request->username;
-        $user->project = $request->project;
-        $user->department_id = $request->department_id;
+        $this->updateUserBasicInfo($user, $request);
         $user->password = Hash::make($request->password);
         $user->save();
         $user->assignRole('user');
-
 
         return redirect()->route('users.index')->with('success', 'User created successfully');
     }
@@ -53,7 +44,7 @@ class UserController extends Controller
 
     public function edit($id)
     {
-        $projects = ['000H', '001H', '017C', '021C', '022C', '023C', 'APS'];
+        $projects = Project::orderBy('code', 'asc')->get();
         $departments = Department::orderBy('department_name', 'asc')->get();
         $user = User::findOrFail($id);
         $roles = Role::all();
@@ -65,44 +56,24 @@ class UserController extends Controller
     public function roles_user_update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-
+        
         if ($request->password) {
-            $this->validate($request, [
-                'name'          => 'required|min:3|max:255',
-                'username'      => 'required|min:3|max:50|unique:users,username,' . $user->id . ',id',
-                'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
-                'password'      => 'min:6',
-                'password_confirmation' => 'required_with:password|same:password|min:6'
-            ]);
+            $this->validateUserUpdateWithPassword($request, $user);
             $user->password = Hash::make($request->password);
-            $user->name = $request->name;
-            $user->username = $request->username;
-            $user->email = $request->email;
-            $user->project = $request->project;
-            $user->department_id = $request->department_id;
-            $user->save();
         } else {
-            $this->validate($request, [
-                'name'          => 'required|min:3|max:255',
-                'username'      => 'required|min:3|max:50|unique:users,username,' . $user->id . ',id',
-                'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
-            ]);
-            $user->name = $request->name;
-            $user->username = $request->username;
-            $user->email = $request->email;
-            $user->project = $request->project;
-            $user->department_id = $request->department_id;
-            $user->save();
+            $this->validateUserUpdate($request, $user);
         }
-
+        
+        $this->updateUserBasicInfo($user, $request);
+        $user->save();
         $user->syncRoles($request->role);
+        
         return redirect()->route('users.index')->with('success', 'User updated successfully');
     }
 
     public function activate($id)
     {
         $user = User::findOrFail($id);
-
         $user->is_active = 1;
         $user->save();
 
@@ -112,7 +83,6 @@ class UserController extends Controller
     public function deactivate($id)
     {
         $user = User::findOrFail($id);
-
         $user->is_active = 0;
         $user->save();
 
@@ -132,13 +102,8 @@ class UserController extends Controller
 
     public function password_update(Request $request, $id)
     {
+        $this->validatePasswordUpdate($request);
         $user = User::findOrFail($id);
-
-        $this->validate($request, [
-            'password'      => 'required|min:5',
-            'password_confirmation' => 'required_with:password|same:password|min:5'
-        ]);
-
         $user->password = Hash::make($request->password);
         $user->save();
 
@@ -178,5 +143,58 @@ class UserController extends Controller
             ->addColumn('action', 'users.action')
             ->rawColumns(['action', 'is_active'])
             ->toJson();
+    }
+    
+    private function validateUserCreation(Request $request)
+    {
+        $this->validate($request, [
+            'name'          => 'required|min:3|max:255',
+            'username'      => 'required|min:3|max:20|unique:users',
+            'password'      => 'min:6',
+            'password_confirmation' => 'required_with:password|same:password|min:6'
+        ]);
+    }
+    
+    private function validateUserUpdate(Request $request, User $user)
+    {
+        $this->validate($request, [
+            'name'          => 'required|min:3|max:255',
+            'username'      => 'required|min:3|max:50|unique:users,username,' . $user->id . ',id',
+            'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
+        ]);
+    }
+    
+    private function validateUserUpdateWithPassword(Request $request, User $user)
+    {
+        $this->validate($request, [
+            'name'          => 'required|min:3|max:255',
+            'username'      => 'required|min:3|max:50|unique:users,username,' . $user->id . ',id',
+            'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
+            'password'      => 'min:6',
+            'password_confirmation' => 'required_with:password|same:password|min:6'
+        ]);
+    }
+    
+    private function validatePasswordUpdate(Request $request)
+    {
+        $this->validate($request, [
+            'password'      => 'required|min:5',
+            'password_confirmation' => 'required_with:password|same:password|min:5'
+        ]);
+    }
+    
+    private function updateUserBasicInfo(User $user, Request $request)
+    {
+        $user->name = $request->name;
+        $user->username = $request->username;
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+        if ($request->has('project')) {
+            $user->project = $request->project;
+        }
+        if ($request->has('department_id')) {
+            $user->department_id = $request->department_id;
+        }
     }
 }

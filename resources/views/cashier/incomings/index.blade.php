@@ -16,7 +16,8 @@
                 <div class="card-header">
                     <a href="#" style="color: black">NOT RECEIVE YET</a> |
                     <a href="{{ route('cashier.incomings.received.index') }}">Has Received</a>
-                    {{-- <a href="{{ route('cashier.incomings.create') }}" class="btn btn-sm btn-success float-right"> New Incoming Payment</a> --}}
+                    <a href="{{ route('cashier.incomings.create') }}" class="btn btn-sm btn-success float-right"> New Incoming
+                        Payment</a>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
