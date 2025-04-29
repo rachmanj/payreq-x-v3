@@ -5,7 +5,7 @@
             <h5 class="card-title mb-2" style="font-weight: bold; letter-spacing: 1px;">📢 New Feature Announcement
             </h5>
             <div class="card-text" style="opacity: 0.9; line-height: 1.6;">
-                Dear rekan2 Cashiers / Accounting site, kami informasikan bahwa tmt tanggal 5 Mei 2025 terdapat beberapa
+                Dear rekan2 Cashiers / Accounting site, kami informasikan bahwa tmt 5 Mei 2025 terdapat beberapa
                 perubahan sbb. :
                 <ol>
                     <li>
