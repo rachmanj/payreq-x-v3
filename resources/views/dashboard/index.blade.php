@@ -14,6 +14,12 @@
         @include('dashboard.run-text')
     </div>
 
+    @hasanyrole('admin|superadmin|cashier|cashier_bo|cashier_017|cashier_021|cashier_022|cashier_025')
+        <div class="row">
+            @include('dashboard.pengumuman')
+        </div>
+    @endhasanyrole
+
     <div class="row">
         @can('akses_approvals')
             @include('dashboard.row1')
