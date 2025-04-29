@@ -14,7 +14,7 @@
         @include('dashboard.run-text')
     </div>
 
-    @hasanyrole('admin|superadmin|cashier|cashier_bo|cashier_017|cashier_021|cashier_022|cashier_025')
+    @hasanyrole('admin|superadmin|cashier|cashier_bo|cashier_017|cashier_021|cashier_022|cashier_025|cashier_023')
         <div class="row">
             @include('dashboard.pengumuman')
         </div>
