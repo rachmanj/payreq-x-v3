@@ -5,14 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalStage;
 use App\Models\Department;
 use App\Models\User;
+use App\Models\Project;
 use Illuminate\Http\Request;
 
 class ApprovalStageController extends Controller
 {
     public function index()
     {
-        $approvers = User::role('approver')->select('id', 'name')->get();
-        $projects = ['000H', '001H', '017C', '021C', '022C', '023C', 'APS'];
+        // $approvers = User::role('approver')->select('id', 'name')->get();
+        $approvers = User::role('manager')->select('id', 'name')->get();
+        $projects = Project::orderBy('code', 'asc')->get();
         $departments = Department::orderBy('department_name', 'asc')->get();
 
         return view('approval-stages.index', compact('approvers', 'projects', 'departments'));
