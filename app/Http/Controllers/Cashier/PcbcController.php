@@ -8,6 +8,7 @@ use App\Http\Controllers\ToolController;
 use App\Http\Controllers\UserController;
 use App\Models\Dokumen;
 use App\Models\Pcbc;
+use App\Models\Project;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,9 +17,14 @@ use Illuminate\Support\Facades\Log;
 class PcbcController extends Controller
 {
     protected $allowedRoles = ['admin', 'superadmin', 'cashier'];
-    protected $projects = ['000H', '001H', '017C', '021C', '022C', '023C'];
+    protected $projects;
     protected $years = ['2024', '2025'];
     protected $months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+
+    public function __construct()
+    {
+        $this->projects = Project::orderBy('code')->pluck('code');
+    }
 
     public function index(Request $request)
     {

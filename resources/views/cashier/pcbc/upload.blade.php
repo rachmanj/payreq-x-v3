@@ -76,7 +76,7 @@
                                     <div class="form-group">
                                         <label for="project">Project</label>
                                         <select name="project" id="project" class="form-control select2bs4">
-                                            @foreach (App\Models\Project::orderBy('code', 'asc')->get() as $project)
+                                            @foreach (App\Models\Project::where('is_active', true)->orderBy('code', 'asc')->get() as $project)
                                                 <option value="{{ $project->code }}">{{ $project->code }}</option>
                                             @endforeach
                                         </select>
