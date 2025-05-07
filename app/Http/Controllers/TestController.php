@@ -14,6 +14,7 @@ use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\ReportDokumenController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Http\Controllers\Accounting\DeliveryController;
+use App\Http\Controllers\Cashier\CashOnHandTransactionController;
 use App\Models\Anggaran;
 use App\Models\Payreq;
 use App\Models\Realization;
@@ -42,7 +43,9 @@ class TestController extends Controller
         // $test = app(DeliveryController::class)->generate_dashboard_data();
         // $test = app(PcbcController::class)->getProjects(['superadmin']);
         // $test = app(KoranController::class)->check_koran_files('2024');
-        $test = app(AccountController::class)->getList();
+        // $test = app(AccountController::class)->getList();
+        // $test = app(CashOnHandTransactionController::class)->getCombinedCashTransactions('2025-03-01', '2025-05-31', '025C');
+        $test = app(CashOnHandTransactionController::class)->generateStatement(221, '2025-03-01', '2025-05-31');
         // $test = $this->getDNCRabs();
 
         return $test;

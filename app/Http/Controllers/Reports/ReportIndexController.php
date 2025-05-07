@@ -47,14 +47,19 @@ class ReportIndexController extends Controller
                         'protector' => 'akses_dashboard_022C',
                     ],
                     [
-                        'name' => 'Dashboard 023C',
-                        'url' => route('reports.ongoing.dashboard', ['project' => '023C']),
-                        'protector' => 'akses_dashboard_023C',
+                        'name' => 'Dashboard 025C',
+                        'url' => route('reports.ongoing.dashboard', ['project' => '025C']),
+                        'protector' => 'akses_dashboard_025C',
                     ],
                     [
                         'name' => 'Payreq Aging',
                         'url' => route('reports.ongoing.payreq-aging.index'),
                         'protector' => 'akses_payreq_aging',
+                    ],
+                    [
+                        'name' => 'Dashboard 023C',
+                        'url' => route('reports.ongoing.dashboard', ['project' => '023C']),
+                        'protector' => 'akses_dashboard_023C',
                     ],
 
                 ],

@@ -269,7 +269,7 @@ class CashOnHandTransactionController extends Controller
      * @param string|null $projectCode
      * @return array
      */
-    private function generateStatement($accountId, $startDate, $endDate)
+    public function generateStatement($accountId, $startDate, $endDate)
     {
         $account = Account::findOrFail($accountId);
         
@@ -285,11 +285,13 @@ class CashOnHandTransactionController extends Controller
         
         // Prepare and add opening balance line
         $openingLine = [
-            'date' => $startDate,
+            'date' => Carbon::parse($startDate)->format('Y-m-d'),
+            'display_date' => $this->formatDate($startDate),
             'description' => 'Opening Balance',
             'doc_num' => '',
             'doc_type' => '',
             'project_code' => '',
+            'sort_order' => 0, // Always first
         ];
         
         // For view, use formatted values with Indonesian locale
@@ -297,10 +299,10 @@ class CashOnHandTransactionController extends Controller
         $openingLine['credit'] = $this->formatNumber(0);
         $openingLine['balance'] = $this->formatNumber($openingBalance);
         
-        
         $statementLines->push($openingLine);
 
         // Process each transaction
+        $sortOrder = 1;
         foreach ($combinedTransactions as $transaction) {
             $amount = floatval($transaction['amount']);
             $debitAmount = 0;
@@ -310,17 +312,21 @@ class CashOnHandTransactionController extends Controller
             if ($transaction['transaction_type'] === 'incoming') {
                 $debitAmount = $amount;
                 $runningBalance += $amount; // Incomings increase the balance
+                $transactionSortOrder = $sortOrder;
             } else {
                 $creditAmount = $amount;
                 $runningBalance -= $amount; // Outgoings decrease the balance
+                $transactionSortOrder = $sortOrder + 0.5; // Make outgoings come after incomings on same date
             }
 
             $line = [
-                'date' => $transaction['transaction_date'],
+                'date' => Carbon::parse($transaction['transaction_date'])->format('Y-m-d'),
+                'display_date' => $this->formatDate($transaction['transaction_date']),
                 'description' => $transaction['description'],
                 'doc_num' => $transaction['document_number'],
                 'doc_type' => $transaction['transaction_type'],
                 'project_code' => $transaction['project'],
+                'sort_order' => $transactionSortOrder,
             ];
             
             // For view, use formatted values with Indonesian locale
@@ -328,9 +334,23 @@ class CashOnHandTransactionController extends Controller
             $line['credit'] = $this->formatNumber($creditAmount);
             $line['balance'] = $this->formatNumber($runningBalance);
             
-            
             $statementLines->push($line);
+            $sortOrder++;
         }
+
+        // Sort the statement lines by date and then by sort_order
+        $statementLines = $statementLines->sortBy([
+            ['date', 'asc'],
+            ['sort_order', 'asc']
+        ])->values();
+
+        // Replace date field with display_date for output
+        $statementLines = $statementLines->map(function($line) {
+            $line['date'] = $line['display_date'];
+            unset($line['display_date']);
+            unset($line['sort_order']);
+            return $line;
+        });
 
         // Create the final response
         $response = [
@@ -467,8 +487,17 @@ class CashOnHandTransactionController extends Controller
         // Combine and sort by transaction_date
         $combinedTransactions = array_merge($incomings, $outgoings);
         
+        // Improve sorting by using Carbon for date comparison
         usort($combinedTransactions, function($a, $b) {
-            return strtotime($a['transaction_date']) - strtotime($b['transaction_date']);
+            $dateA = Carbon::parse($a['transaction_date']);
+            $dateB = Carbon::parse($b['transaction_date']);
+            
+            if ($dateA->eq($dateB)) {
+                // If dates are equal, sort by transaction type (incoming first)
+                return $a['transaction_type'] === 'incoming' ? -1 : 1;
+            }
+            
+            return $dateA->lt($dateB) ? -1 : 1;
         });
         
         return $combinedTransactions;
