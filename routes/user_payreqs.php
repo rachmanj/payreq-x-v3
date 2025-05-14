@@ -72,6 +72,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::get('/create', [PayreqAdvanceController::class, 'create'])->name('create');
         Route::post('/proses', [PayreqAdvanceController::class, 'proses'])->name('proses');
         Route::get('/{id}/edit', [PayreqAdvanceController::class, 'edit'])->name('edit');
+        Route::post('/search-lot', [PayreqAdvanceController::class, 'searchLOT'])->name('search-lot');
     });
 
     //REIMBURSE TYPE

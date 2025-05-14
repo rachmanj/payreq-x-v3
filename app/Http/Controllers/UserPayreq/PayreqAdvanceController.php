@@ -9,10 +9,20 @@ use App\Http\Controllers\PayreqController;
 use App\Models\Anggaran;
 use App\Models\Payreq;
 use App\Models\Realization;
+use App\Services\LotService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class PayreqAdvanceController extends Controller
 {
+    protected $lotService;
+
+    public function __construct(LotService $lotService)
+    {
+        $this->lotService = $lotService;
+    }
+
     public function create()
     {
         $payreq_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
@@ -31,7 +41,6 @@ class PayreqAdvanceController extends Controller
 
     public function proses(Request $request)
     {
-
         $request->validate([
             'remarks' => 'required',
             'amount' => 'required',
@@ -84,7 +93,7 @@ class PayreqAdvanceController extends Controller
         }
 
         $response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $id);
-
+        // dd($response);
         if (!$response) {
             return redirect()->route('user-payreqs.index')->with('error', 'Payreq gagal disubmit. Hubungi IT Administrator');
         }
@@ -132,5 +141,19 @@ class PayreqAdvanceController extends Controller
         ]);
 
         return $payreq;
+    }
+
+    public function searchLOT(Request $request)
+    {
+        $searchParams = [
+            'travel_number' => $request->travel_number,
+            'traveler' => $request->traveler,
+            'department' => $request->department,
+            'project' => $request->project
+        ];
+
+        $result = $this->lotService->search($searchParams);
+
+        return response()->json($result);
     }
 }
