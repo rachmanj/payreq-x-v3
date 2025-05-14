@@ -90,10 +90,10 @@ class UserRealizationController extends Controller
     public function submit_realization(Request $request)
     {
         $realization = Realization::findOrFail($request->realization_id);
-        // update payreq status to 'realization'
-        $realization->payreq->update([
-            'status' => 'realization',
-        ]);
+        // update payreq status to 'realization' // payreq status still paid until approval plan is complete
+        // $realization->payreq->update([
+        //     'status' => 'realization',
+        // ]);
 
         // create approval plan
         $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('realization', $realization->id);

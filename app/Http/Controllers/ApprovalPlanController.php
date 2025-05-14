@@ -143,6 +143,12 @@ class ApprovalPlanController extends Controller
                 'deletable' => 1,
             ]);
 
+            // find its payment request
+            $payment_request = Payreq::where('id', $document->payreq_id)->first();
+            $payment_request->update([
+                'status' => 'paid'
+            ]);
+
             // Close all open approval plans for this document
             $this->closeOpenApprovalPlans($document_type, $document->id);
         }
@@ -152,6 +158,12 @@ class ApprovalPlanController extends Controller
             $document->update([
                 'status' => 'rejected',
                 'deletable' => 1,
+            ]);
+
+            // find its payment request
+            $payment_request = Payreq::where('id', $document->payreq_id)->first();
+            $payment_request->update([
+                'status' => 'paid'
             ]);
 
             // Close all open approval plans for this document
