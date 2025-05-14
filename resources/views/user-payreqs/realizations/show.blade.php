@@ -46,8 +46,7 @@
                             @csrf @method('DELETE')
                             {{-- <input type="hidden" name="realization_id" value="{{ $realization->id }}"> --}}
                             <button type="submit" class="btn btn-sm btn-danger d-inline float-right"
-                                onclick="return confirm('Are You sure You want to CANCEL this Payment Request? This transaction cannot be undone')"
-                                disabled>CANCEL</button>
+                                onclick="return confirm('Are You sure You want to CANCEL this Payment Request? This transaction cannot be undone')">CANCEL</button>
                         </form>
                     @endif
                 </div>
@@ -126,7 +125,8 @@
                                 <tr>
                                     <td colspan="2" class="text-right">Total</td>
                                     <td class="text-right">
-                                        <b>{{ number_format($realization_details->sum('amount'), 2) }}</b></td>
+                                        <b>{{ number_format($realization_details->sum('amount'), 2) }}</b>
+                                    </td>
                                 </tr>
                             </tfoot>
                         @else
