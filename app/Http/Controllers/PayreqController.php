@@ -19,6 +19,7 @@ class PayreqController extends Controller
             'status' => 'draft',
             'type' => $data->payreq_type,
             'rab_id' => $data->rab_id,
+            'lot_no' => $data->lot_no,
             'user_id' => $data->employee_id,
         ]);
 
@@ -37,6 +38,7 @@ class PayreqController extends Controller
         $payreq = Payreq::findOrFail($data->payreq_id);
         $payreq->update(array_merge($validated, [
             'rab_id' => $data->rab_id,
+            'lot_no' => $data->lot_no,
         ]));
 
         return $payreq;
