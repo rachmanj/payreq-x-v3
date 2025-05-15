@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('realizations', function (Blueprint $table) {
-            $table->boolean('uncanceled')->default(false);
+        Schema::table('payreqs', function (Blueprint $table) {
+            $table->integer('cancel_count')->default(0)->after('canceled_at');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('realizations', function (Blueprint $table) {
-            $table->dropColumn('uncanceled');
+        Schema::table('payreqs', function (Blueprint $table) {
+            $table->dropColumn('cancel_count');
         });
     }
 };

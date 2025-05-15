@@ -46,7 +46,16 @@
                             @csrf @method('DELETE')
                             {{-- <input type="hidden" name="realization_id" value="{{ $realization->id }}"> --}}
                             <button type="submit" class="btn btn-sm btn-danger d-inline float-right"
-                                onclick="return confirm('Are You sure You want to CANCEL this Payment Request? This transaction cannot be undone')">CANCEL</button>
+                                onclick="return confirm('Are You sure You want to CANCEL this Payment Request? This transaction cannot be undone')"
+                                @if ($realization->payreq->cancel_count > 2) disabled @endif>
+                                CANCEL
+                            </button>
+                            @if ($realization->payreq->cancel_count > 2)
+                                <span class="text-danger float-right mr-2"
+                                    style="font-size: 0.95em; background-color: #fff3cd;">
+                                    <i class="fas fa-info-circle"></i> This payreq has already been canceled 3 times.
+                                </span>
+                            @endif
                         </form>
                     @endif
                 </div>

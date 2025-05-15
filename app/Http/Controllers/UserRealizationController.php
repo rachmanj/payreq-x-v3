@@ -158,6 +158,7 @@ class UserRealizationController extends Controller
         // reverse payreq status to 'paid'
         $realization->payreq->update([
             'status' => 'paid',
+            'cancel_count' => $realization->payreq->cancel_count + 1,
         ]);
 
         // delete realization

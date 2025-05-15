@@ -116,6 +116,8 @@
                                     <select name="curr" id="curr" class="form-control select2bs4">
                                         <option value="IDR">IDR</option>
                                         <option value="USD">USD</option>
+                                        <option value="SGD">SGD</option>
+                                        <option value="AUD">AUD</option>
                                     </select>
                                 </div>
                             </div>
