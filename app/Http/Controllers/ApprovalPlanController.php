@@ -182,6 +182,12 @@ class ApprovalPlanController extends Controller
                 'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
             ]);
 
+            //find its payment request
+            $payment_request = Payreq::where('id', $document->payreq_id)->first();
+            $payment_request->update([
+                'status' => 'realization',
+            ]);
+
             // Special handling for reimbursement type payment requests
             if ($request->document_type === 'payreq') {
                 if ($document->type === 'reimburse') {
@@ -371,6 +377,12 @@ class ApprovalPlanController extends Controller
                     'editable' => 0,
                     'approved_at' => now(),
                     'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
+                ]);
+
+                //find its payment request
+                $payment_request = Payreq::where('id', $document->payreq_id)->first();
+                $payment_request->update([
+                    'status' => 'realization',
                 ]);
 
                 // Special handling for reimbursement type payment requests
