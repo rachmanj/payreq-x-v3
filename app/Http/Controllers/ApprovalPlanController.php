@@ -143,11 +143,13 @@ class ApprovalPlanController extends Controller
                 'deletable' => 1,
             ]);
 
-            // find its payment request
+            // find its payment request if it exists
             $payment_request = Payreq::where('id', $document->payreq_id)->first();
-            $payment_request->update([
-                'status' => 'paid'
-            ]);
+            if ($payment_request) {
+                $payment_request->update([
+                    'status' => 'paid'
+                ]);
+            }
 
             // Close all open approval plans for this document
             $this->closeOpenApprovalPlans($document_type, $document->id);
@@ -160,11 +162,13 @@ class ApprovalPlanController extends Controller
                 'deletable' => 1,
             ]);
 
-            // find its payment request
+            // find its payment request if it exists
             $payment_request = Payreq::where('id', $document->payreq_id)->first();
-            $payment_request->update([
-                'status' => 'paid'
-            ]);
+            if ($payment_request) {
+                $payment_request->update([
+                    'status' => 'paid'
+                ]);
+            }
 
             // Close all open approval plans for this document
             $this->closeOpenApprovalPlans($document_type, $document->id);
@@ -182,26 +186,30 @@ class ApprovalPlanController extends Controller
                 'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
             ]);
 
-            //find its payment request
+            // Find its payment request if it exists
             $payment_request = Payreq::where('id', $document->payreq_id)->first();
-            $payment_request->update([
-                'status' => 'realization',
-            ]);
+            if ($payment_request) {
+                $payment_request->update([
+                    'status' => 'realization',
+                ]);
+            }
 
             // Special handling for reimbursement type payment requests
-            if ($request->document_type === 'payreq') {
+            if ($document_type === 'payreq') {
                 if ($document->type === 'reimburse') {
                     $realization = Realization::where('payreq_id', $document->id)->first();
-                    $realization->update([
-                        'status' => 'reimburse-approved',
-                        'approved_at' => $approval_plan->updated_at,
-                        'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
-                    ]);
+                    if ($realization) {
+                        $realization->update([
+                            'status' => 'reimburse-approved',
+                            'approved_at' => $approval_plan->updated_at,
+                            'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
+                        ]);
+                    }
                 }
             }
 
             // Special handling for realization documents
-            if ($request->document_type === 'realization') {
+            if ($document_type === 'realization') {
                 // Set due date for realization (3 days from now)
                 $realization = Realization::findOrFail($document->id);
                 $realization->update([
@@ -213,11 +221,11 @@ class ApprovalPlanController extends Controller
             }
 
             // Special handling for budget (RAB) documents
-            if ($request->document_type === 'rab') {
+            if ($document_type === 'rab') {
                 $document->update([
-                    'periode_ofr' => $request->periode_ofr,
-                    'usage' => $request->usage,
-                    'periode_anggaran' => $request->periode_anggaran,
+                    'periode_ofr' => $request->periode_ofr ?? null,
+                    'usage' => $request->usage ?? null,
+                    'periode_anggaran' => $request->periode_anggaran ?? null,
                 ]);
             }
         }
@@ -244,11 +252,11 @@ class ApprovalPlanController extends Controller
         }
 
         // Redirect to appropriate page based on document type for non-AJAX requests
-        if ($request->document_type === 'payreq') {
+        if ($document_type === 'payreq') {
             return redirect()->route('approvals.request.payreqs.index')->with('success', 'Payment Request has been ' . $status_text);
-        } elseif ($request->document_type === 'realization') {
+        } elseif ($document_type === 'realization') {
             return redirect()->route('approvals.request.realizations.index')->with('success', 'Realization has been ' . $status_text);
-        } elseif ($request->document_type === 'rab') {
+        } elseif ($document_type === 'rab') {
             return redirect()->route('approvals.request.anggarans.index')->with('success', 'Budget (RAB) has been ' . $status_text);
         } else {
             return false; // Invalid document type
@@ -379,21 +387,25 @@ class ApprovalPlanController extends Controller
                     'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
                 ]);
 
-                //find its payment request
+                // Find its payment request if it exists
                 $payment_request = Payreq::where('id', $document->payreq_id)->first();
-                $payment_request->update([
-                    'status' => 'realization',
-                ]);
+                if ($payment_request) {
+                    $payment_request->update([
+                        'status' => 'realization',
+                    ]);
+                }
 
                 // Special handling for reimbursement type payment requests
                 if ($document_type === 'payreq') {
                     if ($document->type === 'reimburse') {
                         $realization = Realization::where('payreq_id', $document->id)->first();
-                        $realization->update([
-                            'status' => 'reimburse-approved',
-                            'approved_at' => now(),
-                            'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
-                        ]);
+                        if ($realization) {
+                            $realization->update([
+                                'status' => 'reimburse-approved',
+                                'approved_at' => now(),
+                                'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
+                            ]);
+                        }
                     }
                 }
 
@@ -412,9 +424,9 @@ class ApprovalPlanController extends Controller
                 // Special handling for budget (RAB) documents
                 if ($document_type === 'rab') {
                     $document->update([
-                        'periode_ofr' => $request->periode_ofr,
-                        'usage' => $request->usage,
-                        'periode_anggaran' => $request->periode_anggaran,
+                        'periode_ofr' => $request->periode_ofr ?? null,
+                        'usage' => $request->usage ?? null,
+                        'periode_anggaran' => $request->periode_anggaran ?? null,
                     ]);
                 }
             }
