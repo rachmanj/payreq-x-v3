@@ -154,6 +154,27 @@ class PayreqAdvanceController extends Controller
 
         $result = $this->lotService->search($searchParams);
 
+        // If LOT data is found and has travel_number, check for related payreq
+        if ($result['success'] && !empty($result['data'])) {
+            foreach ($result['data'] as &$lot) {
+                if (!empty($lot['official_travel_number'])) {
+                    // Find related payreq
+                    $payreq = Payreq::where('lot_no', $lot['official_travel_number'])
+                        ->select('id', 'nomor', 'amount', 'status')
+                        ->first();
+
+                    if ($payreq) {
+                        $lot['payment_request'] = [
+                            'id' => $payreq->id,
+                            'nomor' => $payreq->nomor,
+                            'amount' => $payreq->amount,
+                            'status' => $payreq->status
+                        ];
+                    }
+                }
+            }
+        }
+
         return response()->json($result);
     }
 }

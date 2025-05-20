@@ -125,82 +125,555 @@
 
 ### 1. Persiapan Database
 
-1. **Buat tabel lot_claims:**
+1. **Buat tabel lot_claims (tabel utama):**
 
     - Buat migrasi untuk tabel `lot_claims` dengan struktur:
-        - id (primary key)
-        - lot_number (string, index)
-        - user_id (foreign key ke users)
-        - realization_id (foreign key ke realizations)
+        - id (primary key, bigInteger, auto increment)
+        - lot_no (string, 50, index)
         - claim_date (date)
-        - amount (decimal)
-        - description (text)
-        - status (string)
-        - timestamps (created_at, updated_at)
+        - project (string)
+        - advance_amount (decimal 15,2)
+        - claim_remarks (text, nullable)
+        - claim_status (enum: 'pending', 'approved', 'rejected')
+        - user_id (foreign key ke users)
 
-2. **Relasi Database:**
+2. **Buat tabel lot_claim_accommodations:**
+
+    - id (primary key, bigInteger, auto increment)
+    - lot_claim_id (foreign key ke lot_claims)
+    - accommodation_description (string) - contoh: hotel, laundry, etc.
+    - accommodation_amount (decimal 15,2)
+    - notes (text, nullable)
+
+3. **Buat tabel lot_claim_travels:**
+
+    - id (primary key, bigInteger, auto increment)
+    - lot_claim_id (foreign key ke lot_claims)
+    - travel_description (string) - contoh: airline ticket, airport tax, taxi, etc.
+    - travel_amount (decimal 15,2)
+    - notes (text, nullable)
+
+4. **Buat tabel lot_claim_meals:**
+
+    - id (primary key, bigInteger, auto increment)
+    - lot_claim_id (foreign key ke lot_claims)
+    - meal_type (enum: 'airport-meal', 'breakfast', 'lunch', 'dinner', 'other')
+    - people_count (integer)
+    - per_person_limit (decimal 15,2)
+    - frequency (integer)
+    - meal_amount (decimal 15,2) - dihitung dari people_count x per_person_limit x frequency
+    - notes (text, nullable) e.g.: staff, driver, etc.
+
+5. **Tambahkan kolom-kolom total pada tabel lot_claims:**
+
+    ```php
+    // Di migration
+    $table->decimal('accommodation_total', 15, 2)->nullable();
+    $table->decimal('travel_total', 15, 2)->nullable();
+    $table->decimal('meal_total', 15, 2)->nullable();
+    $table->decimal('total_claim', 15, 2)->nullable();
+    $table->decimal('difference', 15, 2)->nullable();
+
+    // Tambahkan indeks untuk optimasi query
+    $table->index('accommodation_total');
+    $table->index('travel_total');
+    $table->index('meal_total');
+    $table->index('total_claim');
+    $table->index('difference');
+    ```
+
+    Kolom-kolom ini akan menyimpan total dari setiap kategori pengeluaran. Keuntungan menggunakan kolom biasa:
+
+    - Lebih fleksibel dalam pengelolaan data
+    - Bisa diupdate secara manual atau melalui event/observer
+    - Tidak ada ketergantungan pada fitur database tertentu
+    - Bisa diindeks untuk pencarian yang lebih cepat
+    - Bisa digunakan dalam WHERE clause dan ORDER BY
+
+6. **Relasi Database:**
     - Buat foreign key constraint antara `lot_claims` dan `realizations`
     - Buat foreign key constraint antara `lot_claims` dan `users`
+    - Buat foreign key constraint antara `lot_claim_accommodations` dan `lot_claims`
+    - Buat foreign key constraint antara `lot_claim_travels` dan `lot_claims`
+    - Buat foreign key constraint antara `lot_claim_meals` dan `lot_claims`
+    - Tambahkan indeks untuk kolom yang sering digunakan dalam pencarian
 
 ### 2. Implementasi Model
 
 1. **Buat Model LotClaim:**
 
-    - Buat model `LotClaim` dengan relasi yang sesuai
-    - Definisikan relasi dengan `User` dan `Realization`
-    - Tambahkan metode scope untuk filtering
+    ```php
+    class LotClaim extends Model
+    {
+        protected $fillable = [
+            'lot_no',
+            'claim_date',
+            'project',
+            'advance_amount',
+            'description',
+            'status',
+            'user_id',
+            'accommodation_total',
+            'travel_total',
+            'meal_total',
+            'total_claim',
+            'difference'
+        ];
 
-2. **Update Model Realization:**
-    - Tambahkan relasi `hasMany` ke LotClaim di model Realization
+        protected $casts = [
+            'claim_date' => 'date',
+            'advance_amount' => 'decimal:2',
+            'accommodation_total' => 'decimal:2',
+            'travel_total' => 'decimal:2',
+            'meal_total' => 'decimal:2',
+            'total_claim' => 'decimal:2',
+            'difference' => 'decimal:2'
+        ];
+
+        // Event untuk update totals
+        protected static function booted()
+        {
+            static::saving(function ($lotClaim) {
+                // Update accommodation total
+                $lotClaim->accommodation_total = $lotClaim->accommodations()->sum('accommodation_amount');
+
+                // Update travel total
+                $lotClaim->travel_total = $lotClaim->travels()->sum('travel_amount');
+
+                // Update meal total
+                $lotClaim->meal_total = $lotClaim->meals()->sum('meal_amount');
+
+                // Update total claim
+                $lotClaim->total_claim = $lotClaim->accommodation_total +
+                                       $lotClaim->travel_total +
+                                       $lotClaim->meal_total;
+
+                // Update difference
+                $lotClaim->difference = $lotClaim->advance_amount - $lotClaim->total_claim;
+            });
+        }
+
+        public function user()
+        {
+            return $this->belongsTo(User::class);
+        }
+
+        public function accommodations()
+        {
+            return $this->hasMany(LotClaimAccommodation::class);
+        }
+
+        public function travels()
+        {
+            return $this->hasMany(LotClaimTravel::class);
+        }
+
+        public function meals()
+        {
+            return $this->hasMany(LotClaimMeal::class);
+        }
+    }
+    ```
+
+2. **Buat Model LotClaimAccommodation:**
+
+    ```php
+    class LotClaimAccommodation extends Model
+    {
+        protected $fillable = [
+            'lot_claim_id',
+            'description',
+            'amount',
+            'receipt_date',
+            'receipt_number',
+            'notes'
+        ];
+
+        protected $casts = [
+            'receipt_date' => 'date',
+            'amount' => 'decimal:2'
+        ];
+
+        public function lotClaim()
+        {
+            return $this->belongsTo(LotClaim::class);
+        }
+    }
+    ```
+
+3. **Buat Model LotClaimTravel:**
+
+    ```php
+    class LotClaimTravel extends Model
+    {
+        protected $fillable = [
+            'lot_claim_id',
+            'description',
+            'amount',
+            'travel_date',
+            'receipt_number',
+            'notes'
+        ];
+
+        protected $casts = [
+            'travel_date' => 'date',
+            'amount' => 'decimal:2'
+        ];
+
+        public function lotClaim()
+        {
+            return $this->belongsTo(LotClaim::class);
+        }
+    }
+    ```
+
+4. **Buat Model LotClaimMeal:**
+
+    ```php
+    class LotClaimMeal extends Model
+    {
+        protected $fillable = [
+            'lot_claim_id',
+            'meal_type',
+            'people_count',
+            'per_person_limit',
+            'frequency',
+            'total_amount',
+            'meal_date',
+            'notes'
+        ];
+
+        protected $casts = [
+            'meal_date' => 'date',
+            'per_person_limit' => 'decimal:2',
+            'total_amount' => 'decimal:2'
+        ];
+
+        public function lotClaim()
+        {
+            return $this->belongsTo(LotClaim::class);
+        }
+
+        // Otomatis menghitung total_amount
+        protected static function booted()
+        {
+            static::creating(function ($meal) {
+                $meal->total_amount = $meal->people_count * $meal->per_person_limit * $meal->frequency;
+            });
+
+            static::updating(function ($meal) {
+                $meal->total_amount = $meal->people_count * $meal->per_person_limit * $meal->frequency;
+            });
+        }
+    }
+    ```
 
 ### 3. Implementasi Controller
 
 1. **Buat Controller LotClaimController:**
 
-    - Implementasikan metode CRUD standard (index, create, store, show, edit, update, delete)
-    - Tambahkan validasi request
-    - Implementasikan authorization menggunakan policy
+    ```php
+    class LotClaimController extends Controller
+    {
+        public function index()
+        {
+            $lotClaims = LotClaim::with(['user'])
+                ->when(request('search'), function($q) {
+                    return $q->where('lot_no', 'like', '%' . request('search') . '%')
+                        ->orWhere('description', 'like', '%' . request('search') . '%');
+                })
+                ->when(request('status'), function($q) {
+                    return $q->where('status', request('status'));
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
 
-2. **Integrasi dengan UserRealizationController:**
-    - Update UserRealizationController untuk mendukung pemilihan LotClaim
-    - Tambahkan logika untuk menghubungkan LotClaim dengan Realization
+            return view('lot-claims.index', compact('lotClaims'));
+        }
+
+        public function create()
+        {
+            return view('lot-claims.create');
+        }
+
+        public function store(Request $request)
+        {
+            DB::beginTransaction();
+            try {
+                $lotClaim = LotClaim::create($request->validated());
+
+                // Store accommodations
+                if ($request->has('accommodations')) {
+                    foreach ($request->accommodations as $accommodation) {
+                        $lotClaim->accommodations()->create($accommodation);
+                    }
+                }
+
+                // Store travels
+                if ($request->has('travels')) {
+                    foreach ($request->travels as $travel) {
+                        $lotClaim->travels()->create($travel);
+                    }
+                }
+
+                // Store meals
+                if ($request->has('meals')) {
+                    foreach ($request->meals as $meal) {
+                        $lotClaim->meals()->create($meal);
+                    }
+                }
+
+                DB::commit();
+                return redirect()->route('lot-claims.show', $lotClaim)
+                    ->with('success', 'LOT Claim created successfully');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return back()->with('error', 'Failed to create LOT Claim: ' . $e->getMessage());
+            }
+        }
+
+        public function show(LotClaim $lotClaim)
+        {
+            $lotClaim->load(['accommodations', 'travels', 'meals']);
+            return view('lot-claims.show', compact('lotClaim'));
+        }
+
+        public function edit(LotClaim $lotClaim)
+        {
+            $lotClaim->load(['accommodations', 'travels', 'meals']);
+            return view('lot-claims.edit', compact('lotClaim'));
+        }
+
+        public function update(Request $request, LotClaim $lotClaim)
+        {
+            DB::beginTransaction();
+            try {
+                $lotClaim->update($request->validated());
+
+                // Handle accommodations
+                if ($request->has('accommodations')) {
+                    // Delete removed accommodations
+                    $keepIds = collect($request->accommodations)
+                        ->pluck('id')
+                        ->filter()
+                        ->toArray();
+
+                    $lotClaim->accommodations()
+                        ->whereNotIn('id', $keepIds)
+                        ->delete();
+
+                    // Update or create accommodations
+                    foreach ($request->accommodations as $accommodation) {
+                        if (!empty($accommodation['id'])) {
+                            $lotClaim->accommodations()
+                                ->find($accommodation['id'])
+                                ->update($accommodation);
+                        } else {
+                            $lotClaim->accommodations()->create($accommodation);
+                        }
+                    }
+                }
+
+                // Similar logic for travels and meals
+                // ...
+
+                DB::commit();
+                return redirect()->route('lot-claims.show', $lotClaim)
+                    ->with('success', 'LOT Claim updated successfully');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return back()->with('error', 'Failed to update LOT Claim: ' . $e->getMessage());
+            }
+        }
+
+        public function destroy(LotClaim $lotClaim)
+        {
+            try {
+                $lotClaim->delete();
+                return redirect()->route('lot-claims.index')
+                    ->with('success', 'LOT Claim deleted successfully');
+            } catch (\Exception $e) {
+                return back()->with('error', 'Failed to delete LOT Claim: ' . $e->getMessage());
+            }
+        }
+    }
+    ```
+
+2. **Buat Controllers untuk Detail:**
+    - LotClaimAccommodationController
+    - LotClaimTravelController
+    - LotClaimMealController
 
 ### 4. Implementasi View
 
 1. **Buat Views untuk LotClaim:**
 
-    - Form create/edit untuk LotClaim
-    - List view dengan datatable
-    - Detail view untuk single LotClaim
-    - Tambahkan modal untuk quick-add LotClaim
+    - `index.blade.php`:
 
-2. **Update View Form Realization:**
-    - Tambahkan section untuk memilih/menambahkan LotClaim
-    - Implementasikan dynamic form untuk multiple LotClaim
+        - Tabel dengan kolom: LOT Number, Claim Date, Project, Advance Amount, Total Claim, Difference, Status, Actions
+        - Filter berdasarkan status, tanggal, dan LOT number
+        - Pagination
+        - Tombol untuk create, edit, delete
+
+    - `create.blade.php` dan `edit.blade.php`:
+
+        - Form utama untuk LOT Claim
+        - Tabs untuk berbagai kategori pengeluaran
+        - Dynamic forms untuk accommodations, travels, dan meals dengan tombol add/remove
+        - Summary section yang menampilkan perhitungan total dan selisih
+        - JavaScript untuk perhitungan on-the-fly
+
+    - `show.blade.php`:
+        - Detail informasi LOT Claim
+        - Tabel untuk setiap kategori pengeluaran
+        - Summary section dengan total untuk tiap kategori
+        - Perhitungan final (total claim dan selisih)
+        - Status history
+        - Tombol untuk print dan export ke PDF
+
+2. **Implementasi JavaScript untuk Perhitungan Dinamis:**
+
+    ```javascript
+    // Update totals when any amount changes
+    function updateTotals() {
+        // Calculate accommodation total
+        let accommodationTotal = 0;
+        document
+            .querySelectorAll(".accommodation-amount")
+            .forEach((element) => {
+                accommodationTotal += parseFloat(element.value || 0);
+            });
+
+        // Calculate travel total
+        let travelTotal = 0;
+        document.querySelectorAll(".travel-amount").forEach((element) => {
+            travelTotal += parseFloat(element.value || 0);
+        });
+
+        // Calculate meal total
+        let mealTotal = 0;
+        document.querySelectorAll(".meal-row").forEach((row) => {
+            const peopleCount = parseFloat(
+                row.querySelector(".people-count").value || 0
+            );
+            const perPersonLimit = parseFloat(
+                row.querySelector(".per-person-limit").value || 0
+            );
+            const frequency = parseFloat(
+                row.querySelector(".frequency").value || 0
+            );
+            const rowTotal = peopleCount * perPersonLimit * frequency;
+
+            row.querySelector(".meal-total").textContent = rowTotal.toFixed(2);
+            mealTotal += rowTotal;
+        });
+
+        // Update displayed totals
+        document.getElementById("accommodation-total").textContent =
+            accommodationTotal.toFixed(2);
+        document.getElementById("travel-total").textContent =
+            travelTotal.toFixed(2);
+        document.getElementById("meal-total").textContent =
+            mealTotal.toFixed(2);
+
+        // Calculate and display grand total
+        const totalClaim = accommodationTotal + travelTotal + mealTotal;
+        document.getElementById("total-claim").textContent =
+            totalClaim.toFixed(2);
+
+        // Calculate and display difference
+        const advanceAmount = parseFloat(
+            document.getElementById("advance-amount").value || 0
+        );
+        const difference = advanceAmount - totalClaim;
+        document.getElementById("difference").textContent =
+            difference.toFixed(2);
+
+        // Highlight difference based on value
+        const differenceElement = document.getElementById("difference");
+        if (difference < 0) {
+            differenceElement.classList.add("text-danger");
+            differenceElement.classList.remove("text-success");
+        } else {
+            differenceElement.classList.add("text-success");
+            differenceElement.classList.remove("text-danger");
+        }
+    }
+
+    // Add event listeners to all input fields
+    document.querySelectorAll("input[type=number]").forEach((input) => {
+        input.addEventListener("change", updateTotals);
+        input.addEventListener("keyup", updateTotals);
+    });
+
+    // Add row functions for each expense type
+    function addAccommodationRow() {
+        // Clone template row and append to table
+        // Add event listeners to new inputs
+        // Update totals
+    }
+
+    function addTravelRow() {
+        // Similar logic
+    }
+
+    function addMealRow() {
+        // Similar logic
+    }
+
+    // Remove row functions
+    function removeRow(button) {
+        button.closest("tr").remove();
+        updateTotals();
+    }
+
+    // Initialize totals on page load
+    document.addEventListener("DOMContentLoaded", updateTotals);
+    ```
 
 ### 5. Implementasi Routes
 
 1. **Tambahkan Routes untuk LotClaim:**
-    - Buat resource routes untuk LotClaim di `routes/user_payreqs.php`
-    - Implementasikan nested routes jika diperlukan
+    ```php
+    Route::middleware(['auth'])->group(function () {
+        Route::resource('lot-claims', LotClaimController::class);
+        Route::post('lot-claims/search', [LotClaimController::class, 'search'])->name('lot-claims.search');
+    });
+    ```
 
 ### 6. Implementasi Permission
 
 1. **Tambahkan Permission untuk LotClaim:**
 
-    - Buat permission baru untuk manajemen LotClaim
-    - Assign ke roles yang sesuai
+    - `lot-claims.view`
+    - `lot-claims.create`
+    - `lot-claims.edit`
+    - `lot-claims.delete`
+    - `lot-claims.approve`
 
 2. **Update Controller dengan Authorization:**
-    - Implementasikan Gates/Policies untuk akses LotClaim
-    - Tambahkan middleware permission pada routes
+    ```php
+    public function __construct()
+    {
+        $this->authorizeResource(LotClaim::class, 'lotClaim');
+    }
+    ```
 
 ### 7. Implementasi Validasi
 
-1. **Buat Request Classes:**
-    - StoreLotClaimRequest
-    - UpdateLotClaimRequest
-    - Implementasikan rules validasi yang sesuai
+1. **StoreLotClaimRequest:**
+    ```php
+    public function rules()
+    {
+        return [
+            'lot_number' => 'required|string|max:50',
+            'claim_date' => 'required|date',
+            'amount' => 'required|numeric|min:0',
+            'description' => 'required|string',
+            'realization_id' => 'required|exists:realizations,id'
+        ];
+    }
+    ```
 
 ### 8. Pengujian
 
@@ -208,20 +681,27 @@
 
     - Test model LotClaim
     - Test relasi dengan Realization
+    - Test validasi input
+    - Test authorization
 
 2. **Feature Testing:**
     - Test CRUD operations
     - Test integrasi dengan Realization
+    - Test approval workflow
+    - Test search dan filter
 
 ### 9. Dokumentasi
 
 1. **Update README:**
 
-    - Tambahkan dokumentasi untuk fitur baru
+    - Tambahkan dokumentasi untuk fitur LOT Claim
     - Sertakan instruksi penggunaan
+    - Tambahkan contoh penggunaan API
 
 2. **Dokumentasi API:**
-    - Jika ada endpoint API baru, dokumentasikan dengan format yang sesuai
+    - Dokumentasikan endpoint untuk LOT Claim
+    - Sertakan contoh request dan response
+    - Tambahkan informasi tentang authorization
 
 ## Timeline Implementasi
 

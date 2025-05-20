@@ -9,6 +9,7 @@ class LotService
 {
     protected $baseUrl;
     protected $searchEndpoint;
+    protected $claimedSearchEndpoint;
     protected $timeout;
 
     public function __construct()
@@ -20,21 +21,24 @@ class LotService
     {
         $this->baseUrl = rtrim(config('services.lot.base_url'), '/');
         $this->searchEndpoint = ltrim(config('services.lot.search_endpoint'), '/');
+        $this->claimedSearchEndpoint = ltrim(config('services.lot.claimed_search_endpoint', 'api/official-travels/search-claimed'), '/');
         $this->timeout = config('services.lot.timeout', 30);
 
         Log::info('LOT Service Initialized', [
             'base_url' => $this->baseUrl,
             'search_endpoint' => $this->searchEndpoint,
+            'claimed_search_endpoint' => $this->claimedSearchEndpoint,
             'full_url' => $this->getFullUrl()
         ]);
     }
 
-    protected function getFullUrl(): string
+    protected function getFullUrl(bool $isClaimed = false): string
     {
-        return $this->baseUrl . '/' . $this->searchEndpoint;
+        $endpoint = $isClaimed ? $this->claimedSearchEndpoint : $this->searchEndpoint;
+        return $this->baseUrl . '/' . $endpoint;
     }
 
-    public function search(array $params)
+    public function search(array $params, bool $isClaimed = false)
     {
         try {
             // Check if fetch_all is enabled
@@ -60,7 +64,7 @@ class LotService
                 $searchParams = ['fetch_all' => true];
             }
 
-            $response = $this->makeRequest($searchParams);
+            $response = $this->makeRequest($searchParams, $isClaimed);
 
             return $this->handleResponse($response);
         } catch (\Exception $e) {
@@ -86,13 +90,14 @@ class LotService
         return $searchParams;
     }
 
-    protected function makeRequest(array $params)
+    protected function makeRequest(array $params, bool $isClaimed = false)
     {
-        $fullUrl = $this->getFullUrl();
+        $fullUrl = $this->getFullUrl($isClaimed);
 
         Log::info('LOT Search Request', [
             'url' => $fullUrl,
-            'params' => $params
+            'params' => $params,
+            'is_claimed' => $isClaimed
         ]);
 
         return Http::withHeaders([

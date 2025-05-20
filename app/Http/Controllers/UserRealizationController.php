@@ -6,6 +6,7 @@ use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Models\ApprovalPlan;
 use App\Models\Equipment;
 use App\Models\Incoming;
+use App\Models\LotClaim;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
@@ -29,6 +30,7 @@ class UserRealizationController extends Controller
             ->distinct()
             ->get();
 
+
         $user_payreqs = $user_payreqs_no_realization->merge($payreq_with_realization_rejected);
 
         // $realization_no = app(ToolController::class)->generateDraftRealizationNumber();
@@ -39,7 +41,7 @@ class UserRealizationController extends Controller
 
     public function create()
     {
-        // 
+        //
     }
 
     public function show($id)
@@ -94,6 +96,14 @@ class UserRealizationController extends Controller
         $realization->payreq->update([
             'status' => 'realization',
         ]);
+
+        $lotc = LotClaim::where('lot_no', $realization->payreq->lot_no)->first();
+
+        if ($lotc) {
+            $lotc->update([
+                'is_claimed' => 'yes',
+            ]);
+        }
 
         // create approval plan
         $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('realization', $realization->id);
@@ -186,9 +196,16 @@ class UserRealizationController extends Controller
         return $this->index();
     }
 
+    private function checkPayreqLot($payreq_id)
+    {
+        $payreq = Payreq::findOrFail($payreq_id);
+        $lotc = LotClaim::where('lot_no', $payreq->lot_no)->first();
+        return $lotc;
+    }
+
     public function add_details($realization_id)
     {
-        $realization = Realization::findOrFail($realization_id);
+        $realization = Realization::with('payreq')->findOrFail($realization_id);
         $realization_details = $realization->realizationDetails;
         // $equipments = app(ToolController::class)->getEquipments($realization->project);
         // $equipments = Equipment::where('project', $realization->project)->get();
@@ -201,11 +218,15 @@ class UserRealizationController extends Controller
             $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();
         }
 
+        // Check if payreq has LOTC
+        $lotc_detail = $this->checkPayreqLot($realization->payreq_id);
+
         return view('user-payreqs.realizations.add_details', compact([
             'realization',
             'realization_details',
-            // 'project_equipment', 
-            'equipments'
+            // 'project_equipment',
+            'equipments',
+            'lotc_detail'
         ]));
     }
 
@@ -217,7 +238,6 @@ class UserRealizationController extends Controller
         ]);
 
         $realization = Realization::findOrFail($request->realization_id);
-
         $payreq = Payreq::findOrFail($realization->payreq_id);
 
         // if payreq of rab_id is not null than realization_detail rab_id = payreq rab_id
