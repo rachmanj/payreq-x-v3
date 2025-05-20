@@ -4,6 +4,7 @@
     <ul aria-labelledby="dropdownPayreq" class="dropdown-menu border-0 shadow">
         <li><a href="{{ route('user-payreqs.index') }}" class="dropdown-item">Submissions</a></li>
         <li><a href="{{ route('user-payreqs.realizations.index') }}" class="dropdown-item">Realizations</a></li>
+        <li><a href="{{ route('user-payreqs.lotclaims.index') }}" class="dropdown-item">LOT Claims</a></li>
         @can('akses_anggarans')
             <li><a href="{{ route('user-payreqs.anggarans.index') }}" class="dropdown-item">RAB</a></li>
         @endcan

@@ -175,6 +175,29 @@
                         action="{{ route('user-payreqs.realizations.store_detail') }}">
                         @csrf
                         <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+
+                        @if (isset($lotc_detail) && $lotc_detail)
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="is_lotc" name="is_lotc">
+                                    <label class="custom-control-label" for="is_lotc">
+                                        LOT Claim Realization ({{ $lotc_detail->lot_no }})
+                                    </label>
+                                </div>
+                            </div>
+                        @elseif($realization->payreq->lot_no)
+                            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
+                                    {{ $realization->payreq->lot_no }}.
+                                </div>
+                                <a href="{{ route('user-payreqs.lotclaims.create') }}" class="btn btn-primary btn-sm"
+                                    style="text-decoration: none;" target="_blank">
+                                    <i class="fas fa-plus"></i> New LOTC
+                                </a>
+                            </div>
+                        @endif
+
                         <div class="row">
                             <div class="col-8">
                                 <div class="form-group">
@@ -284,6 +307,28 @@
                 <div class="modal-body">
                     <form id="edit-detail-form">
                         <input type="hidden" id="edit-id" name="id">
+
+                        @if (isset($lotc_detail) && $lotc_detail)
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="edit-is_lotc"
+                                        name="is_lotc">
+                                    <label class="custom-control-label" for="edit-is_lotc">
+                                        LOT Claim Realization ({{ $lotc_detail->lot_no }})
+                                    </label>
+                                </div>
+                            </div>
+                        @elseif($realization->payreq->lot_no)
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
+                                {{ $realization->payreq->lot_no }}, please create new.
+                                <a href="{{ route('user-payreqs.lotclaims.create') }}?lot_no={{ $realization->payreq->lot_no }}"
+                                    class="btn btn-warning btn-sm ml-2">
+                                    <i class="fas fa-plus"></i> Create LOTC
+                                </a>
+                            </div>
+                        @endif
+
                         <div class="row">
                             <div class="col-8">
                                 <div class="form-group">
@@ -578,7 +623,27 @@
                             // Fill the edit form
                             $('#edit-id').val(response.id);
                             $('#edit-description').val(response.description);
-                            $('#edit-amount').val(numberFormat(response.amount));
+
+                            // Format amount with thousand separator and 2 decimal places
+                            const amount = parseFloat(response.amount);
+                            const formattedAmount = amount.toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                            $('#edit-amount').val(formattedAmount);
+
+                            // Check if description contains LOT Claim
+                            @if (isset($lotc_detail) && $lotc_detail)
+                                if (response.description.includes(
+                                        'LOT Claim - {{ $lotc_detail->lot_no }}')) {
+                                    $('#edit-is_lotc').prop('checked', true);
+                                    $('#edit-description, #edit-amount').prop('readonly', true);
+                                } else {
+                                    $('#edit-is_lotc').prop('checked', false);
+                                    $('#edit-description, #edit-amount').prop('readonly',
+                                        false);
+                                }
+                            @endif
 
                             // Set select values and trigger change for Select2
                             $('#edit-unit_no').val(response.unit_no).trigger('change');
@@ -870,6 +935,54 @@
                     }
                 });
             });
+
+            // Add LOTC checkbox handler for add modal
+            @if (isset($lotc_detail) && $lotc_detail)
+                $('#is_lotc').change(function() {
+                    if ($(this).is(':checked')) {
+                        // Auto fill description with LOT number
+                        $('#description').val('LOT Claim - {{ $lotc_detail->lot_no }}');
+
+                        // Auto fill amount with total claim
+                        const totalClaim = {{ $lotc_detail->total_claim }};
+                        const formattedAmount = totalClaim.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        $('#amount').val(formattedAmount);
+
+                        // Disable the inputs
+                        $('#description, #amount').prop('readonly', true);
+                    } else {
+                        // Clear and enable the inputs
+                        $('#description, #amount').val('').prop('readonly', false);
+                    }
+                });
+            @endif
+
+            // Add LOTC checkbox handler for edit modal
+            @if (isset($lotc_detail) && $lotc_detail)
+                $('#edit-is_lotc').change(function() {
+                    if ($(this).is(':checked')) {
+                        // Auto fill description with LOT number
+                        $('#edit-description').val('LOT Claim - {{ $lotc_detail->lot_no }}');
+
+                        // Auto fill amount with total claim
+                        const totalClaim = {{ $lotc_detail->total_claim }};
+                        const formattedAmount = totalClaim.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        $('#edit-amount').val(formattedAmount);
+
+                        // Disable the inputs
+                        $('#edit-description, #edit-amount').prop('readonly', true);
+                    } else {
+                        // Clear and enable the inputs
+                        $('#edit-description, #edit-amount').val('').prop('readonly', false);
+                    }
+                });
+            @endif
 
             // Initial attachment of event handlers
             attachEventHandlers();

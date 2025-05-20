@@ -392,7 +392,8 @@
                         @can('rab_select')
                             <div class="form-group">
                                 <label for="rab_id">RAB No</label>
-                                <select name="rab_id" class="form-control select2bs4 @error('rab_id') is-invalid @enderror">
+                                <select name="rab_id" class="form-control select2bs4 @error('rab_id') is-invalid @enderror"
+                                    style="width: 100%;">
                                     <option value="">-- Select RAB --</option>
                                     @foreach ($rabs as $rab)
                                         <option value="{{ $rab->id }}">{{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} |
@@ -490,10 +491,10 @@
                     $('#lot_search_results').hide();
                     $('#selected_lot_no').val('');
                     $('#lot_search_error').hide();
-                    $('#travel_number').val('');
-                    $('#traveler').val('');
-                    $('#department').val('');
-                    $('#project').val('');
+                    // $('#travel_number').val('');
+                    // $('#traveler').val('');
+                    // $('#department').val('');
+                    // $('#project').val('');
 
                     // Remove selected LOT display if exists
                     $('#selected_lot_display').remove();
