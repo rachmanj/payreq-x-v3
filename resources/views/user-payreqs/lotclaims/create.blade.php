@@ -115,6 +115,17 @@
                         <input type="hidden" name="total_claim" id="total_claim_input">
                         <input type="hidden" name="difference" id="difference_input">
                         <input type="hidden" name="is_claimed" id="is_claimed_input" value="no">
+
+                        <!-- Payment Request Alert -->
+                        <div id="payment-request-alert" class="alert alert-warning alert-dismissible fade" role="alert"
+                            style="display: none;">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Warning!</strong>
+                            <span id="payment-request-message"></span>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
                         <div class="row">
                             <div class="col-4">
                                 <div class="form-group">
@@ -157,7 +168,7 @@
                                         </div>
                                         <input type="text" name="advance_amount" id="advance_amount"
                                             class="form-control text-right" value="{{ old('advance_amount') }}"
-                                            onkeyup="formatNumber(this)">
+                                            onkeyup="formatNumber(this)" readonly>
                                     </div>
                                     @error('advance_amount')
                                         <div class="text-danger">{{ $message }}</div>
@@ -885,12 +896,22 @@
                 $('#selected_lot_no').val(lotNo);
                 $('#lotDetailModal').modal('hide');
 
-                // Set advance amount from payment request if exists
-                if (lot.payment_request && lot.payment_request.amount) {
+                // Check payment request status
+                if (lot.payment_request && lot.payment_request.status ===
+                    'No payment request found for this LOT number') {
+                    $('#payment-request-message').text(
+                        ' No payment request found for this LOT number. Please create payment request first.'
+                    );
+                    $('#payment-request-alert').addClass('show').show();
+                    $('#advance_amount').val('').prop('readonly', true);
+                    // Disable form submission
+                    $('#btn-submit').prop('disabled', true);
+                } else if (lot.payment_request && lot.payment_request.amount) {
+                    $('#payment-request-alert').removeClass('show').hide();
                     $('#advance_amount').val(formatNumberInput(lot.payment_request.amount)).prop('readonly',
                         true);
-                } else {
-                    $('#advance_amount').val('').prop('readonly', false);
+                    // Enable form submission
+                    $('#btn-submit').prop('disabled', false);
                 }
 
                 // Collapse the accordion

@@ -10,6 +10,7 @@ class LotService
     protected $baseUrl;
     protected $searchEndpoint;
     protected $claimedSearchEndpoint;
+    protected $claimEndpoint;
     protected $timeout;
 
     public function __construct()
@@ -22,12 +23,14 @@ class LotService
         $this->baseUrl = rtrim(config('services.lot.base_url'), '/');
         $this->searchEndpoint = ltrim(config('services.lot.search_endpoint'), '/');
         $this->claimedSearchEndpoint = ltrim(config('services.lot.claimed_search_endpoint', 'api/official-travels/search-claimed'), '/');
+        $this->claimEndpoint = ltrim(config('services.lot.claim_endpoint', 'api/official-travels/claim'), '/');
         $this->timeout = config('services.lot.timeout', 30);
 
         Log::info('LOT Service Initialized', [
             'base_url' => $this->baseUrl,
             'search_endpoint' => $this->searchEndpoint,
             'claimed_search_endpoint' => $this->claimedSearchEndpoint,
+            'claim_endpoint' => $this->claimEndpoint,
             'full_url' => $this->getFullUrl()
         ]);
     }
@@ -200,6 +203,78 @@ class LotService
             str_contains($message, 'duplicate') => 'LOT data already exists.',
             str_contains($message, 'invalid') => 'Invalid input data.',
             default => 'An error occurred while searching LOT data.'
+        };
+    }
+
+    public function claim(string $lotNumber)
+    {
+        try {
+            $fullUrl = $this->baseUrl . '/' . $this->claimEndpoint;
+
+            Log::info('LOT Claim Request', [
+                'url' => $fullUrl,
+                'lot_number' => $lotNumber
+            ]);
+
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ])->timeout($this->timeout)
+                ->put($fullUrl, [
+                    'official_travel_number' => $lotNumber,
+                    'is_claimed' => 'yes'
+                ]);
+
+            if (!$response->successful()) {
+                Log::error('LOT Claim Error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'url' => $fullUrl
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => $this->getClaimErrorMessage($response->status())
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'LOT claimed successfully'
+            ];
+        } catch (\Exception $e) {
+            Log::error('LOT Claim Exception', [
+                'message' => $e->getMessage(),
+                'url' => $fullUrl ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $this->handleClaimException($e)
+            ];
+        }
+    }
+
+    protected function getClaimErrorMessage(int $statusCode): string
+    {
+        return match ($statusCode) {
+            404 => 'LOT number not found. Please verify the LOT number and try again.',
+            409 => 'LOT has already been claimed.',
+            401, 403 => 'You do not have permission to claim this LOT.',
+            408 => 'Request timeout. Please try again.',
+            500 => 'Server error occurred while claiming LOT. Please try again later.',
+            default => 'An error occurred while claiming the LOT.'
+        };
+    }
+
+    protected function handleClaimException(\Exception $e): string
+    {
+        return match (true) {
+            str_contains($e->getMessage(), 'Connection refused') => 'Unable to connect to LOT server. Please try again later.',
+            str_contains($e->getMessage(), 'timeout') => 'Request timeout. Please try again.',
+            str_contains($e->getMessage(), 'SSL') => 'Security connection issue. Please contact administrator.',
+            default => 'An error occurred while claiming the LOT. Please try again.'
         };
     }
 }

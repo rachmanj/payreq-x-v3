@@ -12,6 +12,8 @@ use App\Models\Realization;
 use App\Models\RealizationDetail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Services\LotService;
 
 class UserRealizationController extends Controller
 {
@@ -91,31 +93,60 @@ class UserRealizationController extends Controller
 
     public function submit_realization(Request $request)
     {
-        $realization = Realization::findOrFail($request->realization_id);
-        // update payreq status to 'realization'
-        $realization->payreq->update([
-            'status' => 'realization',
-        ]);
+        try {
+            $realization = Realization::findOrFail($request->realization_id);
 
-        $lotc = LotClaim::where('lot_no', $realization->payreq->lot_no)->first();
-
-        if ($lotc) {
-            $lotc->update([
-                'is_claimed' => 'yes',
+            // update payreq status to 'realization'
+            $realization->payreq->update([
+                'status' => 'realization',
             ]);
-        }
 
-        // create approval plan
-        $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('realization', $realization->id);
+            // If payreq has LOT number, try to claim it
+            if ($realization->payreq->lot_no) {
+                $lotService = app(LotService::class);
+                $claimResult = $lotService->claim($realization->payreq->lot_no);
 
-        if ($approval_plan) {
+                if (!$claimResult['success']) {
+                    throw new \Exception('Failed to claim LOT: ' . $claimResult['message']);
+                }
+
+                // Update local LOT claim status
+                $lotc = LotClaim::where('lot_no', $realization->payreq->lot_no)->first();
+                if ($lotc) {
+                    $lotc->update([
+                        'is_claimed' => 'yes',
+                    ]);
+                }
+            }
+
+            // create approval plan
+            $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('realization', $realization->id);
+            if (!$approval_plan) {
+                throw new \Exception('Failed to create approval plan');
+            }
+
             $realization->update([
                 'status' => 'submitted',
             ]);
 
-            return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization submitted');
-        } else {
-            return redirect()->route('user-payreqs.realizations.index')->with('error', 'Realization failed to submit');
+            return redirect()->route('user-payreqs.realizations.index')
+                ->with('success', 'Realization submitted successfully');
+        } catch (\Exception $e) {
+            // Log the error
+            Log::error('Realization Submission Error', [
+                'error' => $e->getMessage(),
+                'realization_id' => $request->realization_id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // If the error is from LOT claiming, show the specific error message
+            if (str_contains($e->getMessage(), 'Failed to claim LOT:')) {
+                return redirect()->route('user-payreqs.realizations.index')
+                    ->with('error', $e->getMessage());
+            }
+
+            return redirect()->route('user-payreqs.realizations.index')
+                ->with('error', 'Failed to submit realization. Please try again or contact support.');
         }
     }
 
