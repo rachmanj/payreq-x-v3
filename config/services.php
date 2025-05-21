@@ -40,6 +40,7 @@ return [
         'base_url' => env('LOT_API_BASE_URL'),
         'search_endpoint' => env('LOT_API_SEARCH_ENDPOINT'),
         'claimed_search_endpoint' => env('LOT_API_CLAIMED_SEARCH_ENDPOINT'),
+        'claim_endpoint' => env('LOT_API_CLAIM_ENDPOINT'),
         'timeout' => env('LOT_API_TIMEOUT', 30),
     ],
 

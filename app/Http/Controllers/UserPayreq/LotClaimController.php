@@ -388,6 +388,13 @@ class LotClaimController extends Controller
                             'amount' => $payreq->amount,
                             'status' => $payreq->status
                         ];
+                    } else {
+                        $lot['payment_request'] = [
+                            'id' => null,
+                            'nomor' => null,
+                            'amount' => null,
+                            'status' => 'No payment request found for this LOT number'
+                        ];
                     }
                 }
             }

@@ -109,11 +109,23 @@
                     <form action="{{ route('user-payreqs.lotclaims.update', $lotclaim->id) }}" method="POST">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
                         <input type="hidden" name="accommodation_total" id="accommodation_total_input">
                         <input type="hidden" name="travel_total" id="travel_total_input">
                         <input type="hidden" name="meal_total" id="meal_total_input">
                         <input type="hidden" name="total_claim" id="total_claim_input">
                         <input type="hidden" name="difference" id="difference_input">
+
+                        <!-- Payment Request Alert -->
+                        @if ($lot && $lot->payment_request && $lot->payment_request->status === 'No payment request found for this LOT number')
+                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                <strong><i class="fas fa-exclamation-triangle"></i> Warning!</strong>
+                                No payment request found for this LOT number. Please create payment request first.
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        @endif
 
                         <div class="row">
                             <div class="col-md-4">
