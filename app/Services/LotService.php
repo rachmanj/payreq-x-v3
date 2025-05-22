@@ -11,6 +11,7 @@ class LotService
     protected $searchEndpoint;
     protected $claimedSearchEndpoint;
     protected $claimEndpoint;
+    protected $detailEndpoint;
     protected $timeout;
 
     public function __construct()
@@ -24,6 +25,7 @@ class LotService
         $this->searchEndpoint = ltrim(config('services.lot.search_endpoint'), '/');
         $this->claimedSearchEndpoint = ltrim(config('services.lot.claimed_search_endpoint', 'api/official-travels/search-claimed'), '/');
         $this->claimEndpoint = ltrim(config('services.lot.claim_endpoint', 'api/official-travels/claim'), '/');
+        $this->detailEndpoint = ltrim(config('services.lot.detail_endpoint', 'api/official-travels/detail'), '/');
         $this->timeout = config('services.lot.timeout', 30);
 
         Log::info('LOT Service Initialized', [
@@ -31,6 +33,7 @@ class LotService
             'search_endpoint' => $this->searchEndpoint,
             'claimed_search_endpoint' => $this->claimedSearchEndpoint,
             'claim_endpoint' => $this->claimEndpoint,
+            'detail_endpoint' => $this->detailEndpoint,
             'full_url' => $this->getFullUrl()
         ]);
     }
@@ -275,6 +278,79 @@ class LotService
             str_contains($e->getMessage(), 'timeout') => 'Request timeout. Please try again.',
             str_contains($e->getMessage(), 'SSL') => 'Security connection issue. Please contact administrator.',
             default => 'An error occurred while claiming the LOT. Please try again.'
+        };
+    }
+
+    public function getDetail(string $lotNumber)
+    {
+        try {
+            $fullUrl = $this->baseUrl . '/' . $this->detailEndpoint;
+
+            Log::info('LOT Detail Request', [
+                'url' => $fullUrl,
+                'lot_number' => $lotNumber
+            ]);
+
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ])->timeout($this->timeout)
+                ->post($fullUrl, [
+                    'travel_number' => $lotNumber
+                ]);
+
+            if (!$response->successful()) {
+                Log::error('LOT Detail Error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'url' => $fullUrl
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => $this->getDetailErrorMessage($response->status())
+                ];
+            }
+
+            $responseData = $response->json();
+
+            // Restructure the response to match the view's expectations
+            return [
+                'success' => true,
+                'data' => $responseData['data'] ?? null
+            ];
+        } catch (\Exception $e) {
+            Log::error('LOT Detail Exception', [
+                'message' => $e->getMessage(),
+                'url' => $fullUrl ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $this->handleDetailException($e)
+            ];
+        }
+    }
+
+    protected function getDetailErrorMessage(int $statusCode): string
+    {
+        return match ($statusCode) {
+            404 => 'LOT number not found. Please verify the LOT number and try again.',
+            401, 403 => 'You do not have permission to view this LOT detail.',
+            408 => 'Request timeout. Please try again.',
+            500 => 'Server error occurred while fetching LOT detail. Please try again later.',
+            default => 'An error occurred while fetching the LOT detail.'
+        };
+    }
+
+    protected function handleDetailException(\Exception $e): string
+    {
+        return match (true) {
+            str_contains($e->getMessage(), 'Connection refused') => 'Unable to connect to LOT server. Please try again later.',
+            str_contains($e->getMessage(), 'timeout') => 'Request timeout. Please try again.',
+            str_contains($e->getMessage(), 'SSL') => 'Security connection issue. Please contact administrator.',
+            default => 'An error occurred while fetching the LOT detail. Please try again.'
         };
     }
 }
