@@ -68,48 +68,54 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            @if (isset($lotDetail['data'][0]))
+                            @if (isset($lotDetail['data']))
                                 <div class="info-item mb-3">
                                     <label class="text-muted small">LOT Origin</label>
                                     <p class="mb-0 font-weight-bold">
-                                        {{ $lotDetail['data'][0]['project']['project_code'] ?? '-' }}
+                                        {{ $lotDetail['data']['project']['project_code'] ?? '-' }}
                                     </p>
                                 </div>
                                 <div class="info-item mb-3">
                                     <label class="text-muted small">LOT Date</label>
                                     <p class="mb-0 font-weight-bold">
-                                        {{ date('d F Y', strtotime($lotDetail['data'][0]['official_travel_date'])) }}</p>
+                                        {{ date('d F Y', strtotime($lotDetail['data']['official_travel_date'])) }}
+                                    </p>
                                 </div>
                                 <div class="info-item mb-3">
                                     <label class="text-muted small">Purpose</label>
-                                    <p class="mb-0 font-weight-bold">{{ $lotDetail['data'][0]['purpose'] }}</p>
+                                    <p class="mb-0 font-weight-bold">{{ $lotDetail['data']['purpose'] }}</p>
                                 </div>
                                 <div class="info-item mb-3">
                                     <label class="text-muted small">Destination</label>
-                                    <p class="mb-0 font-weight-bold">{{ $lotDetail['data'][0]['destination'] }}</p>
+                                    <p class="mb-0 font-weight-bold">{{ $lotDetail['data']['destination'] }}</p>
                                 </div>
                                 <div class="info-item mb-3">
                                     <label class="text-muted small">Duration</label>
-                                    <p class="mb-0 font-weight-bold">{{ $lotDetail['data'][0]['duration'] }}</p>
+                                    <p class="mb-0 font-weight-bold">{{ $lotDetail['data']['duration'] }}</p>
                                 </div>
                                 <div class="info-item mb-3">
                                     <label class="text-muted small">Departure Date</label>
                                     <p class="mb-0 font-weight-bold">
-                                        {{ date('d F Y', strtotime($lotDetail['data'][0]['departure_from'])) }}</p>
+                                        {{ date('d F Y', strtotime($lotDetail['data']['departure_from'])) }}</p>
                                 </div>
                                 <div class="info-item mb-3">
                                     <label class="text-muted small">Traveler</label>
                                     <p class="mb-0 font-weight-bold">
-                                        {{ $lotDetail['data'][0]['traveler']['employee']['fullname'] ?? '-' }}
+                                        {{ $lotDetail['data']['traveler']['employee']['fullname'] ?? '-' }}
                                     </p>
                                 </div>
                                 <div class="info-item mb-3">
                                     <label class="text-muted small">Followers</label>
-                                    @foreach ($lotDetail['data'][0]['details'] as $detail)
+                                    @foreach ($lotDetail['data']['details'] as $detail)
                                         <p class="mb-0 font-weight-bold">
                                             {{ $detail['follower']['employee']['fullname'] ?? '-' }}
                                         </p>
                                     @endforeach
+                                </div>
+                            @else
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                    <p class="mb-0">{{ $lotDetail['message'] ?? 'LOT detail not found' }}</p>
                                 </div>
                             @endif
                         </div>

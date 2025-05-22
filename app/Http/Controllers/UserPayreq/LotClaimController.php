@@ -147,10 +147,9 @@ class LotClaimController extends Controller
     {
         $lotclaim->load(['user', 'accommodations', 'travels', 'meals']);
 
-        // Fetch LOT detail from API
-        $lotDetail = Http::post(config('services.lot.base_url') . config('services.lot.search_endpoint'), [
-            'travel_number' => $lotclaim->lot_no
-        ])->json();
+        // Fetch LOT detail from API using the service
+        $lotDetail = $this->lotService->getDetail($lotclaim->lot_no);
+        // dd($lotDetail);
         return view('user-payreqs.lotclaims.show', compact('lotclaim', 'lotDetail'));
     }
 
