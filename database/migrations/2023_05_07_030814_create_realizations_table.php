@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('realizations', function (Blueprint $table) {
             $table->id();
             $table->string('nomor');
-            $table->string('draft_no')->nullable();
+            // $table->string('draft_no')->nullable();
             $table->foreignId('payreq_id');
             $table->foreignId('user_id');
             $table->string('project', 10)->nullable();
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->foreignId('verification_journal_id')->nullable();
             $table->string('flag', 50)->nullable();
-            $table->date('due_date')->nullable();
+            // $table->date('due_date')->nullable();
             $table->timestamps();
         });
     }

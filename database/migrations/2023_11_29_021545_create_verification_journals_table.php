@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('project', 20)->nullable();
             $table->string('sap_journal_no')->nullable();
             $table->date('sap_posting_date')->nullable();
-            $table->foreignId('posted_by')->nullable(); // posted to SAP by
+            // $table->foreignId('posted_by')->nullable(); // posted to SAP by
             $table->double('amount')->nullable();
             $table->string('description')->nullable();
             $table->string('status', 50)->nullable();

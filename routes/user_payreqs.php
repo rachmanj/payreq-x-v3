@@ -3,14 +3,30 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserOngoingController;
+use App\Http\Controllers\UserRealizationController;
 use App\Http\Controllers\UserPayreq\FakturController;
+use App\Http\Controllers\UserPayreq\LotClaimController;
+use App\Http\Controllers\UserPayreqHistoriesController;
+use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Http\Controllers\UserPayreq\PayreqReimburseController;
-use App\Http\Controllers\UserPayreq\UserAnggaranController;
-use App\Http\Controllers\UserRealizationController;
-use App\Http\Controllers\UserPayreqHistoriesController;
 
 Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
+
+    // LOT CLAIMS
+    Route::get('lotclaims/data', [LotClaimController::class, 'data'])->name('lotclaims.data');
+    Route::post('lotclaims/search-lot', [LotClaimController::class, 'searchLOT'])->name('lotclaims.search-lot');
+    Route::resource('lotclaims', LotClaimController::class);
+    Route::get('lotclaims/{lotclaim}/print', [LotClaimController::class, 'print'])->name('lotclaims.print');
+    // Route::prefix('lotclaims')->name('lotclaims.')->group(function () {
+    // Route::get('/', [LotClaimController::class, 'index'])->name('index');
+    // Route::get('/create', [LotClaimController::class, 'create'])->name('create');
+    // Route::post('/store', [LotClaimController::class, 'store'])->name('store');
+    // Route::get('/{id}/edit', [LotClaimController::class, 'edit'])->name('edit');
+    // Route::put('/{id}', [LotClaimController::class, 'update'])->name('update');
+    // Route::delete('/{id}', [LotClaimController::class, 'destroy'])->name('destroy');
+    // Route::get('/{lotClaim}', [LotClaimController::class, 'show'])->name('show');
+    // });
 
     // ANGGARAN
     Route::prefix('anggarans')->name('anggarans.')->group(function () {
@@ -72,6 +88,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::get('/create', [PayreqAdvanceController::class, 'create'])->name('create');
         Route::post('/proses', [PayreqAdvanceController::class, 'proses'])->name('proses');
         Route::get('/{id}/edit', [PayreqAdvanceController::class, 'edit'])->name('edit');
+        Route::post('/search-lot', [PayreqAdvanceController::class, 'searchLOT'])->name('search-lot');
     });
 
     //REIMBURSE TYPE
