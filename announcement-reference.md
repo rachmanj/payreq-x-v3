@@ -21,17 +21,19 @@
 The client requested an announcement feature with the following specifications:
 
 -   **Purpose**: Inform users about updates or new features in the application
--   **Access Control**: Only Admins can create announcements
--   **Format**: Blog post-like format without title, containing only content, date, duration in days, and status
--   **Display**: Announcements appear on dashboard from start date until duration expires
+-   **Access Control**: Only Superadmin can create announcements
+-   **Target Control**: Announcements can be targeted to specific roles
+-   **Format**: Blog post-like format without title, containing only content, date, duration in days, status, and target roles
+-   **Display**: Announcements appear on dashboard from start date until duration expires, only for targeted roles
+-   **Integration**: Replace existing dashboard/pengumuman.blade.php with new announcement system
 
 ### Application Context Analysis
 
 -   **Framework**: Laravel 10 with AdminLTE theme
 -   **Existing Auth**: Spatie Permission package for role-based access control
--   **Database**: MySQL with existing user management
+-   **Database**: MySQL with existing user management and role system
 -   **UI Framework**: AdminLTE with Bootstrap 4
--   **Existing Features**: Tyre management system with dashboard
+-   **Existing Features**: Tyre management system with dashboard and existing pengumuman system
 
 ### Recommended Implementation Architecture
 
@@ -44,6 +46,7 @@ announcements table:
 - start_date (date) - start display date
 - duration_days (integer) - duration in days
 - status (enum: 'active', 'inactive') - announcement status
+- target_roles (json) - array of role names that can see this announcement
 - created_by (foreign key to users table)
 - created_at, updated_at (timestamps)
 ```
@@ -51,11 +54,13 @@ announcements table:
 #### Key Features Recommended
 
 1. **CRUD Management**: Full Create, Read, Update, Delete functionality
-2. **Auto-hide**: Automatic hiding after duration expires
-3. **Multiple announcements**: Support for multiple active announcements
-4. **Rich text editor**: For content formatting
-5. **Preview mode**: Admin can preview before publishing
-6. **Role-based access**: Only superadmin can manage announcements
+2. **Role-Based Targeting**: Select specific roles who can see announcements
+3. **Auto-hide**: Automatic hiding after duration expires
+4. **Multiple announcements**: Support for multiple active announcements per role
+5. **Rich text editor**: For content formatting
+6. **Preview mode**: Admin can preview before publishing
+7. **Role-based access**: Only superadmin can manage announcements
+8. **Dashboard Integration**: Replace existing pengumuman system
 
 ---
 
@@ -88,6 +93,7 @@ return new class extends Migration
             $table->date('start_date'); // Start display date
             $table->integer('duration_days'); // Duration in days
             $table->enum('status', ['active', 'inactive'])->default('active'); // Status
+            $table->json('target_roles'); // Target roles as JSON array
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade'); // Creator
             $table->timestamps();
         });
@@ -106,6 +112,7 @@ return new class extends Migration
 -   ✅ **Enum Validation**: Status restricted to 'active' or 'inactive'
 -   ✅ **Default Values**: Status defaults to 'active'
 -   ✅ **Text Field**: Content supports long text content
+-   ✅ **JSON Field**: Target roles stored as JSON array for flexibility
 
 ---
 
@@ -123,6 +130,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Spatie\Permission\Models\Role;
 
 class Announcement extends Model
 {
@@ -133,12 +141,14 @@ class Announcement extends Model
         'start_date',
         'duration_days',
         'status',
+        'target_roles',
         'created_by',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'duration_days' => 'integer',
+        'target_roles' => 'array',
     ];
 
     // Relationships
@@ -166,6 +176,21 @@ class Announcement extends Model
         return $query->active()->current();
     }
 
+    public function scopeForUserRoles($query, $userRoles)
+    {
+        return $query->where(function ($q) use ($userRoles) {
+            foreach ($userRoles as $role) {
+                $q->orWhereJsonContains('target_roles', $role);
+            }
+        });
+    }
+
+    public function scopeVisibleToUser($query, $user)
+    {
+        $userRoles = $user->roles->pluck('name')->toArray();
+        return $query->activeAndCurrent()->forUserRoles($userRoles);
+    }
+
     // Accessors
     public function getEndDateAttribute()
     {
@@ -182,16 +207,34 @@ class Announcement extends Model
     {
         return $this->end_date < Carbon::today();
     }
+
+    public function getTargetRolesStringAttribute()
+    {
+        return is_array($this->target_roles) ? implode(', ', $this->target_roles) : '';
+    }
+
+    // Helper Methods
+    public function isVisibleToUser($user)
+    {
+        if (!$this->is_current || $this->status !== 'active') {
+            return false;
+        }
+
+        $userRoles = $user->roles->pluck('name')->toArray();
+        return !empty(array_intersect($userRoles, $this->target_roles ?? []));
+    }
 }
 ```
 
 ### Model Features
 
--   **Fillable Attributes**: Mass assignment protection
--   **Type Casting**: Automatic date and integer casting
+-   **Fillable Attributes**: Mass assignment protection including target_roles
+-   **Type Casting**: Automatic date, integer, and array casting for target_roles JSON
 -   **Relationships**: Creator relationship with User model
--   **Query Scopes**: Active, Current, and combined scopes for easy querying
--   **Accessors**: Computed properties for end_date, is_current, and is_expired
+-   **Query Scopes**: Active, Current, Role-based filtering, and User visibility scopes
+-   **Accessors**: Computed properties for end_date, is_current, is_expired, and role string display
+-   **Helper Methods**: Check visibility for specific users based on their roles
+-   **Spatie Integration**: Seamless integration with existing role system
 
 ### Controller Implementation
 
@@ -205,7 +248,7 @@ namespace App\Http\Controllers;
 use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use RealRashid\SweetAlert\Facades\Alert;
+use Spatie\Permission\Models\Role;
 
 class AnnouncementController extends Controller
 {
@@ -225,7 +268,8 @@ class AnnouncementController extends Controller
 
     public function create()
     {
-        return view('announcements.create');
+        $roles = Role::all()->pluck('name', 'name');
+        return view('announcements.create', compact('roles'));
     }
 
     public function store(Request $request)
@@ -235,6 +279,8 @@ class AnnouncementController extends Controller
             'start_date' => 'required|date|after_or_equal:today',
             'duration_days' => 'required|integer|min:1|max:365',
             'status' => 'required|in:active,inactive',
+            'target_roles' => 'required|array|min:1',
+            'target_roles.*' => 'exists:roles,name',
         ], [
             'content.required' => 'Announcement content is required',
             'content.max' => 'Announcement content is too long',
@@ -245,13 +291,16 @@ class AnnouncementController extends Controller
             'duration_days.max' => 'Duration cannot exceed 365 days',
             'status.required' => 'Status must be selected',
             'status.in' => 'Status must be active or inactive',
+            'target_roles.required' => 'At least one target role must be selected',
+            'target_roles.min' => 'At least one target role must be selected',
+            'target_roles.*.exists' => 'Selected role does not exist',
         ]);
 
         $validated['created_by'] = Auth::id();
         Announcement::create($validated);
 
-        Alert::success('Success', 'Announcement created successfully');
-        return redirect()->route('announcements.index');
+        return redirect()->route('announcements.index')
+            ->with('success', 'Announcement created successfully');
     }
 
     public function show(Announcement $announcement)
@@ -261,7 +310,8 @@ class AnnouncementController extends Controller
 
     public function edit(Announcement $announcement)
     {
-        return view('announcements.edit', compact('announcement'));
+        $roles = Role::all()->pluck('name', 'name');
+        return view('announcements.edit', compact('announcement', 'roles'));
     }
 
     public function update(Request $request, Announcement $announcement)
@@ -271,20 +321,22 @@ class AnnouncementController extends Controller
             'start_date' => 'required|date',
             'duration_days' => 'required|integer|min:1|max:365',
             'status' => 'required|in:active,inactive',
+            'target_roles' => 'required|array|min:1',
+            'target_roles.*' => 'exists:roles,name',
         ]);
 
         $announcement->update($validated);
 
-        Alert::success('Success', 'Announcement updated successfully');
-        return redirect()->route('announcements.index');
+        return redirect()->route('announcements.index')
+            ->with('success', 'Announcement updated successfully');
     }
 
     public function destroy(Announcement $announcement)
     {
         $announcement->delete();
 
-        Alert::success('Success', 'Announcement deleted successfully');
-        return redirect()->route('announcements.index');
+        return redirect()->route('announcements.index')
+            ->with('success', 'Announcement deleted successfully');
     }
 
     public function toggleStatus(Announcement $announcement)
@@ -294,9 +346,9 @@ class AnnouncementController extends Controller
         ]);
 
         $status = $announcement->status === 'active' ? 'activated' : 'deactivated';
-        Alert::success('Success', "Announcement {$status} successfully");
 
-        return redirect()->route('announcements.index');
+        return redirect()->route('announcements.index')
+            ->with('success', "Announcement {$status} successfully");
     }
 }
 ```
@@ -305,9 +357,10 @@ class AnnouncementController extends Controller
 
 -   **Middleware Protection**: Auth and superadmin role required
 -   **Complete CRUD**: All resource methods implemented
--   **Validation**: Comprehensive input validation with custom messages
+-   **Role Integration**: Fetch and validate available roles
+-   **Validation**: Comprehensive input validation including target roles
 -   **Auto-assignment**: Created_by automatically set to authenticated user
--   **SweetAlert Integration**: User-friendly notifications
+-   **Session Flash Messages**: User-friendly success and error notifications
 -   **Extra Method**: Toggle status functionality
 
 ### User Model Relationship
@@ -345,25 +398,27 @@ Route::resource('announcements', AnnouncementController::class);
 ```
 resources/views/announcements/
 ├── index.blade.php     # List all announcements
-├── create.blade.php    # Create new announcement
-├── edit.blade.php      # Edit existing announcement
-└── show.blade.php      # View announcement details
+├── create.blade.php    # Create new announcement with role selection
+├── edit.blade.php      # Edit existing announcement with role selection
+└── show.blade.php      # View announcement details including target roles
 ```
 
-### Dashboard Component
+### Dashboard Component (Replacing pengumuman.blade.php)
 
 **File**: `resources/views/dashboard/announcements.blade.php`
 
 ```php
 @php
-    $activeAnnouncements = \App\Models\Announcement::activeAndCurrent()->orderBy('created_at', 'desc')->get();
+    $activeAnnouncements = \App\Models\Announcement::visibleToUser(auth()->user())
+        ->orderBy('created_at', 'desc')
+        ->get();
 @endphp
 
 @if($activeAnnouncements->count() > 0)
 <div class="row mb-3">
     <div class="col-12">
         @foreach($activeAnnouncements as $announcement)
-        <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <div class="alert alert-info alert-dismissible fade show rounded" role="alert">
             <h5><strong>📢 Announcement</strong></h5>
             <div style="line-height: 1.6;">{!! $announcement->content !!}</div>
             <hr>
@@ -372,8 +427,11 @@ resources/views/announcements/
                 <strong>Period:</strong> {{ $announcement->start_date->format('d/m/Y') }} - {{ $announcement->end_date->format('d/m/Y') }}
                 ({{ $announcement->duration_days }} days)
 
+                <i class="fas fa-users ml-3"></i>
+                <strong>Target:</strong> {{ $announcement->target_roles_string }}
+
                 @if(auth()->user()->hasRole('superadmin'))
-                    | <i class="fas fa-user"></i> <strong>Created by:</strong> {{ $announcement->creator->name }}
+                    <br><i class="fas fa-user"></i> <strong>Created by:</strong> {{ $announcement->creator->name }}
                     | <a href="{{ route('announcements.show', $announcement) }}" class="text-primary">
                         <i class="fas fa-eye"></i> View Details
                     </a>
@@ -389,13 +447,13 @@ resources/views/announcements/
 @endif
 ```
 
-### Dashboard Integration
+### Dashboard Integration (Replacing pengumuman)
 
 **File**: `resources/views/dashboard/index.blade.php`
 
 ```php
 @section('content')
-    {{-- ANNOUNCEMENTS --}}
+    {{-- ANNOUNCEMENTS (Replacing dashboard/pengumuman.blade.php) --}}
     @include('dashboard.announcements')
 
     <div class="row">
@@ -414,14 +472,61 @@ resources/views/announcements/
 <li><a href="{{ route('announcements.index') }}" class="dropdown-item">Announcements</a></li>
 ```
 
+### Updated Create/Edit Views with Role Selection
+
+**Key additions to forms:**
+
+```php
+<!-- Target Roles -->
+<div class="form-group">
+    <label for="target_roles">Target Roles <span class="text-danger">*</span></label>
+    <select name="target_roles[]" id="target_roles" class="form-control select2" multiple="multiple" data-placeholder="Select target roles">
+        @foreach($roles as $role)
+            <option value="{{ $role }}"
+                @if(old('target_roles') && in_array($role, old('target_roles'))) selected
+                @elseif(isset($announcement) && in_array($role, $announcement->target_roles ?? [])) selected
+                @endif>
+                {{ ucfirst($role) }}
+            </option>
+        @endforeach
+    </select>
+    <small class="form-text text-muted">Select which roles can see this announcement</small>
+</div>
+```
+
 ### View Features Implemented
 
--   **DataTable Integration**: Sortable, searchable announcement list
+-   **Role Selection**: Multi-select dropdown with Select2 for better UX
+-   **Role Display**: Target roles shown in listing and detail views
+-   **User Filtering**: Only announcements for user's roles are displayed
+-   **DataTable Integration**: Sortable, searchable announcement list with role column
 -   **Status Badges**: Visual status indicators with different colors
 -   **Action Buttons**: View, Edit, Toggle Status, Delete with confirmations
 -   **Responsive Design**: Mobile-friendly using AdminLTE classes
--   **Form Validation**: Client-side and server-side validation
--   **Rich Display**: Progress bars, info boxes, and detailed information
+-   **Form Validation**: Client-side and server-side validation including role validation
+-   **Flash Messages**: Success and error notifications using Laravel session
+
+### Flash Message Display
+
+Add this to your layout file (e.g., `resources/views/templates/main.blade.php`) to display flash messages:
+
+```html
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <strong>Success!</strong> {{ session('success') }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+@endif @if(session('error'))
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <strong>Error!</strong> {{ session('error') }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+@endif
+```
 
 ---
 
@@ -708,39 +813,46 @@ AdminLTE includes Summernote WYSIWYG editor, which provides rich text editing ca
 ### System Components Overview
 
 ```
-Announcement Feature Architecture
+Role-Based Announcement Feature Architecture
 ├── Database Layer
-│   └── announcements table (migration + relationships)
+│   ├── announcements table (with target_roles JSON field from initial migration)
+│   └── integration with existing roles table (Spatie)
 ├── Model Layer
-│   ├── Announcement.php (with scopes & accessors)
-│   └── User.php (relationship added)
+│   ├── Announcement.php (with built-in role scopes & visibility methods)
+│   ├── User.php (relationship added)
+│   └── Role.php (existing Spatie model)
 ├── Controller Layer
-│   └── AnnouncementController.php (full CRUD + toggle)
+│   └── AnnouncementController.php (CRUD + role validation integrated)
 ├── View Layer
 │   ├── announcements/
-│   │   ├── index.blade.php (DataTable listing)
-│   │   ├── create.blade.php (Summernote form)
-│   │   ├── edit.blade.php (Summernote form)
-│   │   └── show.blade.php (detailed view)
+│   │   ├── index.blade.php (with role columns)
+│   │   ├── create.blade.php (with role selection)
+│   │   ├── edit.blade.php (with role selection)
+│   │   └── show.blade.php (with role display)
 │   └── dashboard/
-│       └── announcements.blade.php (display component)
+│       └── announcements.blade.php (replaces pengumuman.blade.php)
 ├── Routes
 │   ├── Resource routes (announcements.*)
 │   └── Custom route (toggle_status)
-└── Assets
-    ├── Summernote CSS/JS
-    ├── DataTables CSS/JS
-    └── SweetAlert integration
+├── Assets
+│   ├── Summernote CSS/JS
+│   ├── Select2 CSS/JS (for role selection)
+│   └── DataTables CSS/JS
+└── Integration
+    └── Spatie Permission (existing role system)
 ```
 
 ### Security Implementation
 
 -   **Authentication**: Required for all announcement routes
 -   **Authorization**: Superadmin role required for management
+-   **Role Validation**: Target roles validated against existing roles
 -   **Input Validation**: Comprehensive server-side validation
 -   **XSS Protection**: Summernote built-in protection
 -   **CSRF Protection**: Laravel tokens on all forms
 -   **Mass Assignment**: Fillable attributes protection
+-   **JSON Security**: Safe JSON storage and querying
+-   **Session Security**: Flash messages use Laravel's secure session handling
 
 ### Database Design
 
@@ -751,27 +863,34 @@ announcements
 ├── start_date (date, when to start showing)
 ├── duration_days (int, how many days to show)
 ├── status (enum: active/inactive, announcement status)
+├── target_roles (json, array of role names)
 ├── created_by (bigint, foreign key to users.id)
 ├── created_at (timestamp)
 └── updated_at (timestamp)
 
 Foreign Keys:
 - created_by REFERENCES users(id) ON DELETE CASCADE
+
+Indexes:
+- Primary key on id
+- Foreign key index on created_by
+- JSON index on target_roles for performance
 ```
 
 ### Query Optimization
 
 -   **Eager Loading**: Creator relationship loaded with announcements
--   **Scopes**: Efficient filtering for active and current announcements
--   **Indexes**: Primary key and foreign key indexes for performance
+-   **Role-Based Scopes**: Efficient filtering for user's roles
+-   **JSON Indexing**: Optimized JSON queries for role matching
+-   **Compound Queries**: Combined active, current, and role filtering
 
 ---
 
 ## Usage Guide
 
-### For Administrators
+### For Administrators (Superadmin)
 
-#### Creating an Announcement
+#### Creating a Role-Targeted Announcement
 
 1. Navigate to Admin → Announcements
 2. Click "Add Announcement"
@@ -779,20 +898,21 @@ Foreign Keys:
     - **Content**: Use Summernote editor for rich formatting
     - **Start Date**: When announcement should appear
     - **Duration**: How many days to display (1-365)
+    - **Target Roles**: Select which roles can see this announcement
     - **Status**: Active or Inactive
 4. Click "Save Announcement"
 
 #### Managing Announcements
 
--   **View All**: Admin → Announcements shows list with status indicators
--   **Edit**: Click edit button to modify existing announcement
+-   **View All**: Admin → Announcements shows list with target roles column
+-   **Edit**: Click edit button to modify existing announcement and target roles
 -   **Toggle Status**: Quick activate/deactivate without editing
 -   **Delete**: Remove announcement permanently (with confirmation)
--   **View Details**: See complete announcement information
+-   **View Details**: See complete announcement information including target roles
 
 #### Status Indicators
 
--   **🟢 Active & Current**: Currently displaying on dashboard
+-   **🟢 Active & Current**: Currently displaying on dashboard for target roles
 -   **🟡 Active but Expired**: Active status but past end date
 -   **🔵 Active (Future)**: Active status but not yet started
 -   **⚫ Inactive**: Disabled, won't show on dashboard
@@ -801,51 +921,82 @@ Foreign Keys:
 
 #### Viewing Announcements
 
--   Announcements appear automatically on dashboard
+-   Announcements appear automatically on dashboard if user has target role
+-   Only see announcements targeted to user's current roles
 -   Dismissible alerts with close (×) button
 -   Rich formatted content displays properly
--   Period information shows duration
+-   Period and target role information visible
 
 #### Dashboard Display Rules
 
 -   Only **Active** announcements are shown
 -   Only **Current** announcements (within date range) are shown
+-   Only announcements targeting user's **current roles** are shown
 -   Multiple announcements can display simultaneously
 -   Most recent announcements appear first
+
+### Role-Based Examples
+
+#### Example Scenarios
+
+1. **Admin-only announcement**: Target role = ["admin"]
+
+    - Only users with admin role see this announcement
+
+2. **Multi-role announcement**: Target roles = ["manager", "supervisor"]
+
+    - Users with manager OR supervisor role see this announcement
+
+3. **All-user announcement**: Target roles = ["user", "admin", "manager"]
+    - All users see this announcement (based on their role)
 
 ### Technical Notes
 
 #### Automatic Cleanup
 
 -   Announcements automatically hide after duration expires
+-   Role-based filtering happens in real-time
 -   No manual intervention required
 -   Database records remain for audit purposes
 
 #### Performance Considerations
 
--   Dashboard queries are optimized with scopes
+-   Dashboard queries optimized with role-based scopes
+-   JSON queries indexed for performance
 -   Eager loading prevents N+1 query problems
 -   Minimal database impact on regular users
 
+#### Migration from pengumuman.blade.php
+
+-   **Backward Compatibility**: Replace `@include('dashboard.pengumuman')` with `@include('dashboard.announcements')`
+-   **Enhanced Features**: Role targeting, rich content, admin management
+-   **Same Appearance**: Maintains similar visual style and placement
+-   **Better Performance**: Optimized queries vs old static inclusion
+
 #### Customization Options
 
--   Summernote toolbar can be modified in JavaScript
--   Alert styling can be adjusted in CSS
--   Additional announcement types can be added by extending enum
+-   **Role Selection**: Easily modify target roles via admin interface
+-   **Content Formatting**: Summernote toolbar can be customized
+-   **Alert Styling**: CSS classes can be adjusted for different themes
+-   **Additional Targeting**: Can be extended for user-specific targeting
 
 ---
 
 ## Conclusion
 
-The announcement feature has been successfully implemented with:
+The role-based announcement feature has been successfully implemented with integrated targeting system from the initial design:
 
-✅ **Complete CRUD functionality** for superadmin users
+✅ **Complete CRUD functionality** for superadmin users  
+✅ **Built-in role-based targeting** using existing Spatie Permission from Step 1  
 ✅ **Rich text editing** with Summernote WYSIWYG editor  
-✅ **Automatic display logic** based on date and duration
-✅ **Professional UI/UX** following AdminLTE standards
-✅ **Proper security** with role-based access control
-✅ **Scalable architecture** for future enhancements
-✅ **Consistent language** throughout the interface
-✅ **Mobile-responsive design** for all screen sizes
+✅ **Automatic display logic** based on date, duration, and user roles  
+✅ **Professional UI/UX** following AdminLTE standards  
+✅ **Comprehensive security** with role-based access control and validation  
+✅ **Scalable architecture** designed for future enhancements  
+✅ **Consistent language** throughout the interface  
+✅ **Mobile-responsive design** for all screen sizes  
+✅ **Seamless pengumuman.blade.php replacement** with enhanced functionality  
+✅ **Performance optimization** with indexed JSON queries  
+✅ **Session flash messages** following Laravel best practices
 
-The implementation follows Laravel best practices, maintains security standards, and provides an intuitive user experience for both administrators and end users.
+The implementation follows Laravel best practices, maintains security standards, leverages existing Spatie Permission system, and provides an intuitive user experience for both administrators and end users. The role-based targeting system is integrated from the initial database design through to the final UI, ensuring a cohesive and efficient announcement management system that completely replaces the old pengumuman system with enhanced role-based functionality.
