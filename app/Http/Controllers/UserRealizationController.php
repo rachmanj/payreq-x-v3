@@ -127,6 +127,7 @@ class UserRealizationController extends Controller
 
             $realization->update([
                 'status' => 'submitted',
+                'printable' => 1, // saat create realization, sudah bisa langsung printable
             ]);
 
             return redirect()->route('user-payreqs.realizations.index')
