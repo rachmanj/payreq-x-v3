@@ -605,11 +605,11 @@
                 <tr id="detail-row-${detail.id}">
                     <td>${index}</td>
                     <td>${detail.description}
-                        ${(detail.nopol || detail.unit_no) ? 
-                            `<br/>${detail.type === 'fuel' ? 
-                                                                                                        `<small>${detail.unit_no}, ${detail.nopol}, ${detail.type} ${detail.qty} ${detail.uom}. HM: ${detail.km_position}</small>` : 
-                                                                                                        `<small>${detail.type}, HM: ${detail.km_position}</small>`
-                                                                                                    }` : 
+                        ${(detail.nopol || detail.unit_no) ?
+                            `<br/>${detail.type === 'fuel' ?
+                                                                                                            `<small>${detail.unit_no}, ${detail.nopol}, ${detail.type} ${detail.qty} ${detail.uom}. HM: ${detail.km_position}</small>` :
+                                                                                                            `<small>${detail.type}, HM: ${detail.km_position}</small>`
+                                                                                                        }` :
                             ''
                         }
                     </td>
@@ -650,11 +650,11 @@
             let rowHtml = `
                 <td>${$('#detail-row-' + detail.id).index() + 1}</td>
                 <td>${detail.description}
-                    ${(detail.nopol || detail.unit_no) ? 
-                        `<br/>${detail.type === 'fuel' ? 
-                                                                                                    `<small>${detail.unit_no}, ${detail.nopol}, ${detail.type} ${detail.qty} ${detail.uom}. HM: ${detail.km_position}</small>` : 
-                                                                                                    `<small>${detail.type}, HM: ${detail.km_position}</small>`
-                                                                                                }` : 
+                    ${(detail.nopol || detail.unit_no) ?
+                        `<br/>${detail.type === 'fuel' ?
+                                                                                                        `<small>${detail.unit_no}, ${detail.nopol}, ${detail.type} ${detail.qty} ${detail.uom}. HM: ${detail.km_position}</small>` :
+                                                                                                        `<small>${detail.type}, HM: ${detail.km_position}</small>`
+                                                                                                    }` :
                         ''
                     }
                 </td>

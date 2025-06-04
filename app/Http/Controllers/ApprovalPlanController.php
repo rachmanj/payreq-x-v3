@@ -176,11 +176,22 @@ class ApprovalPlanController extends Controller
 
         // Handle document approval (when all approvers have approved)
         if ($approved_count === $approval_plans->count()) {
+            // Tentukan nilai printable berdasarkan jenis dokumen
+            $printable_value = 1; // Default untuk semua dokumen
+
+            // Set printable = 0 untuk realization dan reimburse
+            if (
+                $document_type === 'realization' ||
+                ($document_type === 'payreq' && $document->type === 'reimburse')
+            ) {
+                $printable_value = 0;
+            }
+
             // Update document status to approved and generate official document number
             $document->update([
                 'status' => 'approved',
                 'draft_no' => $document->nomor,
-                'printable' => 1,
+                'printable' => $printable_value,
                 'editable' => 0,
                 'approved_at' => $approval_plan->updated_at,
                 'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
@@ -377,11 +388,22 @@ class ApprovalPlanController extends Controller
 
             // Check if all approvers have approved
             if ($approved_count === $approval_plans->count()) {
+                // Tentukan nilai printable berdasarkan jenis dokumen
+                $printable_value = 1; // Default untuk semua dokumen
+
+                // Set printable = 0 untuk realization dan reimburse
+                if (
+                    $document_type === 'realization' ||
+                    ($document_type === 'payreq' && $document->type === 'reimburse')
+                ) {
+                    $printable_value = 0;
+                }
+
                 // Update document status to approved and generate official document number
                 $document->update([
                     'status' => 'approved',
                     'draft_no' => $document->nomor,
-                    'printable' => 1,
+                    'printable' => $printable_value,
                     'editable' => 0,
                     'approved_at' => now(),
                     'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),

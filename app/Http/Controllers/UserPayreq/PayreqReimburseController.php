@@ -125,6 +125,7 @@ class PayreqReimburseController extends Controller
 
         $payreq->update([
             'status' => 'submitted',
+            'printable' => 1,
         ]);
 
         $realization->update([
