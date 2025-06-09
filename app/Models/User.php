@@ -50,4 +50,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ApprovalStage::class, 'approver_id', 'id');
     }
+
+    public function announcements()
+    {
+        return $this->hasMany(Announcement::class, 'created_by');
+    }
 }

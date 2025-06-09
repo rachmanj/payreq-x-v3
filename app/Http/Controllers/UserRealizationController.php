@@ -6,11 +6,14 @@ use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Models\ApprovalPlan;
 use App\Models\Equipment;
 use App\Models\Incoming;
+use App\Models\LotClaim;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Services\LotService;
 
 class UserRealizationController extends Controller
 {
@@ -29,6 +32,7 @@ class UserRealizationController extends Controller
             ->distinct()
             ->get();
 
+
         $user_payreqs = $user_payreqs_no_realization->merge($payreq_with_realization_rejected);
 
         // $realization_no = app(ToolController::class)->generateDraftRealizationNumber();
@@ -39,7 +43,7 @@ class UserRealizationController extends Controller
 
     public function create()
     {
-        // 
+        //
     }
 
     public function show($id)
@@ -89,23 +93,61 @@ class UserRealizationController extends Controller
 
     public function submit_realization(Request $request)
     {
-        $realization = Realization::findOrFail($request->realization_id);
-        // update payreq status to 'realization' // payreq status still paid until approval plan is complete
-        // $realization->payreq->update([
-        //     'status' => 'realization',
-        // ]);
+        try {
+            $realization = Realization::findOrFail($request->realization_id);
 
-        // create approval plan
-        $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('realization', $realization->id);
-
-        if ($approval_plan) {
-            $realization->update([
-                'status' => 'submitted',
+            // update payreq status to 'realization'
+            $realization->payreq->update([
+                'status' => 'realization',
             ]);
 
-            return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization submitted');
-        } else {
-            return redirect()->route('user-payreqs.realizations.index')->with('error', 'Realization failed to submit');
+            // If payreq has LOT number, try to claim it
+            if ($realization->payreq->lot_no) {
+                $lotService = app(LotService::class);
+                $claimResult = $lotService->claim($realization->payreq->lot_no);
+
+                if (!$claimResult['success']) {
+                    throw new \Exception('Failed to claim LOT: ' . $claimResult['message']);
+                }
+
+                // Update local LOT claim status
+                $lotc = LotClaim::where('lot_no', $realization->payreq->lot_no)->first();
+                if ($lotc) {
+                    $lotc->update([
+                        'is_claimed' => 'yes',
+                    ]);
+                }
+            }
+
+            // create approval plan
+            $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('realization', $realization->id);
+            if (!$approval_plan) {
+                throw new \Exception('Failed to create approval plan');
+            }
+
+            $realization->update([
+                'status' => 'submitted',
+                'printable' => 1, // saat create realization, sudah bisa langsung printable
+            ]);
+
+            return redirect()->route('user-payreqs.realizations.index')
+                ->with('success', 'Realization submitted successfully');
+        } catch (\Exception $e) {
+            // Log the error
+            Log::error('Realization Submission Error', [
+                'error' => $e->getMessage(),
+                'realization_id' => $request->realization_id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // If the error is from LOT claiming, show the specific error message
+            if (str_contains($e->getMessage(), 'Failed to claim LOT:')) {
+                return redirect()->route('user-payreqs.realizations.index')
+                    ->with('error', $e->getMessage());
+            }
+
+            return redirect()->route('user-payreqs.realizations.index')
+                ->with('error', 'Failed to submit realization. Please try again or contact support.');
         }
     }
 
@@ -187,9 +229,16 @@ class UserRealizationController extends Controller
         return $this->index();
     }
 
+    private function checkPayreqLot($payreq_id)
+    {
+        $payreq = Payreq::findOrFail($payreq_id);
+        $lotc = LotClaim::where('lot_no', $payreq->lot_no)->first();
+        return $lotc;
+    }
+
     public function add_details($realization_id)
     {
-        $realization = Realization::findOrFail($realization_id);
+        $realization = Realization::with('payreq')->findOrFail($realization_id);
         $realization_details = $realization->realizationDetails;
         // $equipments = app(ToolController::class)->getEquipments($realization->project);
         // $equipments = Equipment::where('project', $realization->project)->get();
@@ -202,11 +251,15 @@ class UserRealizationController extends Controller
             $equipments = Equipment::where('project', auth()->user()->project)->orderBy('unit_code', 'asc')->get();
         }
 
+        // Check if payreq has LOTC
+        $lotc_detail = $this->checkPayreqLot($realization->payreq_id);
+
         return view('user-payreqs.realizations.add_details', compact([
             'realization',
             'realization_details',
-            // 'project_equipment', 
-            'equipments'
+            // 'project_equipment',
+            'equipments',
+            'lotc_detail'
         ]));
     }
 
@@ -218,7 +271,6 @@ class UserRealizationController extends Controller
         ]);
 
         $realization = Realization::findOrFail($request->realization_id);
-
         $payreq = Payreq::findOrFail($realization->payreq_id);
 
         // if payreq of rab_id is not null than realization_detail rab_id = payreq rab_id

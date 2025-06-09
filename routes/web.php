@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\BucSyncController;
 use App\Http\Controllers\DashboardUserController;
 use App\Http\Controllers\DocumentNumberController;
@@ -47,6 +48,12 @@ Route::middleware('auth')->group(function () {
         Route::put('password-update/{id}', [UserController::class, 'password_update'])->name('password_update');
     });
     Route::resource('users', UserController::class);
+
+    // ANNOUNCEMENTS
+    Route::prefix('announcements')->name('announcements.')->group(function () {
+        Route::put('toggle-status/{announcement}', [AnnouncementController::class, 'toggleStatus'])->name('toggle_status');
+    });
+    Route::resource('announcements', AnnouncementController::class);
 
     // ROLES
     Route::prefix('roles')->name('roles.')->group(function () {

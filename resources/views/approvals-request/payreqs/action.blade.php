@@ -52,6 +52,27 @@
                             </div>
                         </div>
 
+                        @if ($model->payreq->lot_no != null)
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label>LOT No</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                value="{{ $model->payreq->lot_no }}" readonly>
+                                            @if ($model->payreq->lot_no)
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-info" id="view_lot_detail">
+                                                        <strong>LOT Detail</strong>
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         @if ($model->payreq->rab_id != null)
                             <div class="row">
                                 <div class="col-12">
@@ -91,7 +112,8 @@
                     </div>
                     <div class="modal-footer justify-content-between">
                         <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i>
+                            Save</button>
                     </div>
                 </form>
             </div>
