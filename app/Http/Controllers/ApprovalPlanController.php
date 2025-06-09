@@ -176,16 +176,8 @@ class ApprovalPlanController extends Controller
 
         // Handle document approval (when all approvers have approved)
         if ($approved_count === $approval_plans->count()) {
-            // Tentukan nilai printable berdasarkan jenis dokumen
-            $printable_value = 1; // Default untuk semua dokumen
-
-            // Set printable = 0 untuk realization dan reimburse
-            if (
-                $document_type === 'realization' ||
-                ($document_type === 'payreq' && $document->type === 'reimburse')
-            ) {
-                $printable_value = 0;
-            }
+            // Set printable = 1 untuk semua dokumen
+            $printable_value = 1;
 
             // Update document status to approved and generate official document number
             $document->update([
@@ -388,16 +380,8 @@ class ApprovalPlanController extends Controller
 
             // Check if all approvers have approved
             if ($approved_count === $approval_plans->count()) {
-                // Tentukan nilai printable berdasarkan jenis dokumen
-                $printable_value = 1; // Default untuk semua dokumen
-
-                // Set printable = 0 untuk realization dan reimburse
-                if (
-                    $document_type === 'realization' ||
-                    ($document_type === 'payreq' && $document->type === 'reimburse')
-                ) {
-                    $printable_value = 0;
-                }
+                // Set printable = 1 untuk semua dokumen
+                $printable_value = 1;
 
                 // Update document status to approved and generate official document number
                 $document->update([
