@@ -13,6 +13,10 @@
             <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Available Accounts</a></li>
         @endcan
 
+        @can('akses_exchange_rates')
+            <li><a href="{{ route('accounting.exchange-rates.index') }}" class="dropdown-item">Exchange Rates</a></li>
+        @endcan
+
         @can('akses_giro')
             <li><a href="{{ route('accounting.giros.index') }}" class="dropdown-item">Giro</a></li>
         @endcan

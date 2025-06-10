@@ -1,25 +1,26 @@
 <?php
 
-use App\Http\Controllers\AccountController;
-use App\Http\Controllers\AnnouncementController;
-use App\Http\Controllers\BucSyncController;
-use App\Http\Controllers\DashboardUserController;
-use App\Http\Controllers\DocumentNumberController;
-use App\Http\Controllers\EquipmentSyncController;
-use App\Http\Controllers\GeneralLedgerController;
-use App\Http\Controllers\JournalController;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\TestController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\BucSyncController;
+use App\Http\Controllers\JournalController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\OutgoingController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\DashboardUserController;
+use App\Http\Controllers\EquipmentSyncController;
+use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\PayreqOverdueController;
+use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\RealizationOverdueController;
-use App\Http\Controllers\RegisterController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\TestController;
-use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'index'])->name('login');
@@ -140,6 +141,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/auto-generate', [DocumentNumberController::class, 'auto_generate'])->name('auto_generate');
     });
     Route::resource('document-number', DocumentNumberController::class);
+
+    // CURRENCIES
+    Route::prefix('currencies')->name('currencies.')->group(function () {
+        Route::get('/data', [CurrencyController::class, 'data'])->name('data');
+    });
+    Route::resource('currencies', CurrencyController::class);
 
     Route::prefix('rabs')->name('rabs.')->group(function () {
         Route::prefix('/sync')->name('sync.')->group(function () {

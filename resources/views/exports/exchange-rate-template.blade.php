@@ -1,0 +1,24 @@
+<table>
+    <thead>
+        <tr>
+            <th>currency_from</th>
+            <th>currency_to</th>
+            <th>exchange_rate</th>
+            <th>effective_date</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>USD</td>
+            <td>IDR</td>
+            <td>15750.000000</td>
+            <td>2024-01-15</td>
+        </tr>
+        <tr>
+            <td>EUR</td>
+            <td>IDR</td>
+            <td>17250.500000</td>
+            <td>2024-01-15</td>
+        </tr>
+    </tbody>
+</table>
