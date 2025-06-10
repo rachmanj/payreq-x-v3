@@ -179,15 +179,21 @@ class ApprovalPlanController extends Controller
             // Set printable = 1 untuk semua dokumen
             $printable_value = 1;
 
-            // Update document status to approved and generate official document number
-            $document->update([
+            // Update document status to approved
+            $updateData = [
                 'status' => 'approved',
-                'draft_no' => $document->nomor,
                 'printable' => $printable_value,
                 'editable' => 0,
                 'approved_at' => $approval_plan->updated_at,
-                'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
-            ]);
+            ];
+
+            // Generate official number hanya untuk payreq advance (bukan reimburse)
+            if ($document_type === 'payreq' && $document->type !== 'reimburse') {
+                $updateData['draft_no'] = $document->nomor;
+                $updateData['nomor'] = app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project);
+            }
+
+            $document->update($updateData);
 
             // Find its payment request if it exists
             $payment_request = Payreq::where('id', $document->payreq_id)->first();
@@ -205,7 +211,6 @@ class ApprovalPlanController extends Controller
                         $realization->update([
                             'status' => 'reimburse-approved',
                             'approved_at' => $approval_plan->updated_at,
-                            'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
                         ]);
                     }
                 }
@@ -383,15 +388,21 @@ class ApprovalPlanController extends Controller
                 // Set printable = 1 untuk semua dokumen
                 $printable_value = 1;
 
-                // Update document status to approved and generate official document number
-                $document->update([
+                // Update document status to approved
+                $updateData = [
                     'status' => 'approved',
-                    'draft_no' => $document->nomor,
                     'printable' => $printable_value,
                     'editable' => 0,
                     'approved_at' => now(),
-                    'nomor' => app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project),
-                ]);
+                ];
+
+                // Generate official number hanya untuk payreq advance (bukan reimburse)
+                if ($document_type === 'payreq' && $document->type !== 'reimburse') {
+                    $updateData['draft_no'] = $document->nomor;
+                    $updateData['nomor'] = app(DocumentNumberController::class)->generate_document_number($document_type, auth()->user()->project);
+                }
+
+                $document->update($updateData);
 
                 // Find its payment request if it exists
                 $payment_request = Payreq::where('id', $document->payreq_id)->first();
@@ -409,7 +420,6 @@ class ApprovalPlanController extends Controller
                             $realization->update([
                                 'status' => 'reimburse-approved',
                                 'approved_at' => now(),
-                                'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
                             ]);
                         }
                     }

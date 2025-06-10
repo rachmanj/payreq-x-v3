@@ -126,6 +126,8 @@ class PayreqReimburseController extends Controller
         $payreq->update([
             'status' => 'submitted',
             'printable' => 1,
+            'draft_no' => $payreq->nomor, // Simpan draft number
+            'nomor' => app(DocumentNumberController::class)->generate_document_number('payreq', auth()->user()->project),
         ]);
 
         $realization->update([
@@ -133,6 +135,8 @@ class PayreqReimburseController extends Controller
             'submit_at' => Carbon::now(),
             'editable' => 0,
             'deletable' => 0,
+            'draft_no' => $realization->nomor, // Simpan draft number
+            'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
         ]);
 
         return redirect()->route('user-payreqs.index')->with('success', 'Payreq submitted successfully');

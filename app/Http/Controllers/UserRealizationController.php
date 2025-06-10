@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
+use App\Http\Controllers\DocumentNumberController;
 use App\Models\ApprovalPlan;
 use App\Models\Equipment;
 use App\Models\Incoming;
@@ -128,6 +129,8 @@ class UserRealizationController extends Controller
             $realization->update([
                 'status' => 'submitted',
                 'printable' => 1, // saat create realization, sudah bisa langsung printable
+                'draft_no' => $realization->nomor, // Simpan draft number
+                'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
             ]);
 
             return redirect()->route('user-payreqs.realizations.index')
