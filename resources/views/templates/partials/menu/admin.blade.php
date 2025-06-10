@@ -3,6 +3,7 @@
         class="nav-link dropdown-toggle">Admin</a>
     <ul aria-labelledby="dropdownSubMenu1" class="dropdown-menu border-0 shadow">
         <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Accounts</a></li>
+        <li><a href="{{ route('currencies.index') }}" class="dropdown-item">Currencies</a></li>
         {{-- <li><a href="{{ route('adv-category.index') }}" class="dropdown-item">Advance Category</a></li> --}}
         <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
         @can('akses_sync_buc')

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountingPayreqController;
 use App\Http\Controllers\InstallmentController;
 use App\Http\Controllers\LoanController;
+use App\Http\Controllers\ExchangeRateController;
 
 Route::prefix('accounting')->name('accounting.')->group(function () {
     // PAYREQS LIST
@@ -113,5 +114,16 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/{id}/receive', [DeliveryController::class, 'receive_show'])->name('receive_show');
         Route::put('/{id}/receive-update', [DeliveryController::class, 'updateReceiveInfo'])->name('receive_update');
         Route::get('/dashboard-data', [DeliveryController::class, 'dashboard_data'])->name('dashboard-data');
+    });
+
+    // EXCHANGE RATES
+    Route::prefix('exchange-rates')->name('exchange-rates.')->group(function () {
+        Route::get('/data', [ExchangeRateController::class, 'data'])->name('data');
+        Route::put('/bulk-update', [ExchangeRateController::class, 'bulkUpdate'])->name('bulk-update');
+        Route::delete('/bulk-delete', [ExchangeRateController::class, 'bulkDelete'])->name('bulk-delete');
+        Route::post('/import', [ExchangeRateController::class, 'import'])->name('import');
+        Route::get('/export', [ExchangeRateController::class, 'export'])->name('export');
+        Route::get('/template', [ExchangeRateController::class, 'downloadTemplate'])->name('template');
+        Route::resource('/', ExchangeRateController::class)->parameters(['' => 'exchange_rate']);
     });
 });
