@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
+use App\Http\Controllers\DocumentNumberController;
 use App\Models\ApprovalPlan;
 use App\Models\Equipment;
 use App\Models\Incoming;
@@ -128,6 +129,8 @@ class UserRealizationController extends Controller
             $realization->update([
                 'status' => 'submitted',
                 'printable' => 1, // saat create realization, sudah bisa langsung printable
+                'draft_no' => $realization->nomor, // Simpan draft number
+                'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
             ]);
 
             return redirect()->route('user-payreqs.realizations.index')
@@ -333,7 +336,7 @@ class UserRealizationController extends Controller
                 return number_format($realization->realizationDetails->sum('amount'), 2, ',', '.');
             })
             ->editColumn('created_at', function ($realization) {
-                return $realization->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
+                return $realization->created_at->format('d-M-Y H:i') . ' wita';
             })
             ->addColumn('days', function ($realization) {
                 if ($realization->approved_at) {

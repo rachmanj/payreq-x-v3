@@ -10,6 +10,7 @@ use App\Models\Bilyet;
 use App\Models\BilyetTemp;
 use App\Models\Giro;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class BilyetController extends Controller
@@ -27,18 +28,35 @@ class BilyetController extends Controller
 
         $views = [
             'dashboard' => 'cashier.bilyets.dashboard',
-            'onhand' => 'cashier.bilyets.onhand',
-            'release' => 'cashier.bilyets.release',
-            'cair' => 'cashier.bilyets.cair',
-            'void' => 'cashier.bilyets.void',
+            'list' => 'cashier.bilyets.list',           // New unified list page
             'upload' => 'cashier.bilyets.upload',
         ];
+
+        // Add fallback for invalid page parameters
+        $allowedPages = ['dashboard', 'list', 'upload'];
+        if (!in_array($page, $allowedPages)) {
+            $page = 'dashboard'; // fallback to dashboard
+        }
 
         if ($page === 'dashboard') {
             $data = app(ReportsBilyetController::class)->dashboardData();
             return view($views[$page], compact('data'));
-        } elseif ($page === 'onhand') {
-            $onhands = Bilyet::where('status', 'onhand')->orderBy('prefix', 'asc')->orderBy('nomor', 'asc')->get();
+        } elseif ($page === 'list') {
+            // Get all bilyets for filtering - will be loaded via AJAX
+            // Also get onhand bilyets for update many modal
+            if (array_intersect(['admin', 'superadmin'], $userRoles)) {
+                $onhands = Bilyet::where('status', 'onhand')
+                    ->with(['giro.bank'])
+                    ->orderBy('prefix', 'asc')->orderBy('nomor', 'asc')
+                    ->get();
+            } else {
+                $onhands = Bilyet::where('status', 'onhand')
+                    ->where('project', auth()->user()->project)
+                    ->with(['giro.bank'])
+                    ->orderBy('prefix', 'asc')->orderBy('nomor', 'asc')
+                    ->get();
+            }
+
             return view($views[$page], compact('giros', 'onhands'));
         } elseif ($page === 'upload') {
             // count giro_id that is null
@@ -75,6 +93,11 @@ class BilyetController extends Controller
 
         Bilyet::create($request->all());
 
+        // Check referer to redirect properly to list page if coming from there
+        if (strpos($request->headers->get('referer'), 'page=list') !== false) {
+            return redirect()->route('cashier.bilyets.index', ['page' => 'list'])->with('success', 'Bilyet created successfully.');
+        }
+
         return redirect()->back()->with('success', 'Bilyet created successfully.');
     }
 
@@ -83,11 +106,8 @@ class BilyetController extends Controller
         $bilyet = Bilyet::find($id);
 
         if ($request->is_void) {
+            // For void, only update status - don't change other fields
             $bilyet->update([
-                'bilyet_date' => $request->bilyet_date,
-                'cair_date' => $request->cair_date,
-                'amount' => $request->amount,
-                'remarks' => $request->remarks,
                 'status' => 'void',
             ]);
         } else {
@@ -109,6 +129,29 @@ class BilyetController extends Controller
         }
 
         return redirect()->back()->with('success', 'Bilyet updated successfully.');
+    }
+
+    public function void($id)
+    {
+        $bilyet = Bilyet::find($id);
+        $userRoles = app(UserController::class)->getUserRoles();
+
+        if (!$bilyet) {
+            return redirect()->back()->with('error', 'Bilyet not found.');
+        }
+
+        // Check access control - user can only void bilyets from their project
+        if (!array_intersect(['admin', 'superadmin'], $userRoles) && $bilyet->project !== auth()->user()->project) {
+            return redirect()->back()->with('error', 'Unauthorized access.');
+        }
+
+        if ($bilyet->status === 'void') {
+            return redirect()->back()->with('warning', 'Bilyet is already voided.');
+        }
+
+        $bilyet->update(['status' => 'void']);
+
+        return redirect()->back()->with('success', 'Bilyet voided successfully. Status changed to void while preserving other data.');
     }
 
     public function export()
@@ -178,50 +221,77 @@ class BilyetController extends Controller
             ]);
         }
 
+        // Check from_page to redirect properly
+        if ($request->from_page === 'list') {
+            return redirect()->route('cashier.bilyets.index', ['page' => 'list'])->with('success', 'Bilyet updated successfully.');
+        }
+
         return redirect()->route('cashier.bilyets.index')->with('success', 'Bilyet updated successfully.');
     }
 
-    public function data()
+    public function data(Request $request)
     {
-        $status = request()->query('status');
-
         $userRoles = app(UserController::class)->getUserRoles();
 
-        // determine which action button to show
-        switch ($status) {
-            case 'release':
-                $bilyet_bystatus = Bilyet::where('status', 'release')->orderBy('bilyet_date', 'asc');
-                $action_button = 'cashier.bilyets.release_action';
-                break;
-            case 'cair':
-                $bilyet_bystatus = Bilyet::where('status', 'cair')->orderBy('cair_date', 'desc');
-                $action_button = 'cashier.bilyets.cair_action';
-                break;
-            case 'trash':
-                $bilyet_bystatus = Bilyet::where('status', 'void')->orderBy('updated_at', 'desc');
-                $action_button = 'cashier.bilyets.void_action';
-                break;
-            default:
-                $bilyet_bystatus = Bilyet::where('status', 'onhand');
-                $action_button = 'cashier.bilyets.action';
-                break;
+        // Check if any filter is applied
+        $hasFilter = $this->hasAnyFilter($request);
+
+        // Debug logging
+        \Illuminate\Support\Facades\Log::info('Bilyet data request', [
+            'status' => $request->query('status'),
+            'nomor' => $request->query('nomor'),
+            'date_from' => $request->query('date_from'),
+            'date_to' => $request->query('date_to'),
+            'user_roles' => $userRoles,
+            'has_filter' => $hasFilter
+        ]);
+
+        // If no filter applied, return empty result
+        if (!$hasFilter) {
+            return datatables()->of(collect())->toJson();
         }
 
-        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
-            $bilyets = $bilyet_bystatus->orderBy('project', 'asc')->get();
-        } else {
-            $bilyets = $bilyet_bystatus->where('project', auth()->user()->project)->get();
+        // Base query with eager loading for performance
+        $query = Bilyet::query()
+            ->whereNotNull('giro_id')
+            ->with([
+                'giro' => function ($query) {
+                    $query->select('id', 'bank_id', 'curr', 'acc_no');
+                },
+                'giro.bank' => function ($query) {
+                    $query->select('id', 'name');
+                }
+            ])
+            ->select('id', 'giro_id', 'prefix', 'nomor', 'type', 'bilyet_date', 'cair_date', 'amount', 'status', 'remarks', 'project', 'created_at');
+
+        // Apply filters
+        $this->applyStatusFilter($query, $request->query('status'));
+        $this->applyNomorFilter($query, $request->query('nomor'));
+        $this->applyDateFilter($query, $request->query('date_from'), $request->query('date_to'));
+
+        // Role-based access control
+        if (!array_intersect(['superadmin', 'admin'], $userRoles)) {
+            $query->where('project', auth()->user()->project);
         }
 
-        // $bilyets = Bilyet::all();
+        // Get data
+        $bilyets = $query->orderBy('created_at', 'desc')->get();
+
+        \Illuminate\Support\Facades\Log::info('Bilyet data result count: ' . $bilyets->count());
 
         return datatables()->of($bilyets)
+            ->editColumn('account', function ($bilyet) {
+                $remarks = $bilyet->remarks ? $bilyet->remarks : '';
+                $bankName = $bilyet->giro && $bilyet->giro->bank ? $bilyet->giro->bank->name : 'N/A';
+                $currency = $bilyet->giro ? strtoupper($bilyet->giro->curr) : 'N/A';
+                $accNo = $bilyet->giro ? $bilyet->giro->acc_no : 'N/A';
+                return '<small>' . $bankName . ' ' . $currency . ' | ' . $accNo . '<br>' . $remarks . '</small>';
+            })
             ->editColumn('nomor', function ($bilyet) {
                 return $bilyet->prefix . $bilyet->nomor;
             })
-            ->addColumn('account', function ($bilyet) {
-                $remarks = $bilyet->remarks ? $bilyet->remarks : '';
-                return '<small>' . $bilyet->giro->bank->name . ' ' . strtoupper($bilyet->giro->curr) . ' | ' . $bilyet->giro->acc_no . '<br>' . $remarks . '</small>';
+            ->editColumn('type', function ($bilyet) {
+                return strtoupper($bilyet->type);
             })
             ->editColumn('bilyet_date', function ($bilyet) {
                 return $bilyet->bilyet_date ? date('d-M-Y', strtotime($bilyet->bilyet_date)) : '-';
@@ -229,15 +299,87 @@ class BilyetController extends Controller
             ->editColumn('cair_date', function ($bilyet) {
                 return $bilyet->cair_date ? date('d-M-Y', strtotime($bilyet->cair_date)) : '-';
             })
-            ->editColumn('amount', function ($bilyet) {
-                return $bilyet->amount ? number_format($bilyet->amount, 0, ',', '.') . ',-' : '-';
+            ->editColumn('status', function ($bilyet) {
+                $statusBadges = [
+                    'onhand' => '<span class="badge badge-primary">Onhand</span>',
+                    'release' => '<span class="badge badge-warning">Release</span>',
+                    'cair' => '<span class="badge badge-success">Cair</span>',
+                    'void' => '<span class="badge badge-danger">Void</span>',
+                ];
+                return $statusBadges[$bilyet->status] ?? $bilyet->status;
             })
-            ->editColumn('type', function ($bilyet) {
-                return strtoupper($bilyet->type);
+            ->editColumn('amount', function ($bilyet) {
+                if ($bilyet->amount && $bilyet->amount > 0) {
+                    return '<span class="amount-value" data-amount="' . $bilyet->amount . '">'
+                        . number_format($bilyet->amount, 0, ',', '.') . ',-</span>';
+                }
+                return '<span class="text-muted">-</span>';
+            })
+            ->addColumn('checkbox', function ($bilyet) {
+                // Only show checkbox for bilyets with amount
+                if ($bilyet->amount && $bilyet->amount > 0) {
+                    return '<div class="text-center">
+                                <input type="checkbox" class="bilyet-checkbox"
+                                       data-id="' . $bilyet->id . '"
+                                       data-amount="' . $bilyet->amount . '"
+                                       data-status="' . $bilyet->status . '"
+                                       data-type="' . strtoupper($bilyet->type) . '"
+                                       value="' . $bilyet->id . '">
+                            </div>';
+                }
+                return '<div class="text-center"><span class="text-muted">-</span></div>';
+            })
+            ->addColumn('action', function ($bilyet) {
+                try {
+                    return view('cashier.bilyets.list_action', ['model' => $bilyet])->render();
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Error rendering bilyet action template', [
+                        'bilyet_id' => $bilyet->id ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                    return '<span class="text-danger">Error</span>';
+                }
             })
             ->addIndexColumn()
-            ->addColumn('action', $action_button)
-            ->rawColumns(['action', 'account', 'nomor'])
+            ->rawColumns(['action', 'account', 'status', 'checkbox', 'amount'])
             ->toJson();
+    }
+
+    private function applyStatusFilter($query, $status)
+    {
+        if ($status && $status !== 'all' && $status !== '') {
+            $query->where('status', $status);
+        }
+    }
+
+    private function applyNomorFilter($query, $nomor)
+    {
+        if ($nomor) {
+            $query->where(function ($q) use ($nomor) {
+                $q->where('nomor', 'LIKE', "%{$nomor}%")
+                    ->orWhereRaw("CONCAT(prefix, nomor) LIKE ?", ["%{$nomor}%"]);
+            });
+        }
+    }
+
+    private function applyDateFilter($query, $dateFrom, $dateTo)
+    {
+        if ($dateFrom && $dateTo) {
+            $query->whereBetween('bilyet_date', [$dateFrom, $dateTo]);
+        } elseif ($dateFrom) {
+            $query->where('bilyet_date', '>=', $dateFrom);
+        } elseif ($dateTo) {
+            $query->where('bilyet_date', '<=', $dateTo);
+        }
+    }
+
+    private function hasAnyFilter($request)
+    {
+        $status = $request->query('status');
+        $nomor = $request->query('nomor');
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+
+        return !empty($status) || !empty($nomor) || !empty($dateFrom) || !empty($dateTo);
     }
 }
