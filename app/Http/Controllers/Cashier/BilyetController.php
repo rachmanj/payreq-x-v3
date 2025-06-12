@@ -365,11 +365,11 @@ class BilyetController extends Controller
     private function applyDateFilter($query, $dateFrom, $dateTo)
     {
         if ($dateFrom && $dateTo) {
-            $query->whereBetween('created_at', [$dateFrom, $dateTo]);
+            $query->whereBetween('bilyet_date', [$dateFrom, $dateTo]);
         } elseif ($dateFrom) {
-            $query->where('created_at', '>=', $dateFrom);
+            $query->where('bilyet_date', '>=', $dateFrom);
         } elseif ($dateTo) {
-            $query->where('created_at', '<=', $dateTo);
+            $query->where('bilyet_date', '<=', $dateTo);
         }
     }
 

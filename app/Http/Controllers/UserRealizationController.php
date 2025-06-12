@@ -336,7 +336,7 @@ class UserRealizationController extends Controller
                 return number_format($realization->realizationDetails->sum('amount'), 2, ',', '.');
             })
             ->editColumn('created_at', function ($realization) {
-                return $realization->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
+                return $realization->created_at->format('d-M-Y H:i') . ' wita';
             })
             ->addColumn('days', function ($realization) {
                 if ($realization->approved_at) {
