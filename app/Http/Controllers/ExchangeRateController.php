@@ -16,6 +16,22 @@ use App\Imports\ExchangeRatesImport;
 class ExchangeRateController extends Controller
 {
     /**
+     * Create a new controller instance.
+     */
+    public function __construct()
+    {
+        // Basic access permission for all methods
+        $this->middleware('permission:akses_exchange_rates');
+
+        // Granular permissions for specific actions
+        $this->middleware('permission:create_exchange_rates')->only(['create', 'store']);
+        $this->middleware('permission:edit_exchange_rates')->only(['edit', 'update', 'bulkUpdate']);
+        $this->middleware('permission:delete_exchange_rates')->only(['destroy', 'bulkDelete']);
+        $this->middleware('permission:import_exchange_rates')->only(['import', 'downloadTemplate']);
+        $this->middleware('permission:export_exchange_rates')->only(['export']);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
