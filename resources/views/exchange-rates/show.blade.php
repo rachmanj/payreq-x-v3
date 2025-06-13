@@ -118,22 +118,30 @@
                     <a href="{{ route('accounting.exchange-rates.index') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to List
                     </a>
-                    <a href="{{ route('accounting.exchange-rates.edit', $exchangeRate->id) }}" class="btn btn-warning">
-                        <i class="fas fa-edit"></i> Edit
-                    </a>
+                    @can('edit_exchange_rates')
+                        <a href="{{ route('accounting.exchange-rates.edit', $exchangeRate->id) }}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                    @endcan
                     <div class="btn-group float-right">
                         <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown">
                             <i class="fas fa-cog"></i> Actions
                         </button>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item" href="{{ route('accounting.exchange-rates.create') }}">
-                                <i class="fas fa-plus"></i> Add New Rate
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item"
-                                href="{{ route('accounting.exchange-rates.export') }}?currency_from={{ $exchangeRate->currency_from }}&currency_to={{ $exchangeRate->currency_to }}">
-                                <i class="fas fa-file-excel"></i> Export This Pair
-                            </a>
+                            @can('create_exchange_rates')
+                                <a class="dropdown-item" href="{{ route('accounting.exchange-rates.create') }}">
+                                    <i class="fas fa-plus"></i> Add New Rate
+                                </a>
+                            @endcan
+                            @can('export_exchange_rates')
+                                @can('create_exchange_rates')
+                                    <div class="dropdown-divider"></div>
+                                @endcan
+                                <a class="dropdown-item"
+                                    href="{{ route('accounting.exchange-rates.export') }}?currency_from={{ $exchangeRate->currency_from }}&currency_to={{ $exchangeRate->currency_to }}">
+                                    <i class="fas fa-file-excel"></i> Export This Pair
+                                </a>
+                            @endcan
                         </div>
                     </div>
                 </div>

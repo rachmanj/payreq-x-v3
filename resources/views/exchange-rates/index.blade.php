@@ -76,9 +76,11 @@
                 <div class="card-header">
                     <h3 class="card-title">Exchange Rates List</h3>
                     <div class="card-tools">
-                        <a href="{{ route('accounting.exchange-rates.create') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus"></i> Add New Exchange Rate
-                        </a>
+                        @can('create_exchange_rates')
+                            <a href="{{ route('accounting.exchange-rates.create') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> Add New Exchange Rate
+                            </a>
+                        @endcan
                     </div>
                 </div>
 
@@ -139,22 +141,30 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <div class="btn-group" id="bulkActions" style="display: none;">
-                                <button type="button" class="btn btn-warning btn-sm" id="bulkUpdateBtn">
-                                    <i class="fas fa-edit"></i> Bulk Update
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm" id="bulkDeleteBtn">
-                                    <i class="fas fa-trash"></i> Bulk Delete
-                                </button>
+                                @can('edit_exchange_rates')
+                                    <button type="button" class="btn btn-warning btn-sm" id="bulkUpdateBtn">
+                                        <i class="fas fa-edit"></i> Bulk Update
+                                    </button>
+                                @endcan
+                                @can('delete_exchange_rates')
+                                    <button type="button" class="btn btn-danger btn-sm" id="bulkDeleteBtn">
+                                        <i class="fas fa-trash"></i> Bulk Delete
+                                    </button>
+                                @endcan
                             </div>
                         </div>
                         <div class="col-md-6 text-right">
-                            <button type="button" class="btn btn-success btn-sm" id="exportBtn">
-                                <i class="fas fa-file-excel"></i> Export Excel
-                            </button>
-                            <button type="button" class="btn btn-info btn-sm" data-toggle="modal"
-                                data-target="#importModal">
-                                <i class="fas fa-file-import"></i> Import Excel
-                            </button>
+                            @can('export_exchange_rates')
+                                <button type="button" class="btn btn-success btn-sm" id="exportBtn">
+                                    <i class="fas fa-file-excel"></i> Export Excel
+                                </button>
+                            @endcan
+                            @can('import_exchange_rates')
+                                <button type="button" class="btn btn-info btn-sm" data-toggle="modal"
+                                    data-target="#importModal">
+                                    <i class="fas fa-file-import"></i> Import Excel
+                                </button>
+                            @endcan
                         </div>
                     </div>
 
@@ -195,19 +205,23 @@
                                                     class="btn btn-sm btn-info" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="{{ route('accounting.exchange-rates.edit', $rate->id) }}"
-                                                    class="btn btn-sm btn-warning ml-2" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <form action="{{ route('accounting.exchange-rates.destroy', $rate->id) }}"
-                                                    method="POST" style="display: inline;" class="delete-form">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger ml-2"
-                                                        title="Delete">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
+                                                @can('edit_exchange_rates')
+                                                    <a href="{{ route('accounting.exchange-rates.edit', $rate->id) }}"
+                                                        class="btn btn-sm btn-warning ml-2" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                @endcan
+                                                @can('delete_exchange_rates')
+                                                    <form action="{{ route('accounting.exchange-rates.destroy', $rate->id) }}"
+                                                        method="POST" style="display: inline;" class="delete-form">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-danger ml-2"
+                                                            title="Delete">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                @endcan
                                             </div>
                                         </td>
                                     </tr>
@@ -248,9 +262,13 @@
                         <div class="form-group">
                             <label>1. Download Template:</label>
                             <div>
-                                <a href="{{ route('accounting.exchange-rates.template') }}" class="btn btn-info btn-sm">
-                                    <i class="fas fa-download"></i> Download Template
-                                </a>
+                                @can('import_exchange_rates')
+                                    <a href="{{ route('accounting.exchange-rates.template') }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-download"></i> Download Template
+                                    </a>
+                                @else
+                                    <span class="text-muted">You don't have permission to download template</span>
+                                @endcan
                             </div>
                         </div>
                         <div class="form-group">
