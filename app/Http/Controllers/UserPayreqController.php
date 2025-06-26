@@ -255,15 +255,15 @@ class UserPayreqController extends Controller
             })
             ->editColumn('submit_at', function ($payreq) {
                 if ($payreq->status == 'draft') {
-                    return "Created at " . $payreq->created_at->format('d-M-Y H:i') . ' wita';
+                    return "Created at " . $payreq->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
                 }
                 if ($payreq->status == 'paid') {
                     $paid_date = App(ToolController::class)->getPaidDate($payreq->id);
                     $paid_date = new \Carbon\Carbon($paid_date);
-                    return 'Paid at ' . $paid_date->format('d-M-Y');
+                    return 'Paid at ' . $paid_date->addHours(8)->format('d-M-Y');
                 }
                 $submit_date = new \Carbon\Carbon($payreq->submit_at);
-                return 'Submit at ' . $submit_date->format('d-M-Y H:i') . ' wita';
+                return 'Submit at ' . $submit_date->addHours(8)->format('d-M-Y H:i') . ' wita';
             })
             ->addColumn('action', 'user-payreqs.action')
             ->rawColumns(['action', 'nomor', 'status'])
