@@ -37,7 +37,8 @@ class UserPayreqHistoriesController extends Controller
     {
         $status_include = ['canceled', 'close'];
 
-        $payreqs = Payreq::where('user_id', auth()->user()->id)
+        $payreqs = Payreq::with(['realization'])
+            ->where('user_id', auth()->user()->id)
             ->whereIn('status', $status_include)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -62,7 +63,7 @@ class UserPayreqHistoriesController extends Controller
             })
             ->editColumn('status', function ($payreq) {
                 if ($payreq->status === 'canceled') {
-                    $cancel_date = new \Carbon\Carbon($payreq->cancelled_at);
+                    $cancel_date = new \Carbon\Carbon($payreq->canceled_at);
                     return '<button class="badge badge-danger">CANCELED</button> at ' . $cancel_date->addHours(8)->format('d-M-Y H:i') . ' wita';
                 } else {
                     $close_date = new \Carbon\Carbon($payreq->updated_at);

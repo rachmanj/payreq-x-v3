@@ -180,6 +180,7 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/cash_journals.php';
     require __DIR__ . '/accounting.php';
     require __DIR__ . '/reports.php';
+    require __DIR__ . '/admin.php';
 });
 
 Route::post('/get_account_name', [AccountController::class, 'get_account_name'])->name('get_account_name');
