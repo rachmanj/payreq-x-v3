@@ -42,7 +42,7 @@ class PrintableDocumentController extends Controller
             ])
             ->leftJoin('realizations as r', 'p.id', '=', 'r.payreq_id')
             ->leftJoin('users as u', 'p.user_id', '=', 'u.id')
-            ->whereIn('p.status', ['canceled', 'close'])
+            ->whereIn('p.status', ['close'])
             ->orderBy('p.created_at', 'desc');
 
         return datatables()->of($query)
