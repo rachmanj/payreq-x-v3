@@ -23,6 +23,7 @@ class PrintableDocumentController extends Controller
         // 2. COALESCE for null handling at database level
         // 3. Specific column selection to reduce memory usage
         // 4. Direct column search without whereHas (faster execution)
+        // 5. Pre-calculated date formatting at database level
         $query = DB::table('payreqs as p')
             ->select([
                 'p.id',
@@ -38,16 +39,21 @@ class PrintableDocumentController extends Controller
                 'p.printable as payreq_printable',
                 DB::raw('COALESCE(r.nomor, "n/a") as realization_no'),
                 DB::raw('COALESCE(r.printable, 0) as realization_printable'),
-                DB::raw('COALESCE(u.name, "N/A") as requestor_name')
+                DB::raw('COALESCE(u.name, "N/A") as requestor_name'),
+                // Pre-calculate formatted dates at database level
+                DB::raw('DATE_FORMAT(DATE_ADD(p.updated_at, INTERVAL 8 HOUR), "%d-%b-%Y %H:%i") as formatted_updated_at'),
+                DB::raw('DATE_FORMAT(DATE_ADD(p.canceled_at, INTERVAL 8 HOUR), "%d-%b-%Y %H:%i") as formatted_canceled_at'),
+                // Pre-calculate duration in days
+                DB::raw('CASE WHEN p.approved_at IS NOT NULL THEN DATEDIFF(p.updated_at, p.approved_at) ELSE NULL END as duration_days')
             ])
             ->leftJoin('realizations as r', 'p.id', '=', 'r.payreq_id')
             ->leftJoin('users as u', 'p.user_id', '=', 'u.id')
-            ->whereIn('p.status', ['close'])
+            ->where('p.status', '=', 'close') // Use = instead of whereIn for single value
             ->orderBy('p.created_at', 'desc');
 
         return datatables()->of($query)
             ->editColumn('nomor', function ($row) {
-                return '<a href="#" style="color: black" title="' . $row->remarks . '">' . $row->nomor . '</a>';
+                return '<a href="#" style="color: black" title="' . e($row->remarks) . '">' . e($row->nomor) . '</a>';
             })
             ->editColumn('type', function ($row) {
                 return ucfirst($row->type);
@@ -60,47 +66,46 @@ class PrintableDocumentController extends Controller
             })
             ->editColumn('status', function ($row) {
                 if ($row->status === 'canceled') {
-                    $cancel_date = new \Carbon\Carbon($row->canceled_at);
-                    return '<button class="badge badge-danger">CANCELED</button> at ' . $cancel_date->addHours(8)->format('d-M-Y H:i') . ' wita';
+                    return '<button class="badge badge-danger">CANCELED</button> at ' . $row->formatted_canceled_at . ' wita';
                 } else {
-                    $close_date = new \Carbon\Carbon($row->updated_at);
-                    return '<button class="badge badge-success">CLOSE</button> at ' . $close_date->addHours(8)->format('d-M-Y H:i') . ' wita';
+                    return '<button class="badge badge-success">CLOSE</button> at ' . $row->formatted_updated_at . ' wita';
                 }
             })
             ->addColumn('duration', function ($row) {
-                if ($row->approved_at) {
-                    $approved = new \Carbon\Carbon($row->approved_at);
-                    $closed = new \Carbon\Carbon($row->updated_at);
-                    return $approved->diffInDays($closed);
-                }
-                return 'N/A';
+                return $row->duration_days ?? 'N/A';
             })
             ->editColumn('amount', function ($row) {
                 return number_format($row->amount, 2);
             })
             ->addColumn('action', function ($row) {
-                // Create a simple object for the view
+                // Create a simple object for the view - maintaining original UI
                 $payreq = (object) [
                     'id' => $row->id,
                     'type' => $row->type,
                     'printable' => $row->payreq_printable,
-                    'realization' => $row->realization_no ? (object) ['printable' => $row->realization_printable] : null
+                    'realization' => $row->realization_no !== 'n/a' ? (object) ['printable' => $row->realization_printable] : null
                 ];
                 return view('admin.printable-documents.action', compact('payreq'));
             })
-            // Optimized search - direct column search without N+1 queries
+            // Optimized search - use more efficient query patterns
             ->filter(function ($query) use ($request) {
                 if ($request->has('search') && !empty($request->search['value'])) {
                     $searchValue = $request->search['value'];
 
+                    // Use more efficient search with proper escaping
+                    $searchValue = '%' . $searchValue . '%';
+
                     $query->where(function ($q) use ($searchValue) {
-                        $q->where('p.nomor', 'like', "%{$searchValue}%")
-                            ->orWhere('p.type', 'like', "%{$searchValue}%")
-                            ->orWhere('p.status', 'like', "%{$searchValue}%")
-                            ->orWhere('p.amount', 'like', "%{$searchValue}%")
-                            ->orWhere('p.remarks', 'like', "%{$searchValue}%")
-                            ->orWhere('r.nomor', 'like', "%{$searchValue}%")
-                            ->orWhere('u.name', 'like', "%{$searchValue}%");
+                        $q->where('p.nomor', 'like', $searchValue)
+                            ->orWhere('p.type', 'like', $searchValue)
+                            ->orWhere('r.nomor', 'like', $searchValue)
+                            ->orWhere('u.name', 'like', $searchValue);
+
+                        // Only search numeric fields if search value is numeric
+                        if (is_numeric(str_replace(['%', ',', '.'], '', $searchValue))) {
+                            $numericSearch = str_replace(['%', ','], '', $searchValue);
+                            $q->orWhere('p.amount', 'like', $numericSearch . '%');
+                        }
                     });
                 }
             })

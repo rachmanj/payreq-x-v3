@@ -189,6 +189,9 @@
                     printable: printable
                 });
 
+                // Disable button to prevent multiple clicks
+                button.prop('disabled', true);
+
                 $.ajax({
                     url: '{{ route('admin.printable-documents.update') }}',
                     method: 'POST',
@@ -209,6 +212,11 @@
                     },
                     error: function(xhr) {
                         toastr.error('Failed to update printable status');
+                        console.error('AJAX Error:', xhr.responseJSON);
+                    },
+                    complete: function() {
+                        // Re-enable button after request completes
+                        button.prop('disabled', false);
                     }
                 });
             });
