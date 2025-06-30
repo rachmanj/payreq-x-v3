@@ -38,7 +38,8 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="currency_from">Currency From <span class="text-danger">*</span></label>
+                                    <input type="hidden" name="currency_to" id="currency_to" value="IDR">
+                                    <label for="currency_from">Foreign Currency <span class="text-danger">*</span></label>
                                     <select name="currency_from" id="currency_from"
                                         class="form-control @error('currency_from') is-invalid @enderror" required>
                                         <option value="">Select Currency From</option>
@@ -54,33 +55,16 @@
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="currency_to">Currency To <span class="text-danger">*</span></label>
-                                    <select name="currency_to" id="currency_to"
-                                        class="form-control @error('currency_to') is-invalid @enderror" required>
-                                        <option value="">Select Currency To</option>
-                                        @foreach ($currencies as $currency)
-                                            <option value="{{ $currency->currency_code }}"
-                                                {{ old('currency_to', $exchangeRate->currency_to) == $currency->currency_code ? 'selected' : '' }}>
-                                                {{ $currency->currency_code }} - {{ $currency->currency_name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('currency_to')
-                                        <span class="invalid-feedback">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label for="exchange_rate">Exchange Rate <span class="text-danger">*</span></label>
+                                    <label for="exchange_rate">Exchange Rate to IDR <span
+                                            class="text-danger">*</span></label>
                                     <input type="text" name="exchange_rate" id="exchange_rate"
                                         class="form-control @error('exchange_rate') is-invalid @enderror"
-                                        value="{{ old('exchange_rate', number_format($exchangeRate->exchange_rate, 2)) }}"
+                                        value="{{ old('exchange_rate', number_format($exchangeRate->exchange_rate, 6)) }}"
                                         placeholder="Enter exchange rate (e.g., 15,750.00)" onkeyup="formatNumber(this)"
                                         required>
                                     @error('exchange_rate')
@@ -276,19 +260,11 @@
                     isValid = false;
                 }
 
-                // Validate Currency To
-                if (!$('#currency_to').val()) {
-                    $('#currency_to').addClass('is-invalid');
-                    $('#currency_to').after('<div class="invalid-feedback">Currency To is required.</div>');
-                    isValid = false;
-                }
-
-                // Check if currencies are different
-                if ($('#currency_from').val() && $('#currency_to').val() &&
-                    $('#currency_from').val() === $('#currency_to').val()) {
-                    $('#currency_to').addClass('is-invalid');
-                    $('#currency_to').after(
-                        '<div class="invalid-feedback">Currency To must be different from Currency From.</div>'
+                // Check if currencies are different (currency_to is always IDR)
+                if ($('#currency_from').val() && $('#currency_from').val() === 'IDR') {
+                    $('#currency_from').addClass('is-invalid');
+                    $('#currency_from').after(
+                        '<div class="invalid-feedback">Currency From cannot be IDR as it is already the base currency.</div>'
                     );
                     isValid = false;
                 }
@@ -313,30 +289,37 @@
 
                 if (isValid) {
                     // Show confirmation dialog
-                    const currencyFrom = $('#currency_from option:selected').text();
-                    const currencyTo = $('#currency_to option:selected').text();
+                    const currencyFromCode = $('#currency_from').val();
+                    const currencyToCode = 'IDR';
+                    const currencyFromName = $('#currency_from option:selected').text().split(' - ')[1];
+                    const currencyToName = 'Indonesian Rupiah';
                     const rate = $('#exchange_rate').val();
                     const effectiveDate = $('#effective_date').val();
 
                     const confirmMessage = `Are you sure you want to update this exchange rate?\n\n` +
-                        `Currency: ${currencyFrom} → ${currencyTo}\n` +
+                        `Currency: \n` +
+                        `From: ${currencyFromCode} - ${currencyFromName}\n` +
+                        `To: ${currencyToCode} - ${currencyToName}\n` +
                         `New Rate: ${rate}\n` +
                         `Effective Date: ${effectiveDate}`;
 
                     if (confirm(confirmMessage)) {
+                        // Convert formatted exchange rate to numeric value before submit
+                        const numericRate = parseNumber($('#exchange_rate').val());
+                        $('#exchange_rate').val(numericRate);
                         this.submit();
                     }
                 }
             });
 
             // Currency change validation
-            $('#currency_from, #currency_to').change(function() {
-                if ($('#currency_from').val() && $('#currency_to').val() &&
-                    $('#currency_from').val() === $('#currency_to').val()) {
-
+            $('#currency_from').change(function() {
+                if ($(this).val() === 'IDR') {
                     $(this).addClass('is-invalid');
                     $(this).siblings('.invalid-feedback').remove();
-                    $(this).after('<div class="invalid-feedback">Currencies must be different.</div>');
+                    $(this).after(
+                        '<div class="invalid-feedback">Currency From cannot be IDR as it is already the base currency.</div>'
+                    );
                 } else {
                     $(this).removeClass('is-invalid');
                     $(this).siblings('.invalid-feedback').remove();
@@ -373,6 +356,10 @@
 
         // Format number function for currency inputs
         function formatNumber(input) {
+            // Store cursor position
+            const cursorPosition = input.selectionStart;
+            const originalLength = input.value.length;
+
             // Remove any non-digit characters except dots
             let value = input.value.replace(/[^\d.]/g, '');
 
@@ -382,17 +369,34 @@
                 parts = [parts[0], parts.slice(1).join('')];
             }
 
-            // Add thousand separators
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            // Limit decimal places to 6
+            if (parts[1] && parts[1].length > 6) {
+                parts[1] = parts[1].substring(0, 6);
+            }
+
+            // Add thousand separators to integer part
+            if (parts[0]) {
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
 
             // Join with decimal part if exists
-            input.value = parts.join('.');
+            const formattedValue = parts.length > 1 ? parts.join('.') : parts[0];
+            input.value = formattedValue;
+
+            // Restore cursor position
+            const newLength = input.value.length;
+            const lengthDiff = newLength - originalLength;
+            const newCursorPosition = cursorPosition + lengthDiff;
+            input.setSelectionRange(newCursorPosition, newCursorPosition);
         }
 
         // Function to parse number from formatted string
         function parseNumber(value) {
-            if (!value) return 0;
-            return parseFloat(value.toString().replace(/,/g, '')) || 0;
+            if (!value || value === '') return 0;
+            // Remove commas and convert to float
+            const cleanValue = value.toString().replace(/,/g, '');
+            const parsed = parseFloat(cleanValue);
+            return isNaN(parsed) ? 0 : parsed;
         }
     </script>
 @endsection

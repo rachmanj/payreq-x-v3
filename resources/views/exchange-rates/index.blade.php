@@ -176,8 +176,8 @@
                                     <th width="30" class="text-center align-middle">
                                         <input type="checkbox" id="selectAll">
                                     </th>
-                                    <th class="align-middle">Currency From</th>
-                                    <th class="align-middle">Currency To</th>
+                                    <th class="align-middle">Foreign Currency</th>
+                                    {{-- <th class="align-middle">Currency To</th> --}}
                                     <th class="align-middle">Exchange Rate</th>
                                     <th class="align-middle">Effective Date</th>
                                     <th class="align-middle">Created By</th>
@@ -193,21 +193,21 @@
                                             <input type="checkbox" class="row-checkbox" value="{{ $rate->id }}">
                                         </td>
                                         <td>{{ $rate->currency_from }}</td>
-                                        <td>{{ $rate->currency_to }}</td>
+                                        {{-- <td>{{ $rate->currency_to }}</td> --}}
                                         <td class="text-right">{{ number_format($rate->exchange_rate, 2) }}</td>
-                                        <td>{{ $rate->effective_date->format('Y-m-d') }}</td>
+                                        <td>{{ $rate->effective_date->format('d-M-Y') }}</td>
                                         <td>{{ $rate->creator->name ?? 'N/A' }}</td>
-                                        <td>{{ $rate->created_at->format('Y-m-d H:i') }}</td>
-                                        <td>{{ $rate->updated_at->format('Y-m-d H:i') }}</td>
+                                        <td>{{ $rate->created_at->format('d-M-Y H:i') }}</td>
+                                        <td>{{ $rate->updated_at->format('d-M-Y H:i') }}</td>
                                         <td class="text-center">
                                             <div class="btn-group">
                                                 <a href="{{ route('accounting.exchange-rates.show', $rate->id) }}"
-                                                    class="btn btn-sm btn-info" title="View">
+                                                    class="btn btn-xs btn-info" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 @can('edit_exchange_rates')
                                                     <a href="{{ route('accounting.exchange-rates.edit', $rate->id) }}"
-                                                        class="btn btn-sm btn-warning ml-2" title="Edit">
+                                                        class="btn btn-xs btn-warning ml-2" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                 @endcan
@@ -216,7 +216,7 @@
                                                         method="POST" style="display: inline;" class="delete-form">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger ml-2"
+                                                        <button type="submit" class="btn btn-xs btn-danger ml-2"
                                                             title="Delete">
                                                             <i class="fas fa-trash"></i>
                                                         </button>

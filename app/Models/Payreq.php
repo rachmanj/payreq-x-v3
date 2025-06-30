@@ -12,6 +12,10 @@ class Payreq extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'submit_at' => 'datetime',
+    ];
+
     public function approval_plans()
     {
         return $this->hasMany(ApprovalPlan::class);

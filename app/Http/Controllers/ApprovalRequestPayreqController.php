@@ -44,8 +44,8 @@ class ApprovalRequestPayreqController extends Controller
             ->addColumn('nomor', function ($approval_request) {
                 return $approval_request->payreq->nomor;
             })
-            ->addColumn('created_at', function ($approval_request) {
-                return $approval_request->payreq->created_at->addHours(8)->format('d-M-Y H:i:s');
+            ->addColumn('submit_at', function ($approval_request) {
+                return $approval_request->payreq->submit_at->addHours(8)->format('d-M-Y H:i:s');
             })
             ->addColumn('type', function ($approval_request) {
                 return ucfirst($approval_request->payreq->type);
@@ -64,7 +64,7 @@ class ApprovalRequestPayreqController extends Controller
                 return $approval_request->payreq->requestor->name;
             })
             ->addColumn('days', function ($approval_request) {
-                return $approval_request->payreq->created_at->diffInDays(now());
+                return $approval_request->payreq->submit_at->diffInDays(now());
             })
             ->addIndexColumn()
             ->addColumn('action', 'approvals-request.payreqs.action')

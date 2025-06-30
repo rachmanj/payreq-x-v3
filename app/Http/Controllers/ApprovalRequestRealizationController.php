@@ -46,8 +46,7 @@ class ApprovalRequestRealizationController extends Controller
                 return $approval_request->realization->payreq->nomor;
             })
             ->addColumn('submit_at', function ($approval_request) {
-                $date = new \Carbon\Carbon($approval_request->realization->submit_at);
-                return $date->addHours(8)->format('d-M-Y H:i:s') . ' wita';
+                return $approval_request->realization->submit_at->addHours(8)->format('d-M-Y H:i:s') . ' wita';
             })
             ->addColumn('amount', function ($approval_request) {
                 return number_format($approval_request->realization->realizationDetails->sum('amount'), 2);
@@ -56,7 +55,7 @@ class ApprovalRequestRealizationController extends Controller
                 return $approval_request->realization->requestor->name;
             })
             ->addColumn('days', function ($approval_request) {
-                return $approval_request->realization->created_at->diffInDays(now());
+                return $approval_request->realization->submit_at->diffInDays(now());
             })
             ->addIndexColumn()
             ->addColumn('action', 'approvals-request.realizations.action')

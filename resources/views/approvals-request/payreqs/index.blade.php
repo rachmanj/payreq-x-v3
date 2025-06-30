@@ -380,7 +380,7 @@
                         data: 'requestor'
                     },
                     {
-                        data: 'created_at'
+                        data: 'submit_at'
                     },
                     {
                         data: 'type'

@@ -35,7 +35,8 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="currency_from">Currency From <span class="text-danger">*</span></label>
+                                    <input type="hidden" name="currency_to" id="currency_to" value="IDR">
+                                    <label for="currency_from">Foreign Currency <span class="text-danger">*</span></label>
                                     <select name="currency_from" id="currency_from"
                                         class="form-control @error('currency_from') is-invalid @enderror" required>
                                         <option value="">Select Currency From</option>
@@ -51,7 +52,7 @@
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            {{-- <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="currency_to">Currency To <span class="text-danger">*</span></label>
                                     <select name="currency_to" id="currency_to"
@@ -68,13 +69,14 @@
                                         <span class="invalid-feedback">{{ $message }}</span>
                                     @enderror
                                 </div>
-                            </div>
+                            </div> --}}
                         </div>
 
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label for="exchange_rate">Exchange Rate <span class="text-danger">*</span></label>
+                                    <label for="exchange_rate">Exchange Rate to IDR <span
+                                            class="text-danger">*</span></label>
                                     <input type="text" name="exchange_rate" id="exchange_rate"
                                         class="form-control @error('exchange_rate') is-invalid @enderror"
                                         value="{{ old('exchange_rate') }}"
@@ -231,19 +233,11 @@
                     isValid = false;
                 }
 
-                // Validate Currency To
-                if (!$('#currency_to').val()) {
-                    $('#currency_to').addClass('is-invalid');
-                    $('#currency_to').after('<div class="invalid-feedback">Currency To is required.</div>');
-                    isValid = false;
-                }
-
-                // Check if currencies are different
-                if ($('#currency_from').val() && $('#currency_to').val() &&
-                    $('#currency_from').val() === $('#currency_to').val()) {
-                    $('#currency_to').addClass('is-invalid');
-                    $('#currency_to').after(
-                        '<div class="invalid-feedback">Currency To must be different from Currency From.</div>'
+                // Check if currencies are different (currency_to is always IDR)
+                if ($('#currency_from').val() && $('#currency_from').val() === 'IDR') {
+                    $('#currency_from').addClass('is-invalid');
+                    $('#currency_from').after(
+                        '<div class="invalid-feedback">Currency From cannot be IDR as it is already the base currency.</div>'
                     );
                     isValid = false;
                 }
@@ -291,9 +285,9 @@
                     // Show confirmation dialog
                     const recordCount = calculateRecordCount();
                     const currencyFromCode = $('#currency_from').val();
-                    const currencyToCode = $('#currency_to').val();
+                    const currencyToCode = 'IDR';
                     const currencyFromName = $('#currency_from option:selected').text().split(' - ')[1];
-                    const currencyToName = $('#currency_to option:selected').text().split(' - ')[1];
+                    const currencyToName = 'Indonesian Rupiah';
                     const rate = $('#exchange_rate').val();
 
                     const dateFrom = new Date($('#date_from').val()).toLocaleDateString('en-GB');
@@ -316,13 +310,13 @@
             });
 
             // Currency change validation
-            $('#currency_from, #currency_to').change(function() {
-                if ($('#currency_from').val() && $('#currency_to').val() &&
-                    $('#currency_from').val() === $('#currency_to').val()) {
-
+            $('#currency_from').change(function() {
+                if ($(this).val() === 'IDR') {
                     $(this).addClass('is-invalid');
                     $(this).siblings('.invalid-feedback').remove();
-                    $(this).after('<div class="invalid-feedback">Currencies must be different.</div>');
+                    $(this).after(
+                        '<div class="invalid-feedback">Currency From cannot be IDR as it is already the base currency.</div>'
+                    );
                 } else {
                     $(this).removeClass('is-invalid');
                     $(this).siblings('.invalid-feedback').remove();

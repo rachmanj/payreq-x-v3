@@ -11,6 +11,10 @@ class Realization extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'submit_at' => 'datetime',
+    ];
+
     public function payreq()
     {
         return $this->belongsTo(Payreq::class)->withDefault([
