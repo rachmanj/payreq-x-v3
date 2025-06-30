@@ -23,6 +23,9 @@
             <li><a href="{{ route('document-number.index') }}" class="dropdown-item">Document Numbering</a></li>
             <li><a href="{{ route('parameters.index') }}" class="dropdown-item">Advance Parameters</a></li>
         @endcan
+        @can('akses_admin')
+            <li><a href="{{ route('admin.printable-documents.index') }}" class="dropdown-item">Printable Documents</a></li>
+        @endcan
         <li><a href="{{ route('announcements.index') }}" class="dropdown-item">Announcements</a></li>
     </ul>
 </li>
