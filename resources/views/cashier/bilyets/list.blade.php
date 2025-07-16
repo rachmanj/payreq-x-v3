@@ -29,7 +29,7 @@
                 <div class="card-body">
                     <form id="filter-form">
                         <div class="row">
-                            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+                            <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6">
                                 <div class="form-group">
                                     <label for="status-filter">Status</label>
                                     <select class="form-control form-control-sm" id="status-filter">
@@ -41,14 +41,27 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-xl-3 col-lg-4 col-md-4 col-sm-6">
+                            <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
+                                <div class="form-group">
+                                    <label for="giro-filter">Bank Account</label>
+                                    <select class="form-control form-control-sm" id="giro-filter">
+                                        <option value="">Semua Giro</option>
+                                        @foreach ($giros as $giro)
+                                            <option value="{{ $giro->id }}">
+                                                {{ $giro->bank->name ?? 'N/A' }} - {{ $giro->acc_no }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-xl-2 col-lg-3 col-md-3 col-sm-6">
                                 <div class="form-group">
                                     <label for="nomor-filter">Nomor Bilyet</label>
                                     <input type="text" class="form-control form-control-sm" id="nomor-filter"
                                         placeholder="Cari nomor bilyet...">
                                 </div>
                             </div>
-                            <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                            <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6">
                                 <div class="form-group">
                                     <label for="date-from">Tanggal Dari</label>
                                     <input type="date" class="form-control form-control-sm" id="date-from">
@@ -60,7 +73,7 @@
                                     <input type="date" class="form-control form-control-sm" id="date-to">
                                 </div>
                             </div>
-                            <div class="col-xl-3 col-lg-12 col-md-8 col-sm-12">
+                            <div class="col-xl-1 col-lg-12 col-md-8 col-sm-12">
                                 <div class="form-group text-right">
                                     <label class="d-none d-sm-block">&nbsp;</label>
                                     <div class="btn-group-vertical btn-group-sm d-block d-sm-none mb-2">
@@ -83,6 +96,63 @@
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Auto-Sum Summary Panel -->
+            <div class="card card-info mt-3" id="sum-panel" style="display: none;">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calculator"></i> Selected Summary
+                            </h5>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light" id="clear-selection" title="Clear Selection">
+                                    <i class="fas fa-times"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body py-3">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="text-center">
+                                <small class="text-muted d-block">Selected Items</small>
+                                <div class="h4 mb-0 text-primary" id="selected-count">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="text-center">
+                                <small class="text-muted d-block">Total Amount</small>
+                                <div class="h4 mb-0 text-success" id="selected-sum">Rp 0,-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="text-center">
+                                <small class="text-muted d-block">Average</small>
+                                <div class="h4 mb-0 text-info" id="selected-average">Rp 0,-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="text-center">
+                                <small class="text-muted d-block">Status Mix</small>
+                                <div class="h6 mb-0" id="status-mix">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keyboard Shortcuts Info -->
+                <div class="card-footer py-2">
+                    <div class="text-muted small text-center">
+                        <i class="fas fa-keyboard"></i>
+                        <strong>Shortcuts:</strong>
+                        Ctrl+A (Select All) • Esc (Clear Selection)
+                    </div>
                 </div>
             </div>
 
@@ -135,64 +205,6 @@
                     </div>
                 </div> <!-- /.card-body -->
             </div> <!-- /.card -->
-
-            <!-- Auto-Sum Summary Panel -->
-            <div class="card card-info mt-3" id="sum-panel" style="display: none;">
-                <div class="card-header">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h5 class="mb-0">
-                                <i class="fas fa-calculator"></i> Selected Summary
-                            </h5>
-                        </div>
-                        <div class="col-md-4 text-right">
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-light" id="clear-selection"
-                                    title="Clear Selection">
-                                    <i class="fas fa-times"></i> Clear
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body py-3">
-                    <div class="row">
-                        <div class="col-md-3 col-sm-6">
-                            <div class="text-center">
-                                <small class="text-muted d-block">Selected Items</small>
-                                <div class="h4 mb-0 text-primary" id="selected-count">0</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="text-center">
-                                <small class="text-muted d-block">Total Amount</small>
-                                <div class="h4 mb-0 text-success" id="selected-sum">Rp 0,-</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="text-center">
-                                <small class="text-muted d-block">Average</small>
-                                <div class="h4 mb-0 text-info" id="selected-average">Rp 0,-</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="text-center">
-                                <small class="text-muted d-block">Status Mix</small>
-                                <div class="h6 mb-0" id="status-mix">-</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Keyboard Shortcuts Info -->
-                <div class="card-footer py-2">
-                    <div class="text-muted small text-center">
-                        <i class="fas fa-keyboard"></i>
-                        <strong>Shortcuts:</strong>
-                        Ctrl+A (Select All) • Esc (Clear Selection)
-                    </div>
-                </div>
-            </div>
         </div> <!-- /.col -->
     </div> <!-- /.row -->
 
@@ -603,6 +615,7 @@
                     url: "{{ route('cashier.bilyets.data') }}",
                     data: function(d) {
                         d.status = $('#status-filter').val();
+                        d.giro_id = $('#giro-filter').val();
                         d.nomor = $('#nomor-filter').val();
                         d.date_from = $('#date-from').val();
                         d.date_to = $('#date-to').val();
@@ -740,7 +753,8 @@
                 $btn.prop('disabled', true);
 
                 // Check if any filter is applied
-                const hasFilter = $('#status-filter').val() || $('#nomor-filter').val() ||
+                const hasFilter = $('#status-filter').val() || $('#giro-filter').val() || $('#nomor-filter')
+                    .val() ||
                     $('#date-from').val() || $('#date-to').val();
 
                 if (!hasFilter) {
@@ -781,6 +795,7 @@
 
                 // Clear all filter inputs
                 $('#status-filter').val('');
+                $('#giro-filter').val('');
                 $('#nomor-filter').val('');
                 $('#date-from').val('');
                 $('#date-to').val('');
@@ -806,6 +821,7 @@
 
                     // Clear all filter inputs
                     $('#status-filter').val('');
+                    $('#giro-filter').val('');
                     $('#nomor-filter').val('');
                     $('#date-from').val('');
                     $('#date-to').val('');

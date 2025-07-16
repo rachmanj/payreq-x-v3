@@ -21,9 +21,9 @@ class BilyetController extends Controller
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (array_intersect(['admin', 'superadmin'], $userRoles)) {
-            $giros = Giro::all();
+            $giros = Giro::with('bank')->orderBy('acc_no')->get();
         } else {
-            $giros = Giro::where('project', auth()->user()->project)->get();
+            $giros = Giro::with('bank')->where('project', auth()->user()->project)->orderBy('acc_no')->get();
         }
 
         $views = [
@@ -239,6 +239,7 @@ class BilyetController extends Controller
         // Debug logging
         \Illuminate\Support\Facades\Log::info('Bilyet data request', [
             'status' => $request->query('status'),
+            'giro_id' => $request->query('giro_id'),
             'nomor' => $request->query('nomor'),
             'date_from' => $request->query('date_from'),
             'date_to' => $request->query('date_to'),
@@ -266,6 +267,7 @@ class BilyetController extends Controller
 
         // Apply filters
         $this->applyStatusFilter($query, $request->query('status'));
+        $this->applyGiroFilter($query, $request->query('giro_id'));
         $this->applyNomorFilter($query, $request->query('nomor'));
         $this->applyDateFilter($query, $request->query('date_from'), $request->query('date_to'));
 
@@ -275,7 +277,7 @@ class BilyetController extends Controller
         }
 
         // Get data
-        $bilyets = $query->orderBy('created_at', 'desc')->get();
+        $bilyets = $query->orderBy('bilyet_date', 'asc')->get();
 
         \Illuminate\Support\Facades\Log::info('Bilyet data result count: ' . $bilyets->count());
 
@@ -352,6 +354,13 @@ class BilyetController extends Controller
         }
     }
 
+    private function applyGiroFilter($query, $giroId)
+    {
+        if ($giroId && $giroId !== '') {
+            $query->where('giro_id', $giroId);
+        }
+    }
+
     private function applyNomorFilter($query, $nomor)
     {
         if ($nomor) {
@@ -376,10 +385,11 @@ class BilyetController extends Controller
     private function hasAnyFilter($request)
     {
         $status = $request->query('status');
+        $giroId = $request->query('giro_id');
         $nomor = $request->query('nomor');
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
 
-        return !empty($status) || !empty($nomor) || !empty($dateFrom) || !empty($dateTo);
+        return !empty($status) || !empty($giroId) || !empty($nomor) || !empty($dateFrom) || !empty($dateTo);
     }
 }
