@@ -98,9 +98,9 @@ class UserRealizationController extends Controller
             $realization = Realization::findOrFail($request->realization_id);
 
             // update payreq status to 'realization'
-            $realization->payreq->update([
-                'status' => 'realization',
-            ]);
+            // $realization->payreq->update([
+            //     'status' => 'realization',
+            // ]);
 
             // If payreq has LOT number, try to claim it
             if ($realization->payreq->lot_no) {
