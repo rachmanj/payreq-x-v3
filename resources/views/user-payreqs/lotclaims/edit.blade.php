@@ -116,16 +116,7 @@
                         <input type="hidden" name="total_claim" id="total_claim_input">
                         <input type="hidden" name="difference" id="difference_input">
 
-                        <!-- Payment Request Alert -->
-                        @if ($lot && $lot->payment_request && $lot->payment_request->status === 'No payment request found for this LOT number')
-                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                                <strong><i class="fas fa-exclamation-triangle"></i> Warning!</strong>
-                                No payment request found for this LOT number. Please create payment request first.
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                        @endif
+                        <!-- Payment Request Alert (handled dynamically if needed) -->
 
                         <div class="row">
                             <div class="col-md-4">
@@ -636,25 +627,20 @@
                                 <div class="card card-outline card-success mb-3">
                                     <div class="card-header py-2">
                                         <h6 class="card-title mb-0">
-                                            <i class="fas fa-check-circle mr-1"></i>Approval Status
+                                            <i class="fas fa-check-circle mr-1"></i>Approval Plans
                                         </h6>
                                     </div>
                                     <div class="card-body py-2">
-                                        <div class="row">
-                                            <div class="col-6">
-                                                <small class="text-muted d-block">Recommendation</small>
-                                                <span id="modal_recommender_name" class="d-block"></span>
-                                                <small class="text-muted d-block"
-                                                    id="modal_recommendation_remark"></small>
-                                                <small class="text-muted d-block mb-2"
-                                                    id="modal_recommendation_date"></small>
-                                            </div>
-                                            <div class="col-6">
-                                                <small class="text-muted d-block">Approval</small>
-                                                <span id="modal_approver_name" class="d-block"></span>
-                                                <small class="text-muted d-block" id="modal_approval_remark"></small>
-                                                <small class="text-muted d-block mb-2" id="modal_approval_date"></small>
-                                            </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered mb-0">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th>Approver</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="modal_approval_plans"></tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -1143,17 +1129,19 @@
             $(document).on('click', '.view-lot-detail', function() {
                 const lot = $(this).data('lot');
 
-                // Set status badge
-                const status = lot.official_travel_status || 'N/A';
+                // Set status badge (use lot.status)
+                const status = lot.status || 'N/A';
                 let badgeClass = 'badge-secondary';
-                if (status === 'open') badgeClass = 'badge-success';
-                if (status === 'closed') badgeClass = 'badge-danger';
-                if (status === 'pending') badgeClass = 'badge-warning';
+                const normalizedStatus = String(status).toLowerCase();
+                if (['approved', 'open', 'active'].includes(normalizedStatus)) badgeClass = 'badge-success';
+                if (['rejected', 'declined', 'closed'].includes(normalizedStatus)) badgeClass =
+                    'badge-danger';
+                if (['pending', 'in review'].includes(normalizedStatus)) badgeClass = 'badge-warning';
 
                 $('#modal_status_badge')
                     .removeClass('badge-secondary badge-success badge-danger badge-warning')
                     .addClass(badgeClass)
-                    .text(status.toUpperCase());
+                    .text(String(status).toUpperCase());
 
                 // Travel Information
                 $('#modal_travel_number').text(lot.official_travel_number || 'N/A');
@@ -1174,13 +1162,20 @@
                 $('#modal_traveler_nik').text(lot.traveler?.nik || 'N/A');
                 $('#modal_traveler_class').text(lot.traveler?.class || 'N/A');
 
-                // Approval Information
-                $('#modal_recommender_name').text(lot.recommender?.name || 'N/A');
-                $('#modal_recommendation_remark').text(lot.recommendation_remark || '');
-                $('#modal_recommendation_date').text(lot.recommendation_date || '');
-                $('#modal_approver_name').text(lot.approver?.name || 'N/A');
-                $('#modal_approval_remark').text(lot.approval_remark || '');
-                $('#modal_approval_date').text(lot.approval_date || '');
+                // Approval Plans (Approver, Status)
+                const plans = Array.isArray(lot.approval_plans) ? lot.approval_plans : [];
+                const plansHtml = plans.length ? plans.map(plan => {
+                    const approverName = plan?.approver?.name || '-';
+                    const statusText = (plan?.status === 1 ? 'APPROVED' : plan?.status === 0 ?
+                        'PENDING' : plan?.status === -1 ? 'REJECTED' : (plan?.status ?? 'N/A'));
+                    return `
+                        <tr>
+                            <td>${approverName}</td>
+                            <td>${statusText}</td>
+                        </tr>
+                    `;
+                }).join('') : '<tr><td colspan="2" class="text-center">No approval plans</td></tr>';
+                $('#modal_approval_plans').html(plansHtml);
 
                 // Transportation & Accommodation
                 $('#modal_transportation').text(lot.transportation?.transportation_name || 'N/A');
