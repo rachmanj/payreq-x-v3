@@ -10,6 +10,7 @@ class LotService
     protected $baseUrl;
     protected $searchEndpoint;
     protected $claimedSearchEndpoint;
+    protected $claimableSearchEndpoint;
     protected $claimEndpoint;
     protected $detailEndpoint;
     protected $timeout;
@@ -24,6 +25,7 @@ class LotService
         $this->baseUrl = rtrim(config('services.lot.base_url'), '/');
         $this->searchEndpoint = ltrim(config('services.lot.search_endpoint'), '/');
         $this->claimedSearchEndpoint = ltrim(config('services.lot.claimed_search_endpoint', 'api/official-travels/search-claimed'), '/');
+        $this->claimableSearchEndpoint = ltrim(config('services.lot.claimable_search_endpoint', 'api/official-travels/search-claimable'), '/');
         $this->claimEndpoint = ltrim(config('services.lot.claim_endpoint', 'api/official-travels/claim'), '/');
         $this->detailEndpoint = ltrim(config('services.lot.detail_endpoint', 'api/official-travels/detail'), '/');
         $this->timeout = config('services.lot.timeout', 30);
@@ -42,6 +44,42 @@ class LotService
     {
         $endpoint = $isClaimed ? $this->claimedSearchEndpoint : $this->searchEndpoint;
         return $this->baseUrl . '/' . $endpoint;
+    }
+
+    public function searchClaimable(array $params)
+    {
+        try {
+            if ($this->areAllParamsEmpty($params)) {
+                return [
+                    'success' => false,
+                    'message' => 'Please enter at least one search parameter'
+                ];
+            }
+
+            $searchParams = $this->prepareSearchParams($params);
+
+            $response = $this->makeRequestToEndpoint($searchParams, $this->claimableSearchEndpoint);
+
+            return $this->handleResponse($response);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    protected function makeRequestToEndpoint(array $params, string $endpoint)
+    {
+        $fullUrl = $this->baseUrl . '/' . ltrim($endpoint, '/');
+
+        Log::info('LOT Search Request (custom endpoint)', [
+            'url' => $fullUrl,
+            'params' => $params,
+        ]);
+
+        return Http::withHeaders([
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+        ])->timeout($this->timeout)
+            ->post($fullUrl, $params);
     }
 
     public function search(array $params, bool $isClaimed = false)

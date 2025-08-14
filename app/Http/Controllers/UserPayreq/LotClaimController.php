@@ -369,7 +369,8 @@ class LotClaimController extends Controller
             'project' => $request->project
         ];
 
-        $result = $this->lotService->search($searchParams, true);
+        // Prefer search-claimable endpoint for creating LOT Claim
+        $result = $this->lotService->searchClaimable($searchParams);
 
         // If LOT data is found and has travel_number, check for related payreq
         if ($result['success'] && !empty($result['data'])) {
