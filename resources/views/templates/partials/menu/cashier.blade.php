@@ -18,6 +18,9 @@
         @can('akses_verification_journal')
             <li><a href="{{ route('verifications.journal.index') }}" class="dropdown-item">Verification Journal</a></li>
         @endcan
+        @can('akses_invoice_payment')
+            <li><a href="{{ route('cashier.invoice-payment.index') }}" class="dropdown-item">Invoice Payment</a></li>
+        @endcan
         <li class="dropdown-divider">EOD</li>
         @can('akses_bilyet')
             <li><a href="{{ route('cashier.bilyets.index', ['page' => 'dashboard']) }}" class="dropdown-item">Administrasi

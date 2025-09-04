@@ -1,0 +1,10 @@
+### wait payment invoices
+GET http://192.168.32.13/dds/api/v1/departments/000HCASHO/wait-payment-invoices
+X-API-Key: mantapjiwa
+Accept: application/json
+
+### Get Invoices by Department (Requires API Key)
+# GET http://localhost:8000/api/v1/departments/000HCASHO/invoices
+GET http://192.168.32.13/dds/api/v1/departments/000HCASHO/invoices
+X-API-Key: mantapjiwa
+Accept: application/json

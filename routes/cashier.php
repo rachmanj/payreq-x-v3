@@ -19,6 +19,7 @@ use App\Http\Controllers\Migrasi\MigrasiPayreqController;
 use App\Http\Controllers\Cashier\SapTransactionController;
 use App\Http\Controllers\Cashier\CashOnHandTransactionController;
 use App\Http\Controllers\Cashier\BankTransactionController;
+use App\Http\Controllers\InvoicePaymentController;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
@@ -174,5 +175,14 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::put('/{id}', [BankTransactionController::class, 'update'])->name('update');
         Route::delete('/{id}', [BankTransactionController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/submit', [BankTransactionController::class, 'submit'])->name('submit');
+    });
+
+    // INVOICE PAYMENT
+    Route::prefix('invoice-payment')->name('invoice-payment.')->group(function () {
+        Route::get('/', [InvoicePaymentController::class, 'index'])->name('index');
+        Route::get('/dashboard', [InvoicePaymentController::class, 'dashboard'])->name('dashboard');
+        Route::get('/waiting-payment', [InvoicePaymentController::class, 'waitingPayment'])->name('waiting');
+        Route::get('/paid-invoices', [InvoicePaymentController::class, 'paidInvoices'])->name('paid');
+        Route::put('/invoices/{invoiceId}/payment', [InvoicePaymentController::class, 'updatePayment'])->name('update-payment');
     });
 });
