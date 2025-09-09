@@ -17,7 +17,14 @@ class InvoicePaymentController extends Controller
     {
         $this->apiUrl = env('DDS_API_URL');
         $this->apiKey = env('DDS_API_KEY');
-        $this->departmentCode = env('DDS_DEPARTMENT_CODE');
+
+        // First try to get department code from authenticated user
+        if (auth()->check() && auth()->user()->dds_department_code) {
+            $this->departmentCode = auth()->user()->dds_department_code;
+        } else {
+            // Fall back to environment variable
+            $this->departmentCode = env('DDS_DEPARTMENT_CODE');
+        }
     }
 
     public function index()
@@ -33,6 +40,7 @@ class InvoicePaymentController extends Controller
                 'api_url' => $this->apiUrl,
                 'api_key' => $this->apiKey ? '***' . substr($this->apiKey, -4) : 'NOT_SET',
                 'department_code' => $this->departmentCode,
+                'department_code_source' => auth()->check() && auth()->user()->dds_department_code ? 'user' : 'env',
                 'full_url' => "{$this->apiUrl}/api/v1/departments/{$this->departmentCode}/invoices",
                 'headers' => [
                     'X-API-Key' => $this->apiKey ? '***' . substr($this->apiKey, -4) : 'NOT_SET',
@@ -43,10 +51,10 @@ class InvoicePaymentController extends Controller
             Log::info('Invoice Payment Dashboard Debug Info:', $debugInfo);
 
             if (!$this->apiUrl || !$this->apiKey || !$this->departmentCode) {
-                $error = 'Missing environment variables: ' .
+                $error = 'Missing configuration: ' .
                     (!$this->apiUrl ? 'DDS_API_URL ' : '') .
                     (!$this->apiKey ? 'DDS_API_KEY ' : '') .
-                    (!$this->departmentCode ? 'DDS_DEPARTMENT_CODE' : '');
+                    (!$this->departmentCode ? 'Department Code' : '');
                 Log::error('Invoice Payment Environment Error: ' . $error);
                 return response()->json([
                     'error' => 'Configuration error',
@@ -103,6 +111,7 @@ class InvoicePaymentController extends Controller
                 'api_url' => $this->apiUrl,
                 'api_key' => $this->apiKey ? '***' . substr($this->apiKey, -4) : 'NOT_SET',
                 'department_code' => $this->departmentCode,
+                'department_code_source' => auth()->check() && auth()->user()->dds_department_code ? 'user' : 'env',
                 'full_url' => "{$this->apiUrl}/api/v1/departments/{$this->departmentCode}/wait-payment-invoices",
                 'query_params' => $request->all(),
                 'headers' => [
@@ -114,10 +123,10 @@ class InvoicePaymentController extends Controller
             Log::info('Invoice Payment Waiting Payment Debug Info:', $debugInfo);
 
             if (!$this->apiUrl || !$this->apiKey || !$this->departmentCode) {
-                $error = 'Missing environment variables: ' .
+                $error = 'Missing configuration: ' .
                     (!$this->apiUrl ? 'DDS_API_URL ' : '') .
                     (!$this->apiKey ? 'DDS_API_KEY ' : '') .
-                    (!$this->departmentCode ? 'DDS_DEPARTMENT_CODE' : '');
+                    (!$this->departmentCode ? 'Department Code' : '');
                 Log::error('Invoice Payment Environment Error: ' . $error);
                 return response()->json([
                     'error' => 'Configuration error',
@@ -201,6 +210,7 @@ class InvoicePaymentController extends Controller
                 'api_url' => $this->apiUrl,
                 'api_key' => $this->apiKey ? '***' . substr($this->apiKey, -4) : 'NOT_SET',
                 'department_code' => $this->departmentCode,
+                'department_code_source' => auth()->check() && auth()->user()->dds_department_code ? 'user' : 'env',
                 'full_url' => "{$this->apiUrl}/api/v1/departments/{$this->departmentCode}/invoices",
                 'query_params' => $request->all(),
                 'headers' => [
@@ -212,10 +222,10 @@ class InvoicePaymentController extends Controller
             Log::info('Invoice Payment Paid Invoices Debug Info:', $debugInfo);
 
             if (!$this->apiUrl || !$this->apiKey || !$this->departmentCode) {
-                $error = 'Missing environment variables: ' .
+                $error = 'Missing configuration: ' .
                     (!$this->apiUrl ? 'DDS_API_URL ' : '') .
                     (!$this->apiKey ? 'DDS_API_KEY ' : '') .
-                    (!$this->departmentCode ? 'DDS_DEPARTMENT_CODE' : '');
+                    (!$this->departmentCode ? 'Department Code' : '');
                 Log::error('Invoice Payment Environment Error: ' . $error);
                 return response()->json([
                     'error' => 'Configuration error',

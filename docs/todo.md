@@ -46,6 +46,17 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   [x] **Per-User DDS Department Code** - Completed on 2025-09-09
+
+    -   ✅ Added `dds_department_code` field to users table (migration)
+    -   ✅ Updated User model with fillable attribute
+    -   ✅ Modified InvoicePaymentController to use authenticated user's department code
+    -   ✅ Added fallback to environment variable for backward compatibility
+    -   ✅ Added field to user create/edit forms with validation
+    -   ✅ Enhanced logging to show department code source (user vs env)
+    -   ✅ Added warning alert when department code is missing
+    -   ✅ Updated documentation (decisions.md, architecture.md)
+
 -   [x] **Invoice Payment Feature** - Completed on 2025-09-04
     -   ✅ DDS API Integration for invoice management
     -   ✅ Three-tab interface: Dashboard, Waiting Payment, Paid Invoices

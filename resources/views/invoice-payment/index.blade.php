@@ -11,6 +11,15 @@
 @section('content')
     <section class="content">
         <div class="container-fluid">
+            <!-- Department Code Check Alert -->
+            @if (auth()->check() && empty(auth()->user()->dds_department_code) && empty(env('DDS_DEPARTMENT_CODE')))
+                <div class="alert alert-warning alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                    <h5><i class="icon fas fa-exclamation-triangle"></i> Missing DDS Department Code!</h5>
+                    Please set your DDS department code in your user profile or contact an administrator.
+                </div>
+            @endif
+
             <div class="card">
                 <div class="card-header">
                     <ul class="nav nav-tabs card-header-tabs" id="invoicePaymentTabs" role="tablist">

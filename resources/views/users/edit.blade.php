@@ -87,6 +87,14 @@
                             </select>
                         </div>
 
+                        <div class="form-group">
+                            <label for='dds_department_code'>DDS Department Code</label>
+                            <input type="text" name="dds_department_code" class="form-control"
+                                value="{{ old('dds_department_code', $user->dds_department_code) }}"
+                                placeholder="e.g., 000HCASHO">
+                            <small class="form-text text-muted">Department code used for DDS API integration</small>
+                        </div>
+
                         <div class="row">
                             <div class="col-12">
                                 <div class="form-group">

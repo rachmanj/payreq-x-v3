@@ -95,6 +95,59 @@
 
 ## Key Decisions & Learnings
 
+### Per-User DDS Department Code Implementation (2025-09-09)
+
+**Context**: Enhanced the Invoice Payment feature to use user-specific department codes instead of a single environment variable.
+
+**Key Challenges & Solutions**:
+
+1. **User-level Configuration**
+
+    - **Problem**: Different users needed to work with different department codes
+    - **Solution**: Added `dds_department_code` field to users table with migration
+    - **Learning**: User-specific configuration provides greater flexibility than environment variables
+
+2. **Backward Compatibility**
+
+    - **Problem**: Existing system relied on environment variable
+    - **Solution**: Implemented fallback mechanism to use environment variable when user code is not set
+    - **Learning**: Gradual migration strategies allow for smooth transitions without breaking changes
+
+3. **User Experience**
+
+    - **Problem**: Users might not have department codes configured
+    - **Solution**: Added warning alert in UI when department code is missing
+    - **Learning**: Proactive UI warnings prevent confusion and guide users to complete configuration
+
+4. **Enhanced Logging**
+    - **Problem**: Difficult to determine source of department code in logs
+    - **Solution**: Added source tracking in debug logs (user vs. env)
+    - **Learning**: Detailed logging with context information simplifies troubleshooting
+
+**Technical Implementation**:
+
+-   **Database**: Added nullable, indexed string field to users table
+-   **Model**: Updated User model fillable attributes
+-   **Controller**: Modified InvoicePaymentController to resolve department code from user first
+-   **Forms**: Added field to user create/edit forms with validation
+-   **UI**: Added warning alert when department code is missing
+-   **Documentation**: Updated decisions.md and architecture.md
+
+**Files Created/Modified**:
+
+-   `database/migrations/2025_09_09_063420_add_dds_department_code_to_users_table.php`
+-   `app/Models/User.php`
+-   `app/Http/Controllers/InvoicePaymentController.php`
+-   `app/Http/Controllers/UserController.php`
+-   `resources/views/users/index.blade.php`
+-   `resources/views/users/edit.blade.php`
+-   `resources/views/invoice-payment/index.blade.php`
+-   `docs/decisions.md`
+-   `docs/architecture.md`
+-   `docs/todo.md`
+
+**Outcome**: Successfully implemented user-specific department codes with backward compatibility, enhanced logging, and improved user experience.
+
 ### Invoice Payment Feature Implementation (2025-09-04)
 
 **Context**: Implemented a new "Invoice Payment" feature to communicate with DDS application through API endpoints for invoice management.

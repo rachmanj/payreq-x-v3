@@ -59,6 +59,7 @@ The Accounting One system is a comprehensive financial management application bu
     - User authentication and authorization
     - Role-based access control (RBAC)
     - Department-based user organization
+    - User-specific API configurations
 
 2. **Financial Management**
 
@@ -73,12 +74,13 @@ The Accounting One system is a comprehensive financial management application bu
     - Printable documents
     - Document approval workflows
 
-4. **Invoice Payment** ⭐ **NEW**
+4. **Invoice Payment**
 
-    - DDS API integration
+    - DDS API integration with per-user department codes
     - Invoice status management
     - Payment processing
     - Real-time dashboard
+    - User-specific department code configuration
 
 5. **Reporting & Analytics**
     - Financial reports
@@ -163,27 +165,36 @@ sequenceDiagram
     participant User
     participant UI as Frontend UI
     participant Controller as InvoicePaymentController
+    participant Auth as Auth System
     participant DDS as DDS API
     participant DB as Database
 
     User->>UI: Access Invoice Payment
     UI->>Controller: GET /invoice-payment
-    Controller->>UI: Return view
+    Controller->>Auth: Get authenticated user
+    Auth->>Controller: Return user with dds_department_code
+    Controller->>UI: Return view with warning if no code
 
     User->>UI: View Dashboard
     UI->>Controller: GET /dashboard
+    Controller->>Auth: Get user's department code
+    Auth->>Controller: Return department code (or fallback)
     Controller->>DDS: GET /departments/{code}/invoices
     DDS->>Controller: Return invoice data
     Controller->>UI: Return dashboard data
 
     User->>UI: View Waiting Payment
     UI->>Controller: GET /waiting-payment
+    Controller->>Auth: Get user's department code
+    Auth->>Controller: Return department code (or fallback)
     Controller->>DDS: GET /departments/{code}/wait-payment-invoices
     DDS->>Controller: Return waiting invoices
     Controller->>UI: Return table data
 
     User->>UI: Mark Invoice as Paid
     UI->>Controller: PUT /invoices/{id}/payment
+    Controller->>Auth: Get user's department code
+    Auth->>Controller: Return department code (or fallback)
     Controller->>DDS: PUT /invoices/{id}/payment
     DDS->>Controller: Return success
     Controller->>UI: Return success
@@ -264,7 +275,7 @@ DB_PASSWORD=
 # External APIs
 DDS_API_URL=http://192.168.32.13/dds
 DDS_API_KEY=your_api_key
-DDS_DEPARTMENT_CODE=000HCASHO
+DDS_DEPARTMENT_CODE=000HCASHO  # Fallback department code, users can have individual codes
 
 # Cache
 CACHE_DRIVER=file

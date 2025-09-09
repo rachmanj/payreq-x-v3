@@ -56,18 +56,18 @@ class UserController extends Controller
     public function roles_user_update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        
+
         if ($request->password) {
             $this->validateUserUpdateWithPassword($request, $user);
             $user->password = Hash::make($request->password);
         } else {
             $this->validateUserUpdate($request, $user);
         }
-        
+
         $this->updateUserBasicInfo($user, $request);
         $user->save();
         $user->syncRoles($request->role);
-        
+
         return redirect()->route('users.index')->with('success', 'User updated successfully');
     }
 
@@ -144,26 +144,28 @@ class UserController extends Controller
             ->rawColumns(['action', 'is_active'])
             ->toJson();
     }
-    
+
     private function validateUserCreation(Request $request)
     {
         $this->validate($request, [
             'name'          => 'required|min:3|max:255',
             'username'      => 'required|min:3|max:20|unique:users',
             'password'      => 'min:6',
-            'password_confirmation' => 'required_with:password|same:password|min:6'
+            'password_confirmation' => 'required_with:password|same:password|min:6',
+            'dds_department_code' => 'nullable|string|max:20'
         ]);
     }
-    
+
     private function validateUserUpdate(Request $request, User $user)
     {
         $this->validate($request, [
             'name'          => 'required|min:3|max:255',
             'username'      => 'required|min:3|max:50|unique:users,username,' . $user->id . ',id',
             'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
+            'dds_department_code' => 'nullable|string|max:20',
         ]);
     }
-    
+
     private function validateUserUpdateWithPassword(Request $request, User $user)
     {
         $this->validate($request, [
@@ -171,10 +173,11 @@ class UserController extends Controller
             'username'      => 'required|min:3|max:50|unique:users,username,' . $user->id . ',id',
             'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
             'password'      => 'min:6',
-            'password_confirmation' => 'required_with:password|same:password|min:6'
+            'password_confirmation' => 'required_with:password|same:password|min:6',
+            'dds_department_code' => 'nullable|string|max:20'
         ]);
     }
-    
+
     private function validatePasswordUpdate(Request $request)
     {
         $this->validate($request, [
@@ -182,7 +185,7 @@ class UserController extends Controller
             'password_confirmation' => 'required_with:password|same:password|min:5'
         ]);
     }
-    
+
     private function updateUserBasicInfo(User $user, Request $request)
     {
         $user->name = $request->name;
@@ -195,6 +198,9 @@ class UserController extends Controller
         }
         if ($request->has('department_id')) {
             $user->department_id = $request->department_id;
+        }
+        if ($request->has('dds_department_code')) {
+            $user->dds_department_code = $request->dds_department_code;
         }
     }
 }

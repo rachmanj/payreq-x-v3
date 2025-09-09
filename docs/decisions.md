@@ -192,6 +192,73 @@ Decision: [Title] - [YYYY-MM-DD]
 
 # Architecture Decision Records
 
+## ADR-005: Per-User DDS Department Code Implementation (2025-09-09)
+
+### Status
+
+Accepted
+
+### Context
+
+Initially, the Invoice Payment feature used a single department code from the `.env` file (`DDS_DEPARTMENT_CODE`) for all users. This approach limited flexibility as different users might need to work with different department codes when communicating with the DDS API.
+
+### Decision
+
+We implemented a user-specific DDS department code with the following architecture:
+
+1. **User-level Configuration**: Added `dds_department_code` field to the `users` table
+2. **Fallback Mechanism**: Maintained `.env` variable as fallback for backward compatibility
+3. **Flexible Resolution**: Controller resolves department code from user first, then falls back to environment
+4. **Enhanced Logging**: Added source tracking in logs (user vs. env)
+5. **UI Integration**: Added field to user create/edit forms with validation
+
+### Consequences
+
+#### Positive
+
+-   **Enhanced Flexibility**: Different users can work with different departments
+-   **Backward Compatibility**: System continues to work with existing configuration
+-   **Improved Debugging**: Logs now show source of department code
+-   **Better User Experience**: Warning alerts when department code is missing
+-   **Seamless Integration**: No changes needed to DDS API communication logic
+
+#### Negative
+
+-   **Additional Configuration**: Requires setting up department codes per user
+-   **Data Migration**: Existing users need department codes assigned
+-   **UI Complexity**: Additional field in user management forms
+-   **Potential Confusion**: Two possible sources for department code
+
+#### Risks
+
+-   **Missing Configuration**: Users might not have department codes set
+-   **Incorrect Codes**: Users might enter invalid department codes
+-   **Permission Issues**: Users might need specific permissions for certain departments
+
+### Implementation Details
+
+#### Files Created/Modified
+
+-   `database/migrations/2025_09_09_063420_add_dds_department_code_to_users_table.php` - Added field to users table
+-   `app/Models/User.php` - Updated fillable attributes
+-   `app/Http/Controllers/InvoicePaymentController.php` - Updated department code resolution
+-   `app/Http/Controllers/UserController.php` - Added validation and handling for new field
+-   `resources/views/users/index.blade.php` - Added field to create form
+-   `resources/views/users/edit.blade.php` - Added field to edit form
+-   `resources/views/invoice-payment/index.blade.php` - Added warning alert for missing department code
+
+#### Key Features Implemented
+
+-   User-specific department code storage
+-   Environment variable fallback mechanism
+-   Form field validation (nullable, string, max:20)
+-   Warning alerts for missing configuration
+-   Enhanced logging with source tracking
+
+### Review Date
+
+2025-12-09 (3 months from implementation)
+
 ## ADR-004: Invoice Payment Feature Implementation (2025-09-04)
 
 ### Status
