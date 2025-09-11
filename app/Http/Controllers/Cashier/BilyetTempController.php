@@ -7,8 +7,10 @@ use App\Imports\BilyetTempImport;
 use App\Models\BilyetTemp;
 use App\Models\Bilyet;
 use App\Models\Loan;
+use App\Services\BilyetValidationService;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Log;
 
 class BilyetTempController extends Controller
 {
@@ -37,23 +39,48 @@ class BilyetTempController extends Controller
             'file_upload' => 'required|mimes:xls,xlsx',
         ]);
 
-        // get the file
-        $file = $request->file('file_upload');
+        try {
+            // get the file
+            $file = $request->file('file_upload');
 
-        // rename the file name to prevent duplication
-        $filename = 'bilyet_' . rand() . '_' . $file->getClientOriginalName();
+            // rename the file name to prevent duplication
+            $filename = 'bilyet_' . rand() . '_' . $file->getClientOriginalName();
 
-        // move the file to the folder
-        $file->move(public_path('file_upload'), $filename);
+            // move the file to the folder
+            $file->move(public_path('file_upload'), $filename);
 
-        // import data from the file to the database
-        Excel::import(new BilyetTempImport, public_path('file_upload/' . $filename));
+            // import data from the file to the database
+            $import = new BilyetTempImport();
+            Excel::import($import, public_path('file_upload/' . $filename));
 
-        // delete the file after importing
-        unlink(public_path('file_upload/' . $filename));
+            // delete the file after importing
+            unlink(public_path('file_upload/' . $filename));
 
-        // return to the index page with success message
-        return redirect()->route('cashier.bilyets.index', ['page' => 'upload'])->with('success', 'Bilyet uploaded successfully.');
+            // Check for failures and provide detailed feedback
+            if ($import->failures()->count() > 0) {
+                $failures = $import->failures();
+                $errorReport = $this->generateDetailedErrorReport($failures);
+
+                return redirect()->route('cashier.bilyets.index', ['page' => 'upload'])
+                    ->with('warning', $errorReport['summary'])
+                    ->with('error_details', $errorReport['details']);
+            }
+
+            // Get import statistics
+            $importedCount = BilyetTemp::where('created_by', auth()->id())->count();
+
+            // return to the index page with success message
+            return redirect()->route('cashier.bilyets.index', ['page' => 'upload'])
+                ->with('success', "Bilyet uploaded successfully! {$importedCount} records imported.");
+        } catch (\Exception $e) {
+            // Clean up file if it exists
+            if (isset($filename) && file_exists(public_path('file_upload/' . $filename))) {
+                unlink(public_path('file_upload/' . $filename));
+            }
+
+            return redirect()->route('cashier.bilyets.index', ['page' => 'upload'])
+                ->with('error', 'Upload failed: ' . $e->getMessage());
+        }
     }
 
     public function truncate()
@@ -147,6 +174,81 @@ class BilyetTempController extends Controller
         }
 
         return $duplikasi_bilyet;
+    }
+
+    /**
+     * Generate detailed error report for import failures
+     */
+    private function generateDetailedErrorReport($failures)
+    {
+        $errorCount = $failures->count();
+        $errors = [];
+        $errorCategories = [
+            'required_fields' => 0,
+            'account_issues' => 0,
+            'format_issues' => 0,
+            'duplication_issues' => 0,
+            'other' => 0
+        ];
+
+        foreach ($failures as $failure) {
+            $rowNumber = $failure->row();
+            $rowErrors = $failure->errors();
+
+            foreach ($rowErrors as $error) {
+                $errors[] = "Row {$rowNumber}: {$error}";
+
+                // Categorize errors
+                if (strpos($error, 'required') !== false || strpos($error, 'cannot be empty') !== false) {
+                    $errorCategories['required_fields']++;
+                } elseif (strpos($error, 'Account') !== false || strpos($error, 'not found') !== false) {
+                    $errorCategories['account_issues']++;
+                } elseif (strpos($error, 'format') !== false || strpos($error, 'Invalid') !== false) {
+                    $errorCategories['format_issues']++;
+                } elseif (strpos($error, 'Duplicate') !== false || strpos($error, 'already exists') !== false) {
+                    $errorCategories['duplication_issues']++;
+                } else {
+                    $errorCategories['other']++;
+                }
+            }
+        }
+
+        // Generate summary message
+        $summary = "Import completed with {$errorCount} errors. ";
+        if ($errorCategories['required_fields'] > 0) {
+            $summary .= "{$errorCategories['required_fields']} required field errors. ";
+        }
+        if ($errorCategories['account_issues'] > 0) {
+            $summary .= "{$errorCategories['account_issues']} account issues. ";
+        }
+        if ($errorCategories['format_issues'] > 0) {
+            $summary .= "{$errorCategories['format_issues']} format issues. ";
+        }
+        if ($errorCategories['duplication_issues'] > 0) {
+            $summary .= "{$errorCategories['duplication_issues']} duplication issues. ";
+        }
+
+        // Generate recommendations
+        $recommendations = [];
+        if ($errorCategories['account_issues'] > 0) {
+            $recommendations[] = "Download the latest account list and verify account numbers";
+        }
+        if ($errorCategories['format_issues'] > 0) {
+            $recommendations[] = "Check date formats - use DD-MM-YYYY format";
+        }
+        if ($errorCategories['duplication_issues'] > 0) {
+            $recommendations[] = "Remove duplicate bilyet numbers from your Excel file";
+        }
+
+        return [
+            'summary' => $summary,
+            'details' => [
+                'errors' => $errors,
+                'categories' => $errorCategories,
+                'recommendations' => $recommendations,
+                'total_errors' => $errorCount
+            ]
+        ];
     }
 
     public function buatArrayNomor()

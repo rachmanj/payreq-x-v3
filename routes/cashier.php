@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Cashier\BilyetController;
+use App\Http\Controllers\Cashier\BilyetAuditController;
+use App\Http\Controllers\Cashier\BilyetReportController;
 use App\Http\Controllers\Cashier\BilyetTempController;
 use App\Http\Controllers\Cashier\CashierDokumenController;
 use App\Http\Controllers\Cashier\CashierModalController;
@@ -116,6 +118,19 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('import', [BilyetController::class, 'import'])->name('import'); // move data from bilyet_temp to bilyet
         Route::delete('{id}', [BilyetController::class, 'destroy'])->name('destroy');
         Route::post('update-many', [BilyetController::class, 'update_many'])->name('update_many');
+        Route::post('statistics', [BilyetController::class, 'getStatistics'])->name('statistics');
+
+        // Audit routes
+        Route::get('audit', [BilyetAuditController::class, 'index'])->name('audit.index');
+        Route::get('audit/{id}', [BilyetAuditController::class, 'show'])->name('audit.show');
+        Route::get('history/{bilyetId}', [BilyetAuditController::class, 'bilyetHistory'])->name('history');
+
+        // Report routes
+        Route::get('reports', [BilyetReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/dashboard', [BilyetReportController::class, 'dashboard'])->name('reports.dashboard');
+        Route::get('reports/analytics', [BilyetReportController::class, 'analytics'])->name('reports.analytics');
+        Route::get('reports/audit', [BilyetReportController::class, 'auditReport'])->name('reports.audit');
+        Route::get('reports/export', [BilyetReportController::class, 'export'])->name('reports.export');
     });
 
     // BILYET TEMP

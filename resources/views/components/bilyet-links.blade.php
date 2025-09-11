@@ -1,11 +1,15 @@
 <div class="card">
     <div class="card-header">
         <a href="{{ route('cashier.bilyets.index', ['page' => 'dashboard']) }}"
-            class="{{ request()->get('page') == 'dashboard' || request()->get('page') == '' || !request()->get('page') ? 'active' : '' }}">Dashboard</a>
+            class="{{ $page == 'dashboard' || $page == '' ? 'active' : '' }}">Dashboard</a>
         |
         <a href="{{ route('cashier.bilyets.index', ['page' => 'list']) }}"
-            class="{{ request()->get('page') == 'list' ? 'active' : '' }}">List</a> |
+            class="{{ $page == 'list' ? 'active' : '' }}">List</a> |
         <a href="{{ route('cashier.bilyets.index', ['page' => 'upload']) }}"
-            class="{{ request()->get('page') == 'upload' ? 'active' : '' }}">Upload</a>
+            class="{{ $page == 'upload' ? 'active' : '' }}">Upload</a> |
+        <a href="{{ route('cashier.bilyets.audit.index') }}" class="{{ $page == 'audit' ? 'active' : '' }}">Audit
+            Trail</a> |
+        <a href="{{ route('cashier.bilyets.reports.index') }}"
+            class="{{ $page == 'reports' ? 'active' : '' }}">Reports</a>
     </div>
 </div>

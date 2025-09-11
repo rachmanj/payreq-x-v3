@@ -250,13 +250,24 @@ class BilyetController extends Controller
         $startTime = microtime(true);
 
         try {
-            Log::info('About to start import process', [
+            Log::info('About to start database transaction', [
                 'user_id' => $userId,
                 'receive_date' => $receive_date,
                 'bilyets_count' => $bilyets->count()
             ]);
 
-            // Process records directly
+            // Temporarily disable transaction to debug the issue
+            Log::info('Inside import process (no transaction)', [
+                'user_id' => $userId,
+                'receive_date' => $receive_date
+            ]);
+
+            Log::info('About to process chunks', [
+                'bilyets_count' => $bilyets->count(),
+                'bilyets_class' => get_class($bilyets)
+            ]);
+
+            // Process records directly (temporarily disable chunking for debugging)
             $data = [];
             $now = now();
             $skippedCount = 0;
@@ -311,11 +322,20 @@ class BilyetController extends Controller
                     'sample_record' => $data[0] ?? null
                 ]);
 
-                Bilyet::insert($data);
-                $importedCount += count($data);
-                Log::info('Data inserted successfully', [
-                    'imported_count' => count($data)
-                ]);
+                try {
+                    Bilyet::insert($data);
+                    $importedCount += count($data);
+                    Log::info('Data inserted successfully', [
+                        'imported_count' => count($data)
+                    ]);
+                } catch (\Exception $insertException) {
+                    Log::error('Database insert failed', [
+                        'error' => $insertException->getMessage(),
+                        'data_count' => count($data),
+                        'sample_record' => $data[0] ?? null
+                    ]);
+                    throw $insertException;
+                }
             } else {
                 Log::warning('No data to insert', [
                     'skipped_count' => $skippedCount
@@ -325,7 +345,18 @@ class BilyetController extends Controller
             // Delete temp data after successful import
             BilyetTemp::where('created_by', $userId)->delete();
 
+            Log::info('Import process completed successfully', [
+                'user_id' => $userId,
+                'imported_count' => $importedCount
+            ]);
+
             $duration = microtime(true) - $startTime;
+
+            Log::info('After transaction completion', [
+                'user_id' => $userId,
+                'imported_count' => $importedCount,
+                'duration' => round($duration, 2)
+            ]);
 
             // Log import statistics
             Log::info('Bilyet import completed', [

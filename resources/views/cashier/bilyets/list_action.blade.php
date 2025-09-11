@@ -30,6 +30,11 @@
                 <i class="fas fa-eye"></i>
             </button>
 
+            <a href="{{ route('cashier.bilyets.history', $model->id) }}" class="btn btn-sm btn-outline-secondary"
+                title="View History">
+                <i class="fas fa-history"></i>
+            </a>
+
             @can('delete_bilyet')
                 @if ($model->status == 'onhand')
                     <form action="{{ route('cashier.bilyets.destroy', $model->id) }}" method="POST" style="display:inline;"
@@ -176,23 +181,23 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>Nomor:</strong></td>
-                                    <td>{{ $model->prefix . $model->nomor }}</td>
+                                    <td>{{ $model->full_nomor }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Type:</strong></td>
-                                    <td>{{ strtoupper($model->type) }}</td>
+                                    <td>{{ $model->type_label }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Status:</strong></td>
                                     <td>
                                         @if ($model->status == 'onhand')
-                                            <span class="badge badge-primary">Onhand</span>
+                                            <span class="badge badge-primary">{{ $model->status_label }}</span>
                                         @elseif($model->status == 'release')
-                                            <span class="badge badge-warning">Release</span>
+                                            <span class="badge badge-warning">{{ $model->status_label }}</span>
                                         @elseif($model->status == 'cair')
-                                            <span class="badge badge-success">Cair</span>
+                                            <span class="badge badge-success">{{ $model->status_label }}</span>
                                         @elseif($model->status == 'void')
-                                            <span class="badge badge-danger">Void</span>
+                                            <span class="badge badge-danger">{{ $model->status_label }}</span>
                                         @endif
                                     </td>
                                 </tr>

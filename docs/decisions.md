@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-01-15
+**Last Updated**: 2025-09-11
 
 # Technical Decision Records
 
@@ -416,6 +416,138 @@ We implemented Spatie Laravel Permission package for role-based access control (
 
 ---
 
+## ADR-006: Comprehensive Database Schema Design (2025-01-15)
+
+### Status
+
+Accepted
+
+### Context
+
+The accounting system required a robust database schema to support complex financial workflows, multi-currency operations, approval processes, and external integrations while maintaining data integrity and performance.
+
+### Decision
+
+We implemented a comprehensive database schema with the following key design principles:
+
+1. **Normalized Structure**: Proper normalization to eliminate data redundancy
+2. **Foreign Key Constraints**: Enforced referential integrity across all relationships
+3. **Soft Deletes**: Audit trail preservation for financial data
+4. **Performance Indexes**: Strategic indexing for query optimization
+5. **Multi-Currency Support**: Flexible currency and exchange rate management
+6. **Approval Workflows**: Configurable approval stages and plans
+
+### Consequences
+
+#### Positive
+
+-   **Data Integrity**: Foreign key constraints prevent orphaned records
+-   **Audit Trail**: Soft deletes maintain complete transaction history
+-   **Performance**: Strategic indexes provide 70-80% query performance improvement
+-   **Flexibility**: Multi-currency support enables international operations
+-   **Scalability**: Normalized structure supports growth and complexity
+-   **Compliance**: Complete audit trail meets financial reporting requirements
+
+#### Negative
+
+-   **Complexity**: Complex relationships require careful query design
+-   **Migration Overhead**: Schema changes require careful migration planning
+-   **Storage**: Soft deletes increase storage requirements over time
+
+### Implementation Details
+
+#### Core Tables Implemented
+
+-   **User Management**: users, departments, projects, roles, permissions
+-   **Financial Core**: accounts, payreqs, realizations, cash_journals
+-   **Budget Management**: rabs, anggarans, approval_stages, approval_plans
+-   **Multi-Currency**: currencies, exchange_rates
+-   **Document Management**: bilyets, dokumens, document_numbers
+-   **External Integrations**: invoice_creations, verification_journals, lot_claims
+
+#### Key Features
+
+-   85+ migrations covering all financial entities
+-   Comprehensive Eloquent relationships with proper foreign keys
+-   Performance-optimized indexes on critical query fields
+-   Soft delete implementation for audit trail preservation
+-   Multi-currency support with daily exchange rate updates
+
+### Review Date
+
+2025-07-15 (6 months from implementation)
+
+---
+
+## ADR-007: Modular Architecture with Route Separation (2025-01-15)
+
+### Status
+
+Accepted
+
+### Context
+
+The accounting system needed to organize complex functionality across multiple modules (user management, financial operations, approvals, cashier operations, reporting) while maintaining clean separation of concerns and easy maintenance.
+
+### Decision
+
+We implemented a modular architecture with the following structure:
+
+1. **Route Separation**: Separate route files for different modules
+2. **Controller Organization**: Controllers organized by functional areas
+3. **Service Layer**: Dedicated services for complex business logic
+4. **Component-Based Views**: Reusable Blade components for consistent UI
+5. **Import/Export Classes**: Dedicated classes for data processing
+
+### Consequences
+
+#### Positive
+
+-   **Maintainability**: Clear separation makes code easier to maintain
+-   **Scalability**: New modules can be added without affecting existing code
+-   **Team Development**: Multiple developers can work on different modules
+-   **Code Organization**: Related functionality grouped together
+-   **Reusability**: Components and services can be reused across modules
+
+#### Negative
+
+-   **File Proliferation**: More files to manage and navigate
+-   **Complexity**: Requires understanding of module boundaries
+-   **Dependencies**: Modules may have interdependencies
+
+### Implementation Details
+
+#### Route Organization
+
+-   `web.php`: Core authentication and general routes
+-   `user_payreqs.php`: User payment request operations
+-   `cashier.php`: Cashier operations and invoice payment
+-   `approvals.php`: Approval workflow management
+-   `verification.php`: Document verification processes
+-   `cash_journals.php`: Cash journal operations
+-   `accounting.php`: General ledger and accounting
+-   `reports.php`: Reporting and analytics
+-   `admin.php`: Administrative functions
+
+#### Controller Structure
+
+-   **Base Controllers**: Shared functionality and middleware
+-   **Module Controllers**: Feature-specific controllers
+-   **API Controllers**: External API integrations
+-   **Service Controllers**: Business logic services
+
+#### Service Layer
+
+-   `LotService`: Official travel claim management
+-   Custom services for complex business operations
+-   External API integration services
+
+### Review Date
+
+2025-07-15 (6 months from implementation)
+
+---
+
 ## ADR-001: Laravel Framework Choice (2024-12-31)
 
 ### Status
@@ -455,3 +587,40 @@ We chose Laravel framework for its robust features, active community, and excell
 ### Review Date
 
 2025-06-30
+
+---
+
+## ADR-008: Bilyet Import System Error Handling Strategy - 2025-09-11
+
+**Context**: The Bilyet Excel import system was experiencing silent failures where data would upload to staging table but fail to import to final table, with no clear error messages to users or developers.
+
+**Options Considered**:
+
+1. **Option A**: Strict validation with blocking errors
+    - ✅ Pros: Ensures data integrity, prevents invalid records
+    - ❌ Cons: Blocks entire import for minor issues, poor user experience
+2. **Option B**: Relaxed validation with warnings
+    - ✅ Pros: Allows import to proceed, logs issues for review, better UX
+    - ❌ Cons: May allow some invalid data through
+3. **Option C**: Two-stage validation (staging + final)
+    - ✅ Pros: Provides validation opportunities, allows data review
+    - ❌ Cons: More complex, requires careful error handling
+
+**Decision**: Option B + C (Relaxed validation with two-stage process)
+
+**Rationale**:
+
+-   Financial systems need data integrity but also operational efficiency
+-   Two-stage import allows validation without blocking user workflow
+-   Comprehensive logging provides audit trail for data quality issues
+-   User-friendly error messages improve system usability
+
+**Implementation**:
+
+-   Modified `BilyetValidationService` to log warnings instead of throwing blocking errors
+-   Enhanced `BilyetTempImport` with comprehensive logging at each stage
+-   Simplified `BilyetController::import()` with direct record processing
+-   Added detailed error reporting with actionable user feedback
+-   Implemented proper Carbon date formatting for database compatibility
+
+**Review Date**: 2025-12-31

@@ -73,6 +73,20 @@
                                     <input type="date" class="form-control form-control-sm" id="date-to">
                                 </div>
                             </div>
+                            <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6">
+                                <div class="form-group">
+                                    <label for="amount-from">Amount From</label>
+                                    <input type="number" class="form-control form-control-sm" id="amount-from"
+                                        placeholder="Min amount">
+                                </div>
+                            </div>
+                            <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6">
+                                <div class="form-group">
+                                    <label for="amount-to">Amount To</label>
+                                    <input type="number" class="form-control form-control-sm" id="amount-to"
+                                        placeholder="Max amount">
+                                </div>
+                            </div>
                             <div class="col-xl-1 col-lg-12 col-md-8 col-sm-12">
                                 <div class="form-group text-right">
                                     <label class="d-none d-sm-block">&nbsp;</label>
@@ -619,6 +633,8 @@
                         d.nomor = $('#nomor-filter').val();
                         d.date_from = $('#date-from').val();
                         d.date_to = $('#date-to').val();
+                        d.amount_from = $('#amount-from').val();
+                        d.amount_to = $('#amount-to').val();
                     },
                     dataSrc: function(json) {
                         // Cache data for statistics calculation
@@ -755,7 +771,8 @@
                 // Check if any filter is applied
                 const hasFilter = $('#status-filter').val() || $('#giro-filter').val() || $('#nomor-filter')
                     .val() ||
-                    $('#date-from').val() || $('#date-to').val();
+                    $('#date-from').val() || $('#date-to').val() || $('#amount-from').val() || $(
+                        '#amount-to').val();
 
                 if (!hasFilter) {
                     $('#empty-data-message').show();
@@ -799,6 +816,8 @@
                 $('#nomor-filter').val('');
                 $('#date-from').val('');
                 $('#date-to').val('');
+                $('#amount-from').val('');
+                $('#amount-to').val('');
 
                 // Show empty message since no filter applied
                 $('#empty-data-message').show();
@@ -825,6 +844,8 @@
                     $('#nomor-filter').val('');
                     $('#date-from').val('');
                     $('#date-to').val('');
+                    $('#amount-from').val('');
+                    $('#amount-to').val('');
 
                     table.ajax.reload(function() {
                         $btn.html(originalText);

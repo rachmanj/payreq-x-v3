@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-01-15
+Last Updated: 2025-09-11
 
 ## Architecture Documentation Guidelines
 
@@ -56,36 +56,48 @@ The Accounting One system is a comprehensive financial management application bu
 
 1. **User Management**
 
-    - User authentication and authorization
-    - Role-based access control (RBAC)
-    - Department-based user organization
-    - User-specific API configurations
+    - User authentication and authorization with Spatie Laravel Permission
+    - Role-based access control (RBAC) with granular permissions
+    - Department-based user organization with hierarchical structure
+    - User-specific API configurations (DDS department codes)
+    - Project-based user assignment and access control
 
 2. **Financial Management**
 
-    - Payment requests (Payreqs)
-    - Realizations
-    - Cash management
-    - Multi-currency support
+    - **Payment Requests (Payreqs)**: Complete CRUD with approval workflows
+    - **Realizations**: Expense reporting and documentation with detailed tracking
+    - **Cash Management**: Incoming/outgoing cash journals, cashier operations
+    - **Multi-Currency Support**: Exchange rate management with daily updates
+    - **General Ledger**: Chart of accounts with SAP integration
+    - **Budget Management**: RAB (Rencana Anggaran Biaya) and Anggaran systems
 
 3. **Document Management**
 
-    - Bilyet (Promissory Notes)
-    - Printable documents
-    - Document approval workflows
+    - **Bilyet (Promissory Notes)**: Promissory note handling and tracking
+    - **Printable Documents**: PDF generation with DomPDF and caching
+    - **Document Approval Workflows**: Multi-level approval with status tracking
+    - **Document Numbering**: Automated document number generation
 
 4. **Invoice Payment**
 
     - DDS API integration with per-user department codes
-    - Invoice status management
-    - Payment processing
-    - Real-time dashboard
-    - User-specific department code configuration
+    - Invoice status management (open, pending, paid, closed)
+    - Payment processing with modal-based updates
+    - Real-time dashboard with statistics and overdue tracking
+    - User-specific department code configuration with fallback
 
 5. **Reporting & Analytics**
-    - Financial reports
-    - DataTables integration
-    - Export functionality
+
+    - Financial reports with DataTables integration
+    - Export functionality (Excel, PDF) with Laravel Excel
+    - Performance-optimized queries with database indexing
+    - Real-time dashboard analytics
+
+6. **External Integrations**
+    - **DDS API**: Document Distribution System for invoice management
+    - **SAP Integration**: General ledger synchronization
+    - **LOT Service**: Official travel claim management
+    - **BUC Sync**: Budget synchronization system
 
 ## Architecture Diagram
 
@@ -205,59 +217,162 @@ sequenceDiagram
 
 ### Backend
 
--   **Framework**: Laravel 10.x
+-   **Framework**: Laravel 10.x with modern skeleton structure
 -   **PHP Version**: 8.1+
--   **Database**: MySQL/MariaDB
--   **Cache**: Redis (optional)
--   **Queue**: Laravel Queue
+-   **Database**: MySQL/MariaDB with optimized indexes
+-   **Cache**: Redis (optional) for performance optimization
+-   **Queue**: Laravel Queue for background processing
+-   **Authentication**: Laravel Sanctum for API authentication
+-   **Permissions**: Spatie Laravel Permission for RBAC
 
 ### Frontend
 
--   **UI Framework**: AdminLTE 3.x
--   **JavaScript**: jQuery, DataTables
--   **CSS**: Bootstrap 4.x
--   **Charts**: Chart.js (for analytics)
+-   **UI Framework**: AdminLTE 3.x with responsive design
+-   **JavaScript**: jQuery, DataTables (Yajra DataTables)
+-   **CSS**: Bootstrap 4.x with custom styling
+-   **Charts**: Chart.js for analytics and reporting
+-   **Notifications**: SweetAlert2 for user feedback
+-   **AJAX**: Laravel HTTP Client for API communication
+
+### Data Processing
+
+-   **Excel Processing**: Laravel Excel (Maatwebsite) for import/export with two-stage validation
+-   **PDF Generation**: DomPDF for printable documents
+-   **Data Validation**: Laravel validation with custom rules and enhanced error reporting
+-   **File Upload**: Laravel file handling with validation and progress tracking
+-   **Bilyet Import System**: Two-stage import process (Excel → staging table → final table) with comprehensive logging and error handling
 
 ### External Integrations
 
--   **DDS API**: Document Distribution System API
--   **Exchange Rate APIs**: External currency APIs
+-   **DDS API**: Document Distribution System API for invoice management
+-   **SAP Integration**: General ledger synchronization
+-   **LOT Service**: Official travel claim management
+-   **BUC Sync**: Budget synchronization system
+-   **Exchange Rate APIs**: External currency APIs for rate updates
 
 ## Security Architecture
 
 ### Authentication & Authorization
 
--   Laravel's built-in authentication
--   Spatie Laravel Permission for RBAC
--   CSRF protection on all forms
--   API key authentication for external APIs
+-   Laravel's built-in authentication with custom login controller
+-   Spatie Laravel Permission for granular RBAC
+-   CSRF protection on all forms and AJAX requests
+-   API key authentication for external APIs (DDS, LOT, etc.)
+-   Middleware-based route protection with permission checks
+-   User session management with secure token regeneration
 
 ### Data Protection
 
--   Input validation and sanitization
--   SQL injection prevention (Eloquent ORM)
--   XSS protection (Blade templating)
--   Audit logging for sensitive operations
+-   Input validation and sanitization with Laravel validation
+-   SQL injection prevention (Eloquent ORM with parameter binding)
+-   XSS protection (Blade templating with automatic escaping)
+-   Audit logging for sensitive operations (user actions, API calls)
+-   File upload validation and secure storage
+-   Environment variable protection for sensitive configuration
+
+### Access Control
+
+-   Role-based permissions (admin, user, approver, etc.)
+-   Feature-specific permissions (view_exchange_rates, edit_payreqs, etc.)
+-   Department-based access control
+-   Project-based data isolation
+-   Middleware protection on all sensitive routes
+
+## Database Architecture
+
+### Core Tables
+
+#### User Management
+
+-   **users**: User accounts with department and project assignments
+-   **departments**: Organizational structure with hierarchical relationships
+-   **projects**: Project definitions and configurations
+-   **roles**: User roles for RBAC system
+-   **permissions**: Granular permissions for feature access
+-   **model_has_roles**: Role assignments to users
+-   **model_has_permissions**: Direct permission assignments
+
+#### Financial Core
+
+-   **accounts**: Chart of accounts with balance tracking
+-   **payreqs**: Payment requests with approval workflows
+-   **realizations**: Expense realizations linked to payreqs
+-   **realization_details**: Detailed expense breakdowns
+-   **outgoings**: Cash outflow transactions
+-   **incomings**: Cash inflow transactions
+-   **cash_journals**: Daily cash operations and reconciliation
+
+#### Budget Management
+
+-   **rabs**: Rencana Anggaran Biaya (Budget Plans)
+-   **anggarans**: Budget allocations and tracking
+-   **approval_stages**: Approval workflow configurations
+-   **approval_plans**: Approval process instances
+
+#### Multi-Currency Support
+
+-   **currencies**: Currency definitions and codes
+-   **exchange_rates**: Daily exchange rates with effective dates
+
+#### Document Management
+
+-   **bilyets**: Promissory notes and tracking
+-   **dokumens**: Document management system
+-   **document_numbers**: Automated document numbering
+
+#### External Integrations
+
+-   **invoice_creations**: DDS invoice synchronization
+-   **verification_journals**: SAP journal verification
+-   **lot_claims**: Official travel claim management
+
+### Database Relationships
+
+```mermaid
+erDiagram
+    USERS ||--o{ PAYREQS : creates
+    USERS ||--o{ REALIZATIONS : submits
+    USERS }o--|| DEPARTMENTS : belongs_to
+    USERS }o--o{ ROLES : has
+
+    PAYREQS ||--o| REALIZATIONS : has_one
+    PAYREQS ||--o{ OUTGOINGS : generates
+    PAYREQS }o--|| RABS : budget_from
+
+    REALIZATIONS ||--o{ REALIZATION_DETAILS : contains
+    REALIZATION_DETAILS }o--|| ACCOUNTS : charged_to
+
+    EXCHANGE_RATES }o--|| CURRENCIES : from_currency
+    EXCHANGE_RATES }o--|| CURRENCIES : to_currency
+
+    APPROVAL_STAGES }o--|| USERS : approver
+    APPROVAL_STAGES }o--|| DEPARTMENTS : department
+```
 
 ## Performance Considerations
 
 ### Database Optimization
 
--   Indexed foreign keys and frequently queried fields
--   Eager loading for relationships
--   Query optimization for complex joins
+-   **Indexes**: Critical indexes on frequently queried fields (status, created_at, user_id)
+-   **Composite Indexes**: Multi-column indexes for common query patterns
+-   **Eager Loading**: Relationship loading to prevent N+1 queries
+-   **Query Optimization**: Optimized joins and WHERE clauses
+-   **Performance Monitoring**: 70-80% improvement through index optimization
 
 ### Caching Strategy
 
 -   Redis caching for expensive operations
--   Route caching for production
+-   Route caching for production deployment
 -   View caching for static content
+-   Database query result caching
 
 ### API Integration
 
 -   Rate limiting for external API calls
 -   Timeout handling for network issues
 -   Retry logic for failed requests
+-   Comprehensive logging for debugging
+-   Error handling with user-friendly messages
 
 ## Deployment Architecture
 

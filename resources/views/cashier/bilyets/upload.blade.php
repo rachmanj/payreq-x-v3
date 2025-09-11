@@ -52,25 +52,59 @@
     </div> <!-- /.row -->
 
     <div class="modal fade" id="modal-upload">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title"> Upload Bilyets</h4>
+                    <h4 class="modal-title">
+                        <i class="fas fa-upload"></i> Upload Bilyets
+                    </h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form action="{{ route('cashier.bilyet-temps.upload') }}" enctype="multipart/form-data" method="POST">
+                <form id="upload-form" action="{{ route('cashier.bilyet-temps.upload') }}" enctype="multipart/form-data"
+                    method="POST">
                     @csrf
                     <div class="modal-body">
-                        <label>Pilih file excel</label>
+                        <!-- File Upload Area -->
                         <div class="form-group">
-                            <input type="file" name='file_upload' required class="form-control">
+                            <label for="file_upload">
+                                <i class="fas fa-file-excel"></i> Select Excel File
+                            </label>
+                            <div class="input-group">
+                                <div class="custom-file">
+                                    <input type="file" name="file_upload" id="file_upload" required
+                                        class="custom-file-input" accept=".xls,.xlsx">
+                                    <label class="custom-file-label" for="file_upload">Choose file...</label>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">
+                                Supported formats: .xls, .xlsx (Max size: 10MB)
+                            </small>
                         </div>
+
+                        <!-- File Info Display -->
+                        <div id="file-info" class="alert alert-info" style="display: none;">
+                            <h6><i class="fas fa-info-circle"></i> File Information</h6>
+                            <div id="file-details"></div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div id="upload-progress" class="progress" style="display: none;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                                style="width: 0%"></div>
+                        </div>
+
+                        <!-- Status Messages -->
+                        <div id="upload-status" class="alert" style="display: none;"></div>
                     </div>
                     <div class="modal-footer justify-content-between">
-                        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-sm btn-primary"> Upload</button>
+                        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-sm btn-primary" id="upload-btn">
+                            <i class="fas fa-upload"></i> Upload File
+                        </button>
                     </div>
                 </form>
             </div>
@@ -189,6 +223,104 @@
             $('.select2bs4').select2({
                 theme: 'bootstrap4'
             })
+
+            // Enhanced file upload functionality
+            $('#file_upload').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    // Show file info
+                    const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                    const fileDetails = `
+                        <strong>File:</strong> ${file.name}<br>
+                        <strong>Size:</strong> ${fileSize} MB<br>
+                        <strong>Type:</strong> ${file.type || 'Excel file'}
+                    `;
+                    $('#file-details').html(fileDetails);
+                    $('#file-info').show();
+
+                    // Validate file
+                    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                        $('#upload-status').removeClass('alert-success alert-warning')
+                            .addClass('alert-danger')
+                            .html(
+                                '<i class="fas fa-exclamation-triangle"></i> File size exceeds 10MB limit')
+                            .show();
+                        $('#upload-btn').prop('disabled', true);
+                    } else if (!file.name.match(/\.(xls|xlsx)$/i)) {
+                        $('#upload-status').removeClass('alert-success alert-danger')
+                            .addClass('alert-warning')
+                            .html(
+                                '<i class="fas fa-exclamation-triangle"></i> Please select an Excel file (.xls or .xlsx)'
+                                )
+                            .show();
+                        $('#upload-btn').prop('disabled', true);
+                    } else {
+                        $('#upload-status').removeClass('alert-warning alert-danger')
+                            .addClass('alert-success')
+                            .html('<i class="fas fa-check-circle"></i> File ready for upload')
+                            .show();
+                        $('#upload-btn').prop('disabled', false);
+                    }
+                } else {
+                    $('#file-info').hide();
+                    $('#upload-status').hide();
+                    $('#upload-btn').prop('disabled', false);
+                }
+            });
+
+            // Enhanced form submission with progress
+            $('#upload-form').on('submit', function(e) {
+                const fileInput = $('#file_upload')[0];
+                if (!fileInput.files[0]) {
+                    e.preventDefault();
+                    alert('Please select a file to upload');
+                    return false;
+                }
+
+                // Show progress bar
+                $('#upload-progress').show();
+                $('#upload-btn').prop('disabled', true).html(
+                    '<i class="fas fa-spinner fa-spin"></i> Uploading...');
+
+                // Simulate progress (since we can't track real progress easily)
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    $('.progress-bar').css('width', progress + '%');
+                }, 200);
+
+                // Clear interval when form submits
+                setTimeout(() => {
+                    clearInterval(progressInterval);
+                    $('.progress-bar').css('width', '100%');
+                }, 3000);
+            });
+
+            // Display error details if available
+            @if (session('error_details'))
+                const errorDetails = @json(session('error_details'));
+                if (errorDetails && errorDetails.errors && errorDetails.errors.length > 0) {
+                    let errorHtml =
+                        '<div class="alert alert-danger"><h6><i class="fas fa-exclamation-triangle"></i> Import Errors</h6><ul>';
+                    errorDetails.errors.forEach(error => {
+                        errorHtml += `<li>${error}</li>`;
+                    });
+                    errorHtml += '</ul>';
+
+                    if (errorDetails.recommendations && errorDetails.recommendations.length > 0) {
+                        errorHtml += '<h6><i class="fas fa-lightbulb"></i> Recommendations:</h6><ul>';
+                        errorDetails.recommendations.forEach(rec => {
+                            errorHtml += `<li>${rec}</li>`;
+                        });
+                        errorHtml += '</ul>';
+                    }
+                    errorHtml += '</div>';
+
+                    // Insert error details after the card
+                    $('.card').after(errorHtml);
+                }
+            @endif
         });
     </script>
 @endsection

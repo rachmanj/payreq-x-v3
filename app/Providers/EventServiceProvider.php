@@ -18,6 +18,16 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
+        \App\Events\BilyetCreated::class => [
+            \App\Listeners\LogBilyetAudit::class,
+        ],
+        \App\Events\BilyetUpdated::class => [
+            \App\Listeners\LogBilyetAudit::class,
+        ],
+        \App\Events\BilyetStatusChanged::class => [
+            \App\Listeners\LogBilyetAudit::class,
+            \App\Listeners\SendBilyetStatusNotification::class,
+        ],
     ];
 
     /**
