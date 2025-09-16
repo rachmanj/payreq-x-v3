@@ -9,6 +9,12 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Notification;
 
+/**
+ * DISABLED FOR DEVELOPMENT
+ * This listener sends email notifications when bilyet status changes.
+ * Currently disabled in EventServiceProvider due to mail server configuration issues.
+ * To re-enable: Uncomment the listener registration in EventServiceProvider.php
+ */
 class SendBilyetStatusNotification implements ShouldQueue
 {
     use InteractsWithQueue;

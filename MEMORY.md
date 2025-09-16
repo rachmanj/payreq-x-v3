@@ -128,3 +128,21 @@
 -   **UI Enhancement**: Added dynamic status transition rules display and justification guidance
 -   **Audit Trail**: Comprehensive logging of all changes with context and justification
 -   **Security**: Role-based access control ensuring only superadmins can access edit functionality
+
+### [009] Email Notification System Disabled for Development (2025-09-16) ✅ COMPLETE
+
+**Challenge**: Bilyet status change notifications were causing TransportException errors due to missing mail server configuration (mailpit), preventing successful bilyet updates.
+
+**Solution**: Disabled the SendBilyetStatusNotification listener in EventServiceProvider while preserving the audit logging functionality. Added clear documentation for future re-enablement.
+
+**Key Learning**: Email notification systems require proper mail server configuration. Disabling non-critical features during development allows core functionality to work while deferring infrastructure setup. The audit trail continues to work, providing full change tracking without email notifications.
+
+**Technical Implementation**:
+
+-   **EventServiceProvider**: Commented out SendBilyetStatusNotification listener registration
+-   **Documentation**: Added clear comments explaining the disable and re-enable process
+-   **Preserved Functionality**: Audit logging continues to work normally
+-   **Future Ready**: Easy to re-enable when mail server is configured
+-   **Testing Verified**: Confirmed bilyet updates work without TransportException errors
+-   **Database Updates**: Settlement date and status changes persist correctly
+-   **Audit Trail**: Complete change tracking maintained without email dependencies

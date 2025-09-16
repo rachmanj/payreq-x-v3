@@ -26,7 +26,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         \App\Events\BilyetStatusChanged::class => [
             \App\Listeners\LogBilyetAudit::class,
-            \App\Listeners\SendBilyetStatusNotification::class,
+            // \App\Listeners\SendBilyetStatusNotification::class, // Disabled for development
         ],
     ];
 

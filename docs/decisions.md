@@ -698,3 +698,39 @@ We chose Laravel framework for its robust features, active community, and excell
 -   **Security**: Role-based access control ensuring only superadmins can access edit functionality
 
 **Review Date**: 2025-12-31
+
+## ADR-011: Email Notification System Disabled for Development - 2025-09-16
+
+**Context**: Bilyet status change notifications were causing TransportException errors due to missing mail server configuration (mailpit), preventing successful bilyet updates and blocking development workflow.
+
+**Options Considered**:
+
+1. **Option A**: Set up mail server infrastructure immediately
+    - ✅ Pros: Complete functionality with email notifications
+    - ❌ Cons: Requires additional infrastructure setup, delays development, complex configuration
+2. **Option B**: Disable email notifications temporarily
+    - ✅ Pros: Allows development to continue, preserves core functionality, easy to re-enable
+    - ❌ Cons: Users won't receive email notifications during development
+3. **Option C**: Use alternative notification methods (database only)
+    - ✅ Pros: No external dependencies, notifications still tracked
+    - ❌ Cons: Users must check system for notifications, less immediate than email
+
+**Decision**: Option B (Disable email notifications temporarily)
+
+**Rationale**:
+
+-   Development workflow was being blocked by email configuration issues
+-   Core bilyet functionality is more critical than email notifications
+-   Audit trail continues to work, providing full change tracking
+-   Easy to re-enable when mail server is properly configured
+-   Allows focus on business logic without infrastructure distractions
+
+**Implementation**:
+
+-   **EventServiceProvider**: Commented out SendBilyetStatusNotification listener registration
+-   **Documentation**: Added clear comments explaining disable and re-enable process
+-   **Testing**: Verified bilyet updates work without TransportException errors
+-   **Preserved Functionality**: Audit logging continues to work normally
+-   **Future Ready**: Easy to re-enable when mail server is configured
+
+**Review Date**: 2025-12-31

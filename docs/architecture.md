@@ -234,6 +234,7 @@ sequenceDiagram
     Validation->>Controller: Check business rules + superadmin override
     Controller->>DB: Update bilyet with all fields
     Controller->>Audit: Log superadmin update with justification
+    Note over Controller,Audit: Email notifications disabled for development
     Controller->>UI: Return success
 ```
 
