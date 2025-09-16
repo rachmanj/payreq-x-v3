@@ -1,5 +1,5 @@
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-09-11
+**Last Updated**: 2025-09-16
 
 ## Task Management Guidelines
 
@@ -101,6 +101,17 @@ Include relevant context in brackets to help with future AI-assisted coding:
     -   ✅ Enhanced error handling with detailed user feedback
     -   ✅ Simplified import logic with direct record processing
     -   ✅ Updated documentation (MEMORY.md, architecture.md) with technical findings
+
+-   [x] **Bilyet Edit Dialog Date Field Population Fix** - Completed on 2025-09-16
+
+    -   ✅ Identified root cause: Laravel date casting returns Carbon objects, HTML date inputs need Y-m-d format strings
+    -   ✅ Fixed Bilyet Date field population in edit dialog by adding `.format('Y-m-d')` with null checks
+    -   ✅ Applied same fix to Cair Date field for consistency
+    -   ✅ Updated Blade template `resources/views/cashier/bilyets/list_action.blade.php`
+    -   ✅ Tested complete bilyet edit workflow: search → edit → update → verify changes
+    -   ✅ Verified successful status transition from "Release" to "Cair" with proper date updates
+    -   ✅ Updated documentation (MEMORY.md, decisions.md) with technical decision record (ADR-009)
+    -   ✅ Confirmed complete bilyet management system functionality
 
 ## Backlog
 

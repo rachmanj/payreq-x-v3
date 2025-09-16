@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-09-11
+**Last Updated**: 2025-09-16
 
 # Technical Decision Records
 
@@ -622,5 +622,41 @@ We chose Laravel framework for its robust features, active community, and excell
 -   Simplified `BilyetController::import()` with direct record processing
 -   Added detailed error reporting with actionable user feedback
 -   Implemented proper Carbon date formatting for database compatibility
+
+**Review Date**: 2025-12-31
+
+---
+
+## ADR-009: Bilyet Edit Dialog Date Field Formatting Strategy - 2025-09-16
+
+**Context**: The Bilyet edit dialog was not populating the Bilyet Date field despite having valid data in the database, causing poor user experience during editing operations.
+
+**Options Considered**:
+
+1. **Option A**: Keep current implementation (Carbon objects in views)
+    - ✅ Pros: No code changes required
+    - ❌ Cons: Fields appear empty, poor user experience, confusing for users
+2. **Option B**: Format dates in controller before passing to view
+    - ✅ Pros: Centralized formatting logic
+    - ❌ Cons: Requires controller changes, may affect other views
+3. **Option C**: Format dates directly in Blade template
+    - ✅ Pros: Simple fix, localized to specific view, maintains data types in controller
+    - ❌ Cons: Formatting logic in view layer
+
+**Decision**: Option C (Format dates directly in Blade template)
+
+**Rationale**:
+
+-   Laravel's Eloquent date casting returns Carbon instances, but HTML date inputs require Y-m-d format strings
+-   View-level formatting is appropriate for display-specific formatting
+-   Maintains clean separation between data layer and presentation layer
+-   Simple, targeted fix without affecting other parts of the system
+
+**Implementation**:
+
+-   Updated `resources/views/cashier/bilyets/list_action.blade.php`
+-   Added `.format('Y-m-d')` with proper null checks for both bilyet_date and cair_date fields
+-   Used conditional formatting: `{{ $model->bilyet_date ? $model->bilyet_date->format('Y-m-d') : '' }}`
+-   Applied same pattern to cair_date field for consistency
 
 **Review Date**: 2025-12-31

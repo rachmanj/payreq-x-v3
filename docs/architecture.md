@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-09-11
+Last Updated: 2025-09-16
 
 ## Architecture Documentation Guidelines
 
@@ -69,11 +69,11 @@ The Accounting One system is a comprehensive financial management application bu
     - **Cash Management**: Incoming/outgoing cash journals, cashier operations
     - **Multi-Currency Support**: Exchange rate management with daily updates
     - **General Ledger**: Chart of accounts with SAP integration
-    - **Budget Management**: RAB (Rencana Anggaran Biaya) and Anggaran systems
+    - **Budget Management**: Comprehensive RAB (Rencana Anggaran Biaya) and Anggaran systems with multi-level approval workflows, budget tracking, and utilization monitoring
 
 3. **Document Management**
 
-    - **Bilyet (Promissory Notes)**: Promissory note handling and tracking
+    - **Bilyet (Promissory Notes)**: Complete promissory note management system with Excel import/export, status tracking, audit trails, and comprehensive reporting
     - **Printable Documents**: PDF generation with DomPDF and caching
     - **Document Approval Workflows**: Multi-level approval with status tracking
     - **Document Numbering**: Automated document number generation
@@ -115,6 +115,7 @@ graph TB
             PayreqController
             RealizationController
             CashController
+            BilyetController
             InvoicePaymentController
             ExchangeRateController
         end
@@ -122,6 +123,8 @@ graph TB
         subgraph "Services"
             LotService
             PaymentService
+            BilyetService
+            BilyetValidationService
         end
 
         subgraph "Middleware"
@@ -137,6 +140,9 @@ graph TB
             Payreqs
             Realizations
             CashJournals
+            Bilyets
+            BilyetTemps
+            BilyetAudits
             ExchangeRates
             Permissions
         end
@@ -150,6 +156,7 @@ graph TB
     UI --> PayreqController
     UI --> RealizationController
     UI --> CashController
+    UI --> BilyetController
     UI --> InvoicePaymentController
     UI --> ExchangeRateController
 
@@ -163,11 +170,57 @@ graph TB
     PayreqController --> Payreqs
     RealizationController --> Realizations
     CashController --> CashJournals
+    BilyetController --> Bilyets
+    BilyetController --> BilyetTemps
+    BilyetController --> BilyetAudits
 
     AuthMiddleware --> UserController
     PermissionMiddleware --> PayreqController
     PermissionMiddleware --> RealizationController
     ExchangeRatePermissionMiddleware --> ExchangeRateController
+```
+
+## Bilyet Module Architecture
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Frontend UI
+    participant Controller as BilyetController
+    participant Service as BilyetService
+    participant Validation as BilyetValidationService
+    participant DB as Database
+    participant Audit as Audit System
+
+    User->>UI: Upload Excel File
+    UI->>Controller: POST /upload
+    Controller->>Validation: Validate Excel data
+    Validation->>Controller: Return validation results
+    Controller->>DB: Insert to bilyet_temps
+    Controller->>UI: Return upload status
+
+    User->>UI: Import from Staging
+    UI->>Controller: POST /import
+    Controller->>DB: Get temp records
+    Controller->>Validation: Validate final data
+    Validation->>Controller: Return processed data
+    Controller->>DB: Insert to bilyets
+    Controller->>Audit: Log import operation
+    Controller->>DB: Clear temp records
+    Controller->>UI: Return import status
+
+    User->>UI: Edit Bilyet
+    UI->>Controller: GET /edit/{id}
+    Controller->>DB: Get bilyet data
+    Controller->>UI: Return edit form with populated fields
+
+    User->>UI: Update Bilyet
+    UI->>Controller: PUT /update/{id}
+    Controller->>Validation: Validate status transition
+    Validation->>Controller: Return validation result
+    Controller->>DB: Update bilyet
+    Controller->>Audit: Log status change
+    Controller->>UI: Return success
 ```
 
 ## Invoice Payment Module Architecture
@@ -305,7 +358,8 @@ sequenceDiagram
 #### Budget Management
 
 -   **rabs**: Rencana Anggaran Biaya (Budget Plans)
--   **anggarans**: Budget allocations and tracking
+-   **anggarans**: Budget allocations and tracking with comprehensive approval workflows
+-   **periode_anggarans**: Budget period management for different project cycles
 -   **approval_stages**: Approval workflow configurations
 -   **approval_plans**: Approval process instances
 
@@ -316,7 +370,9 @@ sequenceDiagram
 
 #### Document Management
 
--   **bilyets**: Promissory notes and tracking
+-   **bilyets**: Promissory notes with comprehensive tracking (status, dates, amounts, audit trails)
+-   **bilyet_temps**: Temporary staging table for Excel import validation
+-   **bilyet_audits**: Complete audit trail for all bilyet operations and status changes
 -   **dokumens**: Document management system
 -   **document_numbers**: Automated document numbering
 
@@ -347,6 +403,11 @@ erDiagram
 
     APPROVAL_STAGES }o--|| USERS : approver
     APPROVAL_STAGES }o--|| DEPARTMENTS : department
+
+    BILYETS }o--|| GIROS : source_account
+    BILYETS }o--o| LOANS : related_loan
+    BILYETS }o--|| USERS : created_by
+    BILYETS ||--o{ BILYET_AUDITS : has_audit_trail
 ```
 
 ## Performance Considerations

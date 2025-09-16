@@ -108,12 +108,14 @@
                             <div class="form-group">
                                 <label for="bilyet_date">Bilyet Date</label>
                                 <input type="date" name="bilyet_date" class="form-control"
-                                    value="{{ $model->bilyet_date }}" readonly>
+                                    value="{{ $model->bilyet_date ? $model->bilyet_date->format('Y-m-d') : '' }}"
+                                    readonly>
                             </div>
                             <div class="form-group">
                                 <label for="cair_date">Cair Date <span class="text-danger">*</span></label>
                                 <input type="date" name="cair_date" class="form-control"
-                                    value="{{ old('cair_date', $model->cair_date) }}" required>
+                                    value="{{ old('cair_date', $model->cair_date ? $model->cair_date->format('Y-m-d') : '') }}"
+                                    required>
                             </div>
                             <div class="form-group">
                                 <label for="amount">Amount</label>

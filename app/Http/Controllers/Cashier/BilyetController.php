@@ -163,11 +163,11 @@ class BilyetController extends Controller
     /**
      * Determine the appropriate status based on request data
      */
-    private function determineStatus($request)
+    private function determineStatus($data)
     {
-        if ($request->amount && $request->bilyet_date && $request->cair_date) {
+        if (isset($data['amount']) && $data['amount'] && isset($data['bilyet_date']) && $data['bilyet_date'] && isset($data['cair_date']) && $data['cair_date']) {
             return 'cair';
-        } elseif ($request->amount || $request->bilyet_date) {
+        } elseif ((isset($data['amount']) && $data['amount']) || (isset($data['bilyet_date']) && $data['bilyet_date'])) {
             return 'release';
         } else {
             return 'onhand';
