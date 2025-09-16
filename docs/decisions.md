@@ -660,3 +660,41 @@ We chose Laravel framework for its robust features, active community, and excell
 -   Applied same pattern to cair_date field for consistency
 
 **Review Date**: 2025-12-31
+
+## ADR-010: Superadmin Bilyet Edit Feature with Enhanced Status Validation - 2025-09-16
+
+**Context**: Need to provide superadmin users with comprehensive edit capabilities for bilyet records while maintaining business rule integrity and audit trail requirements.
+
+**Options Considered**:
+
+1. **Option A**: Allow unrestricted superadmin editing without validation
+    - ✅ Pros: Maximum flexibility for superadmins
+    - ❌ Cons: No accountability, bypasses all business rules, poor audit trail
+2. **Option B**: Create separate superadmin routes with enhanced validation
+    - ✅ Pros: Proper business rule enforcement, comprehensive audit trail, justification requirements
+    - ❌ Cons: More complex implementation, additional routes and validation logic
+3. **Option C**: Extend existing edit functionality with role-based features
+    - ✅ Pros: Reuses existing code, simpler implementation
+    - ❌ Cons: Mixed concerns, harder to maintain, unclear separation of responsibilities
+
+**Decision**: Option B (Create separate superadmin routes with enhanced validation)
+
+**Rationale**:
+
+-   Superadmin features require careful balance between administrative flexibility and business rule enforcement
+-   Separate routes provide clear separation of concerns and security boundaries
+-   Enhanced validation ensures business rules are respected while allowing necessary overrides
+-   Comprehensive audit trail with justification requirements provides accountability
+-   Dynamic UI guidance helps users understand business rules and requirements
+
+**Implementation**:
+
+-   **Routes**: Added `GET /edit` and `PUT /superadmin` routes for superadmin operations
+-   **Controller**: Enhanced BilyetController with `edit()` and `superAdminUpdate()` methods
+-   **Validation**: Created SuperAdminUpdateBilyetRequest with comprehensive field validation
+-   **Status Logic**: Implemented existing business rules with superadmin override capability
+-   **UI Enhancement**: Added dynamic status transition rules display and justification guidance
+-   **Audit Trail**: Comprehensive logging of all changes with context and justification
+-   **Security**: Role-based access control ensuring only superadmins can access edit functionality
+
+**Review Date**: 2025-12-31

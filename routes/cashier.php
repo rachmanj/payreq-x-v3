@@ -108,10 +108,12 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('data', [BilyetController::class, 'data'])->name('data');
         Route::get('/', [BilyetController::class, 'index'])->name('index');
         Route::post('/', [BilyetController::class, 'store'])->name('store');
+        Route::get('{id}/edit', [BilyetController::class, 'edit'])->name('edit');
         Route::get('release', [BilyetController::class, 'release_index'])->name('release_index');
         Route::get('cair', [BilyetController::class, 'cair_index'])->name('cair_index');
         Route::get('void', [BilyetController::class, 'void_index'])->name('void_index');
         Route::put('{id}', [BilyetController::class, 'update'])->name('update');
+        Route::put('{id}/superadmin', [BilyetController::class, 'superAdminUpdate'])->name('superadmin_update');
         Route::put('{id}/void', [BilyetController::class, 'void'])->name('void');
         Route::put('{id}/release', [BilyetController::class, 'release'])->name('release');
         Route::get('export', [BilyetController::class, 'export'])->name('export');

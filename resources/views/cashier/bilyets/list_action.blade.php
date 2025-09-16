@@ -35,6 +35,13 @@
                 <i class="fas fa-history"></i>
             </a>
 
+            @if (auth()->user()->hasRole('superadmin'))
+                <a href="{{ route('cashier.bilyets.edit', $model->id) }}" class="btn btn-sm btn-outline-warning"
+                    title="Superadmin Edit (All Fields)">
+                    <i class="fas fa-cog"></i>
+                </a>
+            @endif
+
             @can('delete_bilyet')
                 @if ($model->status == 'onhand')
                     <form action="{{ route('cashier.bilyets.destroy', $model->id) }}" method="POST" style="display:inline;"

@@ -209,17 +209,31 @@ sequenceDiagram
     Controller->>DB: Clear temp records
     Controller->>UI: Return import status
 
-    User->>UI: Edit Bilyet
+    User->>UI: Edit Bilyet (Regular)
     UI->>Controller: GET /edit/{id}
     Controller->>DB: Get bilyet data
     Controller->>UI: Return edit form with populated fields
 
-    User->>UI: Update Bilyet
+    User->>UI: Update Bilyet (Regular)
     UI->>Controller: PUT /update/{id}
     Controller->>Validation: Validate status transition
     Validation->>Controller: Return validation result
     Controller->>DB: Update bilyet
     Controller->>Audit: Log status change
+    Controller->>UI: Return success
+
+    Note over User,Audit: Superadmin Edit Flow
+    User->>UI: Edit Bilyet (Superadmin)
+    UI->>Controller: GET /edit/{id}
+    Controller->>DB: Get bilyet data with related models
+    Controller->>UI: Return enhanced edit form with status rules
+
+    User->>UI: Update Bilyet (Superadmin)
+    UI->>Controller: PUT /superadmin/{id}
+    Controller->>Validation: Validate all fields + status transition
+    Validation->>Controller: Check business rules + superadmin override
+    Controller->>DB: Update bilyet with all fields
+    Controller->>Audit: Log superadmin update with justification
     Controller->>UI: Return success
 ```
 

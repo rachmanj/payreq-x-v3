@@ -8,10 +8,13 @@ use App\Http\Controllers\Reports\BilyetController as ReportsBilyetController;
 use App\Http\Controllers\UserController;
 use App\Http\Requests\StoreBilyetRequest;
 use App\Http\Requests\UpdateBilyetRequest;
+use App\Http\Requests\SuperAdminUpdateBilyetRequest;
 use App\Http\Requests\BulkUpdateBilyetRequest;
 use App\Models\Bilyet;
 use App\Models\BilyetTemp;
 use App\Models\Giro;
+use App\Models\Loan;
+use App\Models\Project;
 use App\Services\BilyetService;
 use Carbon\Carbon;
 use App\Events\BilyetCreated;
@@ -116,6 +119,23 @@ class BilyetController extends Controller
         return redirect()->back()->with('success', 'Bilyet created successfully.');
     }
 
+    public function edit($id)
+    {
+        // Check if user has superadmin role
+        if (!auth()->user()->hasRole('superadmin')) {
+            abort(403, 'Access denied. Superadmin role required.');
+        }
+
+        $bilyet = Bilyet::with(['giro.bank', 'loan', 'creator'])->findOrFail($id);
+
+        // Get data for dropdowns
+        $giros = Giro::with('bank')->orderBy('acc_no')->get();
+        $loans = Loan::orderBy('loan_code')->get();
+        $projects = Project::where('is_active', 1)->orderBy('code')->get();
+
+        return view('cashier.bilyets.edit', compact('bilyet', 'giros', 'loans', 'projects'));
+    }
+
     public function update(UpdateBilyetRequest $request, $id)
     {
         $bilyet = Bilyet::find($id);
@@ -158,6 +178,54 @@ class BilyetController extends Controller
         }
 
         return redirect()->back()->with('success', 'Bilyet updated successfully.');
+    }
+
+    public function superAdminUpdate(SuperAdminUpdateBilyetRequest $request, $id)
+    {
+        // Check if user has superadmin role
+        if (!auth()->user()->hasRole('superadmin')) {
+            abort(403, 'Access denied. Superadmin role required.');
+        }
+
+        $bilyet = Bilyet::findOrFail($id);
+
+        $oldValues = $bilyet->toArray();
+        $data = $request->validated();
+
+        // For superadmin: Validate status transition but allow override with justification
+        $requestedStatus = $data['status'];
+        $isStatusTransitionValid = $bilyet->canTransitionTo($requestedStatus);
+
+        // If status transition is invalid, check if superadmin provided justification
+        if (!$isStatusTransitionValid) {
+            $hasJustification = !empty($data['remarks']) && strlen(trim($data['remarks'])) > 10;
+
+            if (!$hasJustification) {
+                return redirect()->back()->with(
+                    'error',
+                    'Invalid status transition from ' . $bilyet->status_label . ' to ' . Bilyet::STATUS_LABELS[$requestedStatus] .
+                        '. As superadmin, you can override this by providing a detailed reason in the remarks field (minimum 10 characters).'
+                );
+            }
+
+            // Add superadmin override note to remarks
+            $overrideNote = "\n\n[SUPERADMIN OVERRIDE: Status changed from {$bilyet->status_label} to " . Bilyet::STATUS_LABELS[$requestedStatus] . " - " . now()->format('Y-m-d H:i:s') . "]";
+            $data['remarks'] = trim($data['remarks']) . $overrideNote;
+        }
+
+        // Update the bilyet with all provided data
+        $bilyet->update($data);
+
+        // Fire event for audit trail with superadmin context
+        event(new BilyetUpdated($bilyet, auth()->user(), $oldValues, $data, 'superadmin_updated'));
+
+        // Check if status changed and fire status change event
+        if ($oldValues['status'] !== $data['status']) {
+            event(new BilyetStatusChanged($bilyet, auth()->user(), $oldValues['status'], $data['status']));
+        }
+
+        return redirect()->route('cashier.bilyets.index', ['page' => 'list'])
+            ->with('success', 'Bilyet updated successfully by superadmin.');
     }
 
     /**
