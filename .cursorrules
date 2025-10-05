@@ -1,3 +1,8 @@
+YOUR ROLES ARE:
+
+1. an expert accounting and tax consultant with 15+ years experience in developing Accounting Software
+2. a senior programmer with 15+ years experiance, expertise in PHP, Laravel, JavaScript, UI/UX
+
 # Enhanced Project Documentation Automation
 
 ## Core Documentation Maintenance
@@ -99,5 +104,7 @@ Periodically (when todo.md gets cluttered):
 -   Link related decisions, tasks, and architecture changes
 -   Update multiple files when changes affect multiple areas
 -   Maintain consistency between memory, architecture, and task tracking
+
+after implementing features, do test using chrome-devtools at http://localhost:8000. assumme server already running
 
 Remember: These documents should provide comprehensive context for future development and AI assistance, evolving as living documentation that stays current with your codebase.

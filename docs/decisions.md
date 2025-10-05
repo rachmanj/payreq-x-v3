@@ -734,3 +734,91 @@ We chose Laravel framework for its robust features, active community, and excell
 -   **Future Ready**: Easy to re-enable when mail server is configured
 
 **Review Date**: 2025-12-31
+
+---
+
+## ADR-012: Exchange Rate Automation Implementation - 2025-10-05
+
+### Status
+
+Accepted
+
+### Context
+
+The exchange rate management system required manual data entry from the official Kemenkeu Kurs Pajak website (https://fiskal.kemenkeu.go.id/informasi-publik/kurs-pajak), which was time-consuming and error-prone. Users needed to manually check the website weekly and input exchange rates for USD, AUD, and SGD currencies.
+
+### Decision
+
+We implemented a comprehensive exchange rate automation system with the following architecture:
+
+1. **Web Scraping Service**: Created `ExchangeRateScraperService` to parse Kemenkeu Kurs Pajak HTML table
+2. **Database Enhancement**: Added automation tracking fields to `exchange_rates` table
+3. **Console Command**: Implemented `UpdateExchangeRates` command with configurable options
+4. **Scheduled Automation**: Set up weekly and daily automated updates via Laravel scheduler
+5. **UI Enhancement**: Added automation status indicators to the exchange rates interface
+6. **Configuration System**: Implemented configurable target currencies via environment variables
+
+### Consequences
+
+#### Positive
+
+-   **Time Savings**: Eliminates 15-30 minutes of manual work weekly
+-   **Accuracy**: Removes human transcription errors
+-   **Consistency**: Always uses official Kemenkeu rates
+-   **Flexibility**: Configurable target currencies (USD, AUD, SGD by default)
+-   **Audit Trail**: Complete tracking of automated vs manual entries
+-   **Daily Coverage**: Creates daily records for entire KMK effective period
+-   **Real-time Status**: UI shows automation status and last update time
+
+#### Negative
+
+-   **External Dependency**: System now depends on Kemenkeu website availability
+-   **Parsing Complexity**: HTML structure changes could break scraping
+-   **Database Growth**: Daily records increase storage requirements
+
+### Implementation Details
+
+#### Files Created/Modified
+
+-   `database/migrations/2025_10_05_145641_add_automation_fields_to_exchange_rates_table.php` - Added automation fields
+-   `app/Services/ExchangeRateScraperService.php` - Web scraping service with DOM parsing
+-   `app/Console/Commands/UpdateExchangeRates.php` - Automated update command
+-   `app/Console/Kernel.php` - Scheduled automation (weekly + daily backup)
+-   `app/Models/ExchangeRate.php` - Enhanced model with new fields
+-   `config/exchange_rates.php` - Configuration for target currencies
+-   `resources/views/exchange-rates/index.blade.php` - UI automation status display
+
+#### Key Features Implemented
+
+-   **DOM-based Parsing**: Robust HTML parsing using DOMDocument and XPath
+-   **Configurable Currencies**: Environment variable `EXCHANGE_RATES_TARGET` (default: USD,AUD,SGD)
+-   **Command Options**: `--currencies`, `--force`, `--no-expand` for flexible operation
+-   **KMK Period Tracking**: Stores KMK number and effective date range
+-   **Daily Expansion**: Creates records for each day in KMK effective period
+-   **Change Tracking**: Calculates rate changes from previous periods
+-   **Source Attribution**: Tracks manual vs automated entries
+-   **UI Status Display**: Shows "Automated" badge with last update time and KMK number
+
+#### Environment Configuration
+
+```env
+# Target currencies for automation (comma-separated)
+EXCHANGE_RATES_TARGET=USD,AUD,SGD
+```
+
+#### Command Usage
+
+```bash
+# Standard automation (uses config)
+php artisan exchange-rates:update --force
+
+# Specific currencies
+php artisan exchange-rates:update --currencies=USD,SGD --force
+
+# Single date only (no daily expansion)
+php artisan exchange-rates:update --no-expand --force
+```
+
+### Review Date
+
+2025-12-05 (2 months from implementation)

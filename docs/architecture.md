@@ -125,6 +125,7 @@ graph TB
             PaymentService
             BilyetService
             BilyetValidationService
+            ExchangeRateScraperService
         end
 
         subgraph "Middleware"
@@ -316,7 +317,7 @@ sequenceDiagram
 -   **SAP Integration**: General ledger synchronization
 -   **LOT Service**: Official travel claim management
 -   **BUC Sync**: Budget synchronization system
--   **Exchange Rate APIs**: External currency APIs for rate updates
+-   **Exchange Rate Automation**: Automated scraping from Kemenkeu Kurs Pajak with configurable target currencies
 
 ## Security Architecture
 
@@ -381,7 +382,11 @@ sequenceDiagram
 #### Multi-Currency Support
 
 -   **currencies**: Currency definitions and codes
--   **exchange_rates**: Daily exchange rates with effective dates
+-   **exchange_rates**: Daily exchange rates with effective dates and automation tracking
+    -   Automated scraping from Kemenkeu Kurs Pajak (https://fiskal.kemenkeu.go.id/informasi-publik/kurs-pajak)
+    -   Configurable target currencies via environment variables
+    -   KMK period tracking and daily rate expansion
+    -   Source tracking (manual vs automated) with audit trail
 
 #### Document Management
 

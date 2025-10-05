@@ -23,6 +23,12 @@ class ExchangeRate extends Model
         'effective_date',
         'created_by',
         'updated_by',
+        'kmk_number',
+        'kmk_effective_from',
+        'kmk_effective_to',
+        'source',
+        'change_from_previous',
+        'scraped_at',
     ];
 
     /**
@@ -35,6 +41,10 @@ class ExchangeRate extends Model
         'effective_date' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'kmk_effective_from' => 'date',
+        'kmk_effective_to' => 'date',
+        'change_from_previous' => 'decimal:6',
+        'scraped_at' => 'datetime',
     ];
 
     /**

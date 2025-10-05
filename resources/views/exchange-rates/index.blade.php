@@ -82,6 +82,23 @@
                             </a>
                         @endcan
                     </div>
+                    <div class="float-right">
+                        @php
+                            $latestAuto = \App\Models\ExchangeRate::where('source', 'automated')
+                                ->latest('scraped_at')
+                                ->first();
+                        @endphp
+                        @if ($latestAuto)
+                            <span class="badge badge-success mr-2">Automated</span>
+                            <small class="text-muted">Last update:
+                                {{ optional($latestAuto->scraped_at)->format('d-M-Y H:i') }}</small>
+                            @if ($latestAuto->kmk_number)
+                                <small class="text-muted ml-2">KMK: {{ $latestAuto->kmk_number }}</small>
+                            @endif
+                        @else
+                            <span class="badge badge-secondary">Manual</span>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Filters -->
