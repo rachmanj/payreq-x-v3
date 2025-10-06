@@ -65,6 +65,23 @@
 -   **Formatting**: Applied Indonesian number formatting to both rates for consistency
 -   **Real-time Updates**: Maintained 5-minute refresh interval for both rate sources
 
+### [014] Dashboard Exchange Rate Simplification (2025-10-05) ✅ COMPLETE
+
+**Challenge**: User requested to simplify the dashboard exchange rate display by removing the external exchange rate (exchangerate-api.com) and keeping only the automated Kemenkeu Kurs Pajak rate to focus on a single source of truth and reduce complexity.
+
+**Solution**: Simplified the dashboard running text to display only the official government exchange rate from our automated Kemenkeu system. Removed external API dependency, simplified JavaScript function from `fetchExchangeRates()` to `fetchExchangeRate()`, and maintained single source of truth with proper error handling and Indonesian number formatting.
+
+**Key Learning**: Single source of truth approach simplifies user interface and reduces complexity while focusing on official government rates for tax/financial reporting requirements. Eliminating external API dependencies improves system reliability and leverages existing automation investments. Official government rates provide authoritative data for business operations.
+
+**Technical Implementation**:
+
+-   **Frontend Simplification**: Removed external API call to exchangerate-api.com, simplified JavaScript function
+-   **Display Format**: Updated to show only Kemenkeu rate with clear source attribution
+-   **Error Handling**: Maintained graceful fallback when internal rate unavailable
+-   **Formatting**: Preserved Indonesian number formatting and timestamp display
+-   **API Endpoint**: Continued using `/api/dashboard/exchange-rate-usd` for internal rate fetching
+-   **Refresh Interval**: Maintained 5-minute update cycle for real-time data
+
 **Purpose**: AI's persistent knowledge base for project context and learnings
 **Last Updated**: 2025-10-05
 

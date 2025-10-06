@@ -318,7 +318,7 @@ sequenceDiagram
 -   **LOT Service**: Official travel claim management
 -   **BUC Sync**: Budget synchronization system
 -   **Exchange Rate Automation**: Automated scraping from Kemenkeu Kurs Pajak with configurable target currencies
--   **Dashboard Exchange Rate Display**: Dual rate comparison showing both external (exchangerate-api.com) and official (Kemenkeu) rates
+-   **Dashboard Exchange Rate Display**: Single official rate display from Kemenkeu Kurs Pajak automation system
 
 ## Security Architecture
 

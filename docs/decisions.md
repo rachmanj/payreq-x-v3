@@ -908,3 +908,82 @@ php artisan exchange-rates:update --no-expand --force
 ### Review Date
 
 2025-12-05 (2 months from implementation)
+
+---
+
+## ADR-014: Dashboard Exchange Rate Simplification - 2025-10-05
+
+**Context**: User requested to simplify the dashboard exchange rate display by removing the external exchange rate (exchangerate-api.com) and keeping only the automated Kemenkeu Kurs Pajak rate. This change was made to focus on a single source of truth and reduce complexity.
+
+**Options Considered**:
+
+1. **Option A**: Keep dual rate display (current state)
+
+    - ✅ Pros: Rate comparison, transparency, data validation
+    - ❌ Cons: Complex display, dual API calls, longer running text
+
+2. **Option B**: Show only external rate (exchangerate-api.com)
+
+    - ✅ Pros: Market rate, real-time updates
+    - ❌ Cons: Not official government rate, external dependency
+
+3. **Option C**: Show only internal automated rate (Kemenkeu Kurs Pajak)
+    - ✅ Pros: Official government rate, single source of truth, leverages automation
+    - ❌ Cons: No external market comparison
+
+**Decision**: Implement Option C - Single official rate display from Kemenkeu automation system
+
+**Rationale**:
+
+-   Provides official government exchange rate as single source of truth
+-   Leverages our existing automation system investment
+-   Simplifies user interface and reduces complexity
+-   Eliminates external API dependency
+-   Focuses on official tax/financial reporting requirements
+
+**Implementation Details**:
+
+#### Frontend Simplification
+
+-   Removed external API call to exchangerate-api.com
+-   Simplified JavaScript function from `fetchExchangeRates()` to `fetchExchangeRate()`
+-   Updated display format to show only Kemenkeu rate
+-   Maintained 5-minute refresh interval
+
+#### Display Format
+
+```
+💱 Exchange Rate: 1 USD = IDR 16.690 (Source: Kemenkeu Kurs Pajak) | Last Updated: 14.17 WIB 💱
+```
+
+#### Error Handling
+
+-   Graceful fallback when internal rate unavailable
+-   Clear source attribution maintained
+-   Indonesian number formatting preserved
+
+**Consequences**:
+
+✅ **Positive**:
+
+-   Simplified user interface
+-   Single source of truth (official government rate)
+-   Reduced API calls and complexity
+-   Focus on official tax reporting requirements
+-   Leverages existing automation investment
+
+❌ **Negative**:
+
+-   Loss of external market rate comparison
+-   No rate validation against market sources
+-   Reduced transparency about rate differences
+
+**Files Modified**:
+
+-   `resources/views/dashboard/run-text.blade.php` - Simplified JavaScript for single rate fetching
+-   `docs/architecture.md` - Updated external integrations description
+-   `docs/decisions.md` - Added this decision record
+
+### Review Date
+
+2025-12-05 (2 months from implementation)

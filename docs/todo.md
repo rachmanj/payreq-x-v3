@@ -46,6 +46,15 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   [x] **Dashboard Exchange Rate Simplification** - Completed on 2025-10-05
+
+    -   Removed external exchange rate (exchangerate-api.com) from dashboard running text
+    -   Simplified display to show only automated Kemenkeu Kurs Pajak rate
+    -   Updated JavaScript function from `fetchExchangeRates()` to `fetchExchangeRate()`
+    -   Maintained single source of truth with official government rate
+    -   Preserved Indonesian number formatting and error handling
+    -   Files: `resources/views/dashboard/run-text.blade.php`, `docs/architecture.md`, `docs/decisions.md`
+
 -   [x] **Dashboard Dual Exchange Rate Display Implementation** - Completed on 2025-10-05
 
     -   Implemented dual exchange rate display showing both external (exchangerate-api.com) and internal (Kemenkeu Kurs Pajak) rates side by side
