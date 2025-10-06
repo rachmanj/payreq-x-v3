@@ -12,12 +12,17 @@
 </div>
 
 <script>
-    async function fetchExchangeRate() {
+    async function fetchExchangeRates() {
         try {
-            const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-            const data = await response.json();
-            const idrRate = data.rates.IDR;
-            const formattedRate = new Intl.NumberFormat('id-ID').format(idrRate);
+            // Fetch external rate
+            const externalResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+            const externalData = await externalResponse.json();
+            const externalIdrRate = externalData.rates.IDR;
+            const externalFormattedRate = new Intl.NumberFormat('id-ID').format(externalIdrRate);
+
+            // Fetch internal automated rate
+            const internalResponse = await fetch('/api/dashboard/exchange-rate-usd');
+            const internalData = await internalResponse.json();
 
             const currentTime = new Date().toLocaleString('id-ID', {
                 timeZone: 'Asia/Jakarta',
@@ -26,20 +31,36 @@
                 hour12: false
             });
 
-            const marqueeText =
-                `💱 Current Exchange Rate: 1 USD = IDR ${formattedRate} (Source: exchangerate-api.com) | Last Updated: ${currentTime} WIB 💱`;
+            let marqueeText =
+                `💱 External Rate: 1 USD = IDR ${externalFormattedRate} (Source: exchangerate-api.com) | Last Updated: ${currentTime} WIB 💱`;
+
+            if (internalData.success && internalData.rate) {
+                const internalFormattedRate = new Intl.NumberFormat('id-ID').format(internalData.rate);
+                const internalUpdateTime = new Date(internalData.scraped_at).toLocaleString('id-ID', {
+                    timeZone: 'Asia/Jakarta',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+
+                marqueeText +=
+                    ` | 💱 Official Rate: 1 USD = IDR ${internalFormattedRate} (Source: Kemenkeu Kurs Pajak) | Last Updated: ${internalUpdateTime} WIB 💱`;
+            } else {
+                marqueeText += ` | 💱 Official Rate: Not available 💱`;
+            }
+
             document.getElementById('currency-marquee').innerText = marqueeText;
         } catch (error) {
-            console.error('Error fetching exchange rate:', error);
+            console.error('Error fetching exchange rates:', error);
             document.getElementById('currency-marquee').innerText = 'Unable to load exchange rate data';
         }
     }
 
-    // Fetch exchange rate immediately
-    fetchExchangeRate();
+    // Fetch exchange rates immediately
+    fetchExchangeRates();
 
-    // Update exchange rate every 5 minutes
-    setInterval(fetchExchangeRate, 300000);
+    // Update exchange rates every 5 minutes
+    setInterval(fetchExchangeRates, 300000);
 </script>
 
 <style>

@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-09-16
+**Last Updated**: 2025-10-05
 
 # Technical Decision Records
 
@@ -818,6 +818,92 @@ php artisan exchange-rates:update --currencies=USD,SGD --force
 # Single date only (no daily expansion)
 php artisan exchange-rates:update --no-expand --force
 ```
+
+### Review Date
+
+2025-12-05 (2 months from implementation)
+
+---
+
+## ADR-013: Dashboard Dual Exchange Rate Display Implementation - 2025-10-05
+
+**Context**: User requested to display both external exchange rate (from exchangerate-api.com) and internal automated exchange rate (from Kemenkeu Kurs Pajak) side by side in the dashboard running text for comparison purposes. This would help users validate data accuracy and understand rate differences between sources.
+
+**Options Considered**:
+
+1. **Option A**: Replace existing external rate with internal rate only
+
+    - ✅ Pros: Single source of truth, official government data
+    - ❌ Cons: Loses external market rate comparison, reduces transparency
+
+2. **Option B**: Show both rates side by side with source attribution
+
+    - ✅ Pros: Full transparency, rate comparison, data validation capability
+    - ❌ Cons: Slightly more complex UI, requires dual API calls
+
+3. **Option C**: Toggle between sources with user preference
+    - ✅ Pros: User choice, clean UI
+    - ❌ Cons: More complex implementation, users might miss comparison
+
+**Decision**: Implement Option B - Dual rate display with side-by-side comparison
+
+**Rationale**:
+
+-   Provides maximum transparency and data validation capability
+-   Helps users understand rate differences between external market and official government sources
+-   Maintains existing functionality while adding official rate visibility
+-   Simple implementation with clear source attribution
+
+**Implementation Details**:
+
+#### API Endpoint
+
+-   Created `/api/dashboard/exchange-rate-usd` route (no authentication required)
+-   Fetches today's USD rate from automated exchange rate system
+-   Returns JSON with rate, timestamp, KMK number, and effective date
+
+#### Frontend Enhancement
+
+-   Updated `resources/views/dashboard/run-text.blade.php` JavaScript
+-   Dual API calls: external (exchangerate-api.com) + internal (Kemenkeu)
+-   Side-by-side display with source attribution and timestamps
+-   Graceful fallback when internal rate unavailable
+
+#### Display Format
+
+```
+💱 External Rate: 1 USD = IDR 16.574,58 (Source: exchangerate-api.com) | Last Updated: 14.18 WIB 💱 | 💱 Official Rate: 1 USD = IDR 16.690 (Source: Kemenkeu Kurs Pajak) | Last Updated: 14.17 WIB 💱
+```
+
+#### Technical Features
+
+-   Indonesian number formatting for both rates
+-   Real-time updates every 5 minutes
+-   Error handling with graceful degradation
+-   Source attribution for transparency
+
+**Consequences**:
+
+✅ **Positive**:
+
+-   Enhanced transparency and data validation
+-   Rate comparison capability for users
+-   Leverages existing automation system
+-   Maintains existing external rate functionality
+-   Clear source attribution builds trust
+
+❌ **Negative**:
+
+-   Slightly longer running text display
+-   Requires dual API calls (minimal performance impact)
+-   More complex JavaScript logic
+
+**Files Modified**:
+
+-   `resources/views/dashboard/run-text.blade.php` - Enhanced JavaScript for dual rate fetching
+-   `routes/api.php` - Added dashboard API endpoint
+-   `docs/architecture.md` - Updated external integrations section
+-   `MEMORY.md` - Added implementation memory entry
 
 ### Review Date
 

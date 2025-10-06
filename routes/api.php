@@ -32,3 +32,35 @@ Route::prefix('bilyets')->middleware('auth:sanctum')->group(function () {
  * No authentication required
  */
 Route::get('/realization-details/sum-by-unit', [App\Http\Controllers\Api\RealizationDetailController::class, 'sumByUnitNo']);
+
+// Exchange Rates API for Dashboard (no auth required)
+Route::get('/dashboard/exchange-rate-usd', function () {
+    try {
+        $todayRate = \App\Models\ExchangeRate::where('currency_from', 'USD')
+            ->where('currency_to', 'IDR')
+            ->where('source', 'automated')
+            ->whereDate('effective_date', today())
+            ->orderByDesc('scraped_at')
+            ->first();
+
+        if ($todayRate) {
+            return response()->json([
+                'success' => true,
+                'rate' => $todayRate->exchange_rate,
+                'scraped_at' => $todayRate->scraped_at,
+                'kmk_number' => $todayRate->kmk_number,
+                'effective_date' => $todayRate->effective_date,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'No automated USD rate found for today',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching USD rate: ' . $e->getMessage(),
+        ], 500);
+    }
+});

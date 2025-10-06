@@ -1,5 +1,5 @@
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-09-16
+**Last Updated**: 2025-10-05
 
 ## Task Management Guidelines
 
@@ -45,6 +45,16 @@ Include relevant context in brackets to help with future AI-assisted coding:
 -   [ ] Advanced reporting features
 
 ## Recently Completed
+
+-   [x] **Dashboard Dual Exchange Rate Display Implementation** - Completed on 2025-10-05
+
+    -   Implemented dual exchange rate display showing both external (exchangerate-api.com) and internal (Kemenkeu Kurs Pajak) rates side by side
+    -   Created API endpoint `/api/dashboard/exchange-rate-usd` for fetching today's USD rate from automated system
+    -   Enhanced frontend JavaScript to fetch both rates simultaneously with proper error handling
+    -   Added source attribution and timestamps for transparency and data validation
+    -   Maintained 5-minute refresh interval for both rate sources
+    -   Applied Indonesian number formatting for consistency across both rates
+    -   Files: `resources/views/dashboard/run-text.blade.php`, `routes/api.php`, `docs/architecture.md`, `docs/decisions.md`, `MEMORY.md`
 
 -   [x] **Email Notification System Disabled and Bilyet Update Testing Completed** - Completed on 2025-09-16
 

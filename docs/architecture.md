@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-09-16
+Last Updated: 2025-10-05
 
 ## Architecture Documentation Guidelines
 
@@ -318,6 +318,7 @@ sequenceDiagram
 -   **LOT Service**: Official travel claim management
 -   **BUC Sync**: Budget synchronization system
 -   **Exchange Rate Automation**: Automated scraping from Kemenkeu Kurs Pajak with configurable target currencies
+-   **Dashboard Exchange Rate Display**: Dual rate comparison showing both external (exchangerate-api.com) and official (Kemenkeu) rates
 
 ## Security Architecture
 
@@ -387,6 +388,7 @@ sequenceDiagram
     -   Configurable target currencies via environment variables
     -   KMK period tracking and daily rate expansion
     -   Source tracking (manual vs automated) with audit trail
+    -   Dashboard API endpoint for real-time rate display (`/api/dashboard/exchange-rate-usd`)
 
 #### Document Management
 
