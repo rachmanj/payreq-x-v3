@@ -65,6 +65,22 @@
 -   **Formatting**: Applied Indonesian number formatting to both rates for consistency
 -   **Real-time Updates**: Maintained 5-minute refresh interval for both rate sources
 
+### [015] Dashboard Exchange Rate API Route Helper Conversion (2025-10-08) ✅ COMPLETE
+
+**Challenge**: The dashboard running text was using a hardcoded URL string (`'/api/dashboard/exchange-rate-usd'`) to fetch exchange rate data, which doesn't follow Laravel best practices and makes the codebase harder to maintain and refactor.
+
+**Solution**: Converted the hardcoded URL to use Laravel's named route helper (`route('api.dashboard.exchange-rate-usd')`). Added route name to the API endpoint definition and updated the Blade template to use the route helper. Thoroughly tested to confirm all functionality continues to work correctly.
+
+**Key Learning**: Using Laravel's named route helper provides type safety (Laravel throws errors for non-existent routes), better maintainability (URL changes only require single-point updates), and follows Laravel best practices. Named routes make refactoring easier and provide better IDE support for route discovery.
+
+**Technical Implementation**:
+
+-   **Route Naming**: Added `->name('api.dashboard.exchange-rate-usd')` to API route definition in `routes/api.php`
+-   **Blade Template Update**: Changed `fetch('/api/dashboard/exchange-rate-usd')` to `fetch('{{ route('api.dashboard.exchange-rate-usd') }}')`
+-   **Testing**: Verified URL generation, network requests, data fetching, and running text display all working correctly
+-   **Generated URL**: Route helper correctly generates full URL `http://localhost:8000/api/dashboard/exchange-rate-usd`
+-   **No Breaking Changes**: Complete backward compatibility maintained with zero functional impact
+
 ### [014] Dashboard Exchange Rate Simplification (2025-10-05) ✅ COMPLETE
 
 **Challenge**: User requested to simplify the dashboard exchange rate display by removing the external exchange rate (exchangerate-api.com) and keeping only the automated Kemenkeu Kurs Pajak rate to focus on a single source of truth and reduce complexity.
@@ -83,7 +99,7 @@
 -   **Refresh Interval**: Maintained 5-minute update cycle for real-time data
 
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2025-10-05
+**Last Updated**: 2025-10-08
 
 ## Memory Maintenance Guidelines
 

@@ -63,4 +63,4 @@ Route::get('/dashboard/exchange-rate-usd', function () {
             'message' => 'Error fetching USD rate: ' . $e->getMessage(),
         ], 500);
     }
-});
+})->name('api.dashboard.exchange-rate-usd');

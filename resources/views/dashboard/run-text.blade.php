@@ -15,7 +15,7 @@
     async function fetchExchangeRate() {
         try {
             // Fetch internal automated rate
-            const response = await fetch('/api/dashboard/exchange-rate-usd');
+            const response = await fetch('{{ route('api.dashboard.exchange-rate-usd') }}');
             const data = await response.json();
 
             if (data.success && data.rate) {
