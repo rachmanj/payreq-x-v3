@@ -22,6 +22,7 @@ Route::prefix('approvals')->name('approvals.')->group(function () {
             Route::get('/data', [ApprovalRequestRealizationController::class, 'data'])->name('data');
             Route::get('/', [ApprovalRequestRealizationController::class, 'index'])->name('index');
             Route::get('/{id}', [ApprovalRequestRealizationController::class, 'show'])->name('show');
+            Route::put('/{id}/details', [ApprovalRequestRealizationController::class, 'updateDetails'])->name('update-details');
         });
         Route::prefix('anggarans')->name('anggarans.')->group(function () {
             Route::get('/data', [ApprovalRequestAnggaranController::class, 'data'])->name('data');

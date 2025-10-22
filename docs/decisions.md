@@ -30,6 +30,73 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ## Recent Decisions
 
+### Decision: Warning-Based Validation for Approver Edits - 2025-10-22
+
+**Context**: When approvers edit realization details, the total amount may differ from the original. Need to decide whether to block saves when amounts don't match or allow with warnings.
+
+**Options Considered**:
+
+1. **Block save if amounts don't match**
+
+    - ✅ Pros: Enforces data integrity, prevents unintentional amount changes
+    - ❌ Cons: Reduces approver flexibility, may require multiple edit cycles, blocks legitimate corrections
+
+2. **Warning-only approach (allow save anyway)**
+
+    - ✅ Pros: Approver flexibility, faster workflow, handles legitimate corrections
+    - ❌ Cons: Potential for unnoticed errors, requires approver attention to warnings
+
+3. **Require justification field when amounts differ**
+    - ✅ Pros: Audit trail, forces acknowledgment of changes
+    - ❌ Cons: Additional friction, may slow down legitimate corrections
+
+**Decision**: Warning-only approach with visual indicators
+
+**Rationale**: Approvers are trusted financial controllers who may need to correct submitted amounts. Blocking saves would require requestors to resubmit, creating unnecessary workflow delays. Visual warnings (yellow/orange badges, clear messaging) provide awareness while maintaining workflow efficiency. The `modified_by_approver` tracking provides audit trail without requiring manual justification.
+
+**Implementation**:
+
+-   Real-time total calculation with color-coded variance display
+-   Warning alert when amounts differ (not blocking)
+-   Success message mentions "document needs to be reprinted"
+-   User list shows "⚠ Needs Reprint" badge
+-   Database tracks modification timestamp and approver ID
+
+**Review Date**: 2026-04-22
+
+### Decision: Permission-Based Feature Access for Approver Edits - 2025-10-22
+
+**Context**: Need to control which approvers can edit submitted realization details while maintaining security and audit compliance.
+
+**Options Considered**:
+
+1. **All approvers can edit by default**
+
+    - ✅ Pros: Simple implementation, no permission management needed
+    - ❌ Cons: Security risk, no granular control, potential for unauthorized modifications
+
+2. **Permission-based access control**
+
+    - ✅ Pros: Granular control, audit trail, role-based security, flexible assignment
+    - ❌ Cons: Requires permission setup, admin overhead for permission assignment
+
+3. **Hardcoded role check (e.g., only superadmin)**
+    - ✅ Pros: Simple implementation, clear rules
+    - ❌ Cons: Inflexible, requires code changes to adjust access
+
+**Decision**: Permission-based access with `edit-submitted-realization` permission
+
+**Rationale**: Spatie Laravel Permission already in use throughout application. Permission-based approach provides maximum flexibility while maintaining security. Different organizations/projects may have different approval workflows requiring different access levels. Blade `@can` directive provides clean UI implementation.
+
+**Implementation**:
+
+-   New permission: `edit-submitted-realization`
+-   Blade directive: `@can('edit-submitted-realization')` around Edit Details button
+-   Permission assignment through existing role management UI
+-   No controller-level authorization (UI hiding sufficient for this feature)
+
+**Review Date**: 2026-04-22
+
 ### Decision: Laravel 10+ with Modern Architecture - 2024-05-01
 
 **Context**: Need for a robust, scalable accounting system with modern PHP practices

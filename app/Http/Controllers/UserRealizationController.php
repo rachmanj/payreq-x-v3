@@ -348,24 +348,34 @@ class UserRealizationController extends Controller
                 return $diff;
             })
             ->editColumn('status', function ($realization) {
+                $statusText = '';
+
                 if ($realization->status === 'submitted') {
-                    return 'Waiting Approval';
+                    $statusText = 'Waiting Approval';
                 } elseif ($realization->status === 'verification-complete') {
-                    return '<button class="btn btn-xs btn-outline-success mx-2" style="pointer-events: none;">Verification Complete</button>';
+                    $statusText = '<button class="btn btn-xs btn-outline-success mx-2" style="pointer-events: none;">Verification Complete</button>';
                 } else {
                     if ($realization->due_date == null) {
-                        return ucfirst($realization->status);
-                    }
-
-                    $due_date = new \Carbon\Carbon($realization->due_date);
-                    $today = new \Carbon\Carbon();
-                    $dif_days = $due_date->diffInDays($today);
-                    if ($today > $due_date && $realization->status == 'approved') {
-                        return ucfirst($realization->status) . '<button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                        $statusText = ucfirst($realization->status);
                     } else {
-                        return '<button class="btn btn-xs btn-outline-danger mx-2" style="pointer-events: none;">Approved and due in <b>' . $dif_days . '</b> days</button>';
+                        $due_date = new \Carbon\Carbon($realization->due_date);
+                        $today = new \Carbon\Carbon();
+                        $dif_days = $due_date->diffInDays($today);
+
+                        if ($today > $due_date && $realization->status == 'approved') {
+                            $statusText = ucfirst($realization->status) . '<button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                        } else {
+                            $statusText = '<button class="btn btn-xs btn-outline-danger mx-2" style="pointer-events: none;">Approved and due in <b>' . $dif_days . '</b> days</button>';
+                        }
                     }
                 }
+
+                // Add indicator if realization was modified by approver
+                if ($realization->modified_by_approver) {
+                    $statusText .= ' <span class="badge badge-warning" title="Modified by approver on ' . $realization->modified_by_approver_at->format('d-M-Y H:i') . '"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
+                }
+
+                return $statusText;
             })
             ->addColumn('action', 'user-payreqs.realizations.action')
             ->rawColumns(['action', 'nomor', 'status'])

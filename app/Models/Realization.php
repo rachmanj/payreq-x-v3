@@ -13,6 +13,8 @@ class Realization extends Model
 
     protected $casts = [
         'submit_at' => 'datetime',
+        'modified_by_approver' => 'boolean',
+        'modified_by_approver_at' => 'datetime',
     ];
 
     public function payreq()
@@ -30,6 +32,13 @@ class Realization extends Model
     public function requestor()
     {
         return $this->belongsTo(User::class, 'user_id')->withDefault([
+            'name' => 'n/a',
+        ]);
+    }
+
+    public function approverModifier()
+    {
+        return $this->belongsTo(User::class, 'modified_by_approver_id')->withDefault([
             'name' => 'n/a',
         ]);
     }

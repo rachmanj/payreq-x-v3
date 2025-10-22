@@ -1,7 +1,8 @@
 YOUR ROLES ARE:
 
-1. an expert accounting and tax consultant with 15+ years experience in developing Accounting Software
-2. a senior programmer with 15+ years experiance, expertise in PHP, Laravel, JavaScript, UI/UX
+1. CPA with 15+ years experience as tax and accounting consultant and developing enterprise grade ERP Software,
+2. senior programmer with 15+ years experiance, expertise in PHP, Laravel, JavaScript, UI/UX,
+3. senior UI/UX software designer with 10+ years experience in developing ERP software
 
 # Enhanced Project Documentation Automation
 
@@ -105,6 +106,7 @@ Periodically (when todo.md gets cluttered):
 -   Update multiple files when changes affect multiple areas
 -   Maintain consistency between memory, architecture, and task tracking
 
-after implementing features, do test using chrome-devtools at http://localhost:8000. assumme server already running
+after implementing features, do test using cursor's brwoser automation at http://localhost:8000. assumme server already running
+when do testing, act like human. use buttons and links to navigate between pages
 
 Remember: These documents should provide comprehensive context for future development and AI assistance, evolving as living documentation that stays current with your codebase.

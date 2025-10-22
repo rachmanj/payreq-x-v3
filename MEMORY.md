@@ -1,3 +1,21 @@
+### [016] Approver Realization Edit with Reprint Notification (2025-10-22) ✅ COMPLETE
+
+**Challenge**: Approvers needed ability to correct realization details (description, amounts, departments, unit info) after submission but before approval. However, realizations are printed before approval, so modifications by approvers require document reprinting. Users had no visibility into which documents were modified and needed reprinting.
+
+**Solution**: Implemented permission-controlled inline editing for approvers with comprehensive tracking and notification system. Added `edit-submitted-realization` permission to control button visibility. Created database tracking fields (`modified_by_approver`, `modified_by_approver_at`, `modified_by_approver_id`) to record when approvers modify realizations. Enhanced user realization list to display warning badge "⚠ Needs Reprint" with hover tooltip showing modification timestamp. Approvers can add, edit, and delete detail rows with real-time amount validation showing warnings (but not blocking save) when totals differ from original.
+
+**Key Learning**: Tracking approver modifications provides essential audit trail for financial documents. Warning-based validation (vs blocking) gives approvers flexibility while maintaining visibility into amount changes. Permission-based feature access ensures only authorized approvers can edit submitted documents. Visual indicators in user lists prevent confusion about document validity and reprint requirements.
+
+**Technical Implementation**:
+
+-   **Database Migration**: Added tracking fields to realizations table with timestamp and user tracking
+-   **Permission System**: New `edit-submitted-realization` permission guards Edit Details button visibility
+-   **Controller Enhancement**: ApprovalRequestRealizationController::updateDetails() marks realization on save
+-   **Frontend Editing**: Inline table editing with add/delete rows, expandable unit info, amount validation with warning display
+-   **User Notification**: UserRealizationController displays warning badge in status column for modified realizations
+-   **AJAX Implementation**: No page refresh during edit, smooth UX with real-time total calculation
+-   **Model Relationships**: Added approverModifier() relationship to track who made modifications
+
 ### [012] Roles Table Enhancement with Permission Display (2025-01-15) ✅ COMPLETE
 
 **Challenge**: The roles management table only showed basic role information (name, guard) without any visibility into what permissions each role actually had, making it difficult for administrators to understand role capabilities at a glance.
@@ -99,7 +117,7 @@
 -   **Refresh Interval**: Maintained 5-minute update cycle for real-time data
 
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2025-10-08
+**Last Updated**: 2025-10-22
 
 ## Memory Maintenance Guidelines
 

@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-10-05
+Last Updated: 2025-10-22
 
 ## Architecture Documentation Guidelines
 
@@ -343,7 +343,8 @@ sequenceDiagram
 ### Access Control
 
 -   Role-based permissions (admin, user, approver, etc.)
--   Feature-specific permissions (view_exchange_rates, edit_payreqs, etc.)
+-   Feature-specific permissions (view_exchange_rates, edit_payreqs, edit-submitted-realization, etc.)
+-   Permission-based UI rendering with Blade `@can` directive
 -   Department-based access control
 -   Project-based data isolation
 -   Middleware protection on all sensitive routes
@@ -366,8 +367,11 @@ sequenceDiagram
 
 -   **accounts**: Chart of accounts with balance tracking
 -   **payreqs**: Payment requests with approval workflows
--   **realizations**: Expense realizations linked to payreqs
--   **realization_details**: Detailed expense breakdowns
+-   **realizations**: Expense realizations linked to payreqs with approver modification tracking
+    -   Modification tracking: `modified_by_approver` (boolean), `modified_by_approver_at` (timestamp), `modified_by_approver_id` (foreign key)
+    -   Enables audit trail when approvers edit submitted realizations
+    -   Drives "Needs Reprint" notification in user interface
+-   **realization_details**: Detailed expense breakdowns with description, amount, department, unit information
 -   **outgoings**: Cash outflow transactions
 -   **incomings**: Cash inflow transactions
 -   **cash_journals**: Daily cash operations and reconciliation
@@ -379,6 +383,35 @@ sequenceDiagram
 -   **periode_anggarans**: Budget period management for different project cycles
 -   **approval_stages**: Approval workflow configurations
 -   **approval_plans**: Approval process instances
+
+#### Approval System
+
+The system implements comprehensive multi-level approval workflows with permission-based features:
+
+**Approval Workflow**:
+
+-   Multi-level approval stages configured per department and document type
+-   Approvers assigned through `approval_stages` table
+-   Approval tracking via `approval_plans` with status management
+-   Support for approve, revise, and reject actions with remarks
+
+**Approver Edit Capabilities** (Realizations):
+
+-   Permission-controlled edit functionality (`edit-submitted-realization` permission)
+-   Inline editing of realization details after submission but before final approval
+-   Editable fields: description, amount, department, unit information (unit_no, type, qty, uom, km_position)
+-   Add/delete detail rows with real-time amount validation
+-   Warning-based validation (allows save with amount differences)
+-   Modification tracking: Records approver ID, timestamp when details are modified
+-   User notification: "⚠ Needs Reprint" badge shown in user's realization list when document modified by approver
+-   AJAX-based updates without page refresh for improved UX
+
+**Routes**:
+
+-   `GET /approvals/request/realizations` - List pending realizations
+-   `GET /approvals/request/realizations/{id}` - View realization details
+-   `PUT /approvals/request/realizations/{id}/details` - Update realization details (permission-protected)
+-   `PUT /approvals/plan/{id}/update` - Submit approval decision
 
 #### Multi-Currency Support
 
