@@ -178,13 +178,15 @@ class UserPayreqController extends Controller
         $status_include = ['draft', 'submitted', 'approved', 'revise', 'split', 'paid', 'rejected', 'realization'];
 
         if (in_array('superadmin', $userRoles)) {
-            $payreqs = Payreq::whereIn('status', $status_include)
+            $payreqs = Payreq::with('realization')
+                ->whereIn('status', $status_include)
                 ->orderBy('status', 'asc')
                 ->orderBy('approved_at', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
-            $payreqs = Payreq::where('user_id', auth()->user()->id)
+            $payreqs = Payreq::with('realization')
+                ->where('user_id', auth()->user()->id)
                 ->whereIn('status', $status_include)
                 ->orderBy('status', 'asc')
                 ->orderBy('approved_at', 'desc')
@@ -209,17 +211,19 @@ class UserPayreqController extends Controller
                 return ucfirst($payreq->type);
             })
             ->editColumn('status', function ($payreq) {
+                $statusText = '';
+                
                 if ($payreq->status === 'submitted') {
-                    return 'Waiting Approval';
+                    $statusText = 'Waiting Approval';
                 } elseif ($payreq->status === 'approved') {
                     $approved_date = new \Carbon\Carbon($payreq->approved_at);
-                    return '<button class="btn btn-xs btn-success" style="pointer-events: none;">APPROVED at ' . $approved_date->addHours(8)->format('d-M-Y H:i') . ' wita </button>';
+                    $statusText = '<button class="btn btn-xs btn-success" style="pointer-events: none;">APPROVED at ' . $approved_date->addHours(8)->format('d-M-Y H:i') . ' wita </button>';
                 } elseif ($payreq->status === 'revise') {
-                    return '<span class="badge badge-warning">REVISED</span>';
+                    $statusText = '<span class="badge badge-warning">REVISED</span>';
                 } elseif ($payreq->status === 'split') {
                     $amount_paid = Outgoing::where('payreq_id', $payreq->id)->sum('amount');
                     $amount_remain = $payreq->amount - $amount_paid;
-                    return '<button class="btn btn-xs btn-warning" style="pointer-events: none;">Payment SPLITTED</button>' . ' Remain amount: ' . number_format($amount_remain, 2);
+                    $statusText = '<button class="btn btn-xs btn-warning" style="pointer-events: none;">Payment SPLITTED</button>' . ' Remain amount: ' . number_format($amount_remain, 2);
                 } elseif ($payreq->status === 'paid') {
                     // get difference between due_date and today
                     $due_date = new \Carbon\Carbon($payreq->due_date);
@@ -227,12 +231,20 @@ class UserPayreqController extends Controller
                     $dif_days = $due_date->diffInDays($today);
 
                     if ($today > $due_date) {
-                        return '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button><button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                        $statusText = '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button><button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                    } else {
+                        $statusText = '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button> and due in<b> ' . $dif_days . ' </b> days';
                     }
-                    return '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button> and due in<b> ' . $dif_days . ' </b> days';
                 } else {
-                    return ucfirst($payreq->status);
+                    $statusText = ucfirst($payreq->status);
                 }
+                
+                // Add indicator if realization was modified by approver (for reimburse type)
+                if ($payreq->type === 'reimburse' && $payreq->realization && $payreq->realization->modified_by_approver) {
+                    $statusText .= ' <span class="badge badge-warning" title="Modified by approver on ' . $payreq->realization->modified_by_approver_at->format('d-M-Y H:i') . '"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
+                }
+                
+                return $statusText;
             })
             ->editColumn('amount', function ($payreq) {
                 if ($payreq->type === 'advance') {

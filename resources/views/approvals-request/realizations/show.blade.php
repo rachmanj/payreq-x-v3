@@ -289,7 +289,7 @@
                 departments.forEach(dept => {
                     const selected = dept.id == departmentId ? 'selected' : '';
                     deptOptions +=
-                    `<option value="${dept.id}" ${selected}>${dept.department_name}</option>`;
+                        `<option value="${dept.id}" ${selected}>${dept.department_name}</option>`;
                 });
                 deptCell.html(
                     `<select class="form-control form-control-sm department-input">${deptOptions}</select>`);
@@ -372,14 +372,16 @@
                     total += amount;
                 });
 
-                const variance = originalTotal - total;
+                const payreqAmount = {{ $payreq->amount }};
+                const variance = payreqAmount - total;
+                const diffFromOriginal = originalTotal - total;
 
                 // Update display
                 $('#total-amount-display').text(formatNumber(total));
                 $('#variance-display').text(formatNumber(variance));
 
-                // Show/hide warning
-                if (Math.abs(variance) > 0.01) {
+                // Show/hide warning (based on difference from original)
+                if (Math.abs(diffFromOriginal) > 0.01) {
                     $('#amount-warning-row').show();
                     $('#variance-display').parent().addClass('text-danger');
                 } else {

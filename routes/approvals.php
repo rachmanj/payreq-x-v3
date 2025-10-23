@@ -17,6 +17,7 @@ Route::prefix('approvals')->name('approvals.')->group(function () {
             Route::get('/data', [ApprovalRequestPayreqController::class, 'data'])->name('data'); // 'approvals.request.payreqs.data'
             Route::get('/', [ApprovalRequestPayreqController::class, 'index'])->name('index'); // 'approvals.request.payreqs.index'
             Route::get('/{id}', [ApprovalRequestPayreqController::class, 'show'])->name('show'); // 'approvals.request.payreqs.show'
+            Route::put('/{id}/details', [ApprovalRequestPayreqController::class, 'updateDetails'])->name('update-details');
         });
         Route::prefix('realizations')->name('realizations.')->group(function () {
             Route::get('/data', [ApprovalRequestRealizationController::class, 'data'])->name('data');
