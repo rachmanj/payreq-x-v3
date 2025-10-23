@@ -3,12 +3,13 @@
         'use strict'
 
         var ticksStyle = {
-            fontColor: '#495057',
-            fontStyle: 'bold'
+            fontColor: '#6c757d',
+            fontStyle: 'normal',
+            fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
         }
 
         var mode = 'index'
-        var intersect = true
+        var intersect = false
 
         let payreqs = {!! json_encode($monthly_chart) !!}
         let months = payreqs.map(payreq => payreq.month_name)
@@ -21,56 +22,83 @@
             data: {
                 labels: months,
                 datasets: [{
-                    backgroundColor: 'rgba(0, 123, 255, 0.2)',
-                    borderColor: '#007bff',
-                    pointRadius: 3,
-                    pointColor: '#3b8bba',
-                    pointStrokeColor: 'rgba(60,141,188,1)',
-                    pointHighlightFill: '#fff',
-                    pointHighlightStroke: 'rgba(60,141,188,1)',
+                    label: 'Monthly Spending',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderColor: '#667eea',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: '#764ba2',
+                    pointHoverBorderColor: '#fff',
                     fill: true,
-                    tension: 0.3,
+                    tension: 0.4,
                     data: amounts
                 }]
             },
             options: {
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
+                responsive: true,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                },
                 tooltips: {
                     mode: mode,
-                    intersect: intersect
+                    intersect: intersect,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFontSize: 14,
+                    bodyFontSize: 13,
+                    xPadding: 12,
+                    yPadding: 12,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            var value = tooltipItem.yLabel;
+                            return ' Spending: Rp ' + value.toLocaleString('id-ID') + ' K';
+                        }
+                    }
                 },
                 hover: {
                     mode: mode,
-                    intersect: intersect
+                    intersect: intersect,
+                    animationDuration: 400
                 },
                 legend: {
                     display: false
                 },
                 scales: {
                     yAxes: [{
-                        // display: false,
                         gridLines: {
                             display: true,
-                            lineWidth: '4px',
-                            color: 'rgba(0, 0, 0, .2)',
-                            zeroLineColor: 'transparent'
+                            color: 'rgba(0, 0, 0, .05)',
+                            lineWidth: 1,
+                            drawBorder: false,
+                            zeroLineColor: 'rgba(0, 0, 0, .1)'
                         },
                         ticks: $.extend({
                             beginAtZero: true,
-                            suggestedMax: 1000
+                            padding: 10,
+                            callback: function(value) {
+                                return 'Rp ' + value.toLocaleString('id-ID') + 'K';
+                            }
                         }, ticksStyle)
                     }],
                     xAxes: [{
                         display: true,
                         gridLines: {
-                            display: false
+                            display: false,
+                            drawBorder: false
                         },
-                        ticks: ticksStyle
+                        ticks: $.extend({
+                            padding: 10
+                        }, ticksStyle)
                     }]
                 }
             }
         })
-
 
         // activities chart
         let activities = {!! json_encode($chart_activites['activities']) !!};
@@ -82,68 +110,70 @@
             return obj.total_count;
         });
 
-        //  console.log(username);
-
         var $activitiesChart = $('#activities-chart')
         var activitiesChart = new Chart($activitiesChart, {
-            type: 'pie',
+            type: 'doughnut',
             data: {
                 labels: username,
                 datasets: [{
                     data: total_counts,
-                    backgroundColor: ['#007bff', '#28a745', '#333333', '#c3e6cb', '#dc3545',
-                        '#6c757d'
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2',
+                        '#f093fb',
+                        '#4facfe',
+                        '#43e97b',
+                        '#fa709a'
                     ],
+                    borderWidth: 3,
+                    borderColor: '#fff',
+                    hoverBorderColor: '#fff',
+                    hoverBorderWidth: 4
                 }]
             },
             options: {
-                maintainAspectRatio: false,
-                tooltips: {
-                    mode: mode,
-                    intersect: intersect
+                maintainAspectRatio: true,
+                responsive: true,
+                animation: {
+                    animateScale: true,
+                    animateRotate: true,
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
                 },
-                hover: {
-                    mode: mode,
-                    intersect: intersect
+                tooltips: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFontSize: 14,
+                    bodyFontSize: 13,
+                    xPadding: 12,
+                    yPadding: 12,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            var dataset = data.datasets[tooltipItem.datasetIndex];
+                            var total = dataset.data.reduce(function(prev, current) {
+                                return prev + current;
+                            });
+                            var currentValue = dataset.data[tooltipItem.index];
+                            var percentage = Math.round((currentValue / total) * 100);
+                            return ' ' + data.labels[tooltipItem.index] + ': ' + currentValue +
+                                ' (' + percentage + '%)';
+                        }
+                    }
                 },
                 legend: {
-                    display: true
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        boxWidth: 15,
+                        fontColor: '#6c757d',
+                        fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+                        fontSize: 12
+                    }
                 },
-                scales: {
-                    yAxes: [{
-                        display: false,
-                        gridLines: {
-                            display: true,
-                            lineWidth: '4px',
-                            color: 'rgba(0, 0, 0, .2)',
-                            zeroLineColor: 'transparent'
-                        },
-                        ticks: $.extend({
-                            beginAtZero: true,
-
-                            // Include a dollar sign in the ticks
-                            callback: function(value) {
-                                if (value >= 1000000) {
-                                    value /= 1000000
-                                    value += 'Jt'
-                                }
-
-                                return '' + value
-                            }
-                        }, ticksStyle)
-                    }],
-                    xAxes: [{
-                        display: false,
-                        gridLines: {
-                            display: false
-                        },
-                        ticks: ticksStyle
-                    }]
-                }
+                cutoutPercentage: 65
             }
         })
-
-
-
     })
 </script>

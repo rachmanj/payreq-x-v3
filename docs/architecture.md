@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-10-22
+Last Updated: 2025-10-23
 
 ## Architecture Documentation Guidelines
 
@@ -94,10 +94,24 @@ The Accounting One system is a comprehensive financial management application bu
     - Real-time dashboard analytics
 
 6. **External Integrations**
+
     - **DDS API**: Document Distribution System for invoice management
     - **SAP Integration**: General ledger synchronization
     - **LOT Service**: Official travel claim management
     - **BUC Sync**: Budget synchronization system
+
+7. **Dashboard & User Interface**
+
+    - **Modern UI/UX Design**: Comprehensive dashboard redesign with AdminLTE 3 patterns
+    - **Exchange Rate Ticker**: CSS animation-based scrolling display with real-time updates
+    - **Announcements System**: Permission-based announcement display with gradient headers
+    - **Approval Widgets**: Real-time pending approval counts with quick action CTAs
+    - **Statistics Widgets**: Completion days tracking and VJ sync status
+    - **Payreqs/Realizations Cards**: Status-based displays with empty states and badges
+    - **VJ Activities Chart**: Doughnut chart showing user contribution statistics
+    - **Team Management Section**: Avatar-based team member displays with progress tracking
+    - **Monthly Spending Chart**: Line chart with Indonesian currency formatting
+    - **Permission-Based Components**: Role-specific widget visibility (approvers, team leaders, superadmin)
 
 ## Architecture Diagram
 
@@ -298,10 +312,75 @@ sequenceDiagram
 
 -   **UI Framework**: AdminLTE 3.x with responsive design
 -   **JavaScript**: jQuery, DataTables (Yajra DataTables)
--   **CSS**: Bootstrap 4.x with custom styling
+-   **CSS**: Bootstrap 4.x with custom styling and modern gradients
 -   **Charts**: Chart.js for analytics and reporting
 -   **Notifications**: SweetAlert2 for user feedback
 -   **AJAX**: Laravel HTTP Client for API communication
+-   **Animations**: CSS keyframes for smooth transitions and ticker animations
+
+### Dashboard Components
+
+-   **Exchange Rate Ticker**:
+
+    -   CSS animation-based scrolling (30s duration)
+    -   Purple gradient background (`#667eea → #764ba2`)
+    -   Rotating icon animation
+    -   Real-time data from Kemenkeu API (`/api/dashboard/exchange-rate-usd`)
+    -   5-minute auto-refresh interval
+
+-   **Announcements**:
+
+    -   Permission-based visibility via `visibleToUser()` scope
+    -   Pink/red gradient headers (`#f093fb → #f5576c`)
+    -   Role-based targeting with badge display
+    -   Dismissible alerts with period information
+
+-   **Approval Widget**:
+
+    -   Orange/yellow gradient (`#f6d365 → #fda085`)
+    -   Real-time count from `approval_plans` table
+    -   Direct CTA to approval page
+    -   Permission-gated (`akses_approvals`)
+
+-   **Statistics Widgets**:
+
+    -   **Completion Days**: Dynamic gradient (green if ≤7, red if >7)
+    -   **VJ Sync**: Blue gradient with pending count and quick action
+    -   Hover effects with transform and shadow animations
+    -   Permission-based visibility
+
+-   **Payreqs/Realizations Cards**:
+
+    -   Purple gradient for payreqs (`#667eea → #764ba2`)
+    -   Pink/yellow gradient for realizations (`#fa709a → #fee140`)
+    -   Status badges with color coding (draft/submitted/approved/paid/overdue)
+    -   Empty states with positive messaging ("All caught up!")
+    -   Indonesian currency formatting with 2 decimals
+    -   Quick action "View All" buttons
+
+-   **VJ Activities Chart**:
+
+    -   Cyan gradient header (`#4facfe → #00f2fe`)
+    -   Doughnut chart (65% cutout) with Chart.js
+    -   Percentage tooltips with user contributions
+    -   Total activities badge display
+    -   Permission-gated (`see_activities_chart`)
+
+-   **Team Section**:
+
+    -   Teal/purple gradient (`#30cfd0 → #330867`)
+    -   Avatar initials with gradient backgrounds
+    -   Grouped member displays with payreq cards
+    -   Amount formatting with 2 decimals (Rp X.XXX.XXX,XX)
+    -   Status badges and days indicators
+    -   Permission-gated (`see_team`)
+
+-   **Monthly Chart**:
+    -   Purple gradient header
+    -   Line chart with smooth curves (tension: 0.4)
+    -   Indonesian currency tooltips
+    -   Enhanced data points with hover effects
+    -   Responsive height adjustments
 
 ### Data Processing
 

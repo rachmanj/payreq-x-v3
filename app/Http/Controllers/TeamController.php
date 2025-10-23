@@ -50,7 +50,7 @@ class TeamController extends Controller
 
         return $ongoings->map(function ($payreq) {
             $payreq->description = 'PR no.' . $payreq->nomor . ', ' . $payreq->remarks;
-            $payreq->amount = number_format($this->sumAmountPayreqOutgoings($payreq->id), 0, ',', '.') . ',-';
+            $payreq->amount = number_format($this->sumAmountPayreqOutgoings($payreq->id), 2, ',', '.');
             $payreq->days = $this->calculateDays($payreq->outgoing_date);
             return $payreq;
         });

@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-10-08
+**Last Updated**: 2025-10-23
 
 # Technical Decision Records
 
@@ -29,6 +29,147 @@ Decision: [Title] - [YYYY-MM-DD]
 ---
 
 ## Recent Decisions
+
+### Decision: Modern CSS Animation vs JavaScript Marquee for Exchange Rate Ticker - 2025-10-23
+
+**Context**: The dashboard exchange rate ticker was using the deprecated HTML `<marquee>` tag, which is obsolete and not supported in modern browsers. Need to choose a modern, maintainable solution for scrolling text animation.
+
+**Options Considered**:
+
+1. **Pure CSS Animation (Keyframes)**
+
+    - ✅ Pros: No JavaScript required, better performance, modern standard, smooth animations, easier to maintain
+    - ❌ Cons: Requires duplicate text content for seamless looping
+
+2. **JavaScript Animation (requestAnimationFrame)**
+
+    - ✅ Pros: Full control over animation, dynamic content handling
+    - ❌ Cons: JavaScript dependency, potential performance issues, more complex code
+
+3. **Third-party Library (Marquee.js, etc.)**
+    - ✅ Pros: Feature-rich, cross-browser compatible
+    - ❌ Cons: Additional dependency, bundle size increase, overkill for simple use case
+
+**Decision**: Pure CSS Animation with keyframes
+
+**Rationale**: CSS animations provide the best balance of performance, maintainability, and modern browser support. The approach is straightforward (duplicate text for seamless loop), has no JavaScript dependency, and aligns with modern web standards. The small trade-off of duplicating content is negligible compared to the benefits.
+
+**Implementation**:
+
+-   Replaced `<marquee>` with CSS `@keyframes scroll-left` animation
+-   Text duplicated once for seamless infinite loop
+-   Animation duration: 30 seconds for readable speed
+-   Added gradient background and rotating icon for visual enhancement
+
+**Review Date**: 2026-01-01 (review if browser support changes)
+
+---
+
+### Decision: Gradient Design System for Dashboard Components - 2025-10-23
+
+**Context**: Dashboard needed visual refresh with modern design patterns. Need to establish consistent design language across all components while maintaining professional appearance for financial ERP system.
+
+**Options Considered**:
+
+1. **Flat Design (Single Colors)**
+
+    - ✅ Pros: Simple, minimal, clean appearance
+    - ❌ Cons: Less visually engaging, harder to create hierarchy, dated appearance
+
+2. **Gradient Design System**
+
+    - ✅ Pros: Modern appearance, creates visual hierarchy, engaging UI, professional look
+    - ❌ Cons: Can be overwhelming if overused, requires careful color selection
+
+3. **Neumorphism/3D Effects**
+    - ✅ Pros: Trendy, unique appearance
+    - ❌ Cons: Accessibility concerns, may look dated quickly, harder to implement
+
+**Decision**: Gradient Design System with consistent color palette
+
+**Rationale**: Gradients provide modern, professional appearance suitable for enterprise ERP while creating clear visual hierarchy. Careful application prevents overwhelming users. Color scheme aligned with AdminLTE 3 patterns ensures consistency with overall system design.
+
+**Implementation**:
+
+-   Purple gradients: Primary actions and charts (`#667eea → #764ba2`)
+-   Orange/Yellow gradients: Warnings and pending items (`#f6d365 → #fda085`)
+-   Pink/Red gradients: Announcements (`#f093fb → #f5576c`)
+-   Cyan gradients: Information and activities (`#4facfe → #00f2fe`)
+-   Teal/Purple gradients: Team sections (`#30cfd0 → #330867`)
+-   Green gradients: Success states (`#11998e → #38ef7d`)
+-   Red gradients: Danger/Overdue states (`#ee0979 → #ff6a00`)
+
+**Review Date**: 2025-04-01 (review user feedback and design trends)
+
+---
+
+### Decision: Empty State Messaging Strategy - 2025-10-23
+
+**Context**: Dashboard components showing no data (payreqs, realizations, team members) need appropriate messaging to inform users without creating concern.
+
+**Options Considered**:
+
+1. **Neutral Message ("No items found")**
+
+    - ✅ Pros: Factual, clear
+    - ❌ Cons: Feels negative, doesn't celebrate cleared workload
+
+2. **Positive Messaging ("All caught up!")**
+
+    - ✅ Pros: Encouraging, celebrates completion, improves UX
+    - ❌ Cons: May seem dismissive if user expects data
+
+3. **Actionable Message ("Create new item")**
+    - ✅ Pros: Provides next steps
+    - ❌ Cons: Not appropriate when no action needed (completed work)
+
+**Decision**: Positive messaging with context ("All caught up!" + icon)
+
+**Rationale**: Financial systems often create anxiety around pending tasks. Positive messaging acknowledges completed work and reduces stress. Combined with cheerful icon (check circle) and supplementary text, creates encouraging user experience while remaining professional.
+
+**Implementation**:
+
+-   Empty payreqs: "No ongoing payreqs" + "All caught up!" + green check icon
+-   Empty realizations: "No ongoing realizations" + "All caught up!" + green check icon
+-   Empty team: "No team data available" + "Team information will appear here" (neutral, as data absence is informational)
+
+**Review Date**: 2025-04-01 (review user feedback)
+
+---
+
+### Decision: Currency Formatting with Type Safety - 2025-10-23
+
+**Context**: Dashboard displays amounts from various sources (database queries, controller calculations). PHP's `number_format()` requires float but data sometimes arrives as strings, causing type errors.
+
+**Options Considered**:
+
+1. **Fix at Controller Level (ensure float return types)**
+
+    - ✅ Pros: Type safety throughout, cleaner views
+    - ❌ Cons: Requires changing multiple controllers, potential breaking changes
+
+2. **Fix at View Level (cast to float before formatting)**
+
+    - ✅ Pros: Localized fix, doesn't affect controllers, defensive programming
+    - ❌ Cons: Repeated casting in views, addresses symptom not root cause
+
+3. **Mixed Approach (controller returns strings, view displays as-is)**
+    - ✅ Pros: Works if controller formats correctly
+    - ❌ Cons: Breaks when re-formatting needed, discovered in team section issue
+
+**Decision**: Cast to float at view level `(float)$amount` before `number_format()`
+
+**Rationale**: Defensive programming approach provides type safety at point of use without requiring extensive controller refactoring. View-level casting catches edge cases and provides consistent handling regardless of data source. Small performance cost is negligible compared to reliability gain.
+
+**Implementation**:
+
+-   All `number_format()` calls updated to `number_format((float)$amount, ...)`
+-   Applied to payreqs, realizations, and team section amounts
+-   Special handling for team section: removed duplicate formatting by letting controller format with 2 decimals
+
+**Review Date**: 2025-07-01 (consider standardizing controller return types)
+
+---
 
 ### Decision: Warning-Based Validation for Approver Edits - 2025-10-22
 
