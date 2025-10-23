@@ -1,20 +1,21 @@
-### [016] Approver Realization Edit with Reprint Notification (2025-10-22) ✅ COMPLETE
+### [016] Approver Document Edit with Reprint Notification System (2025-10-22) ✅ COMPLETE
 
-**Challenge**: Approvers needed ability to correct realization details (description, amounts, departments, unit info) after submission but before approval. However, realizations are printed before approval, so modifications by approvers require document reprinting. Users had no visibility into which documents were modified and needed reprinting.
+**Challenge**: Approvers needed ability to correct realization details (description, amounts, departments, unit info) after submission but before approval for both realization approval and payreq (reimburse) approval workflows. Documents are printed before approval, so modifications require reprinting. Users had no visibility into which documents were modified and needed reprinting. Additionally, users needed to see variance between payreq amount and total detail amount to understand budget differences.
 
-**Solution**: Implemented permission-controlled inline editing for approvers with comprehensive tracking and notification system. Added `edit-submitted-realization` permission to control button visibility. Created database tracking fields (`modified_by_approver`, `modified_by_approver_at`, `modified_by_approver_id`) to record when approvers modify realizations. Enhanced user realization list to display warning badge "⚠ Needs Reprint" with hover tooltip showing modification timestamp. Approvers can add, edit, and delete detail rows with real-time amount validation showing warnings (but not blocking save) when totals differ from original.
+**Solution**: Implemented permission-controlled inline editing for both approval workflows with comprehensive tracking and notification system. Added `edit-submitted-realization` permission to control button visibility. Created database tracking fields (`modified_by_approver`, `modified_by_approver_at`, `modified_by_approver_id`) on realizations table. Enhanced both user realization list and user payreq list to display warning badge "⚠ Needs Reprint" with hover tooltip showing modification timestamp. Added variance row (Payreq Amount - Total Detail Amount) to both approval pages for budget tracking. Approvers can add, edit, and delete detail rows with real-time amount validation showing warnings (but not blocking save) when totals differ from original.
 
-**Key Learning**: Tracking approver modifications provides essential audit trail for financial documents. Warning-based validation (vs blocking) gives approvers flexibility while maintaining visibility into amount changes. Permission-based feature access ensures only authorized approvers can edit submitted documents. Visual indicators in user lists prevent confusion about document validity and reprint requirements.
+**Key Learning**: Tracking approver modifications provides essential audit trail for financial documents. Warning-based validation (vs blocking) gives approvers flexibility while maintaining visibility into amount changes. Permission-based feature access ensures only authorized approvers can edit submitted documents. Visual indicators in user lists (both payreqs and realizations) prevent confusion about document validity and reprint requirements. Single permission controlling both workflows simplifies administration while maintaining security.
 
 **Technical Implementation**:
 
--   **Database Migration**: Added tracking fields to realizations table with timestamp and user tracking
--   **Permission System**: New `edit-submitted-realization` permission guards Edit Details button visibility
--   **Controller Enhancement**: ApprovalRequestRealizationController::updateDetails() marks realization on save
--   **Frontend Editing**: Inline table editing with add/delete rows, expandable unit info, amount validation with warning display
--   **User Notification**: UserRealizationController displays warning badge in status column for modified realizations
--   **AJAX Implementation**: No page refresh during edit, smooth UX with real-time total calculation
--   **Model Relationships**: Added approverModifier() relationship to track who made modifications
+-   **Database Migration**: Added tracking fields to realizations table (modified_by_approver, modified_by_approver_at, modified_by_approver_id)
+-   **Permission System**: Single `edit-submitted-realization` permission guards both realization and payreq approval edit features
+-   **Dual Controller Enhancement**: Both ApprovalRequestRealizationController and ApprovalRequestPayreqController have updateDetails() methods
+-   **Frontend Editing**: Inline table editing with add/delete rows, expandable unit info, amount/variance display, warning system
+-   **User Notifications**: UserRealizationController and UserPayreqController display warning badges for modified documents
+-   **AJAX Implementation**: No page refresh during edit, smooth UX with real-time total and variance calculation
+-   **Model Relationships**: Added approverModifier() relationship to Realization model for audit trail
+-   **Variance Tracking**: Real-time variance calculation (Payreq Amount - Total Detail Amount) displayed in both view and edit modes
 
 ### [012] Roles Table Enhancement with Permission Display (2025-01-15) ✅ COMPLETE
 

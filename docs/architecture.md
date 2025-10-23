@@ -395,22 +395,30 @@ The system implements comprehensive multi-level approval workflows with permissi
 -   Approval tracking via `approval_plans` with status management
 -   Support for approve, revise, and reject actions with remarks
 
-**Approver Edit Capabilities** (Realizations):
+**Approver Edit Capabilities** (Realizations & Payreqs):
 
 -   Permission-controlled edit functionality (`edit-submitted-realization` permission)
+-   Available on both realization approval page and payreq (reimburse) approval page
 -   Inline editing of realization details after submission but before final approval
 -   Editable fields: description, amount, department, unit information (unit_no, type, qty, uom, km_position)
 -   Add/delete detail rows with real-time amount validation
--   Warning-based validation (allows save with amount differences)
+-   Warning-based validation (allows save with amount differences, not blocking)
+-   Variance calculation: Real-time display of Payreq Amount - Total Detail Amount
 -   Modification tracking: Records approver ID, timestamp when details are modified
--   User notification: "⚠ Needs Reprint" badge shown in user's realization list when document modified by approver
+-   User notifications:
+    -   "⚠ Needs Reprint" badge in user's realization list (`/user-payreqs/realizations`)
+    -   "⚠ Needs Reprint" badge in user's payreq list (`/user-payreqs`) for reimburse-type payreqs
 -   AJAX-based updates without page refresh for improved UX
+-   Expandable unit info section for detailed equipment tracking
 
 **Routes**:
 
 -   `GET /approvals/request/realizations` - List pending realizations
 -   `GET /approvals/request/realizations/{id}` - View realization details
 -   `PUT /approvals/request/realizations/{id}/details` - Update realization details (permission-protected)
+-   `GET /approvals/request/payreqs` - List pending payreqs
+-   `GET /approvals/request/payreqs/{id}` - View payreq details
+-   `PUT /approvals/request/payreqs/{id}/details` - Update payreq realization details (permission-protected)
 -   `PUT /approvals/plan/{id}/update` - Submit approval decision
 
 #### Multi-Currency Support

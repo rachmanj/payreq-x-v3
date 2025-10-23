@@ -97,6 +97,74 @@ Decision: [Title] - [YYYY-MM-DD]
 
 **Review Date**: 2026-04-22
 
+### Decision: Variance Display for Budget Tracking - 2025-10-22
+
+**Context**: Need to provide visibility into differences between approved payreq amounts and actual realization detail totals for budget tracking and reconciliation purposes.
+
+**Options Considered**:
+
+1. **Display variance only in edit mode**
+
+    - ✅ Pros: Cleaner UI in view mode, less information overload
+    - ❌ Cons: Users must enter edit mode to see variance, less transparent
+
+2. **Display variance in both view and edit modes**
+
+    - ✅ Pros: Always visible, transparent budget tracking, helps users understand differences
+    - ❌ Cons: Additional table row, slight UI complexity
+
+3. **Calculate variance but don't display it**
+    - ✅ Pros: Simplest UI
+    - ❌ Cons: Users can't see budget differences, poor transparency
+
+**Decision**: Display variance in both view and edit modes with real-time updates during editing
+
+**Rationale**: Budget variance is critical financial information that users and approvers need for decision-making. Making it always visible improves transparency and helps identify discrepancies quickly. Real-time calculation during editing provides immediate feedback on budget impacts. Formula (Payreq Amount - Total Detail Amount) is simple and intuitive for users.
+
+**Implementation**:
+
+-   Added variance row in table footer for both approval pages
+-   Formula: `Payreq Amount - Total Detail Amount`
+-   Negative variance indicates overspending (total > payreq)
+-   Positive variance indicates underspending (total < payreq)
+-   Real-time JavaScript calculation updates variance during editing
+-   Indonesian number formatting for consistency
+
+**Review Date**: 2026-10-22
+
+### Decision: Single Permission for Dual Approval Edit Workflows - 2025-10-22
+
+**Context**: With edit functionality needed on both realization approval and payreq approval pages, need to decide whether to use one permission or separate permissions.
+
+**Options Considered**:
+
+1. **Single permission for both workflows**
+
+    - ✅ Pros: Simpler administration, logical grouping (both edit realization details), fewer permissions to manage
+    - ❌ Cons: Less granular control, can't restrict to only one workflow
+
+2. **Separate permissions (edit-realization-approval, edit-payreq-approval)**
+
+    - ✅ Pros: Maximum granular control, can assign differently
+    - ❌ Cons: More complex permission management, likely both always assigned together anyway
+
+3. **No permission, available to all approvers**
+    - ✅ Pros: Simplest implementation
+    - ❌ Cons: Security risk, no control over feature access
+
+**Decision**: Single permission `edit-submitted-realization` for both workflows
+
+**Rationale**: Both workflows edit the same underlying data (realization_details table). Approvers who need to edit one type likely need to edit both. Single permission reduces administrative overhead while providing necessary access control. The permission name focuses on what is being edited (submitted realizations) rather than which page is being used.
+
+**Implementation**:
+
+-   One permission: `edit-submitted-realization`
+-   Guards Edit Details button on both pages with same `@can` directive
+-   Both controllers use same updateDetails() logic pattern
+-   Unified user experience across both approval types
+
+**Review Date**: 2026-10-22
+
 ### Decision: Laravel 10+ with Modern Architecture - 2024-05-01
 
 **Context**: Need for a robust, scalable accounting system with modern PHP practices
