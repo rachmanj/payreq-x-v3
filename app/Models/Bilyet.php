@@ -21,6 +21,7 @@ class Bilyet extends Model
         'remarks',
         'filename',
         'loan_id',
+        'purpose',
         'created_by',
         'project',
         'status'
@@ -36,6 +37,7 @@ class Bilyet extends Model
     // Business logic constants
     const STATUSES = ['onhand', 'release', 'cair', 'void'];
     const TYPES = ['cek', 'bilyet', 'loa'];
+    const PURPOSES = ['loan_payment', 'operational', 'other'];
 
     const STATUS_LABELS = [
         'onhand' => 'On Hand',
@@ -48,6 +50,12 @@ class Bilyet extends Model
         'cek' => 'Check',
         'bilyet' => 'Bilyet Giro',
         'loa' => 'Letter of Authority'
+    ];
+
+    const PURPOSE_LABELS = [
+        'loan_payment' => 'Loan Payment',
+        'operational' => 'Operational Expense',
+        'other' => 'Other'
     ];
 
     // Relationships
@@ -69,6 +77,11 @@ class Bilyet extends Model
     public function audits()
     {
         return $this->hasMany(BilyetAudit::class);
+    }
+
+    public function installment()
+    {
+        return $this->hasOne(Installment::class);
     }
 
     // Business logic methods
@@ -99,9 +112,19 @@ class Bilyet extends Model
         return self::TYPE_LABELS[$this->type] ?? $this->type;
     }
 
+    public function getPurposeLabelAttribute()
+    {
+        return self::PURPOSE_LABELS[$this->purpose] ?? $this->purpose;
+    }
+
     public function getFullNomorAttribute()
     {
         return $this->prefix . $this->nomor;
+    }
+
+    public function isForLoanPayment()
+    {
+        return $this->purpose === 'loan_payment';
     }
 
     // Scopes
@@ -143,5 +166,20 @@ class Bilyet extends Model
     public function scopeWithAmount($query)
     {
         return $query->whereNotNull('amount')->where('amount', '>', 0);
+    }
+
+    public function scopeByPurpose($query, $purpose)
+    {
+        return $query->where('purpose', $purpose);
+    }
+
+    public function scopeLoanPayments($query)
+    {
+        return $query->where('purpose', 'loan_payment');
+    }
+
+    public function scopeOperational($query)
+    {
+        return $query->where('purpose', 'operational');
     }
 }

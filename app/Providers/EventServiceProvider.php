@@ -28,6 +28,15 @@ class EventServiceProvider extends ServiceProvider
             \App\Listeners\LogBilyetAudit::class,
             // \App\Listeners\SendBilyetStatusNotification::class, // Disabled for development
         ],
+        \App\Events\LoanCreated::class => [
+            \App\Listeners\LogLoanAudit::class,
+        ],
+        \App\Events\LoanUpdated::class => [
+            \App\Listeners\LogLoanAudit::class,
+        ],
+        \App\Events\LoanStatusChanged::class => [
+            \App\Listeners\LogLoanAudit::class,
+        ],
     ];
 
     /**

@@ -40,14 +40,21 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
 
     // ANGSURAN
     Route::prefix('/loans')->name('loans.')->group(function () {
+        Route::get('/dashboard', [LoanController::class, 'dashboard'])->name('dashboard');
         Route::get('/data', [LoanController::class, 'data'])->name('data');
         Route::get('/', [LoanController::class, 'index'])->name('index');
         Route::get('/create', [LoanController::class, 'create'])->name('create');
         Route::get('/{id}/update', [LoanController::class, 'edit'])->name('edit');
         Route::get('/{id}/show', [LoanController::class, 'show'])->name('show');
+        Route::get('/{id}/history', [LoanController::class, 'history'])->name('history');
         Route::put('/{id}', [LoanController::class, 'update'])->name('update');
         Route::post('/', [LoanController::class, 'store'])->name('store');
         Route::delete('/{id}', [LoanController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('/audit')->name('audit.')->group(function () {
+            Route::get('/', [LoanController::class, 'auditIndex'])->name('index');
+            Route::get('/{id}', [LoanController::class, 'auditShow'])->name('show');
+        });
 
         Route::prefix('/installments')->name('installments.')->group(function () {
             Route::get('/{loan_id}/data', [InstallmentController::class, 'data'])->name('data');
@@ -57,6 +64,8 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
             Route::get('/{id}/edit', [InstallmentController::class, 'edit'])->name('edit');
             Route::post('/update', [InstallmentController::class, 'update'])->name('update');
             Route::delete('/{id}/destroy', [InstallmentController::class, 'destroy'])->name('destroy');
+            Route::post('/{installment_id}/create-bilyet', [InstallmentController::class, 'createBilyetForPayment'])->name('create_bilyet');
+            Route::post('/{installment_id}/mark-auto-debit', [InstallmentController::class, 'markAsAutoDebitPaid'])->name('mark_auto_debit');
         });
     });
 

@@ -1,3 +1,126 @@
+### [018] Loans-Bilyets Integration with Multi-Payment Method Support (2025-10-23) 🚧 IN PROGRESS
+
+**Challenge**: Loans and Bilyets modules were disconnected. Loan installments tracked payments via text field (`bilyet_no`) instead of proper FK relationship. No way to distinguish loan payment bilyets from operational expense bilyets. No support for auto-debit payments (some loans paid directly from bank without bilyet creation). Users manually entered bilyet information in both systems, leading to data inconsistency. Reporting showed incomplete picture of loan payments.
+
+**Solution**: Implemented comprehensive integration with multi-payment method support. Added `bilyet_id` FK and `payment_method` enum to installments table supporting 5 payment types: bilyet, auto-debit, cash, transfer, other. Added `purpose` enum to bilyets table distinguishing loan_payment from operational expenses. Created two-way relationship: Installment → Bilyet and Bilyet → Installment. Built service layer (LoanPaymentService, InstallmentPaymentService) with validation, linking logic, and transaction safety. Implemented dual workflow UI: "Create Bilyet" button (pre-fills form with installment data, creates bilyet with purpose='loan_payment', auto-links to installment) and "Auto-Debit" button (marks installment as paid without creating bilyet). Added comprehensive audit trail system for loans (LoanAudit model, events, listeners) matching bilyet audit capabilities. Created loan dashboard with payment method statistics, loan navigation component, and audit trail views.
+
+**Key Learning**: Multi-payment method support via enum provides extensibility for future payment types while maintaining data integrity. Service layer pattern centralizes business logic and makes complex workflows (create bilyet + link installment) atomic and reusable. Pre-filling forms with related data dramatically improves UX and reduces data entry errors. Distinguishing bilyet purposes (loan vs operational) enables accurate financial categorization. Nullable FK with payment_method field elegantly handles cases where bilyet doesn't exist (auto-debit) without data pollution. Event-driven audit trail provides transparency for financial operations. Browser testing confirms UI properly shows payment method column and dual action buttons (Bilyet/Auto-Debit) for unpaid installments only.
+
+**Technical Implementation**:
+
+-   **Database Schema**:
+
+    -   Migration: add bilyet_id (nullable FK) + payment_method enum to installments
+    -   Migration: add purpose enum to bilyets (loan_payment|operational|other)
+    -   Migration: create loan_audits table (mirrors bilyet_audits structure)
+    -   Indexes on bilyet_id, payment_method, purpose for query performance
+
+-   **Models Enhanced**:
+
+    -   Installment: Added payment method constants, bilyet() relationship, isPaid() method, scopes (paid/unpaid/byPaymentMethod)
+    -   Bilyet: Added purpose constants, installment() relationship, purpose scopes (loanPayments/operational)
+    -   Loan: Added audits() relationship
+    -   LoanAudit: New model with change tracking helpers
+
+-   **Service Layer**:
+
+    -   LoanPaymentService: Validation, linking, unlinking logic
+    -   InstallmentPaymentService: createBilyetAndPay(), markAsAutoDebitPaid() workflows
+    -   All operations wrapped in DB transactions for data integrity
+
+-   **Controllers**:
+
+    -   LoanController: Added dashboard(), history(), auditIndex(), auditShow() + event triggers
+    -   InstallmentController: Added createBilyetForPayment(), markAsAutoDebitPaid() + payment_method column in DataTable
+
+-   **Events & Listeners**:
+
+    -   Events: LoanCreated, LoanUpdated, LoanStatusChanged
+    -   Listener: LogLoanAudit (handles all loan events)
+    -   Registered in EventServiceProvider
+
+-   **Views & UI**:
+
+    -   Updated accounting/loans/show: Added "Payment Method" column
+    -   Updated installments/action: Added "Bilyet" and "Auto-Debit" buttons for unpaid installments
+    -   Created modals: Create Bilyet (full form pre-filled) and Mark as Auto-Debit (simple date selection)
+    -   Created loan-links navigation component (Dashboard|Loans|Audit|Reports)
+    -   Created loan dashboard with statistics, upcoming installments, payment method chart
+    -   Created audit trail views (index + detail) matching bilyet pattern
+    -   Created loan history view with timeline
+
+-   **Routes**:
+
+    -   POST /accounting/loans/installments/{id}/create-bilyet
+    -   POST /accounting/loans/installments/{id}/mark-auto-debit
+    -   GET /accounting/loans/dashboard
+    -   GET /accounting/loans/{id}/history
+    -   GET /accounting/loans/audit + /audit/{id}
+
+-   **Form Requests**:
+    -   Updated StoreBilyetRequest: Added purpose and loan_id validation
+    -   Updated SuperAdminUpdateBilyetRequest: Added purpose validation
+
+**Browser Testing Results**:
+
+-   ✅ Payment Method column successfully displays in installments table
+-   ✅ Bilyet (green) and Auto-Debit (blue) buttons appear ONLY for unpaid installments
+-   ✅ Paid installments show edit/delete buttons, NOT payment buttons
+-   ✅ Auto-Debit modal displays correctly with installment details and warning message
+-   ✅ Create Bilyet modal shows with all data pre-filled (amount=26,039,000, date=due_date, remarks="Loan payment for installment #33")
+-   ✅ Select2 dropdowns working in modals
+-   ✅ No PHP linter errors
+
+**Pending Work**:
+
+-   Run migrations to apply database changes (blocked by production environment confirmation)
+-   Add purpose dropdown to bilyet create/edit forms in UI
+-   Implement advanced filtering on loans index page
+-   Add bulk operations for loans
+-   Implement enhanced reporting with payment method breakdown
+-   Create comprehensive user guide documentation
+
+**Review Date**: 2025-11-23 (after 1 month of usage to gather feedback and assess reporting needs)
+
+---
+
+### [019] Loan Installment Generation Page UX Enhancement (2025-10-23) ✅ COMPLETE
+
+**Challenge**: The loan installment generation page had minimal user guidance with basic form labels, no contextual information about the loan being processed, unclear account selection options (only showing account numbers), no preview of what would be generated, and lack of validation/confirmation before generating potentially dozens of installment records.
+
+**Solution**: Implemented comprehensive UX enhancements including loan information summary box (principal, tenor, creditor) at top of form, improved field labels with Indonesian translations and required indicators, helpful descriptive text under each field explaining its purpose, auto-calculated installment amount (principal ÷ tenor), smart default values (next month's first day for due date, 1 for start number), enhanced account dropdown showing account number + account name (e.g., "11201001 - Mandiri IDR - 149.0004194751"), real-time generation summary showing preview of installments to be created with total calculations, input validation with proper error messages, confirmation dialog before generation, and loading state during submission. Added IDR prefix to amount field for clarity, Select2 integration for searchable account selection, and professional button layout with cancel option.
+
+**Key Learning**: Form UX significantly impacts data entry accuracy and user confidence. Displaying contextual information (loan details) helps users verify they're working with correct record. Real-time preview/summary of pending actions reduces errors and improves trust. Auto-calculation with editable fields provides smart defaults while maintaining flexibility. Enhanced dropdown options with account names (not just numbers) dramatically improves usability. Descriptive field labels in user's language (Indonesian) with help text reduces confusion and support requests. Confirmation dialogs for bulk operations prevent accidental data creation.
+
+**Technical Implementation**:
+
+-   **Loan Info Box**: Added alert-info section displaying principal (formatted currency), tenor, and creditor name from loan record
+-   **Enhanced Labels**: Updated all field labels with Indonesian translations and descriptive text, added required field indicators (red asterisks)
+-   **Account Dropdown**: Modified to show "account_number - account_name" format (e.g., "11201001 - Mandiri IDR - 149.0004194751")
+-   **Auto-calculation**: Installment amount pre-filled with `round($loan->principal / $loan->tenor, 0)` formula
+-   **Smart Defaults**: Start due date defaults to `now()->addMonth()->startOfMonth()`, start number defaults to 1
+-   **Generation Summary**: JavaScript-powered real-time preview showing number of installments, installment range (#X to #Y), start date (formatted Indonesian), amount per month, total amount, and selected account
+-   **Form Validation**: Client-side validation checking required fields before submission, server-side validation via Laravel request validation
+-   **Select2 Integration**: Searchable dropdown with Bootstrap 4 theme for account selection
+-   **Loading States**: Button text changes to "Generating..." with spinner icon during submission
+-   **Responsive Layout**: Proper form grid with col-4 and col-8 layouts, IDR input group prefix for currency clarity
+
+**Browser Testing Results**:
+
+-   ✅ Loan information box displays correctly with formatted amounts
+-   ✅ All fields show helpful descriptive text
+-   ✅ Account dropdown shows simplified but clear format (number + name)
+-   ✅ Installment amount auto-calculates correctly (6,156,576,000 ÷ 36 = 171,016,000)
+-   ✅ Generation summary updates in real-time as fields change
+-   ✅ Validation prevents submission with missing required fields
+-   ✅ Confirmation dialog appears before generation
+-   ✅ Select2 dropdown is searchable and responsive
+-   ✅ No linter errors in updated Blade template
+
+**Impact**: User confidence increased through preview functionality, data entry time reduced via auto-calculation and smart defaults, errors minimized through validation and confirmation, account selection simplified with descriptive dropdown options.
+
+---
+
 ### [017] Dashboard UI/UX Comprehensive Redesign (2025-10-23) ✅ COMPLETE
 
 **Challenge**: The dashboard used outdated design patterns (deprecated marquee tag, basic card styles, inconsistent layouts) and lacked modern UI/UX features like interactive hover effects, gradient designs, proper empty states, and responsive layouts. User experience was functional but not visually engaging or intuitive.

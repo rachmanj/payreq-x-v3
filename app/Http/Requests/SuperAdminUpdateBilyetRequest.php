@@ -36,6 +36,7 @@ class SuperAdminUpdateBilyetRequest extends FormRequest
             'amount' => 'nullable|numeric|min:0',
             'remarks' => 'nullable|string|max:500',
             'loan_id' => 'nullable|exists:loans,id',
+            'purpose' => 'nullable|string|in:loan_payment,operational,other',
             'project' => 'nullable|string|max:50',
             'status' => 'required|string|in:onhand,release,cair,void',
         ];

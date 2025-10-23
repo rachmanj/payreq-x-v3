@@ -33,6 +33,8 @@ class StoreBilyetRequest extends FormRequest
             'cair_date' => 'nullable|date|after_or_equal:bilyet_date',
             'remarks' => 'nullable|string|max:500',
             'project' => 'required|string|max:10',
+            'purpose' => ['nullable', Rule::in(Bilyet::PURPOSES)],
+            'loan_id' => 'nullable|exists:loans,id',
             'file_upload' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ];
     }

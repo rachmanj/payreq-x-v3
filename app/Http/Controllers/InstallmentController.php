@@ -5,10 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\Installment;
 use App\Models\Loan;
+use App\Models\Giro;
+use App\Services\InstallmentPaymentService;
 use Illuminate\Http\Request;
 
 class InstallmentController extends Controller
 {
+    protected $installmentPaymentService;
+
+    public function __construct(InstallmentPaymentService $installmentPaymentService)
+    {
+        $this->installmentPaymentService = $installmentPaymentService;
+    }
     public function generate($loan_id)
     {
         $loan = Loan::find($loan_id);
@@ -92,8 +100,49 @@ class InstallmentController extends Controller
             ->addColumn('account', function ($instalment) {
                 return $instalment->account->account_number;
             })
+            ->addColumn('payment_method', function ($instalment) {
+                return $instalment->payment_method_label;
+            })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.loans.installments.action')
             ->toJson();
+    }
+
+    public function createBilyetForPayment(Request $request, $installment_id)
+    {
+        try {
+            $bilyetData = $request->validate([
+                'giro_id' => 'required|exists:giros,id',
+                'prefix' => 'nullable|string|max:10',
+                'nomor' => 'required|string|max:30',
+                'type' => 'required|in:cek,bg,loa',
+                'bilyet_date' => 'required|date',
+                'amount' => 'required|numeric|min:0',
+                'remarks' => 'nullable|string',
+            ]);
+
+            $bilyetData['project'] = auth()->user()->project;
+
+            $bilyet = $this->installmentPaymentService->createBilyetAndPay($installment_id, $bilyetData);
+
+            return redirect()->back()->with('success', 'Bilyet created and linked to installment successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to create bilyet: ' . $e->getMessage());
+        }
+    }
+
+    public function markAsAutoDebitPaid(Request $request, $installment_id)
+    {
+        try {
+            $request->validate([
+                'paid_date' => 'required|date',
+            ]);
+
+            $this->installmentPaymentService->markAsAutoDebitPaid($installment_id, $request->paid_date);
+
+            return redirect()->back()->with('success', 'Installment marked as paid via auto-debit');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to mark as paid: ' . $e->getMessage());
+        }
     }
 }

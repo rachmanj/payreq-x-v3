@@ -29,4 +29,9 @@ class Loan extends Model
             'name' => 'Unknown'
         ]);
     }
+
+    public function audits()
+    {
+        return $this->hasMany(LoanAudit::class);
+    }
 }

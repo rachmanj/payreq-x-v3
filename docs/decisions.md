@@ -30,6 +30,246 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ## Recent Decisions
 
+### Decision: Form UX Enhancement Pattern for Complex Operations - 2025-10-23
+
+**Context**: The loan installment generation page required users to generate multiple database records (potentially 36+ installments) in a single operation. Users needed to understand what would be generated, verify the calculations, and select the correct account from 20+ bank accounts. Original form had minimal guidance with only basic labels and account numbers, leading to potential errors and user uncertainty.
+
+**Options Considered**:
+
+1. **Minimal Form (Original Approach)**
+
+    - ✅ Pros: Simple, fast to load, minimal code
+    - ❌ Cons: Users uncertain about what will happen, high error rate, poor account selection (numbers only), no preview
+
+2. **Multi-Step Wizard**
+
+    - ✅ Pros: Guided experience, clear progression
+    - ❌ Cons: More clicks required, complex state management, slower workflow for experienced users
+
+3. **Single-Page Enhanced Form with Real-Time Preview**
+    - ✅ Pros: All info on one screen, instant feedback, preview builds confidence, maintains workflow speed
+    - ❌ Cons: More frontend JavaScript required
+
+**Decision**: Single-Page Enhanced Form with Real-Time Preview
+
+**Rationale**:
+
+-   Preview functionality builds user confidence by showing exactly what will be generated before submission
+-   Real-time calculations reduce errors and provide immediate feedback
+-   Contextual information (loan details at top) helps users verify they're working with correct record
+-   Enhanced dropdown options (account number + name) dramatically improve usability without requiring extra clicks
+-   Auto-calculations with editable fields provide smart defaults while maintaining flexibility
+-   Single-page approach maintains workflow efficiency for experienced users
+-   Validation and confirmation prevent accidental bulk operations
+
+**Implementation**:
+
+**Form Enhancements**:
+
+-   Loan information box at top (principal, tenor, creditor) provides context
+-   Field labels in user's language (Indonesian) with descriptive help text
+-   Auto-calculated installment amount (principal ÷ tenor) with editable override
+-   Smart defaults: next month's first day for due date, 1 for starting number
+-   IDR prefix on amount field for currency clarity
+-   Required field indicators (red asterisks) for clear guidance
+
+**Account Selection Enhancement**:
+
+-   Format: "account_number - account_name" (e.g., "11201001 - Mandiri IDR - 149.0004194751")
+-   Select2 integration for searchable dropdown
+-   Simplified from original verbose format to essential information only
+-   Maintains clarity while reducing visual clutter
+
+**Real-Time Preview**:
+
+-   JavaScript-powered generation summary
+-   Shows: number of installments, installment range (#1 to #36), start date, amount per month, total amount, selected account
+-   Updates instantly as user changes any field
+-   Yellow warning box visually distinct from form inputs
+-   Indonesian number formatting (171.016.000 vs 171016000)
+
+**Validation & Confirmation**:
+
+-   Client-side validation before submission
+-   Confirmation dialog showing count of installments to be generated
+-   Loading state during submission ("Generating..." with spinner)
+-   Error messages clearly displayed near relevant fields
+
+**Technical Stack**:
+
+-   Blade template with inline JavaScript
+-   Select2 for enhanced dropdown UX
+-   Bootstrap 4 for responsive grid layout
+-   No additional dependencies required
+
+**Review Date**: 2026-04-23 (after 6 months to assess user feedback and error rates)
+
+**Related Decision**: This pattern should be considered for other bulk operation forms in the system (e.g., bulk bilyet creation, bulk realization entries).
+
+---
+
+### Decision: Payment Method Enum for Installments - 2025-10-23
+
+**Context**: Need to track HOW loan installments are paid. Some installments are paid via bilyet (check/BG), while others use auto-debit from bank accounts. Need a flexible system that supports multiple payment methods.
+
+**Options Considered**:
+
+1. **Boolean Field (is_bilyet_payment)**
+
+    - ✅ Pros: Simple, straightforward
+    - ❌ Cons: Only supports 2 payment types, not extensible, unclear semantics
+
+2. **Payment Method Enum Field**
+
+    - ✅ Pros: Clear semantics, extensible for future payment types, better reporting, explicit values
+    - ❌ Cons: Slightly more complex than boolean
+
+3. **Separate Boolean Fields (has_bilyet, is_auto_debit, etc.)**
+    - ✅ Pros: Flexible
+    - ❌ Cons: Can create conflicting states, hard to maintain, poor database design
+
+**Decision**: Payment Method Enum Field with values: ['bilyet', 'auto_debit', 'cash', 'transfer', 'other']
+
+**Rationale**:
+
+-   Provides clear, explicit tracking of payment method
+-   Extensible for future payment types (e.g., e-wallet, cryptocurrency)
+-   Enables better analytics and reporting (breakdown by payment method)
+-   Prevents conflicting states (can't be both bilyet AND auto-debit)
+-   Industry-standard pattern for categorical data
+
+**Implementation**:
+
+-   Added `payment_method` enum column to `installments` table
+-   Created constants in Installment model: `PAYMENT_METHODS` array
+-   Business rule: If payment_method='bilyet', bilyet_id must be set; if 'auto_debit', bilyet_id must be NULL
+
+**Review Date**: 2026-04-23 (after 6 months of usage to assess if additional payment methods needed)
+
+---
+
+### Decision: Purpose Field for Bilyets - 2025-10-23
+
+**Context**: Not all bilyets are for loan payments. Many are for operational expenses (vendor payments, petty cash, etc.). Need to distinguish between different bilyet purposes for accurate reporting and financial categorization.
+
+**Options Considered**:
+
+1. **Infer from loan_id (if NULL = operational, if set = loan payment)**
+
+    - ✅ Pros: No new field needed
+    - ❌ Cons: Unclear semantics, can't have loan-related operational bilyets, implicit logic hard to understand
+
+2. **Purpose Enum Field**
+
+    - ✅ Pros: Explicit categorization, clear reporting, supports mixed use cases, better analytics
+    - ❌ Cons: One additional field in database
+
+3. **Separate Tables (bilyet_loans vs bilyet_operational)**
+    - ✅ Pros: Completely separate concerns
+    - ❌ Cons: Code duplication, harder to query across all bilyets, complex migrations
+
+**Decision**: Purpose Enum Field with values: ['loan_payment', 'operational', 'other']
+
+**Rationale**:
+
+-   Explicit is better than implicit (Zen of Python applies to database design too)
+-   Enables accurate financial reporting by purpose
+-   Supports edge cases (e.g., loan-related bilyets that aren't direct payments)
+-   Default 'operational' maintains backward compatibility with existing bilyets
+-   Indexed field allows fast filtering in reports
+
+**Implementation**:
+
+-   Added `purpose` enum column to `bilyets` table (nullable, default='operational')
+-   Created constants in Bilyet model: `PURPOSE_LABELS` array
+-   Business rule: If purpose='loan_payment', should have loan_id set (not enforced for flexibility)
+
+**Review Date**: 2026-04-23 (evaluate if additional purpose categories needed)
+
+---
+
+### Decision: Nullable bilyet_id in Installments (Not Required) - 2025-10-23
+
+**Context**: When linking installments to bilyets, need to decide if every paid installment MUST have a bilyet_id. Auto-debit payments don't use bilyets.
+
+**Options Considered**:
+
+1. **Required bilyet_id for All Payments**
+
+    - ✅ Pros: Forced consistency, every payment has documentation
+    - ❌ Cons: Artificial bilyets for auto-debit, data pollution, doesn't match reality
+
+2. **Nullable bilyet_id with payment_method Field**
+
+    - ✅ Pros: Matches reality, clean data, flexible, supports multiple payment types
+    - ❌ Cons: Requires additional field (payment_method), slightly more complex logic
+
+3. **Always Create Bilyet Records (Mark as Virtual)**
+    - ✅ Pros: Unified data model
+    - ❌ Cons: Confusing (bilyet that doesn't exist physically), complicates bilyet management
+
+**Decision**: Nullable bilyet_id with payment_method Field
+
+**Rationale**:
+
+-   Reflects business reality: some installments paid via auto-debit (no physical bilyet)
+-   Clean data: only create bilyets when they actually exist
+-   payment_method field explicitly tracks HOW payment was made
+-   Flexible for future payment types
+-   Historical data compatibility: existing installments have NULL bilyet_id
+
+**Implementation**:
+
+-   bilyet_id as nullable foreign key with onDelete('set null')
+-   payment_method as nullable enum (NULL for unpaid installments)
+-   Business validation: if payment_method='bilyet', bilyet_id must be set
+
+**Review Date**: Not scheduled (fundamental design unlikely to change)
+
+---
+
+### Decision: Backward Compatibility for Existing bilyet_no Field - 2025-10-23
+
+**Context**: Installments table has existing `bilyet_no` text field with historical data. New implementation adds `bilyet_id` FK. Need to decide how to handle both fields.
+
+**Options Considered**:
+
+1. **Migrate All Historical Data to FK**
+
+    - ✅ Pros: Clean schema, single source of truth
+    - ❌ Cons: Complex migration, risk of data loss, manual matching required
+
+2. **Keep Both Fields for Backward Compatibility**
+
+    - ✅ Pros: No data loss, preserves history, gradual migration possible
+    - ❌ Cons: Two fields for same concept, potential confusion
+
+3. **Archive Old Data, Use Only FK Going Forward**
+    - ✅ Pros: Clean going forward
+    - ❌ Cons: Loses historical context, breaks existing reports
+
+**Decision**: Keep Both Fields (bilyet_no for historical, bilyet_id for new)
+
+**Rationale**:
+
+-   Preserves all historical data without risk
+-   New records use proper FK relationship (bilyet_id)
+-   Old records keep text reference (bilyet_no)
+-   Reports can handle both: show bilyet_no if no bilyet_id, else show linked bilyet
+-   Gradual migration possible if needed in future
+-   Non-breaking change for existing functionality
+
+**Implementation**:
+
+-   Keep existing `bilyet_no` varchar field
+-   Add new `bilyet_id` nullable FK
+-   Views prioritize bilyet_id (show linked bilyet), fallback to bilyet_no
+-   Future cleanup: can migrate matching records when time permits
+
+**Review Date**: 2026-01-23 (after 3 months, assess if manual migration of historical data worthwhile)
+
+---
+
 ### Decision: Modern CSS Animation vs JavaScript Marquee for Exchange Rate Ticker - 2025-10-23
 
 **Context**: The dashboard exchange rate ticker was using the deprecated HTML `<marquee>` tag, which is obsolete and not supported in modern browsers. Need to choose a modern, maintainable solution for scrolling text animation.
