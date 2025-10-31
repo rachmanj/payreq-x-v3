@@ -1,3 +1,98 @@
+### [020] Payment Request REST API with Custom API Key Authentication (2025-10-27) ✅ COMPLETE
+
+**Challenge**: External applications (mobile apps, third-party systems) needed ability to create payment requests without requiring user login sessions. Existing web interface wasn't suitable for programmatic access. No secure way to authenticate system-to-system integrations. Business rules (RAB validation, approval workflows) needed to be enforced consistently across web and API interfaces.
+
+**Solution**: Implemented comprehensive REST API with custom API key authentication system. Created dedicated API endpoints for listing, creating (advance/reimburse), and canceling payment requests. Built custom middleware (AuthenticateApiKey) using SHA256-hashed keys for secure, long-lived system-to-system authentication. Designed dual workflow support (draft vs submit) via boolean parameter. Enforced existing business rules including project-specific RAB requirements and automatic approval plan integration. Reused existing PayreqController and ApprovalPlanController logic for consistency. Added admin interface for generating and managing API keys with usage tracking. Created comprehensive API documentation with cURL examples and integration guides.
+
+**Key Learning**: Custom API keys provide better system-to-system integration than user-based tokens (Sanctum). SHA256 one-way hashing ensures keys cannot be recovered even if database is compromised. Reusing existing controllers maintains business logic consistency between web and API interfaces. Single boolean parameter (submit) is cleaner than separate endpoints for draft vs submission workflows. Auto-extracting project/department from employee record prevents data inconsistencies and simplifies external app integration. Graceful handling of missing approval plans (keep as draft, return informative error) provides better developer experience. Usage tracking (last_used_at) enables audit and monitoring of API consumption.
+
+**Technical Implementation**:
+
+-   **Database Schema**:
+
+    -   Migration: create api_keys table with SHA256 key hashing, usage tracking, application identification
+    -   Fields: name, key (64-char hash), application, description, is_active, last_used_at, created_by, permissions (JSON for future)
+    -   Composite index on (key, is_active) for fast authentication lookups
+
+-   **Authentication System**:
+
+    -   Middleware: AuthenticateApiKey validates X-API-Key header against hashed keys
+    -   Model: ApiKey with generate(), validate(), markAsUsed() methods
+    -   Security: One-way hashing, instant activation/deactivation, usage tracking
+    -   Async last_used_at updates via afterResponse() to avoid request slowdown
+
+-   **API Endpoints**:
+
+    -   GET /api/payreqs - List with comprehensive filtering (project, department, status, dates, amounts)
+    -   GET /api/payreqs/{id} - Retrieve single payreq with all relationships
+    -   POST /api/payreqs/advance - Create advance payment request
+    -   POST /api/payreqs/reimburse - Create reimburse with multiple detail items
+    -   POST /api/payreqs/{id}/cancel - Cancel draft payreqs only
+
+-   **Request Validation**:
+
+    -   StoreAdvancePayreqRequest: employee_id, remarks, amount, rab_id (conditional), submit flag
+    -   StoreReimbursePayreqRequest: employee_id, remarks, details array (description, amount, vehicle info), rab_id, submit
+    -   Custom error responses with 422 status for validation failures
+
+-   **Business Rules Enforcement**:
+
+    -   RAB Validation: Required for projects 000H/APS when submit=true
+    -   Approval Plans: Auto-create if available, keep as draft with error if missing
+    -   Project/Department: Auto-extracted from employee record (security + consistency)
+    -   Amount Calculation: Reimburse type auto-sums detail amounts
+    -   Document Numbers: Draft numbers during creation, official numbers on submission
+
+-   **Admin Interface**:
+
+    -   Controller: ApiKeyController with DataTables integration
+    -   View: Admin panel at /admin/api-keys for key management
+    -   Features: Generate (with one-time display), activate/deactivate, delete, usage stats
+    -   Security: Only users with 'akses_admin' permission can manage keys
+
+-   **Documentation**:
+    -   PAYREQ_API_DOCUMENTATION.md: Complete API reference with cURL examples
+    -   architecture.md: Updated with API architecture diagrams and sequence flows
+    -   Includes: Authentication guide, endpoint specs, business rules, error handling, example workflows
+
+**Files Created**:
+
+-   database/migrations/2025_10_27_053857_create_api_keys_table.php
+-   app/Models/ApiKey.php
+-   app/Http/Middleware/AuthenticateApiKey.php
+-   app/Http/Requests/Api/StoreAdvancePayreqRequest.php
+-   app/Http/Requests/Api/StoreReimbursePayreqRequest.php
+-   app/Http/Controllers/Api/PayreqApiController.php
+-   app/Http/Controllers/Admin/ApiKeyController.php
+-   resources/views/admin/api-keys/index.blade.php
+-   docs/PAYREQ_API_DOCUMENTATION.md
+
+**Files Modified**:
+
+-   app/Http/Kernel.php (registered auth.apikey middleware)
+-   routes/api.php (added payreq API routes)
+-   routes/admin.php (added API key management routes)
+-   docs/architecture.md (added Payment Request REST API Architecture section)
+
+**Testing Checklist**:
+
+-   Migration ran successfully creating api_keys table
+-   No linter errors in any created files
+-   API key generation includes random 40-char string with 'ak\_' prefix
+-   SHA256 hashing implemented correctly
+-   Middleware properly validates keys and updates usage timestamp
+-   Request validation catches missing/invalid fields
+-   RAB enforcement works for 000H/APS projects
+-   Approval plan integration creates plans when available
+-   Draft workflow keeps payreqs editable
+-   Submit workflow locks payreqs and generates official numbers
+-   Admin UI allows key generation and management
+-   Documentation complete with examples
+
+**Review Date**: 2025-11-27 (after 1 month of external app integration to gather feedback and assess reliability)
+
+---
+
 ### [018] Loans-Bilyets Integration with Multi-Payment Method Support (2025-10-23) 🚧 IN PROGRESS
 
 **Challenge**: Loans and Bilyets modules were disconnected. Loan installments tracked payments via text field (`bilyet_no`) instead of proper FK relationship. No way to distinguish loan payment bilyets from operational expense bilyets. No support for auto-debit payments (some loans paid directly from bank without bilyet creation). Users manually entered bilyet information in both systems, leading to data inconsistency. Reporting showed incomplete picture of loan payments.
@@ -145,24 +240,25 @@
 
 **Testing**: Successfully tested with 3 different user profiles (yanie, rachmanj, superadmin) verifying all components work correctly across user roles and permissions. All interactive elements (CTAs, hover effects, navigation) functioning properly.
 
-### [016] Approver Document Edit with Reprint Notification System (2025-10-22) ✅ COMPLETE
+### [016] Approver Document Edit with Reprint Notification System (2025-10-31) ✅ COMPLETE
 
-**Challenge**: Approvers needed ability to correct realization details (description, amounts, departments, unit info) after submission but before approval for both realization approval and payreq (reimburse) approval workflows. Documents are printed before approval, so modifications require reprinting. Users had no visibility into which documents were modified and needed reprinting. Additionally, users needed to see variance between payreq amount and total detail amount to understand budget differences.
+**Challenge**: Approvers needed ability to correct realization details (description, amounts, departments, unit info, project codes) after submission but before approval for both realization approval and payreq (reimburse) approval workflows. Documents are printed before approval, so modifications require reprinting. Users had no visibility into which documents were modified and needed reprinting. Additionally, users needed to see variance between payreq amount and total detail amount to understand budget differences. Payment status information was not visible during approval review, requiring approvers to check separately. Advance info section was cluttered with timestamps in separate rows.
 
-**Solution**: Implemented permission-controlled inline editing for both approval workflows with comprehensive tracking and notification system. Added `edit-submitted-realization` permission to control button visibility. Created database tracking fields (`modified_by_approver`, `modified_by_approver_at`, `modified_by_approver_id`) on realizations table. Enhanced both user realization list and user payreq list to display warning badge "⚠ Needs Reprint" with hover tooltip showing modification timestamp. Added variance row (Payreq Amount - Total Detail Amount) to both approval pages for budget tracking. Approvers can add, edit, and delete detail rows with real-time amount validation showing warnings (but not blocking save) when totals differ from original.
+**Solution**: Implemented comprehensive approval workflow enhancements with permission-controlled inline editing, modification tracking, payment status visibility, and redesigned UI. Project field editing moved to detail level (per-row editing in realization_details table) allowing different projects per expense item. Added paid date display directly under Payreq No with icons (💵 when paid, ⏳ when unpaid). Redesigned advance info section to group related data: Realization No shows submit timestamp below (🕐 icon), Payreq No shows paid date below, all in compact single-row layout. Warning badge "⚠ Needs Reprint" displayed in both user lists when approver modifies documents. Real-time variance calculation shows budget differences without blocking saves.
 
-**Key Learning**: Tracking approver modifications provides essential audit trail for financial documents. Warning-based validation (vs blocking) gives approvers flexibility while maintaining visibility into amount changes. Permission-based feature access ensures only authorized approvers can edit submitted documents. Visual indicators in user lists (both payreqs and realizations) prevent confusion about document validity and reprint requirements. Single permission controlling both workflows simplifies administration while maintaining security.
+**Key Learning**: Project assignment at detail level (vs document level) provides granular budget tracking for mixed-project expenses. Grouping related timestamps with parent data (vs separate rows) creates cleaner, more intuitive UI. Icon-based status indicators improve quick visual scanning. Warning-based validation gives approvers flexibility while maintaining transparency. Payment status visibility during approval improves workflow efficiency by eliminating need to switch between screens. Single permission controlling dual workflows (realization + payreq approvals) simplifies administration. Eager loading outgoings relationship prevents N+1 queries when displaying paid dates.
 
 **Technical Implementation**:
 
--   **Database Migration**: Added tracking fields to realizations table (modified_by_approver, modified_by_approver_at, modified_by_approver_id)
+-   **Database Schema**: Project field in realization_details table (not realizations), tracking fields on realizations (modified_by_approver, modified_by_approver_at, modified_by_approver_id)
 -   **Permission System**: Single `edit-submitted-realization` permission guards both realization and payreq approval edit features
--   **Dual Controller Enhancement**: Both ApprovalRequestRealizationController and ApprovalRequestPayreqController have updateDetails() methods
--   **Frontend Editing**: Inline table editing with add/delete rows, expandable unit info, amount/variance display, warning system
--   **User Notifications**: UserRealizationController and UserPayreqController display warning badges for modified documents
+-   **Dual Controller Enhancement**: Both ApprovalRequestRealizationController and ApprovalRequestPayreqController updated - eager load outgoings for payment status, pass projects list, validate project per detail, save project to realization_details
+-   **Frontend Editing**: Project dropdown per detail row with real-time editing, add/delete rows, expandable unit info, amount/variance display, warning system
+-   **Advance Info Redesign**: Compact single-row layout with timestamps below parent fields using <small> tags and muted styling, FontAwesome icons (fa-clock, fa-money-bill-wave, fa-hourglass-half)
+-   **User Notifications**: UserRealizationController and UserPayreqController display "⚠ Needs Reprint" badges for modified documents
 -   **AJAX Implementation**: No page refresh during edit, smooth UX with real-time total and variance calculation
--   **Model Relationships**: Added approverModifier() relationship to Realization model for audit trail
--   **Variance Tracking**: Real-time variance calculation (Payreq Amount - Total Detail Amount) displayed in both view and edit modes
+-   **Model Relationships**: approverModifier() on Realization, outgoings() on Payreq for payment tracking
+-   **Date Formatting**: Submit dates with time (d-M-Y H:i + 8 hours WITA), paid dates without time (d-M-Y)
 
 ### [012] Roles Table Enhancement with Permission Display (2025-01-15) ✅ COMPLETE
 

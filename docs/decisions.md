@@ -30,6 +30,76 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ## Recent Decisions
 
+### Decision: Project Field Granularity - Detail Level vs Document Level - 2025-10-31
+
+**Context**: Realization documents track expenses across multiple detail items. Project assignment determines budget allocation and financial reporting. Original implementation had project field at realization (document) level, assuming all expense items in one realization belong to same project. However, users frequently need to split single realization across multiple projects (e.g., expense report with items from both HO and APS projects).
+
+**Options Considered**:
+
+1. **Document-Level Project (Original)**
+
+    - ✅ Pros: Simple UI, single dropdown at document level, easy to implement
+    - ❌ Cons: Forces all expense items to same project, requires splitting into multiple realizations, poor UX for mixed-project expenses
+
+2. **Detail-Level Project (Granular Approach)**
+
+    - ✅ Pros: Allows mixed projects in single realization, more accurate budget tracking, better financial reporting, aligns with how users actually incur expenses
+    - ❌ Cons: More complex UI (dropdown per row), requires editing each detail item
+
+3. **Dual Fields (Document Default + Detail Override)**
+    - ✅ Pros: Convenience of default with flexibility of override
+    - ❌ Cons: Confusing UX (which value is used?), complex validation logic, potential data inconsistencies
+
+**Decision**: Detail-Level Project (Granular Approach)
+
+**Rationale**:
+
+-   Real-world expense patterns: Users frequently incur expenses across multiple projects in single trip/timeframe
+-   Accurate budget tracking: Financial reporting needs exact project attribution per expense item
+-   Audit requirements: Each expense line must trace to specific project budget
+-   Approver flexibility: During approval review, approvers can correct project assignments per item
+-   Database integrity: Project field in realization_details table provides proper data normalization
+-   Inline editing pattern: Per-row dropdowns align with existing inline edit UI for departments and amounts
+-   Single source of truth: No ambiguity about which project each expense belongs to
+
+**Implementation**:
+
+**Database Schema**:
+
+-   Removed project validation from realization document level
+-   Project field remains in realization_details table (already existed)
+-   Validation moved to detail level: `details.*.project` validation in both controllers
+-   Nullable field allowing gradual data migration without breaking existing records
+
+**Controller Updates**:
+
+-   ApprovalRequestRealizationController: Pass projects list, validate per detail, save to realization_details
+-   ApprovalRequestPayreqController: Same changes for consistency (both workflows edit realization_details)
+-   Eager load projects: `Project::where('is_active', 1)->orderBy('code')->get()`
+
+**Frontend Changes**:
+
+-   Added Project column to details table between Department and Amount
+-   Project dropdown per row in edit mode (like department dropdown)
+-   JavaScript: transformRowToEdit() includes project dropdown generation
+-   JavaScript: collectDetailsData() includes project value from each row
+-   Display: Shows project code in view mode, dropdown in edit mode
+-   New row creation: Project dropdown included in addNewRow() template
+
+**User Experience**:
+
+-   View mode: Project code displayed as plain text per row
+-   Edit mode: Searchable dropdown per row with all active projects
+-   Clear visual grouping: Project column positioned logically between Department and Amount
+-   Consistent with existing patterns: Matches department dropdown UX
+-   Real-time updates: AJAX save without page refresh
+
+**Review Date**: 2026-04-30 (after 6 months to assess if detail-level granularity creates any workflow issues)
+
+**Related Decision**: This aligns with existing granularity decisions where detail-level data (description, amount, department) provides better tracking than document-level aggregation.
+
+---
+
 ### Decision: Form UX Enhancement Pattern for Complex Operations - 2025-10-23
 
 **Context**: The loan installment generation page required users to generate multiple database records (potentially 36+ installments) in a single operation. Users needed to understand what would be generated, verify the calculations, and select the correct account from 20+ bank accounts. Original form had minimal guidance with only basic labels and account numbers, leading to potential errors and user uncertainty.

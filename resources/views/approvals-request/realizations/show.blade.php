@@ -29,6 +29,11 @@
             <div class="description-block border-right">
                 <h5 class="description-header">Realization No</h5>
                 <span class="description-text">{{ $document->realization->nomor }}</span>
+                <br>
+                <small class="text-muted">
+                    <i class="far fa-clock"></i> 
+                    {{ $document->realization->submit_at->addHours(8)->format('d-M-Y H:i') }}
+                </small>
             </div>
         </div>
         <div class="col-sm-3 col-4">
@@ -41,6 +46,15 @@
             <div class="description-block border-right">
                 <h5 class="description-header">Payreq No</h5>
                 <span class="description-text">{{ $payreq->nomor }}</span>
+                <br>
+                <small class="text-muted">
+                    @if($payreq->outgoings->isNotEmpty())
+                        <i class="fas fa-money-bill-wave"></i> 
+                        {{ \Carbon\Carbon::parse($payreq->outgoings->first()->outgoing_date)->format('d-M-Y') }}
+                    @else
+                        <i class="fas fa-hourglass-half"></i> Not yet paid
+                    @endif
+                </small>
             </div>
         </div>
         <div class="col-sm-3 col-4">
@@ -134,6 +148,7 @@
 
             // Departments data
             const departments = @json($departments);
+            const projects = @json($projects);
 
             // Handle AJAX form submission for approval forms
             $('.approval-form').on('submit', function(e) {
@@ -213,7 +228,7 @@
 
             function enterEditMode() {
                 if (isEditMode) return;
-
+                
                 isEditMode = true;
                 originalTableHTML = $('#details-table').html();
 
@@ -235,7 +250,7 @@
 
             function exitEditMode() {
                 if (!isEditMode) return;
-
+                
                 isEditMode = false;
 
                 // Restore original HTML
@@ -253,6 +268,7 @@
                 const description = row.data('description') || '';
                 const amount = row.data('amount') || 0;
                 const departmentId = row.data('department-id') || '';
+                const project = row.data('project') || '';
                 const unitNo = row.data('unit-no') || '';
                 const type = row.data('type') || '';
                 const qty = row.data('qty') || '';
@@ -293,6 +309,17 @@
                 });
                 deptCell.html(
                     `<select class="form-control form-control-sm department-input">${deptOptions}</select>`);
+
+                // Project cell
+                const projectCell = row.find('.project-cell');
+                let projectOptions = '<option value="">-- Select --</option>';
+                projects.forEach(proj => {
+                    const selected = proj.code == project ? 'selected' : '';
+                    projectOptions +=
+                        `<option value="${proj.code}" ${selected}>${proj.code}</option>`;
+                });
+                projectCell.html(
+                    `<select class="form-control form-control-sm project-input">${projectOptions}</select>`);
 
                 // Amount cell
                 const amountCell = row.find('.amount-cell');
@@ -342,6 +369,12 @@
                             <select class="form-control form-control-sm department-input">
                                 <option value="">-- Select --</option>
                                 ${departments.map(dept => `<option value="${dept.id}">${dept.department_name}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="project-cell">
+                            <select class="form-control form-control-sm project-input">
+                                <option value="">-- Select --</option>
+                                ${projects.map(proj => `<option value="${proj.code}">${proj.code}</option>`).join('')}
                             </select>
                         </td>
                         <td class="amount-cell">
@@ -415,6 +448,7 @@
                         description: row.find('.description-input').val(),
                         amount: parseFloat(row.find('.amount-input').val()) || 0,
                         department_id: row.find('.department-input').val() || null,
+                        project: row.find('.project-input').val() || null,
                         unit_no: row.find('.unit-no-input').val() || null,
                         type: row.find('.type-input').val() || null,
                         qty: row.find('.qty-input').val() || null,

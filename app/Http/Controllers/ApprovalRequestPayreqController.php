@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ApprovalPlan;
 use App\Models\Department;
+use App\Models\Project;
 use App\Models\RealizationDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,16 +22,19 @@ class ApprovalRequestPayreqController extends Controller
     {
         $document = ApprovalPlan::find($id);
         $payreq = $document->payreq;
+        $payreq->load('outgoings'); // Eager load outgoings relationship
         $realization = $payreq->realization;
         $realization_details = $realization->realizationDetails;
         $departments = Department::orderBy('department_name')->get();
+        $projects = Project::where('is_active', 1)->orderBy('code')->get();
 
         return view('approvals-request.payreqs.show', compact([
             'document',
             'payreq',
             'realization',
             'realization_details',
-            'departments'
+            'departments',
+            'projects'
         ]));
     }
 
@@ -85,6 +89,7 @@ class ApprovalRequestPayreqController extends Controller
             'details.*.description' => 'required|string|max:255',
             'details.*.amount' => 'required|numeric|min:0',
             'details.*.department_id' => 'nullable|exists:departments,id',
+            'details.*.project' => 'nullable|string|max:10|exists:projects,code',
             'details.*.unit_no' => 'nullable|string|max:20',
             'details.*.type' => 'nullable|string|max:10',
             'details.*.qty' => 'nullable|integer',
@@ -120,6 +125,7 @@ class ApprovalRequestPayreqController extends Controller
                             'description' => $detailData['description'],
                             'amount' => $detailData['amount'],
                             'department_id' => $detailData['department_id'] ?? null,
+                            'project' => $detailData['project'] ?? null,
                             'unit_no' => $detailData['unit_no'] ?? null,
                             'type' => $detailData['type'] ?? null,
                             'qty' => $detailData['qty'] ?? null,
@@ -134,7 +140,7 @@ class ApprovalRequestPayreqController extends Controller
                         'description' => $detailData['description'],
                         'amount' => $detailData['amount'],
                         'department_id' => $detailData['department_id'] ?? null,
-                        'project' => $realization->project,
+                        'project' => $detailData['project'] ?? null,
                         'unit_no' => $detailData['unit_no'] ?? null,
                         'type' => $detailData['type'] ?? null,
                         'qty' => $detailData['qty'] ?? null,

@@ -25,6 +25,7 @@
         @endcan
         @can('akses_admin')
             <li><a href="{{ route('admin.printable-documents.index') }}" class="dropdown-item">Printable Documents</a></li>
+            <li><a href="{{ route('admin.api-keys.index') }}" class="dropdown-item">API Keys</a></li>
         @endcan
         <li><a href="{{ route('announcements.index') }}" class="dropdown-item">Announcements</a></li>
     </ul>

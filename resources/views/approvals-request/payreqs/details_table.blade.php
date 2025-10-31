@@ -29,6 +29,7 @@
                             <th>#</td>
                             <th>Desc</td>
                             <th>Department</td>
+                            <th>Project</td>
                             <th class="text-right">Amount (IDR)</th>
                             <th class="text-center actions-column" style="display: none;">Actions</th>
                         </tr>
@@ -38,6 +39,7 @@
                             @foreach ($realization_details as $item)
                                 <tr data-detail-id="{{ $item->id }}" data-description="{{ $item->description }}"
                                     data-amount="{{ $item->amount }}" data-department-id="{{ $item->department_id }}"
+                                    data-project="{{ $item->project }}"
                                     data-unit-no="{{ $item->unit_no }}" data-type="{{ $item->type }}"
                                     data-qty="{{ $item->qty }}" data-uom="{{ $item->uom }}"
                                     data-km-position="{{ $item->km_position }}">
@@ -62,6 +64,9 @@
                                             {{ $item->department ? $item->department->department_name : '-' }}
                                         </div>
                                     </td>
+                                    <td class="project-cell">
+                                        <div class="project-display">{{ $item->project ?: '-' }}</div>
+                                    </td>
                                     <td class="text-right amount-cell">
                                         <div class="amount-display">{{ number_format($item->amount, 2) }}</div>
                                     </td>
@@ -75,21 +80,21 @@
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="3" class="text-right">Total</td>
+                                <td colspan="4" class="text-right">Total</td>
                                 <td class="text-right"><b
                                         id="total-amount-display">{{ number_format($realization_details->sum('amount'), 2) }}</b>
                                 </td>
                                 <td class="actions-column" style="display: none;"></td>
                             </tr>
                             <tr>
-                                <td colspan="3" class="text-right">Variance</td>
+                                <td colspan="4" class="text-right">Variance</td>
                                 <td class="text-right"><b
                                         id="variance-display">{{ number_format($payreq->amount - $realization_details->sum('amount'), 2) }}</b>
                                 </td>
                                 <td class="actions-column" style="display: none;"></td>
                             </tr>
                             <tr id="amount-warning-row" style="display: none;">
-                                <td colspan="4" class="text-center">
+                                <td colspan="5" class="text-center">
                                     <div class="alert alert-warning mb-0" role="alert">
                                         <i class="fas fa-exclamation-triangle"></i>
                                         <span id="amount-warning-message">Total amount differs from original</span>

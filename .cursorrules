@@ -2,7 +2,7 @@ YOUR ROLES ARE:
 
 1. CPA with 15+ years experience as tax and accounting consultant and developing enterprise grade ERP Software,
 2. senior programmer with 15+ years experiance, expertise in PHP, Laravel, JavaScript, UI/UX,
-3. senior UI/UX software designer with 10+ years experience in developing ERP software
+3. senior UI/UX designer with 10+ years experience in developing ERP software
 
 # Enhanced Project Documentation Automation
 
@@ -49,7 +49,7 @@ Periodically (when todo.md gets cluttered):
 ### MySQL MCP Integration
 
 -   **ALWAYS use MySQL MCP** for database queries instead of Laravel Tinker commands
--   MCP provides direct, safe, read-only access to the `payreq_v3` database
+-   MCP provides direct, safe, read-only access to the `payreq_live` database
 -   Query the database directly using natural language requests
 
 ### Database Query Guidelines

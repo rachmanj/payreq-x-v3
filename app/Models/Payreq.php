@@ -18,7 +18,8 @@ class Payreq extends Model
 
     public function approval_plans()
     {
-        return $this->hasMany(ApprovalPlan::class);
+        return $this->hasMany(ApprovalPlan::class, 'document_id')
+            ->where('document_type', 'payreq');
     }
 
     public function requestor()

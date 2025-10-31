@@ -100,7 +100,20 @@ The Accounting One system is a comprehensive financial management application bu
     - **LOT Service**: Official travel claim management
     - **BUC Sync**: Budget synchronization system
 
-7. **Dashboard & User Interface**
+7. **Payment Request REST API**
+
+    - **Custom API Key Authentication**: SHA256-hashed API keys for external application access
+    - **Advance Payment Requests**: Create advance payment requests via API
+    - **Reimburse Payment Requests**: Create reimbursement requests with multiple detail items
+    - **Workflow Management**: Support for both draft and direct submission workflows
+    - **RAB Validation**: Project-specific budget requirement enforcement (000H, APS)
+    - **Approval Integration**: Automatic approval plan creation and validation
+    - **Comprehensive Filtering**: List payment requests with multiple filter options
+    - **API Key Management UI**: Admin interface for generating and managing API keys
+    - **Usage Tracking**: Last used timestamps and application identification
+    - **Detailed Documentation**: Complete API documentation with cURL examples
+
+8. **Dashboard & User Interface**
 
     - **Modern UI/UX Design**: Comprehensive dashboard redesign with AdminLTE 3 patterns
     - **Exchange Rate Ticker**: CSS animation-based scrolling display with real-time updates
@@ -505,6 +518,256 @@ Events fire automatically via Laravel's event system, listeners log to audit tab
 -   payment_method enum - prevents invalid values
 -   purpose enum - ensures valid categorization
 
+## Payment Request REST API Architecture
+
+### Overview
+
+The Payment Request API provides secure REST endpoints for external applications to create and manage payment requests. It uses custom API key authentication for system-to-system integration.
+
+### API Architecture Diagram
+
+```mermaid
+sequenceDiagram
+    participant ExtApp as External Application
+    participant Middleware as AuthenticateApiKey
+    participant Controller as PayreqApiController
+    participant Validation as Request Validation
+    participant PayreqCtrl as PayreqController
+    participant ApprovalCtrl as ApprovalPlanController
+    participant DB as Database
+
+    Note over ExtApp,DB: CREATE ADVANCE PAYMENT REQUEST
+
+    ExtApp->>Middleware: POST /api/payreqs/advance
+    Note right of ExtApp: Headers: X-API-Key
+
+    Middleware->>Middleware: Extract API key from header
+    Middleware->>DB: Validate key (SHA256 hash)
+    Middleware->>DB: Update last_used_at
+    Middleware->>Controller: Allow request (attach api_key_id)
+
+    Controller->>Validation: Validate request data
+    Validation-->>Controller: Return validated data
+
+    Controller->>DB: Get employee details (project, department)
+    Controller->>Controller: Check RAB validation (000H/APS projects)
+
+    Controller->>PayreqCtrl: store(payreq_data)
+    PayreqCtrl->>DB: Create payreq (status=draft)
+    PayreqCtrl-->>Controller: Return payreq object
+
+    alt submit = true
+        Controller->>ApprovalCtrl: create_approval_plan('payreq', id)
+        ApprovalCtrl->>DB: Find approval stages (project + dept)
+
+        alt Approval plan found
+            ApprovalCtrl->>DB: Create approval_plans records
+            ApprovalCtrl->>DB: Update payreq (status=submitted, editable=0)
+            ApprovalCtrl-->>Controller: Return approvers_count
+        else No approval plan
+            ApprovalCtrl-->>Controller: Return false
+            Controller->>DB: Keep payreq as draft
+        end
+    end
+
+    Controller-->>ExtApp: JSON response (payreq + approval status)
+
+    Note over ExtApp,DB: CREATE REIMBURSE PAYMENT REQUEST
+
+    ExtApp->>Controller: POST /api/payreqs/reimburse
+    Note right of ExtApp: With details array
+
+    Controller->>DB: Create payreq
+    Controller->>DB: Create realization
+    Controller->>DB: Create realization_details (loop)
+    Controller->>DB: Update payreq.amount = sum(details)
+
+    alt submit = true
+        Controller->>ApprovalCtrl: create_approval_plan()
+        Controller->>DB: Generate official document numbers
+        Controller->>DB: Update statuses to submitted
+    end
+
+    Controller-->>ExtApp: JSON (payreq + realization + details)
+```
+
+### Authentication Flow
+
+```mermaid
+graph LR
+    A[Admin generates API key] -->|SHA256 hash| B[Store in api_keys table]
+    B --> C[Show raw key once]
+    C --> D[External app stores key]
+    D --> E[Include in X-API-Key header]
+    E --> F[Middleware hashes incoming key]
+    F --> G{Hash matches?}
+    G -->|Yes| H[Allow request]
+    G -->|No| I[Return 401 Unauthorized]
+    H --> J[Update last_used_at]
+    J --> K[Process request]
+```
+
+### API Key Model
+
+**Table**: `api_keys`
+
+| Field        | Type       | Description            |
+| ------------ | ---------- | ---------------------- |
+| id           | bigint     | Primary key            |
+| name         | string     | Descriptive name       |
+| key          | string(64) | SHA256 hash of raw key |
+| application  | string     | Application identifier |
+| description  | text       | Optional notes         |
+| is_active    | boolean    | Active status          |
+| last_used_at | timestamp  | Usage tracking         |
+| created_by   | bigint     | FK to users            |
+| permissions  | json       | Future use             |
+
+**Security Features**:
+
+-   One-way SHA256 hashing (keys cannot be recovered)
+-   Instant activation/deactivation
+-   Usage tracking for audit
+-   Application-level identification
+
+### API Endpoints
+
+| Method | Endpoint                 | Description             | Auth     |
+| ------ | ------------------------ | ----------------------- | -------- |
+| GET    | /api/payreqs             | List payment requests   | Required |
+| GET    | /api/payreqs/{id}        | Get single payreq       | Required |
+| POST   | /api/payreqs/advance     | Create advance payreq   | Required |
+| POST   | /api/payreqs/reimburse   | Create reimburse payreq | Required |
+| POST   | /api/payreqs/{id}/cancel | Cancel draft payreq     | Required |
+
+### Business Rules Implementation
+
+**RAB Validation**:
+
+```php
+if (in_array($project, ['000H', 'APS']) && $submit === true && !$rab_id) {
+    return 422 error "RAB is required for projects 000H and APS when submitting"
+}
+```
+
+**Approval Plan Handling**:
+
+```php
+if ($submit === true) {
+    $approverCount = create_approval_plan('payreq', $id);
+    if ($approverCount === false) {
+        // Keep as draft, return error with draft payreq data
+    } else {
+        // Update to submitted status, assign official number
+    }
+}
+```
+
+**Project/Department Auto-fill**:
+
+-   API extracts from employee record (prevents data inconsistency)
+-   External apps only provide `employee_id`
+-   System determines `project` and `department_id`
+
+### Request/Response Examples
+
+**Create Advance (Submit)**:
+
+```json
+POST /api/payreqs/advance
+{
+    "employee_id": 123,
+    "remarks": "Travel expenses",
+    "amount": 5000000,
+    "rab_id": 10,
+    "submit": true
+}
+
+Response 201:
+{
+    "success": true,
+    "message": "Payment request created successfully",
+    "data": {
+        "payreq": {...},
+        "approval_status": "submitted",
+        "approvers_count": 3
+    }
+}
+```
+
+**Create Reimburse (Draft)**:
+
+```json
+POST /api/payreqs/reimburse
+{
+    "employee_id": 123,
+    "remarks": "Office supplies",
+    "submit": false,
+    "details": [
+        {"description": "Paper", "amount": 500000},
+        {"description": "Ink", "amount": 300000}
+    ]
+}
+
+Response 201:
+{
+    "success": true,
+    "data": {
+        "payreq": {...},
+        "realization": {...},
+        "approval_status": "draft"
+    }
+}
+```
+
+### Error Handling
+
+| Status | Description                                |
+| ------ | ------------------------------------------ |
+| 401    | Invalid/missing API key                    |
+| 404    | Resource not found                         |
+| 422    | Validation error / business rule violation |
+| 500    | Internal server error                      |
+
+All errors return consistent JSON structure:
+
+```json
+{
+    "success": false,
+    "message": "Error description",
+    "errors": { "field": ["error message"] }
+}
+```
+
+### Integration Points
+
+1. **PayreqController**: Reuses existing business logic for payreq creation
+2. **ApprovalPlanController**: Leverages existing approval workflow
+3. **DocumentNumberController**: Uses same document numbering system
+4. **Realization/RealizationDetail**: Standard models for reimburse type
+
+### API Key Management UI
+
+Admin interface accessible at `/admin/api-keys`:
+
+-   Generate new API keys
+-   View all keys with status and usage
+-   Activate/deactivate keys instantly
+-   Delete keys permanently
+-   Track last usage timestamp
+
+### Logging and Audit
+
+All API operations are logged with:
+
+-   API key identifier (name, application)
+-   Employee ID
+-   Operation type (advance, reimburse)
+-   Success/failure status
+-   Error messages if applicable
+
+Log entries include `api_key` field for filtering and analysis.
+
 ## Invoice Payment Module Architecture
 
 ```mermaid
@@ -842,7 +1105,8 @@ The system implements comprehensive multi-level approval workflows with permissi
 -   Permission-controlled edit functionality (`edit-submitted-realization` permission)
 -   Available on both realization approval page and payreq (reimburse) approval page
 -   Inline editing of realization details after submission but before final approval
--   Editable fields: description, amount, department, unit information (unit_no, type, qty, uom, km_position)
+-   Editable fields: description, amount, department, project (per detail row), unit information (unit_no, type, qty, uom, km_position)
+-   Project editing: Per-row dropdown in realization_details table allowing different projects per expense item
 -   Add/delete detail rows with real-time amount validation
 -   Warning-based validation (allows save with amount differences, not blocking)
 -   Variance calculation: Real-time display of Payreq Amount - Total Detail Amount
@@ -852,6 +1116,16 @@ The system implements comprehensive multi-level approval workflows with permissi
     -   "⚠ Needs Reprint" badge in user's payreq list (`/user-payreqs`) for reimburse-type payreqs
 -   AJAX-based updates without page refresh for improved UX
 -   Expandable unit info section for detailed equipment tracking
+
+**Advance Info Section Redesign** (2025-10-31):
+
+-   Compact single-row layout grouping related information
+-   Realization No: Shows submit timestamp directly below (📅 clock icon, format: d-M-Y H:i WITA)
+-   Payreq No: Shows paid date directly below (💵 money icon when paid, ⏳ hourglass when unpaid)
+-   Payment status integration: Eager loads outgoings relationship to display payment dates
+-   Icon-based visual indicators for quick status scanning
+-   Consistent display across both realization and payreq approval pages
+-   Muted styling for secondary information using `<small class="text-muted">` tags
 
 **Routes**:
 

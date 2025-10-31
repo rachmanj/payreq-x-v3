@@ -64,3 +64,13 @@ Route::get('/dashboard/exchange-rate-usd', function () {
         ], 500);
     }
 })->name('api.dashboard.exchange-rate-usd');
+
+// Payment Request API Routes
+Route::prefix('payreqs')->middleware('auth.apikey')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\PayreqApiController::class, 'index']);
+    Route::post('/advance', [App\Http\Controllers\Api\PayreqApiController::class, 'storeAdvance']);
+    Route::post('/reimburse', [App\Http\Controllers\Api\PayreqApiController::class, 'storeReimburse']);
+    Route::get('/rabs', [App\Http\Controllers\Api\PayreqApiController::class, 'getRabs']);
+    Route::get('/{id}', [App\Http\Controllers\Api\PayreqApiController::class, 'show']);
+    Route::post('/{id}/cancel', [App\Http\Controllers\Api\PayreqApiController::class, 'cancel']);
+});
