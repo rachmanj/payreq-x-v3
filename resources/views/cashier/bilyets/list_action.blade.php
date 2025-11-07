@@ -69,24 +69,32 @@
                     <form action="{{ route('cashier.bilyets.update', $model->id) }}" method="POST">
                         @csrf @method('PUT')
                         <div class="modal-body">
+                            @php
+                                $isReleaseErrorContext = old('bilyet_id') == $model->id;
+                            @endphp
+                            <input type="hidden" name="bilyet_id" value="{{ $model->id }}">
                             <div class="form-group">
                                 <label for="bilyet_date">Bilyet Date</label>
                                 <input type="date" name="bilyet_date" class="form-control"
-                                    value="{{ old('bilyet_date', $model->bilyet_date) }}">
+                                    value="{{ $isReleaseErrorContext ? old('bilyet_date') : optional($model->bilyet_date)->format('Y-m-d') }}">
                             </div>
                             <div class="form-group">
                                 <label for="cair_date">Cair Date (Optional)</label>
                                 <input type="date" name="cair_date" class="form-control"
-                                    value="{{ old('cair_date', $model->cair_date) }}">
+                                    value="{{ $isReleaseErrorContext ? old('cair_date') : optional($model->cair_date)->format('Y-m-d') }}">
                             </div>
                             <div class="form-group">
                                 <label for="amount">Amount</label>
-                                <input type="text" name="amount" class="form-control"
-                                    value="{{ old('amount', $model->amount) }}">
+                                <input type="text" name="amount"
+                                    class="form-control{{ $isReleaseErrorContext && $errors->has('amount') ? ' is-invalid' : '' }}"
+                                    value="{{ $isReleaseErrorContext ? old('amount') : ($model->amount ?? '') }}">
+                                @if ($isReleaseErrorContext && $errors->has('amount'))
+                                    <small class="text-danger">{{ $errors->first('amount') }}</small>
+                                @endif
                             </div>
                             <div class="form-group">
                                 <label for="remarks">Purpose</label>
-                                <textarea name="remarks" class="form-control">{{ old('remarks', $model->remarks) }}</textarea>
+                                <textarea name="remarks" class="form-control">{{ $isReleaseErrorContext ? old('remarks') : $model->remarks }}</textarea>
                             </div>
                         </div>
                         <div class="modal-footer">

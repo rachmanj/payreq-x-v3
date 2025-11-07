@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\Bilyet;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ValidationException;
 
 class UpdateBilyetRequest extends FormRequest
 {
@@ -25,13 +27,19 @@ class UpdateBilyetRequest extends FormRequest
     {
         $bilyet = $this->route('bilyet') ?? Bilyet::find($this->route('id'));
 
-        return [
+        $rules = [
             'bilyet_date' => 'nullable|date',
             'cair_date' => 'nullable|date|after_or_equal:bilyet_date',
             'amount' => 'nullable|numeric|min:0',
             'remarks' => 'nullable|string|max:500',
             'is_void' => 'nullable|boolean',
         ];
+
+        if (!$this->boolean('is_void')) {
+            $rules['amount'] = 'required|numeric|min:0';
+        }
+
+        return $rules;
     }
 
     /**
@@ -41,8 +49,23 @@ class UpdateBilyetRequest extends FormRequest
     {
         return [
             'cair_date.after_or_equal' => 'Cair date must be on or after bilyet date',
+            'amount.required' => 'Amount is required when releasing or settling a bilyet',
             'amount.min' => 'Amount must be a positive number',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        $bilyet = $this->route('bilyet') ?? Bilyet::find($this->route('id'));
+
+        if ($bilyet) {
+            session()->flash('bilyet_failed_id', $bilyet->id);
+            session()->flash('bilyet_failed_status', $bilyet->status);
+        }
+
+        throw (new ValidationException($validator))
+            ->redirectTo($this->getRedirectUrl())
+            ->errorBag($this->errorBag);
     }
 
     /**

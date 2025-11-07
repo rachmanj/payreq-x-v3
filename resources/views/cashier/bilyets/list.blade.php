@@ -1074,4 +1074,26 @@
             });
         });
     </script>
+    @if (session()->has('bilyet_failed_id'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var bilyetId = "{{ session('bilyet_failed_id') }}";
+                var status = "{{ session('bilyet_failed_status') }}";
+                var modalId = null;
+
+                if (status === 'onhand') {
+                    modalId = '#bilyet-release-' + bilyetId;
+                } else if (status === 'release') {
+                    modalId = '#bilyet-cair-' + bilyetId;
+                }
+
+                if (modalId) {
+                    var modal = $(modalId);
+                    if (modal.length) {
+                        modal.modal('show');
+                    }
+                }
+            });
+        </script>
+    @endif
 @endsection
