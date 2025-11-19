@@ -20,8 +20,8 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group mb-2">
-                                <label class="small font-weight-bold">Account Number</label>
-                                <select class="form-control form-control-sm" id="account_number" required>
+                                <label class="small font-weight-bold">Account Code</label>
+                                <select class="form-control form-control-sm" id="account_code" required>
                                     <option value="">-- Pilih Account --</option>
                                     @foreach ($accounts as $account)
                                         <option value="{{ $account->account_number }}">
@@ -54,12 +54,53 @@
                     </div>
                 </div>
                 <div class="card-body p-2">
+                    <div id="sap-alert" class="alert alert-danger d-none"></div>
                     <div class="row mb-2">
                         <div class="col-md-6">
                             <div class="account-info bg-light p-2 rounded">
                                 <span class="small font-weight-bold">Account:</span>
-                                <span id="account-number" class="badge badge-info"></span>
+                                <span id="account-code" class="badge badge-info mr-1"></span>
                                 <span id="account-name" class="ml-1"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="account-info bg-light p-2 rounded text-right">
+                                <span class="small font-weight-bold">Period:</span>
+                                <span id="statement-period"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <p class="mb-1">Opening Balance</p>
+                                    <h5 id="opening-balance" class="mb-0">-</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <p class="mb-1">Closing Balance</p>
+                                    <h5 id="closing-balance" class="mb-0">-</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-primary">
+                                <div class="inner">
+                                    <p class="mb-1">Total Debit</p>
+                                    <h5 id="total-debit" class="mb-0">-</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <p class="mb-1">Total Credit</p>
+                                    <h5 id="total-credit" class="mb-0">-</h5>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -76,7 +117,8 @@
                                     <th class="text-center" width="11%">Debit</th>
                                     <th class="text-center" width="11%">Credit</th>
                                     <th class="text-center" width="11%">Balance</th>
-                                    <th class="text-center" width="8%">SAP User</th>
+                                    <th class="text-center" width="10%">Tx Number</th>
+                                    <th class="text-center" width="10%">Unit</th>
                                 </tr>
                             </thead>
                             <tbody class="small">
@@ -142,6 +184,61 @@
             }
 
             let table;
+            const alertBox = $('#sap-alert');
+            const summaryFields = {
+                opening: $('#opening-balance'),
+                closing: $('#closing-balance'),
+                totalDebit: $('#total-debit'),
+                totalCredit: $('#total-credit')
+            };
+
+            function formatCurrency(value) {
+                const number = Number(value ?? 0);
+                return Intl.NumberFormat('id-ID', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(number);
+            }
+
+            function formatDate(dateString) {
+                if (!dateString) return '-';
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return dateString;
+                
+                const day = String(date.getDate()).padStart(2, '0');
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const month = months[date.getMonth()];
+                const year = date.getFullYear();
+                
+                return `${day}-${month}-${year}`;
+            }
+
+            function resetSummary() {
+                summaryFields.opening.text('-');
+                summaryFields.closing.text('-');
+                summaryFields.totalDebit.text('-');
+                summaryFields.totalCredit.text('-');
+                $('#statement-period').text('-');
+            }
+
+            function updateSummary(payload) {
+                summaryFields.opening.text(formatCurrency(payload.opening_balance ?? 0));
+                summaryFields.closing.text(formatCurrency(payload.closing_balance ?? 0));
+
+                if (payload.summary) {
+                    summaryFields.totalDebit.text(formatCurrency(payload.summary.total_debit ?? 0));
+                    summaryFields.totalCredit.text(formatCurrency(payload.summary.total_credit ?? 0));
+                } else {
+                    summaryFields.totalDebit.text('-');
+                    summaryFields.totalCredit.text('-');
+                }
+
+                if (payload.start_date && payload.end_date) {
+                    $('#statement-period').text(`${formatDate(payload.start_date)} s/d ${formatDate(payload.end_date)}`);
+                } else {
+                    $('#statement-period').text('-');
+                }
+            }
 
             function initializeTable() {
                 if (table) {
@@ -164,39 +261,62 @@
                             orderable: false
                         },
                         {
-                            data: 'date',
-                            className: 'text-center'
+                            data: 'posting_date',
+                            className: 'text-center',
+                            defaultContent: '-',
+                            render: function(data) {
+                                return formatDate(data);
+                            }
                         },
                         {
-                            data: 'description'
+                            data: 'description',
+                            defaultContent: '-'
                         },
                         {
                             data: 'doc_num',
-                            className: 'text-center'
+                            className: 'text-center',
+                            defaultContent: '-'
                         },
                         {
                             data: 'doc_type',
-                            className: 'text-center'
+                            className: 'text-center',
+                            defaultContent: '-'
                         },
                         {
                             data: 'project_code',
-                            className: 'text-center'
+                            className: 'text-center',
+                            defaultContent: '-'
                         },
                         {
-                            data: 'debit',
-                            className: 'text-right'
+                            data: 'debit_amount',
+                            className: 'text-right',
+                            render: function(data) {
+                                return formatCurrency(data);
+                            }
                         },
                         {
-                            data: 'credit',
-                            className: 'text-right'
+                            data: 'credit_amount',
+                            className: 'text-right',
+                            render: function(data) {
+                                return formatCurrency(data);
+                            }
                         },
                         {
-                            data: 'balance',
-                            className: 'text-right'
+                            data: 'running_balance',
+                            className: 'text-right',
+                            render: function(data) {
+                                return formatCurrency(data);
+                            }
                         },
                         {
-                            data: 'sap_user',
-                            className: 'text-center'
+                            data: 'tx_num',
+                            className: 'text-center',
+                            defaultContent: '-'
+                        },
+                        {
+                            data: 'unit_no',
+                            className: 'text-center',
+                            defaultContent: '-'
                         }
                     ],
                     order: [
@@ -209,9 +329,27 @@
             initializeTable();
 
             $('#search').click(function() {
+                alertBox.addClass('d-none').text('');
+                resetSummary();
+                $('#account-code').text('');
+                $('#account-name').text('');
+
                 // Validate account selection
-                if (!$('#account_number').val()) {
+                if (!$('#account_code').val()) {
                     alert('Silahkan pilih Account terlebih dahulu');
+                    return;
+                }
+
+                // Validate date range (<= 6 months)
+                const startDateVal = $('#start_date').val();
+                const endDateVal = $('#end_date').val();
+                const startDateObj = new Date(startDateVal);
+                const endDateObj = new Date(endDateVal);
+                const sixMonthsLater = new Date(startDateObj);
+                sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+
+                if (endDateObj > sixMonthsLater) {
+                    alert('Date range cannot exceed 6 months.');
                     return;
                 }
 
@@ -226,7 +364,7 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     data: {
-                        account_number: $('#account_number').val(),
+                        account_code: $('#account_code').val(),
                         start_date: $('#start_date').val(),
                         end_date: $('#end_date').val(),
                         draw: 1
@@ -234,9 +372,11 @@
                     success: function(response) {
                         // Update account info
                         if (response.account) {
-                            $('#account-number').text(response.account.account_number);
+                            $('#account-code').text(response.account.code);
                             $('#account-name').text(response.account.name);
                         }
+
+                        updateSummary(response);
 
                         // Clear and add new data
                         table.clear();
@@ -247,6 +387,10 @@
                     },
                     error: function(xhr, status, error) {
                         console.error('Error:', error);
+                        const message = xhr.responseJSON && xhr.responseJSON.error ?
+                            xhr.responseJSON.error :
+                            'Failed to fetch data from SAP Bridge.';
+                        alertBox.removeClass('d-none').text(message);
                         table.clear().draw();
                     },
                     complete: function() {

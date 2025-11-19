@@ -97,6 +97,7 @@ The Accounting One system is a comprehensive financial management application bu
 
     - **DDS API**: Document Distribution System for invoice management
     - **SAP Integration**: General ledger synchronization
+    - **SAP Bridge Account Statements**: Cashier SAP Transactions page fetches GL statement data via `/api/account-statements` using API key headers, translating SAP payloads (opening balance, running balances, summaries) directly into the UI.
     - **LOT Service**: Official travel claim management
     - **BUC Sync**: Budget synchronization system
 
@@ -125,6 +126,41 @@ The Accounting One system is a comprehensive financial management application bu
     - **Team Management Section**: Avatar-based team member displays with progress tracking
     - **Monthly Spending Chart**: Line chart with Indonesian currency formatting
     - **Permission-Based Components**: Role-specific widget visibility (approvers, team leaders, superadmin)
+
+### SAP Bridge Account Statement Flow
+
+The cashier `SAP Transactions` module now consumes the SAP-Bridge API instead of the legacy GL service. Data flow:
+
+- `resources/views/cashier/sap-transactions/index.blade.php` posts `account_code`, `start_date`, and `end_date` to `POST /cashier/sap-transactions/data` after enforcing the 6-month window rule client-side.
+- `SapTransactionController::data()` validates the payload (`Y-m-d` dates, `after_or_equal`, custom 6-month guard via Carbon) and delegates to `App\Services\SapBridge\AccountStatementService`.
+- `AccountStatementService` centralizes HTTP concerns: builds `GET /api/account-statements` with `x-sap-bridge-api-key`, reads config from `config/services.php['sap_bridge']`, applies timeouts, and normalizes error responses by throwing `SapBridgeException`.
+- Successful responses are relayed verbatim (`account`, `opening_balance`, `transactions`, `summary`) so the DataTable renders SAP-provided fields (posting date, project, debit/credit, running balance, tx number, unit no) without further transformation.
+- Errors from SAP-Bridge (401 auth, 404 account not found, 422 range exceeded, 5xx connectivity) are surfaced to the UI so cashiers immediately see the root cause.
+
+```mermaid
+sequenceDiagram
+    participant UI as Cashier UI<br/>sap-transactions.blade
+    participant Controller as SapTransactionController
+    participant Service as AccountStatementService
+    participant API as SAP-Bridge<br/>/api/account-statements
+
+    UI->>Controller: POST /cashier/sap-transactions/data<br/>{account_code, start/end}
+    Controller->>Controller: Validate + enforce 6-month window
+    Controller->>Service: getAccountStatement(account_code, start, end)
+    Service->>API: GET /api/account-statements<br/>+ x-sap-bridge-api-key
+    API-->>Service: JSON (account, transactions, summary)
+    Service-->>Controller: Structured payload
+    Controller-->>UI: JSON ({account, opening/closing balance, summary, transactions})
+    API--x Service: Error (401/404/422/5xx)
+    Service--x Controller: SapBridgeException (status + message)
+    Controller--x UI: JSON error response (message, status)
+```
+
+**Configuration**:
+
+- Environment: `SAP_BRIDGE_URL`, `SAP_BRIDGE_API_KEY`, `SAP_BRIDGE_TIMEOUT`
+- Config mapping: `config/services.php['sap_bridge']`
+- Exception handling: `App\Exceptions\SapBridgeException` standardizes downstream error responses.
 
 ## Architecture Diagram
 

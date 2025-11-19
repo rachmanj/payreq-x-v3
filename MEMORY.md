@@ -1,3 +1,13 @@
+### [021] SAP Bridge Account Statement Integration (2025-11-18) ✅ COMPLETE
+
+**Challenge**: The cashier SAP Transactions page still fetched statements from an internal GL service that is being decommissioned. Responses lacked the new opening/closing balance metadata, error messages were generic, and the API key header no longer matched SAP-Bridge requirements.
+
+**Solution**: Added `SAP_BRIDGE_URL`, `SAP_BRIDGE_API_KEY`, `SAP_BRIDGE_TIMEOUT` configuration plus `App\Services\SapBridge\AccountStatementService` and `SapBridgeException` to encapsulate HTTP calls. Refactored `SapTransactionController` to validate the 6-month window, call the new service, and return SAP-Bridge payloads. Rebuilt the Blade view to render SAP fields (posting_date, debit/credit, running_balance, tx_num, unit_no) with summary widgets and surfaced SAP error messages in the UI.
+
+**Key Learning**: Wrapping outbound API calls in a dedicated service provides a single place for headers, timeouts, and error handling, which simplifies controller code and improves resilience. Passing the SAP-Bridge payload directly to the UI avoids fragile re-mapping and lets us expose additional balances without extra queries. Enforcing business rules (≤ 6 months) both client- and server-side prevents avoidable external calls while giving immediate user feedback.
+
+---
+
 ### [020] Payment Request REST API with Custom API Key Authentication (2025-10-27) ✅ COMPLETE
 
 **Challenge**: External applications (mobile apps, third-party systems) needed ability to create payment requests without requiring user login sessions. Existing web interface wasn't suitable for programmatic access. No secure way to authenticate system-to-system integrations. Business rules (RAB validation, approval workflows) needed to be enforced consistently across web and API interfaces.

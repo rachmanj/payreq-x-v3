@@ -36,6 +36,12 @@ return [
         'api_key' => env('GL_API_KEY'),
     ],
 
+    'sap_bridge' => [
+        'url' => env('SAP_BRIDGE_URL'),
+        'api_key' => env('SAP_BRIDGE_API_KEY'),
+        'timeout' => env('SAP_BRIDGE_TIMEOUT', 30),
+    ],
+
     'lot' => [
         'base_url' => env('LOT_API_BASE_URL'),
         'search_endpoint' => env('LOT_API_SEARCH_ENDPOINT'),

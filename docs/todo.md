@@ -1,5 +1,5 @@
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-10-05
+**Last Updated**: 2025-11-18
 
 ## Task Management Guidelines
 
@@ -45,6 +45,15 @@ Include relevant context in brackets to help with future AI-assisted coding:
 -   [ ] Advanced reporting features
 
 ## Recently Completed
+
+-   [x] **SAP Transactions migrated to SAP-Bridge Account Statement API** - Completed on 2025-11-18
+
+    -   Replaced legacy GL `/api/v1/statements` dependency with SAP-Bridge `/api/account-statements` using `x-sap-bridge-api-key`
+    -   Added `SAP_BRIDGE_URL`, `SAP_BRIDGE_API_KEY`, `SAP_BRIDGE_TIMEOUT` with config wiring in `config/services.php`
+    -   Introduced `App\Services\SapBridge\AccountStatementService` + `SapBridgeException` for centralized HTTP/error handling
+    -   Refactored `SapTransactionController::data()` with validation, 6-month guard, and new JSON response schema
+    -   Redesigned `resources/views/cashier/sap-transactions/index.blade.php` to show SAP summary cards, new DataTable columns, currency formatting, and error feedback
+    -   Updated documentation (`docs/architecture.md`, `docs/decisions.md`, `MEMORY.md`) and manual testing notes
 
 -   [x] **Dashboard Exchange Rate Simplification** - Completed on 2025-10-05
 

@@ -30,6 +30,43 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ## Recent Decisions
 
+### Decision: Switch SAP Transactions to SAP-Bridge Account Statement API - 2025-11-18
+
+**Context**: The cashier SAP Transactions page still queried a legacy GL microservice via `/api/v1/statements`. Business moved account-statement ownership to the SAP-Bridge app exposing `/api/account-statements` with richer metadata (opening/closing balances, summaries). We needed to realign the UI with the new source, enforce SAP-side constraints (6-month window), and surface accurate error feedback to cashiers.
+
+**Options Considered**:
+
+1. **Continue Using GL Aggregator**
+    - ✅ Pros: Zero code changes, existing response shape already matches DataTables columns
+    - ❌ Cons: Deprecated service, missing new balances/summary fields, inconsistent data vs SAP-Bridge, security drift (old API key header)
+2. **Call SAP-Bridge Directly from Controller**
+    - ✅ Pros: Smaller diff, controller holds HTTP logic
+    - ❌ Cons: Tight coupling, duplicated config handling, harder to reuse/testing, no central error normalization
+3. **Dedicated SapBridge Account Statement Service (Chosen)**
+    - ✅ Pros: Centralizes HTTP config, timeout, headers, and error handling; controller stays focused on validation; easy to mock in tests; prepares for future SAP endpoints; aligns with service-layer patterns already in app
+    - ❌ Cons: Additional class + exception to maintain
+
+**Decision**: Implement `App\Services\SapBridge\AccountStatementService` and migrate the cashier UI/controller to consume SAP-Bridge `/api/account-statements` payloads directly.
+
+**Rationale**:
+
+- Service encapsulation keeps API details (base URL, headers, timeout) in one place and exposes a simple `getAccountStatement()` contract.
+- SAP-Bridge response is richer than GL aggregator, so passing it through enables opening/closing balance + summary widgets without extra transforms.
+- Standardized `SapBridgeException` lets controllers return user-friendly errors that mirror SAP responses (401/404/422).
+- Client-side + server-side 6-month validation prevents unnecessary SAP requests and echoes SAP’s hard rule.
+- Updating config/env (`SAP_BRIDGE_URL`, `SAP_BRIDGE_API_KEY`, `SAP_BRIDGE_TIMEOUT`) keeps deployments declarative.
+
+**Implementation**:
+
+- Added `sap_bridge` config block + env placeholders; created `App\Services\SapBridge\AccountStatementService` and `App\Exceptions\SapBridgeException`.
+- Refactored `SapTransactionController::data()` for request validation, 6-month guard, and service injection; response now mirrors SAP-Bridge schema.
+- Rebuilt `resources/views/cashier/sap-transactions/index.blade.php` DataTable + summary cards to consume SAP fields (posting_date, debit_amount, running_balance, tx_num, unit_no) and show balances/period info.
+- Documented flow in `docs/architecture.md`, added ADR in `docs/decisions.md`, logged work in `docs/todo.md` and `MEMORY.md`.
+
+**Review Date**: 2026-02-18 (confirm SAP-Bridge uptime, consider caching/pagination if traffic grows).
+
+---
+
 ### Decision: Project Field Granularity - Detail Level vs Document Level - 2025-10-31
 
 **Context**: Realization documents track expenses across multiple detail items. Project assignment determines budget allocation and financial reporting. Original implementation had project field at realization (document) level, assuming all expense items in one realization belong to same project. However, users frequently need to split single realization across multiple projects (e.g., expense report with items from both HO and APS projects).
