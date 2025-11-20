@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-10-23
+**Last Updated**: 2025-11-20
 
 # Technical Decision Records
 
@@ -29,6 +29,51 @@ Decision: [Title] - [YYYY-MM-DD]
 ---
 
 ## Recent Decisions
+
+### Decision: Direct SAP B1 Journal Entry Submission via Service Layer API - 2025-11-20
+
+**Context**: Users were manually exporting verification journals to Excel and copy-pasting data into SAP B1 Journal Entry module. This workflow was time-consuming, error-prone, lacked audit trail, and required manual updates of SAP journal numbers in the local system. Business needed automated submission with proper error handling, transaction safety, and complete audit logging.
+
+**Options Considered**:
+
+1. **Continue Manual Excel Export/Import Workflow**
+   - ✅ Pros: No code changes, users familiar with process, no integration complexity
+   - ❌ Cons: Time-consuming, error-prone, no audit trail, manual data entry errors, no automatic SAP journal number updates, inconsistent data
+
+2. **SAP B1 DI API (Data Interface)**
+   - ✅ Pros: Batch processing capability, supports multiple document types
+   - ❌ Cons: Requires file-based import, more complex setup, not real-time, requires file server access
+
+3. **SAP B1 Service Layer REST API (Chosen)**
+   - ✅ Pros: Real-time submission, programmatic control, proper error handling, supports all journal entry fields (projects, cost centers), automatic session management, standard REST API patterns
+   - ❌ Cons: Requires Service Layer configuration, cookie-based session management complexity
+
+**Decision**: Implement direct journal entry submission using SAP B1 Service Layer REST API with comprehensive error handling, database transactions, and audit logging.
+
+**Rationale**:
+
+- Service Layer API provides real-time, programmatic control over journal entry creation with proper error responses
+- Cookie-based session management (handled by Guzzle CookieJar) is standard for SAP B1 Service Layer and can be abstracted in service class
+- Database transactions ensure atomicity - local records only update if SAP submission succeeds, preventing data inconsistencies
+- Comprehensive audit logging (`SapSubmissionLog`) provides complete trail of all submission attempts for compliance and troubleshooting
+- Permission-based access control ensures only authorized users can submit journals
+- Mandatory confirmation dialog prevents accidental submissions and informs users about posting implications
+- Automatic SAP Document Number extraction and local database update eliminates manual data entry errors
+- UI enhancements (button visibility, status indicators) provide clear feedback about submission status
+
+**Implementation**:
+
+- Created `App\Services\SapService` for SAP B1 Service Layer communication with cookie-based session management, automatic re-login on expiration, and journal entry creation
+- Built `App\Services\SapJournalEntryBuilder` to construct journal entry payloads from `VerificationJournal` records with validation
+- Added database migrations for submission tracking (`sap_submission_attempts`, `sap_submission_status`, etc.) and audit logging (`sap_submission_logs` table)
+- Implemented `SapSyncController::submitToSap()` with permission checks, transaction management, error handling, and local record updates
+- Enhanced UI with submit button, confirmation modal, status indicators, and disabled cancel button after posting
+- Configured SAP B1 General Settings to make cash flow assignment optional ("Warning Only") to resolve "Cash flow assignment is mandatory" errors
+- Added environment variables and config mapping for SAP B1 connection details
+
+**Review Date**: 2026-02-20 (evaluate submission success rate, consider batch processing for multiple journals, assess need for cash flow assignment automation)
+
+---
 
 ### Decision: Switch SAP Transactions to SAP-Bridge Account Statement API - 2025-11-18
 

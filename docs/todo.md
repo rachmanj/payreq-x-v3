@@ -1,5 +1,5 @@
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-11-18
+**Last Updated**: 2025-11-20
 
 ## Task Management Guidelines
 
@@ -45,6 +45,22 @@ Include relevant context in brackets to help with future AI-assisted coding:
 -   [ ] Advanced reporting features
 
 ## Recently Completed
+
+-   [x] **SAP B1 Journal Entry Direct Submission Feature** - Completed on 2025-11-20
+
+    -   Implemented direct submission of verification journals to SAP B1 Journal Entry module via Service Layer API
+    -   Replaced manual Excel export/import workflow with programmatic journal entry creation
+    -   Added `SapService` class for SAP B1 Service Layer communication with cookie-based session management
+    -   Created `SapJournalEntryBuilder` to construct journal entry payloads with account codes, projects, cost centers, debits/credits
+    -   Implemented database transaction rollback on SAP submission failure to maintain data consistency
+    -   Added comprehensive error handling and logging with `SapSubmissionLog` for audit trail
+    -   Created permission-based access control (superadmin, admin, cashier, approver roles)
+    -   Added mandatory confirmation dialog before submission with journal details and previous attempt history
+    -   Implemented automatic SAP Document Number extraction and local database update
+    -   Added UI enhancements: submit button visibility control, disabled cancel button after posting, status indicators
+    -   Resolved SAP B1 cash flow assignment requirement by configuring General Settings to "Warning Only"
+    -   Files: `app/Http/Controllers/Accounting/SapSyncController.php`, `app/Services/SapService.php`, `app/Services/SapJournalEntryBuilder.php`, `app/Models/SapSubmissionLog.php`, `database/migrations/*_add_sap_submission_tracking*.php`, `resources/views/accounting/sap-sync/show.blade.php`, `config/services.php`
+    -   Documentation: Updated `docs/architecture.md`, `docs/decisions.md`, `MEMORY.md`
 
 -   [x] **SAP Transactions migrated to SAP-Bridge Account Statement API** - Completed on 2025-11-18
 

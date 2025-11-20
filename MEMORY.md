@@ -1,3 +1,72 @@
+### [022] SAP B1 Journal Entry Direct Submission Feature (2025-11-20) ✅ COMPLETE
+
+**Challenge**: Users had to manually export verification journals to Excel and then copy-paste the data into SAP B1 Journal Entry module. This process was time-consuming, error-prone, and lacked audit trail. There was no way to track submission attempts, errors, or automatically update local records with SAP journal numbers.
+
+**Solution**: Implemented direct programmatic submission of verification journals to SAP B1 using Service Layer REST API. Created `SapService` class to handle SAP B1 authentication via cookie-based sessions, automatic session management, and journal entry creation. Built `SapJournalEntryBuilder` to construct properly formatted journal entry payloads with account codes, projects, cost centers, and debit/credit amounts. Added comprehensive error handling with database transaction rollback on failure, ensuring local records are only updated if SAP submission succeeds. Implemented `SapSubmissionLog` model for complete audit trail of all submission attempts. Added permission-based access control restricting submission to authorized roles (superadmin, admin, cashier, approver). Created mandatory confirmation dialog showing journal details and previous submission attempts. Enhanced UI to automatically hide submit button after successful submission and disable cancel button once posted to SAP B1.
+
+**Key Learning**: SAP B1 Service Layer uses cookie-based session management (not tokens), requiring CookieJar in Guzzle HTTP client. The Service Layer expects journal entry payload directly (not wrapped in "JournalEntry" key). SAP Document Number (`Number` field) is the correct identifier for `sap_journal_no`, not `JdtNum` or `DocEntry`. Cash flow assignment can be made optional in SAP B1 General Settings (Administration → System Initialization → General Settings → Cash Flow tab → "Assignment in Transactions with All Relevant to Cash Flow" set to "Warning Only"). Database transactions are critical for maintaining data consistency - all local updates must roll back if SAP submission fails. Comprehensive logging and error messages are essential for troubleshooting SAP integration issues.
+
+**Technical Implementation**:
+
+- **Service Layer Integration**:
+  - `SapService`: Handles SAP B1 Service Layer authentication, session management, and journal entry creation
+  - Cookie-based session management using Guzzle CookieJar
+  - Automatic session expiration handling with re-login on 401 errors
+  - Journal entry payload construction and submission via POST to `/JournalEntries` endpoint
+  - SAP Document Number extraction from response (`Number` field prioritized over `JdtNum`)
+
+- **Journal Entry Builder**:
+  - `SapJournalEntryBuilder`: Constructs journal entry payloads from `VerificationJournal` and `VerificationJournalDetail` records
+  - Validates journal balance (debits = credits) and required fields
+  - Maps local account codes, projects, cost centers to SAP B1 format
+  - Handles date formatting (ReferenceDate, TaxDate, DueDate)
+
+- **Database Schema**:
+  - Migration: Added `sap_submission_attempts`, `sap_submission_status`, `sap_submission_error`, `sap_submitted_at`, `sap_submitted_by` to `verification_journals` table
+  - Migration: Created `sap_submission_logs` table for audit trail with status, error messages, SAP response, journal number, attempt number
+
+- **Controller Logic**:
+  - `SapSyncController::submitToSap()`: Validates permissions, prevents resubmission, initiates transaction, builds journal entry, submits to SAP, updates local records on success
+  - Database transaction ensures atomicity - all updates roll back on failure
+  - Updates `sap_journal_no`, `posted_by`, `posted_at` on successful submission
+  - Creates `SapSubmissionLog` entry for each attempt (success or failure)
+
+- **UI Enhancements**:
+  - Submit button only visible when `sap_journal_no` is empty
+  - Confirmation modal displays journal summary, important notes, and previous submission attempts
+  - Cancel SAP Info button disabled once journal is posted to SAP B1
+  - Success/error messages displayed to user
+  - Status indicators show posted status
+
+- **Configuration**:
+  - Environment variables: `SAP_SERVER_URL`, `SAP_DB_NAME`, `SAP_USER`, `SAP_PASSWORD`
+  - Config mapping: `config/services.php['sap']`
+
+- **SAP B1 Configuration**:
+  - General Settings → Cash Flow tab → "Assignment in Transactions with All Relevant to Cash Flow" set to "Warning Only"
+  - This allows journal entries to be posted without mandatory cash flow assignment while still showing warnings
+
+**Files Created**:
+- `app/Services/SapService.php`
+- `app/Services/SapJournalEntryBuilder.php`
+- `app/Models/SapSubmissionLog.php`
+- `database/migrations/2025_11_20_015243_add_sap_submission_tracking_to_verification_journals_table.php`
+- `database/migrations/2025_11_20_015249_create_sap_submission_logs_table.php`
+
+**Files Modified**:
+- `app/Http/Controllers/Accounting/SapSyncController.php` (added `submitToSap()` method)
+- `resources/views/accounting/sap-sync/show.blade.php` (added submit button, confirmation modal, status indicators)
+- `config/services.php` (added SAP configuration)
+- `routes/accounting.php` (added submit-to-sap route)
+
+**Testing Results**:
+- Successfully submitted Verification Journal No 25VJ02501731 → SAP Journal Number: 257644473
+- Successfully submitted Verification Journal No 25VJ00001727 → SAP Journal Number: 257644474 (after resolving cash flow assignment requirement)
+- All error scenarios properly handled with transaction rollback
+- Audit trail correctly logged in `sap_submission_logs` table
+
+---
+
 ### [021] SAP Bridge Account Statement Integration (2025-11-18) ✅ COMPLETE
 
 **Challenge**: The cashier SAP Transactions page still fetched statements from an internal GL service that is being decommissioned. Responses lacked the new opening/closing balance metadata, error messages were generic, and the API key header no longer matched SAP-Bridge requirements.

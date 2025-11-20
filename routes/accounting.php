@@ -35,6 +35,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/edit-vjdetail/data', [SapSyncController::class, 'edit_vjdetail_data'])->name('edit_vjdetail_data');
         Route::post('/cancel_sap_info', [SapSyncController::class, 'cancel_sap_info'])->name('cancel_sap_info');
         Route::post('/update_sap_info', [SapSyncController::class, 'update_sap_info'])->name('update_sap_info');
+        Route::post('/submit-to-sap', [SapSyncController::class, 'submitToSap'])->name('submit_to_sap');
         Route::get('/print_sapj', [SapSyncController::class, 'print_sapj'])->name('print_sapj');
     });
 

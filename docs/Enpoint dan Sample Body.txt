@@ -1,0 +1,226 @@
+Note : Enable SSL certificate verification harus OFF
+
+--Post (Untuk get session)
+https://arkasrv2.arka.own:50000/b1s/v1/Login
+body
+{"CompanyDB": "SBO_ARKA_TEST_ADDON", "UserName": "manager", "Password": "P@ssw0rd"}
+
+--Get Account
+https://arkasrv2.arka.own:50000/b1s/v1/ChartOfAccounts?$select=Code,Name&$filter=startswith(AccountLevel,'5')&$orderby=Code
+
+--Get Costcenter
+https://arkasrv2.arka.own:50000/b1s/v1/ProfitCenters?$select=CenterCode,CenterName
+
+--Get Project
+https://arkasrv2.arka.own:50000/b1s/v1/ProjectsService_GetProjectList
+
+--Get Incoiming By DocNum
+https://arkasrv2.arka.own:50000/b1s/v1/IncomingPayments?$filter=startswith(DocNum,'140101039')
+
+
+--Get Outgoing By DocNum
+https://arkasrv2.arka.own:50000/b1s/v1/VendorPayments?$filter=startswith(DocNum,'140101039')
+
+Post Outgoing payment Advance
+https://arkasrv2.arka.own:50000/b1s/v1/VendorPayments
+
+{
+            "Series": 3298,
+            "DocType": "rAccount",
+            "HandWritten": "tNO",
+            "Printed": "tNO",
+            "DocDate": "2024-03-15",
+            "DueDate": "2024-03-15",
+            "TaxDate": "2024-03-15",
+            "Remarks": "Employee Cash Advance",
+            "JournalRemarks": "Employee Cash Advance IDR",
+            "U_MIS_PayType": "1",
+            "U_MIS_Req": "Agung",
+            "U_MIS_Signature1": "A",
+            "U_MIS_Signature2": "B",
+            "CashAccount": "11101001",
+            "DocCurrency": "IDR",
+	    "CheckAccount": null,
+            "CashSum": 1000000.0,
+            "CashSumFC": 0,
+            "CashSumSys": 0,
+ 	    "TransferAccount": null,
+            "TransferSum": 0.0,
+            "DocRate": 0.0,
+            "Reference1": "140104266",
+            "PaymentAccounts": [
+                {
+                    "LineNum": 0,
+                    "AccountCode": "11409002",
+                    "Decription": "Piutang Karyawan Agung",
+                    "ProfitCenter": "30",
+                    "ProjectCode": "000H",
+                    "SumPaid": 1000000,
+                    "SumPaidFC": 0,
+		    "U_MIS_CCDepartment": "30",
+                    "U_MIS_BPCode": null,
+                    "U_MIS_BPName": null
+
+                }
+            ]
+        }
+
+
+
+---Post Outgoing Payments Settlement
+https://arkasrv2.arka.own:50000/b1s/v1/VendorPayments
+
+{
+            "Series": 3298,
+            "DocType": "rAccount",
+            "HandWritten": "tNO",
+            "Printed": "tNO",
+            "DocDate": "2024-03-15",
+            "DueDate": "2024-03-15",
+            "TaxDate": "2024-03-15",
+            "Remarks": "Pertanggung jawaban Advance Agung Wibowo",
+            "JournalRemarks": "Pertanggung jawaban advance Agung Wibowo",
+            "U_MIS_PayType": "2",
+            "U_MIS_Req": "Agung",
+            "U_MIS_Signature1": "A",
+            "U_MIS_Signature2": "B",
+            "CashAccount": null,
+            "DocCurrency": "IDR",
+            "CheckAccount": null,
+            "CashSum": 0.0,
+            "CashSumFC": 0,
+            "CashSumSys": 0,
+	    "TransferAccount": "11409002",
+            "TransferSum": 1000000.0,
+            "DocRate": 0.0,
+            "Reference1": "248810002",
+            "PaymentAccounts": [
+                {
+                    "LineNum": 0,
+                    "AccountCode": "61210001",
+                    "Decription": "Official Travel - Transportation (Biaya Lain Lain)",
+                    "ProfitCenter": "30",
+                    "ProjectCode": "000H",
+                    "SumPaid": 400000,
+                    "SumPaidFC": 0,
+		    "U_MIS_CCDepartment": "30",
+                    "U_MIS_BPCode": null,
+                    "U_MIS_BPName": null
+                },
+                {
+                    "LineNum": 1,
+                    "AccountCode": "61210002",
+                    "Decription": "Official Travel - Accomodation (Uang Makan)",
+                    "ProfitCenter": "30",
+                    "ProjectCode": "000H",
+                    "SumPaid": 500000,
+                    "SumPaidFC": 0,
+		    "U_MIS_CCDepartment": "30",
+                    "U_MIS_BPCode": null,
+                    "U_MIS_BPName": null
+
+                },
+                {
+                    "LineNum": 2,
+                    "AccountCode": "11101099",
+                    "Decription": "Cash Intransit (Agung Wibowo)",
+                    "ProfitCenter": "30",
+                    "ProjectCode": "000H",
+                    "SumPaid": 100000,
+                    "SumPaidFC": 0,
+		    "U_MIS_CCDepartment": "30",
+                    "U_MIS_BPCode": null,
+                    "U_MIS_BPName": null
+
+                }
+
+            ]
+        }
+
+
+---Post Outgoing payment reimbursment
+https://arkasrv2.arka.own:50000/b1s/v1/VendorPayments
+
+{
+            "Series": 3298,
+            "DocType": "rAccount",
+            "HandWritten": "tNO",
+            "Printed": "tNO",
+            "DocDate": "2024-03-15",
+            "DueDate": "2024-03-15",
+            "TaxDate": "2024-03-15",
+            "Remarks": "Reimbursement kesehatan",
+            "JournalRemarks": "Reimbursement kesehatan",
+            "U_MIS_PayType": "3",
+            "U_MIS_Req": "Agung",
+            "U_MIS_Signature1": "A",
+            "U_MIS_Signature2": "B",
+            "CashAccount": "11101001",
+            "DocCurrency": "IDR",
+	    "CheckAccount": null,
+            "CashSum": 300000.0,
+            "CashSumFC": 0,
+            "CashSumSys": 0,
+ 	    "TransferAccount": null,
+            "TransferSum": 0.0,
+            "DocRate": 0.0,
+            "Reference1": "248810003",
+            "PaymentAccounts": [
+                {
+                    "LineNum": 0,
+                    "AccountCode": "61201099",
+                    "Decription": "Employee Other (Reimbursement Agung)",
+                    "ProfitCenter": "110",
+                    "ProjectCode": "000H",
+                    "SumPaid": 300000,
+                    "SumPaidFC": 0,
+		    "U_MIS_CCDepartment": "110",
+                    "U_MIS_BPCode": null,
+                    "U_MIS_BPName": null
+
+                }
+            ]
+        }
+
+
+
+
+Post Incoming Payment Settlement
+https://arkasrv2.arka.own:50000/b1s/v1/IncomingPayments
+
+{
+            "Series": 3275,
+            "DocType": "rAccount",
+            "HandWritten": "tNO",
+            "Printed": "tNO",
+            "DocDate": "2024-03-15",
+            "DueDate": "2024-03-15",
+            "TaxDate": "2024-03-15",
+            "Remarks": "Pengembalian sisa advance (Agung Wibowo)",
+            "JournalRemarks": "Pengembalian sisa advance (Agung Wibowo)",
+            "U_MIS_PayType": "2",
+            "U_MIS_Req": "Agung",
+            "U_MIS_Signature1": "A",
+            "U_MIS_Signature2": "B",
+            "CashAccount": "11101001",
+            "DocCurrency": "IDR",
+            "CashSum": 100000.0,
+            "CashSumFC": 0,
+            "CashSumSys": 0,
+            "DocRate": 0.0,
+            "Reference1": "140104266",
+            "PaymentAccounts": [
+                {
+                    "LineNum": 0,
+                    "AccountCode": "11101099",
+                    "Decription": "Cash Intransit (Agung Wibowo)",
+                    "ProfitCenter": "30",
+                    "ProjectCode": "000H",
+                    "SumPaid": 100000,
+                    "SumPaidFC": 0,
+		    "U_MIS_CCDepartment": "30",
+                    "U_MIS_BPCode": null,
+                    "U_MIS_BPName": null
+                }
+            ]
+        }

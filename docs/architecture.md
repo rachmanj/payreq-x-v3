@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-10-23
+Last Updated: 2025-11-20
 
 ## Architecture Documentation Guidelines
 
@@ -96,7 +96,8 @@ The Accounting One system is a comprehensive financial management application bu
 6. **External Integrations**
 
     - **DDS API**: Document Distribution System for invoice management
-    - **SAP Integration**: General ledger synchronization
+    - **SAP Integration**: General ledger synchronization and journal entry submission
+    - **SAP B1 Service Layer**: Direct programmatic submission of verification journals to SAP B1 Journal Entry module via REST API with cookie-based session management, automatic error handling, and comprehensive audit logging
     - **SAP Bridge Account Statements**: Cashier SAP Transactions page fetches GL statement data via `/api/account-statements` using API key headers, translating SAP payloads (opening balance, running balances, summaries) directly into the UI.
     - **LOT Service**: Official travel claim management
     - **BUC Sync**: Budget synchronization system
@@ -126,6 +127,68 @@ The Accounting One system is a comprehensive financial management application bu
     - **Team Management Section**: Avatar-based team member displays with progress tracking
     - **Monthly Spending Chart**: Line chart with Indonesian currency formatting
     - **Permission-Based Components**: Role-specific widget visibility (approvers, team leaders, superadmin)
+
+### SAP B1 Journal Entry Submission Flow
+
+The accounting `SAP Sync` module enables direct submission of verification journals to SAP B1 Journal Entry module via Service Layer REST API. Data flow:
+
+- `resources/views/accounting/sap-sync/show.blade.php` displays "Submit to SAP B1" button (visible only when `sap_journal_no` is empty) and opens confirmation modal on click
+- User confirms submission in modal, which posts to `POST /accounting/sap-sync/submit-to-sap` with `verification_journal_id`
+- `SapSyncController::submitToSap()` validates permissions (superadmin, admin, cashier, approver roles), prevents resubmission if `sap_journal_no` exists, and initiates database transaction
+- `SapJournalEntryBuilder` constructs journal entry payload from `VerificationJournal` and `VerificationJournalDetail` records with account codes, projects, cost centers, debits/credits
+- `SapService::createJournalEntry()` handles SAP B1 authentication (cookie-based session via Guzzle CookieJar), sends POST request to `/JournalEntries` endpoint, and extracts SAP Document Number from response
+- On success: Database transaction commits, local records updated with `sap_journal_no`, `posted_by`, `posted_at`, `SapSubmissionLog` entry created with success status
+- On failure: Database transaction rolls back, no local updates, `SapSubmissionLog` entry created with error details, user sees error message
+- UI automatically hides submit button and disables cancel button once journal is posted to SAP B1
+
+```mermaid
+sequenceDiagram
+    participant UI as SAP Sync Show Page<br/>show.blade.php
+    participant Controller as SapSyncController
+    participant Builder as SapJournalEntryBuilder
+    participant Service as SapService
+    participant SAP as SAP B1<br/>Service Layer
+    participant DB as Database
+
+    UI->>Controller: POST /submit-to-sap<br/>{verification_journal_id}
+    Controller->>Controller: Validate permissions<br/>& prevent resubmission
+    Controller->>DB: Begin Transaction
+    Controller->>Builder: build() journal entry payload
+    Builder->>Builder: Validate balance & fields
+    Builder-->>Controller: Return journal entry JSON
+    Controller->>Service: createJournalEntry(payload)
+    Service->>SAP: POST /JournalEntries<br/>(with session cookies)
+    alt Success
+        SAP-->>Service: 201 Created<br/>{Number, JdtNum, DocEntry}
+        Service->>Service: Extract Document Number
+        Service-->>Controller: Return SAP journal number
+        Controller->>DB: Update verification_journals<br/>(sap_journal_no, posted_by, etc.)
+        Controller->>DB: Create SapSubmissionLog<br/>(status: success)
+        Controller->>DB: Commit Transaction
+        Controller-->>UI: Success message<br/>& redirect
+    else Failure
+        SAP-->>Service: 400/401/500 Error<br/>{error message}
+        Service-->>Controller: Throw Exception
+        Controller->>DB: Create SapSubmissionLog<br/>(status: failed, error)
+        Controller->>DB: Rollback Transaction
+        Controller-->>UI: Error message<br/>& redirect
+    end
+```
+
+**Key Components**:
+
+- **SapService** (`app/Services/SapService.php`): Handles SAP B1 Service Layer authentication, session management (cookie-based), automatic re-login on expiration, and journal entry creation
+- **SapJournalEntryBuilder** (`app/Services/SapJournalEntryBuilder.php`): Constructs journal entry payloads from verification journal records with validation
+- **SapSubmissionLog** (`app/Models/SapSubmissionLog.php`): Audit trail model tracking all submission attempts with status, errors, SAP responses, and attempt numbers
+- **Database Schema**: `verification_journals` table tracks submission status (`sap_submission_attempts`, `sap_submission_status`, `sap_submission_error`, `sap_submitted_at`, `sap_submitted_by`), `sap_submission_logs` table stores complete audit trail
+
+**Configuration**:
+
+- Environment: `SAP_SERVER_URL`, `SAP_DB_NAME`, `SAP_USER`, `SAP_PASSWORD`
+- Config mapping: `config/services.php['sap']`
+- SAP B1 Settings: General Settings → Cash Flow tab → "Assignment in Transactions with All Relevant to Cash Flow" set to "Warning Only" (allows posting without mandatory cash flow assignment)
+
+---
 
 ### SAP Bridge Account Statement Flow
 
