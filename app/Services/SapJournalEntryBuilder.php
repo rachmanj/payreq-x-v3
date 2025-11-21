@@ -50,6 +50,12 @@ class SapJournalEntryBuilder
                 $line['CostingCode'] = $detail->cost_center;
             }
 
+            // Reference1: Realization number (empty string if null)
+            $line['Reference1'] = $detail->realization_no ?? '';
+
+            // Reference2: Verification journal number
+            $line['Reference2'] = $this->verificationJournal->nomor ?? '';
+
             $lines[] = $line;
         }
 

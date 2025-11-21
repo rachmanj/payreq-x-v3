@@ -21,6 +21,11 @@ class Kernel extends ConsoleKernel
             ->dailyAt('11:00')
             ->withoutOverlapping()
             ->runInBackground();
+
+        $schedule->command('sap:sync-master-data')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

@@ -95,11 +95,20 @@
                             @if ($vj->sap_journal_no)
                                 <strong class="text-success">{{ $vj->sap_journal_no }}</strong>
                                 @if ($vj->sap_filename)
+                                    @php
+                                        $fileExtension = strtolower(pathinfo($vj->sap_filename, PATHINFO_EXTENSION));
+                                        $isImage = in_array($fileExtension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
+                                        $iconClass = $isImage ? 'fa-file-image' : 'fa-file-pdf';
+                                    @endphp
                                     <a href="{{ asset('file_upload/') . '/' . $vj->sap_filename }}"
                                         class="btn btn-xs btn-success ml-2" target="_blank">
-                                        <i class="fas fa-file-pdf"></i> View
+                                        <i class="fas {{ $iconClass }}"></i> View
                                     </a>
                                 @endif
+                                <button type="button" class="btn btn-xs btn-info ml-2" data-toggle="modal"
+                                    data-target="#upload-journal">
+                                    <i class="fas fa-upload"></i> Upload
+                                </button>
                             @else
                                 <span class="text-muted">Not submitted</span>
                             @endif
@@ -208,8 +217,7 @@
                     {{-- Primary Actions --}}
                     @if (empty($vj->sap_journal_no))
                         <div class="mb-3">
-                            <button type="button" class="btn btn-success btn-lg btn-block"
-                                data-toggle="modal" data-target="#submit-to-sap-modal" id="submit-to-sap-btn">
+                            <button type="button" class="btn btn-success btn-lg btn-block" id="submit-to-sap-btn">
                                 <i class="fas fa-paper-plane"></i> Submit to SAP B1
                             </button>
                         </div>
@@ -247,11 +255,11 @@
                     <div class="row mt-2">
                         <div class="col-md-12">
                             <form action="{{ route('accounting.sap-sync.cancel_sap_info') }}" method="POST"
-                                class="d-inline">
+                                class="d-inline cancel-sap-info-form">
                                 @csrf
                                 <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
-                                <button type="submit" class="btn btn-danger btn-block {{ $vj->sap_journal_no ? 'disabled' : '' }}"
-                                    onclick="return confirm('Are You sure You want to cancel this SAP Info? This action cannot be undone')"
+                                <button type="submit"
+                                    class="btn btn-danger btn-block {{ $vj->sap_journal_no ? 'disabled' : '' }}"
                                     title="{{ $vj->sap_journal_no ? 'Cannot cancel: Journal already submitted to SAP B1. Reversal must be done in SAP B1 first.' : '' }}">
                                     <i class="fas fa-times-circle"></i> Cancel SAP Info
                                 </button>
@@ -430,164 +438,54 @@
         </div>
     </div>
 
-    {{-- UPLOAD JOURNAL --}}
+    {{-- UPLOAD DOCUMENT --}}
     <div class="modal fade" id="upload-journal">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Upload SAP Journal</h5>
+                    <h5 class="modal-title">
+                        <i class="fas fa-upload"></i> Upload SAP Journal Document
+                    </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <form action="{{ route('accounting.sap-sync.upload_sap_journal') }}" method="POST"
-                        enctype="multipart/form-data">
+                        enctype="multipart/form-data" id="upload-document-form">
                         @csrf
                         <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
                         <div class="form-group">
-                            <label for="sap_journal_file">Journal File</label>
-                            <input type="file" name="sap_journal_file" class="form-control">
+                            <label for="sap_journal_file">Document File</label>
+                            <input type="file" name="sap_journal_file" class="form-control" id="sap_journal_file"
+                                accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp" required>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Accepted formats: PDF, JPG, JPEG, PNG, GIF, BMP, WEBP
+                                (Max: 10MB)
+                            </small>
                         </div>
+                        @if ($vj->sap_filename)
+                            <div class="alert alert-info">
+                                <i class="fas fa-exclamation-circle"></i> Uploading a new file will replace the existing
+                                document.
+                            </div>
+                        @endif
                 </div>
                 <div class="modal-footer justify-content-between">
                     <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-upload"></i> Upload</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {{-- MODAL SUBMIT TO SAP B1 --}}
-    <div class="modal fade" id="submit-to-sap-modal">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-gradient-success text-white">
-                    <h5 class="modal-title">
-                        <i class="fas fa-paper-plane"></i> Submit to SAP B1
-                    </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-upload"></i> Upload Document
                     </button>
                 </div>
-                <form action="{{ route('accounting.sap-sync.submit_to_sap') }}" method="POST" id="submit-sap-form">
-                    @csrf
-                    <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
-                    <div class="modal-body">
-                        {{-- Journal Summary Cards --}}
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="card card-outline card-info">
-                                    <div class="card-body">
-                                        <h6 class="card-title"><i class="fas fa-info-circle"></i> Journal Information</h6>
-                                        <table class="table table-sm table-borderless mb-0">
-                                            <tr>
-                                                <td width="40%"><strong>Journal No:</strong></td>
-                                                <td>{{ $vj->nomor }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Date:</strong></td>
-                                                <td>{{ date('d-M-Y', strtotime($vj->date)) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Project:</strong></td>
-                                                <td><span class="badge badge-info">{{ $vj->project }}</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Type:</strong></td>
-                                                <td><span
-                                                        class="badge badge-secondary">{{ strtoupper($vj->type ?? 'REGULAR') }}</span>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card card-outline card-primary">
-                                    <div class="card-body">
-                                        <h6 class="card-title"><i class="fas fa-chart-line"></i> Financial Summary</h6>
-                                        <table class="table table-sm table-borderless mb-0">
-                                            <tr>
-                                                <td width="40%"><strong>Total Amount:</strong></td>
-                                                <td><strong class="text-primary">Rp.
-                                                        {{ number_format($vj->amount, 2) }}</strong></td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Total Lines:</strong></td>
-                                                <td><strong>{{ $vj_details->count() }} lines</strong></td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Status:</strong></td>
-                                                <td>
-                                                    @if ($vj->sap_journal_no)
-                                                        <span class="badge badge-success">Posted</span>
-                                                    @else
-                                                        <span class="badge badge-warning">Not Posted</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Important Notes --}}
-                        <div class="alert alert-warning">
-                            <h5><i class="icon fas fa-exclamation-triangle"></i> Important Notes</h5>
-                            <ul class="mb-0 pl-3">
-                                <li>The journal entry will be created and <strong>POSTED</strong> in SAP B1</li>
-                                <li>This action cannot be undone automatically</li>
-                                <li>Please ensure all account codes, projects, and cost centers are valid in SAP B1</li>
-                                <li>If submission fails, you can retry or use the Excel export option</li>
-                                <li>Once submitted, the journal cannot be canceled from this system. Reversal must be done
-                                    in SAP B1 first.</li>
-                            </ul>
-                        </div>
-
-                        {{-- Previous Attempts --}}
-                        @if ($vj->sap_submission_attempts > 0)
-                            <div class="alert alert-danger">
-                                <h5><i class="icon fas fa-exclamation-circle"></i> Previous Submission Attempts</h5>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p class="mb-1"><strong>Attempts:</strong>
-                                            <span class="badge badge-danger">{{ $vj->sap_submission_attempts }}</span>
-                                        </p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        @if ($vj->sap_submitted_at)
-                                            <p class="mb-1"><strong>Last Attempt:</strong>
-                                                {{ date('d-M-Y H:i', strtotime($vj->sap_submitted_at . '+8 hours')) }} wita
-                                            </p>
-                                        @endif
-                                    </div>
-                                </div>
-                                @if ($vj->sap_submission_error)
-                                    <div class="mt-2">
-                                        <strong>Last Error:</strong>
-                                        <div class="alert alert-danger mb-0 mt-1">
-                                            <code>{{ $vj->sap_submission_error }}</code>
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                        <button type="submit" class="btn btn-success" id="confirm-submit-btn">
-                            <i class="fas fa-paper-plane"></i> Confirm & Submit to SAP B1
-                        </button>
-                    </div>
                 </form>
             </div>
         </div>
     </div>
+
+    <form id="submit-sap-form" action="{{ route('accounting.sap-sync.submit_to_sap') }}" method="POST" class="d-none">
+        @csrf
+        <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+    </form>
 
     @push('styles')
         <style>
@@ -760,13 +658,136 @@
         </style>
     @endpush
 
+    @php
+        $submissionMeta = [
+            'journal' => [
+                'number' => $vj->nomor,
+                'date' => date('d-M-Y', strtotime($vj->date)),
+                'project' => $vj->project,
+                'type' => strtoupper($vj->type ?? 'REGULAR'),
+                'amount' => 'Rp. ' . number_format($vj->amount, 2),
+                'lines' => $vj_details->count() . ' lines',
+                'status' => $vj->sap_journal_no ? 'Posted' : 'Not Posted',
+                'status_badge' => $vj->sap_journal_no ? 'success' : 'warning',
+            ],
+            'attempts' => [
+                'count' => (int) $vj->sap_submission_attempts,
+                'lastAttemptAt' => $vj->sap_submitted_at
+                    ? date('d-M-Y H:i', strtotime($vj->sap_submitted_at . '+8 hours')) . ' wita'
+                    : null,
+                'lastError' => $vj->sap_submission_error,
+            ],
+        ];
+    @endphp
+
     @push('scripts')
         <script>
+            const submissionMeta = @json($submissionMeta);
+
+            function buildSubmissionSummaryHtml(meta) {
+                const journal = meta.journal;
+                const attempts = meta.attempts;
+                const attemptsHtml = attempts.count > 0 ? `
+                    <div class="mt-3 alert alert-danger">
+                        <h6 class="font-weight-bold"><i class="fas fa-history"></i> Previous Submission Attempts</h6>
+                        <p class="mb-1"><strong>Attempts:</strong> ${attempts.count}</p>
+                        ${attempts.lastAttemptAt ? `<p class="mb-1"><strong>Last Attempt:</strong> ${attempts.lastAttemptAt}</p>` : ''}
+                        ${attempts.lastError ? `<div class="alert alert-danger mb-0"><code>${attempts.lastError}</code></div>` : ''}
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="text-left">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="font-weight-bold"><i class="fas fa-info-circle text-primary"></i> Journal Information</h6>
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tr><td><strong>Journal No:</strong></td><td>${journal.number}</td></tr>
+                                    <tr><td><strong>Date:</strong></td><td>${journal.date}</td></tr>
+                                    <tr><td><strong>Project:</strong></td><td><span class="badge badge-info">${journal.project}</span></td></tr>
+                                    <tr><td><strong>Type:</strong></td><td><span class="badge badge-secondary">${journal.type}</span></td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="font-weight-bold"><i class="fas fa-chart-line text-success"></i> Financial Summary</h6>
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tr><td><strong>Total Amount:</strong></td><td><strong>${journal.amount}</strong></td></tr>
+                                    <tr><td><strong>Total Lines:</strong></td><td><strong>${journal.lines}</strong></td></tr>
+                                    <tr><td><strong>Status:</strong></td><td><span class="badge badge-${journal.status_badge}">${journal.status}</span></td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="mt-3 alert alert-warning">
+                            <h6 class="font-weight-bold"><i class="fas fa-exclamation-triangle"></i> Important Notes</h6>
+                            <ul class="mb-0 pl-3">
+                                <li>The journal will be saved as a <strong>draft</strong> in SAP B1.</li>
+                                <li>Please ensure account codes, projects, and cost centers exist in SAP B1.</li>
+                                <li>If SAP rejects the submission, you can retry after fixing the issue.</li>
+                                <li>Reversals must be performed directly in SAP B1.</li>
+                            </ul>
+                        </div>
+                        ${attemptsHtml}
+                    </div>
+                `;
+            }
+
             $(document).ready(function() {
-                $('#submit-sap-form').on('submit', function(e) {
-                    const btn = $('#confirm-submit-btn');
-                    const originalText = btn.html();
-                    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+                const $submitBtn = $('#submit-to-sap-btn');
+
+                if ($submitBtn.length) {
+                    $submitBtn.on('click', function() {
+                        Swal.fire({
+                            title: 'Submit this journal to SAP B1?',
+                            html: buildSubmissionSummaryHtml(submissionMeta),
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, submit to SAP B1',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true,
+                            width: '60rem',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                Swal.fire({
+                                    title: 'Submitting...',
+                                    html: 'Please wait while we save this journal as a draft in SAP B1.',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false,
+                                    showConfirmButton: false,
+                                    didOpen: () => {
+                                        Swal.showLoading();
+                                        $('#submit-sap-form').trigger('submit');
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+                    $('#submit-sap-form').on('submit', function() {
+                        $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+                    });
+                }
+
+                $('.cancel-sap-info-form').on('submit', function(e) {
+                    const isDisabled = $(this).find('button').hasClass('disabled');
+                    if (isDisabled) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    const form = this;
+                    Swal.fire({
+                        title: 'Cancel SAP Info?',
+                        html: '<p>This will clear the SAP submission info for this journal. This action cannot be undone.</p>',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, cancel it',
+                        cancelButtonText: 'Keep SAP Info',
+                        reverseButtons: true,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
                 });
 
                 @if (session('success'))

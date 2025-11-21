@@ -40,11 +40,19 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Currently Working On
 
+-   [WIP] P1: Validate BO Jkt SAP submissions (25VJ00101729 & 25VJ00101704) [resources/views/accounting/sap-sync/001H.blade.php, SapSyncController::bulkSubmitToSap()] — ensure master data (projects/cost centers/accounts) align before retesting submissions via SweetAlert flow.
 -   [ ] Performance optimization for large datasets
 -   [ ] User experience improvements for mobile devices
 -   [ ] Advanced reporting features
 
 ## Recently Completed
+
+-   [done] P1: SweetAlert confirmations + shared bulk script for SAP Sync [resources/views/accounting/sap-sync/show.blade.php, resources/views/accounting/sap-sync/partials/bulk-table-script.blade.php] (completed: 2025-11-20)
+
+    -   Replaced Bootstrap modal + browser confirm prompts with SweetAlert2 summaries for single submission, bulk submission, and cancel SAP info
+    -   Added `$submissionMeta` payload so confirmations reiterate journal info, totals, previous SAP errors, and project/cost center requirements
+    -   Centralized DataTable + checkbox logic in a Blade partial to eliminate duplicate scripts across HO & site tabs
+    -   Added SweetAlert guarded hidden-form submission to ensure consistent audit logging and prevent accidental submissions
 
 -   [x] **SAP B1 Journal Entry Direct Submission Feature** - Completed on 2025-11-20
 

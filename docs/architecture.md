@@ -98,6 +98,7 @@ The Accounting One system is a comprehensive financial management application bu
     - **DDS API**: Document Distribution System for invoice management
     - **SAP Integration**: General ledger synchronization and journal entry submission
     - **SAP B1 Service Layer**: Direct programmatic submission of verification journals to SAP B1 Journal Entry module via REST API with cookie-based session management, automatic error handling, and comprehensive audit logging
+    - **SAP Master Data Sync**: `SapMasterDataSyncService` + `sap:sync-master-data` command (scheduled daily 02:00) pull Projects, Cost Centers, and GL Accounts from SAP B1 into `sap_projects`, `sap_cost_centers`, `sap_accounts` tables for validation, autocomplete, and audit trails
     - **SAP Bridge Account Statements**: Cashier SAP Transactions page fetches GL statement data via `/api/account-statements` using API key headers, translating SAP payloads (opening balance, running balances, summaries) directly into the UI.
     - **LOT Service**: Official travel claim management
     - **BUC Sync**: Budget synchronization system
@@ -132,8 +133,9 @@ The Accounting One system is a comprehensive financial management application bu
 
 The accounting `SAP Sync` module enables direct submission of verification journals to SAP B1 Journal Entry module via Service Layer REST API. Data flow:
 
-- `resources/views/accounting/sap-sync/show.blade.php` displays "Submit to SAP B1" button (visible only when `sap_journal_no` is empty) and opens confirmation modal on click
-- User confirms submission in modal, which posts to `POST /accounting/sap-sync/submit-to-sap` with `verification_journal_id`
+- `resources/views/accounting/sap-sync/show.blade.php` displays "Submit to SAP B1" button (visible only when `sap_journal_no` is empty) and renders a SweetAlert2 confirmation dialog summarizing journal details, important notes, and previous failures
+- User confirms inside SweetAlert dialog; a hidden form posts to `POST /accounting/sap-sync/submit-to-sap` with `verification_journal_id`
+- Bulk listing pages (`resources/views/accounting/sap-sync/{project}.blade.php`) share `partials/bulk-table-script.blade.php`, which initializes DataTables for each project tab and uses SweetAlert2 for safe multi-journal submission (select-all, count badge, audit-friendly messaging)
 - `SapSyncController::submitToSap()` validates permissions (superadmin, admin, cashier, approver roles), prevents resubmission if `sap_journal_no` exists, and initiates database transaction
 - `SapJournalEntryBuilder` constructs journal entry payload from `VerificationJournal` and `VerificationJournalDetail` records with account codes, projects, cost centers, debits/credits
 - `SapService::createJournalEntry()` handles SAP B1 authentication (cookie-based session via Guzzle CookieJar), sends POST request to `/JournalEntries` endpoint, and extracts SAP Document Number from response

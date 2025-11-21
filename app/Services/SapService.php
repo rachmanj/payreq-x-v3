@@ -159,6 +159,68 @@ class SapService
         });
     }
 
+    public function getProjects(): array
+    {
+        $this->ensureSession();
+
+        return $this->handleSessionExpiration(function () {
+            $response = $this->client->post('ProjectsService_GetProjectList', [
+                'json' => new \stdClass(),
+            ]);
+
+            $body = json_decode($response->getBody()->getContents(), true);
+
+            $items = $body['value'] ?? $body ?? [];
+
+            return is_array($items) ? $items : [];
+        });
+    }
+
+    public function getCostCenters(): array
+    {
+        return $this->fetchAll('ProfitCenters', [
+            '$select' => 'CenterCode,CenterName,Active',
+        ]);
+    }
+
+    public function getAccounts(): array
+    {
+        return $this->fetchAll('ChartOfAccounts');
+    }
+
+    protected function fetchAll(string $endpoint, array $query = [], int $pageSize = 100): array
+    {
+        $this->ensureSession();
+
+        $results = [];
+        $skip = 0;
+
+        do {
+            $response = $this->handleSessionExpiration(function () use ($endpoint, $query, $pageSize, $skip) {
+                return $this->client->get($endpoint, [
+                    'query' => array_merge($query, [
+                        '$top' => $pageSize,
+                        '$skip' => $skip,
+                    ]),
+                ]);
+            });
+
+            $body = json_decode($response->getBody()->getContents(), true);
+            $items = $body['value'] ?? (is_array($body) ? $body : []);
+
+            if (!is_array($items)) {
+                $items = [];
+            }
+
+            $results = array_merge($results, $items);
+
+            $fetched = count($items);
+            $skip += $pageSize;
+        } while ($fetched === $pageSize);
+
+        return $results;
+    }
+
     protected function extractJournalNumber(array $response): ?string
     {
         // Priority: Document Number (Number) is the SAP Journal Number

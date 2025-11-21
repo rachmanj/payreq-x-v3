@@ -1,3 +1,19 @@
+### [024] SAP Sync SweetAlert Confirmation + Bulk Script Consolidation (2025-11-20) ✅ COMPLETE
+
+**Challenge**: SAP Sync used two different confirmation patterns: a large Bootstrap modal on the single journal page and native `window.confirm()` prompts for bulk submission + cancel SAP info. This inconsistency caused users to miss critical notes (posting vs draft, retry guidance), made it impossible to show previous SAP errors before re-submitting, and forced us to duplicate DataTable logic across eight project views whenever UX tweaks were required.
+
+**Solution**: Standardized all confirmations on SweetAlert2. The show page now builds a SweetAlert summary (journal info, financial totals, prior errors) and posts a hidden form only after users confirm. Cancel SAP Info uses the same pattern to prevent accidental wipes. All project list views share a new `resources/views/accounting/sap-sync/partials/bulk-table-script.blade.php` partial that initializes DataTables, tracks selections, and launches a SweetAlert warning before bulk submissions—automatically injecting hidden inputs only after confirmation. This removed eight copies of identical jQuery code and guarantees UX parity across HO/BO tabs.
+
+**Key Learning**: Centralizing DataTable + confirmation logic in a Blade partial dramatically reduces drift between project pages. SweetAlert2’s promise-based API makes it easy to chain “confirm → show loading → submit form” without reworking backend routes, and it gives enough real estate to echo SAP validation requirements (valid cost centers, retry guidance). Hidden forms remain a clean way to keep Laravel CSRF + validation untouched while modernizing the UI layer.
+
+**Implementation Notes**:
+
+- `resources/views/accounting/sap-sync/show.blade.php`: removed Bootstrap modal, introduced `$submissionMeta` payload + SweetAlert builder, added hidden form and SweetAlert guard for both submit + cancel actions.
+- `resources/views/accounting/sap-sync/partials/bulk-table-script.blade.php`: new shared script powering all project tabs with checkbox tracking, select-all behavior, SweetAlert confirmation, and spinner state.
+- Updated project views (`000H`, `001H`, `017C`, `021C`, `022C`, `023C`, `025C`, `026C`) to include the partial instead of inline scripts, ensuring every tab gets the same UX improvements automatically.
+
+---
+
 ### [022] SAP B1 Journal Entry Direct Submission Feature (2025-11-20) ✅ COMPLETE
 
 **Challenge**: Users had to manually export verification journals to Excel and then copy-paste the data into SAP B1 Journal Entry module. This process was time-consuming, error-prone, and lacked audit trail. There was no way to track submission attempts, errors, or automatically update local records with SAP journal numbers.
@@ -64,6 +80,16 @@
 - Successfully submitted Verification Journal No 25VJ00001727 → SAP Journal Number: 257644474 (after resolving cash flow assignment requirement)
 - All error scenarios properly handled with transaction rollback
 - Audit trail correctly logged in `sap_submission_logs` table
+
+---
+
+### [023] SAP Master Data Sync Foundation (2025-11-20) ✅ COMPLETE
+
+**Challenge**: Verification journals reference SAP Project, Cost Center, and GL Account codes maintained manually, leading to drift between ERP and local system and submission failures when codes are missing or inactive in SAP.
+
+**Solution**: Added `sap_projects`, `sap_cost_centers`, `sap_accounts` tables with JSON metadata and `last_synced_at` timestamps, created `SapMasterDataSyncService` plus `sap:sync-master-data` artisan command (scheduled daily 02:00) to ingest SAP B1 master data via Service Layer (`Projects`, `ProfitCenters`, `GLAccounts`). Sync logic uses chunked upserts, transaction safety, and structured logging; command supports selective sync via options.
+
+**Key Learning**: Persisting SAP master data locally enables fast validation, richer autocomplete, and offline diagnostics while minimizing real-time API calls. Chunked `updateOrCreate` with `last_synced_at` tracking gives clear observability and prevents timeouts. Centralizing master data pulls in a dedicated service/command keeps controllers thin and allows future reuse (e.g., dropdowns, health checks, drift reports).
 
 ---
 

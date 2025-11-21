@@ -24,7 +24,7 @@
     <body class="hold-transition register-page">
         <div class="register-box">
             <div class="register-logo">
-                <a href="#"><b>Accounting</b>One<small> | v.3.7</small></a>
+                <a href="#"><b>Accounting</b>One<small> | v.3.9</small></a>
             </div>
 
             <div class="card">

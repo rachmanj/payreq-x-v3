@@ -192,6 +192,13 @@ class SapSyncController extends Controller
 
 
         return datatables()->of($verification_journals)
+            ->addColumn('select', function ($journal) {
+                if ($journal->sap_journal_no) {
+                    return '';
+                }
+
+                return '<input type="checkbox" class="bulk-select" value="' . $journal->id . '">';
+            })
             ->editColumn('date', function ($journal) {
                 $date = new \Carbon\Carbon($journal->date);
                 return $date->addHours(8)->format('d-M-Y');
@@ -214,7 +221,7 @@ class SapSyncController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.sap-sync.action')
-            ->rawColumns(['status', 'action'])
+            ->rawColumns(['select', 'status', 'action'])
             ->toJson();
     }
 
@@ -267,133 +274,257 @@ class SapSyncController extends Controller
                 ->with('error', 'This journal has already been submitted to SAP B1.');
         }
 
-        DB::beginTransaction();
-        try {
-            $builder = new SapJournalEntryBuilder($vj);
-            $validationErrors = $builder->validate();
+        $result = $this->processSapSubmission($vj, $user);
 
-            if (!empty($validationErrors)) {
-                DB::rollBack();
-                return redirect()->route('accounting.sap-sync.show', $vj->id)
-                    ->with('error', 'Validation failed: ' . implode(', ', $validationErrors));
-            }
+        $flashKey = $result['success'] ? 'success' : 'error';
 
-            $journalEntryData = $builder->build();
-            $sapService = app(SapService::class);
+        return redirect()->route('accounting.sap-sync.show', $vj->id)
+            ->with($flashKey, $result['message']);
+    }
 
-            $attemptNumber = ($vj->sap_submission_attempts ?? 0) + 1;
+    public function bulkSubmit(Request $request)
+    {
+        $request->validate([
+            'verification_journal_ids' => 'required|array|min:1',
+            'verification_journal_ids.*' => 'distinct|exists:verification_journals,id',
+        ]);
 
-            try {
-                $result = $sapService->createJournalEntry($journalEntryData);
+        $user = auth()->user();
 
-                if ($result['success']) {
-                    $sapJournalNumber = $result['journal_number'] ?? $result['doc_entry'] ?? null;
-                    $postingDate = Carbon::now()->format('Y-m-d');
-
-                    $vj->sap_journal_no = $sapJournalNumber;
-                    $vj->sap_posting_date = $postingDate;
-                    $vj->posted_by = $user->id;
-                    $vj->sap_submission_status = 'success';
-                    $vj->sap_submission_attempts = $attemptNumber;
-                    $vj->sap_submitted_at = Carbon::now();
-                    $vj->sap_submitted_by = $user->id;
-                    $vj->sap_submission_error = null;
-                    $vj->save();
-
-                    $vjDetails = VerificationJournalDetail::where('verification_journal_id', $vj->id)->get();
-                    foreach ($vjDetails as $detail) {
-                        $detail->sap_journal_no = $sapJournalNumber;
-                        $detail->save();
-                    }
-
-                    SapSubmissionLog::create([
-                        'verification_journal_id' => $vj->id,
-                        'user_id' => $user->id,
-                        'status' => 'success',
-                        'error_message' => null,
-                        'sap_response' => $result['data'] ?? null,
-                        'sap_journal_number' => $sapJournalNumber,
-                        'attempt_number' => $attemptNumber,
-                    ]);
-
-                    if ($vj->type === 'bank') {
-                        $incoming = \App\Models\Incoming::where('nomor', $vj->nomor)->first();
-                        if ($incoming) {
-                            $incoming->sap_journal_no = $sapJournalNumber;
-                            $incoming->save();
-                        }
-                        $vj->status = 'posted';
-                        $vj->save();
-                    }
-
-                    $realizations = Realization::whereIn('nomor', $vjDetails->pluck('realization_no')->toArray())->get();
-                    foreach ($realizations as $realization) {
-                        $realization->status = 'close';
-                        $realization->save();
-                    }
-
-                    DB::commit();
-
-                    Log::info('SAP B1 journal submission successful', [
-                        'verification_journal_id' => $vj->id,
-                        'sap_journal_number' => $sapJournalNumber,
-                        'user_id' => $user->id,
-                    ]);
-
-                    return redirect()->route('accounting.sap-sync.show', $vj->id)
-                        ->with('success', 'Journal entry successfully submitted to SAP B1. Journal Number: ' . $sapJournalNumber);
-                } else {
-                    throw new \Exception('SAP submission returned unsuccessful result');
-                }
-            } catch (\Exception $e) {
-                $errorMessage = $e->getMessage();
-
-                $vj->sap_submission_status = 'failed';
-                $vj->sap_submission_attempts = $attemptNumber;
-                $vj->sap_submission_error = $errorMessage;
-                $vj->sap_submitted_at = Carbon::now();
-                $vj->sap_submitted_by = $user->id;
-                $vj->save();
-
-                SapSubmissionLog::create([
-                    'verification_journal_id' => $vj->id,
-                    'user_id' => $user->id,
-                    'status' => 'failed',
-                    'error_message' => $errorMessage,
-                    'sap_response' => null,
-                    'sap_journal_number' => null,
-                    'attempt_number' => $attemptNumber,
-                ]);
-
-                DB::commit();
-
-                Log::error('SAP B1 journal submission failed', [
-                    'verification_journal_id' => $vj->id,
-                    'error' => $errorMessage,
-                    'user_id' => $user->id,
-                    'attempt_number' => $attemptNumber,
-                ]);
-
-                return redirect()->route('accounting.sap-sync.show', $vj->id)
-                    ->with('error', 'Failed to submit to SAP B1: ' . $errorMessage . '. Please check the error and try again.');
-            }
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('SAP B1 journal submission exception', [
-                'verification_journal_id' => $vj->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return redirect()->route('accounting.sap-sync.show', $vj->id)
-                ->with('error', 'An error occurred while submitting to SAP B1: ' . $e->getMessage());
+        if (!$this->canSubmitToSap($user)) {
+            return redirect()->back()->with('error', 'You do not have permission to submit to SAP B1.');
         }
+
+        $ids = collect($request->verification_journal_ids)->unique()->values();
+        $journals = VerificationJournal::whereIn('id', $ids)->get()->keyBy('id');
+
+        $success = [];
+        $failed = [];
+        $skipped = [];
+
+        foreach ($ids as $id) {
+            $journal = $journals->get($id);
+
+            if (!$journal) {
+                $failed[] = ['nomor' => $id, 'message' => 'Journal not found'];
+                continue;
+            }
+
+            if ($journal->sap_journal_no) {
+                $skipped[] = $journal->nomor ?? $journal->id;
+                continue;
+            }
+
+            $result = $this->processSapSubmission($journal, $user);
+
+            if ($result['success']) {
+                $success[] = [
+                    'nomor' => $journal->nomor,
+                    'sap_journal_no' => $result['sap_journal_no'] ?? 'N/A',
+                ];
+            } else {
+                $failed[] = [
+                    'nomor' => $journal->nomor,
+                    'message' => $result['message'],
+                ];
+            }
+        }
+
+        $message = $this->buildBulkSubmissionMessage($success, $failed, $skipped);
+        $flashKey = !empty($failed) ? 'error' : 'success';
+
+        return redirect()->back()->with($flashKey, $message);
     }
 
     protected function canSubmitToSap($user): bool
     {
         $allowedRoles = ['superadmin', 'admin', 'cashier', 'approver'];
         return $user->hasAnyRole($allowedRoles);
+    }
+
+    protected function processSapSubmission(VerificationJournal $vj, User $user): array
+    {
+        $builder = new SapJournalEntryBuilder($vj);
+        $validationErrors = $builder->validate();
+
+        if (!empty($validationErrors)) {
+            return [
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $validationErrors),
+            ];
+        }
+
+        $attemptNumber = ($vj->sap_submission_attempts ?? 0) + 1;
+        $sapService = app(SapService::class);
+        $journalEntryData = $builder->build();
+
+        try {
+            $result = $sapService->createJournalEntry($journalEntryData);
+        } catch (\Exception $e) {
+            $this->recordSubmissionFailure($vj, $user, $attemptNumber, $e->getMessage());
+
+            Log::error('SAP B1 journal submission failed', [
+                'verification_journal_id' => $vj->id,
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+                'attempt_number' => $attemptNumber,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to submit to SAP B1: ' . $e->getMessage() . '. Please check the error and try again.',
+            ];
+        }
+
+        if (!($result['success'] ?? false)) {
+            $message = $result['message'] ?? 'SAP submission returned unsuccessful result';
+
+            $this->recordSubmissionFailure($vj, $user, $attemptNumber, $message);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to submit to SAP B1: ' . $message,
+            ];
+        }
+
+        $sapJournalNumber = $result['journal_number'] ?? $result['doc_entry'] ?? null;
+        $sapResponse = $result['data'] ?? null;
+
+        // Extract only essential information from SAP response to avoid database size limits
+        $sapResponseSummary = null;
+        if ($sapResponse && is_array($sapResponse)) {
+            $sapResponseSummary = [
+                'DocEntry' => $sapResponse['DocEntry'] ?? null,
+                'DocNum' => $sapResponse['DocNum'] ?? null,
+                'Number' => $sapResponse['Number'] ?? null,
+                'JdtNum' => $sapResponse['JdtNum'] ?? null,
+                'TransId' => $sapResponse['TransId'] ?? null,
+                'ReferenceDate' => $sapResponse['ReferenceDate'] ?? null,
+                'TaxDate' => $sapResponse['TaxDate'] ?? null,
+                'Memo' => $sapResponse['Memo'] ?? null,
+                'LineCount' => isset($sapResponse['JournalEntryLines']) ? count($sapResponse['JournalEntryLines']) : 0,
+            ];
+        }
+
+        try {
+            DB::transaction(function () use ($vj, $user, $attemptNumber, $sapJournalNumber, $sapResponseSummary) {
+                $postingDate = Carbon::now()->format('Y-m-d');
+
+                $vj->sap_journal_no = $sapJournalNumber;
+                $vj->sap_posting_date = $postingDate;
+                $vj->posted_by = $user->id;
+                $vj->sap_submission_status = 'success';
+                $vj->sap_submission_attempts = $attemptNumber;
+                $vj->sap_submitted_at = Carbon::now();
+                $vj->sap_submitted_by = $user->id;
+                $vj->sap_submission_error = null;
+                $vj->save();
+
+                $vjDetails = VerificationJournalDetail::where('verification_journal_id', $vj->id)->get();
+                foreach ($vjDetails as $detail) {
+                    $detail->sap_journal_no = $sapJournalNumber;
+                    $detail->save();
+                }
+
+                SapSubmissionLog::create([
+                    'verification_journal_id' => $vj->id,
+                    'user_id' => $user->id,
+                    'status' => 'success',
+                    'error_message' => null,
+                    'sap_response' => $sapResponseSummary ? json_encode($sapResponseSummary) : null,
+                    'sap_journal_number' => $sapJournalNumber,
+                    'attempt_number' => $attemptNumber,
+                ]);
+
+                if ($vj->type === 'bank') {
+                    $incoming = \App\Models\Incoming::where('nomor', $vj->nomor)->first();
+                    if ($incoming) {
+                        $incoming->sap_journal_no = $sapJournalNumber;
+                        $incoming->save();
+                    }
+                    $vj->status = 'posted';
+                    $vj->save();
+                }
+
+                $realizations = Realization::whereIn('nomor', $vjDetails->pluck('realization_no')->toArray())->get();
+                foreach ($realizations as $realization) {
+                    $realization->status = 'close';
+                    $realization->save();
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('SAP B1 journal submission exception', [
+                'verification_journal_id' => $vj->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'An error occurred while saving SAP submission: ' . $e->getMessage(),
+            ];
+        }
+
+        Log::info('SAP B1 journal submission successful', [
+            'verification_journal_id' => $vj->id,
+            'sap_journal_number' => $sapJournalNumber,
+            'user_id' => $user->id,
+        ]);
+
+        return [
+            'success' => true,
+            'sap_journal_no' => $sapJournalNumber,
+            'message' => 'Journal entry successfully submitted to SAP B1. Journal Number: ' . $sapJournalNumber,
+        ];
+    }
+
+    protected function recordSubmissionFailure(VerificationJournal $vj, User $user, int $attemptNumber, string $errorMessage): void
+    {
+        DB::transaction(function () use ($vj, $user, $attemptNumber, $errorMessage) {
+            $vj->sap_submission_status = 'failed';
+            $vj->sap_submission_attempts = $attemptNumber;
+            $vj->sap_submission_error = $errorMessage;
+            $vj->sap_submitted_at = Carbon::now();
+            $vj->sap_submitted_by = $user->id;
+            $vj->save();
+
+            SapSubmissionLog::create([
+                'verification_journal_id' => $vj->id,
+                'user_id' => $user->id,
+                'status' => 'failed',
+                'error_message' => $errorMessage,
+                'sap_response' => null,
+                'sap_journal_number' => null,
+                'attempt_number' => $attemptNumber,
+            ]);
+        });
+    }
+
+    protected function buildBulkSubmissionMessage(array $success, array $failed, array $skipped): string
+    {
+        $parts = ['Bulk submission completed.'];
+
+        if (!empty($success)) {
+            $summary = collect($success)->map(function ($item) {
+                return ($item['nomor'] ?? 'N/A') . '→' . ($item['sap_journal_no'] ?? 'N/A');
+            })->implode(', ');
+
+            $parts[] = 'Success: ' . count($success) . ' (' . $summary . ')';
+        }
+
+        if (!empty($failed)) {
+            $summary = collect($failed)->map(function ($item) {
+                return ($item['nomor'] ?? 'N/A') . ' - ' . $item['message'];
+            })->implode('; ');
+
+            $parts[] = 'Failed: ' . count($failed) . ' (' . $summary . ')';
+        }
+
+        if (!empty($skipped)) {
+            $parts[] = 'Skipped (already posted): ' . implode(', ', $skipped);
+        }
+
+        return implode(' ', $parts);
     }
 
     /**
@@ -506,20 +637,31 @@ class SapSyncController extends Controller
     public function upload_sap_journal(Request $request)
     {
         $this->validate($request, [
-            'sap_journal_file' => 'required|mimes:pdf'
+            'sap_journal_file' => 'required|mimes:pdf,jpg,jpeg,png,gif,bmp,webp|max:10240'
         ]);
 
-        $vj = VerificationJournal::find($request->verification_journal_id);
+        $vj = VerificationJournal::findOrFail($request->verification_journal_id);
+
+        // Check if journal has been posted
+        if (empty($vj->sap_journal_no)) {
+            return back()->with('error', 'Cannot upload document. Journal has not been posted to SAP B1 yet.');
+        }
 
         $file = $request->file('sap_journal_file');
-        $filename = 'sapj_' . rand() . '_' . $file->getClientOriginalName();
+        $extension = $file->getClientOriginalExtension();
+        $filename = 'sapj_' . $vj->sap_journal_no . '_' . time() . '_' . rand(1000, 9999) . '.' . $extension;
         $file->move(public_path('file_upload'), $filename);
+
+        // Delete old file if exists
+        if ($vj->sap_filename && file_exists(public_path('file_upload/' . $vj->sap_filename))) {
+            @unlink(public_path('file_upload/' . $vj->sap_filename));
+        }
+
         $vj->update([
             'sap_filename' => $filename
         ]);
 
-        return back()->with('success', 'SAP Journal Uploaded');
-        // return redirect()->route('accounting.sap-sync.show', $v_id)->with('success', 'SAP Journal Uploaded');
+        return back()->with('success', 'Document uploaded successfully.');
     }
 
     public function print_sapj()

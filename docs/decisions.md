@@ -75,6 +75,45 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ---
 
+### Decision: SweetAlert2 Confirmation Flow for SAP Sync Submissions - 2025-11-20
+
+**Context**: Phase 2 feedback required replacing browser-native confirmations with a consistent, informative dialog that reiterates posting implications before touching SAP. The existing mix of Bootstrap modals (single submission) and `window.confirm()` (bulk submission + cancel SAP info) led to uneven UX, no structured summary, and no way to show previous errors before re-submitting.
+
+**Options Considered**:
+
+1. **Keep Bootstrap Modal + Browser Confirm**
+   - ✅ Pros: Already implemented, no new dependency
+   - ❌ Cons: Modal duplicated markup per page, not reusable for bulk actions, browser confirm cannot show context-rich content or branding
+
+2. **Build Custom Vue/Blade Modal Component**
+   - ✅ Pros: Full control over markup, can embed complex HTML
+   - ❌ Cons: Requires additional JS framework plumbing on pages that currently do not bootstrap Vue; more boilerplate to reuse between single and bulk flows
+
+3. **Adopt SweetAlert2 Across SAP Sync (Chosen)**
+   - ✅ Pros: Already bundled with AdminLTE, supports HTML summaries, consistent look/feel, promise-based flow for single + bulk actions, accessible loading state
+   - ❌ Cons: Need to refactor legacy modal/confirm code and ensure SweetAlert assets are loaded globally
+
+**Decision**: Use SweetAlert2 for all SAP Sync confirmation dialogs (single submission, bulk submission, cancel SAP info) with shared helper logic so UX is consistent and informative.
+
+**Rationale**:
+
+- Business explicitly requested SweetAlert confirmations to replace native prompts
+- SweetAlert2 enables us to inject journal summaries, important notes, and previous errors without maintaining duplicate modal markup
+- Promise-based API works for both single-form submit and bulk submit flows, letting us show spinner/loading state until the form posts
+- Shared Blade partial (`resources/views/accounting/sap-sync/partials/bulk-table-script.blade.php`) centralizes DataTable + SweetAlert wiring, reducing eight duplicate scripts
+- Hidden form submission pattern keeps Laravel CSRF + validation unchanged while upgrading UX
+
+**Implementation**:
+
+- Replaced Bootstrap modal in `resources/views/accounting/sap-sync/show.blade.php` with SweetAlert summary builder + hidden form submit; added SweetAlert guard to "Cancel SAP Info" flow
+- Added `$submissionMeta` payload (journal info, attempts, errors) and new JS helper `buildSubmissionSummaryHtml()` to render rich SweetAlert content
+- Created `resources/views/accounting/sap-sync/partials/bulk-table-script.blade.php` for all project tabs: initializes DataTables, tracks checkbox selection, and shows SweetAlert before queuing hidden inputs + submitting the bulk form
+- Updated all project-specific Blade views (`000H`, `001H`, `017C`, `021C`, `022C`, `023C`, `025C`, `026C`) to include the shared partial instead of inline scripts
+
+**Review Date**: 2026-01-31 (verify SweetAlert2 approach covers any new SAP Sync actions, assess need for per-record previews or queued retries)
+
+---
+
 ### Decision: Switch SAP Transactions to SAP-Bridge Account Statement API - 2025-11-18
 
 **Context**: The cashier SAP Transactions page still queried a legacy GL microservice via `/api/v1/statements`. Business moved account-statement ownership to the SAP-Bridge app exposing `/api/account-statements` with richer metadata (opening/closing balances, summaries). We needed to realign the UI with the new source, enforce SAP-side constraints (6-month window), and surface accurate error feedback to cashiers.
