@@ -765,6 +765,9 @@ class SapSyncController extends Controller
 
     public function monthly_count_by_project()
     {
+        // Define all projects that should appear in the report (matching the tab links)
+        $allProjects = ['000H', '001H', '017C', '021C', '022C', '023C', '025C', '026C'];
+
         // Get counts grouped by year, month, and project
         $counts = DB::table('verification_journals')
             ->select(
@@ -779,8 +782,15 @@ class SapSyncController extends Controller
             ->orderBy('month', 'asc')
             ->get();
 
-        // Get all unique projects
-        $projects = $counts->pluck('project')->unique()->values();
+        // Get all unique projects from data and merge with predefined list
+        $projectsFromData = $counts->pluck('project')->unique()->values()->toArray();
+        $mergedProjects = array_unique(array_merge($allProjects, $projectsFromData));
+        
+        // Sort projects: predefined projects first in their order, then any other projects
+        $projects = collect($mergedProjects)->sortBy(function ($project) use ($allProjects) {
+            $index = array_search($project, $allProjects);
+            return $index !== false ? $index : 999 + ord($project[0]);
+        })->values();
 
         // Get unique years
         $years = $counts->pluck('year')->unique()->sortDesc()->values();
