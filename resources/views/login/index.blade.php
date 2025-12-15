@@ -280,6 +280,17 @@
                             </div>
                         </div>
                     </div>
+                    <div class="feature-item border-secondary">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-database feature-icon text-secondary"></i>
+                            <div>
+                                <strong class="d-block mb-1">Projects/Departments Admin Stability</strong>
+                                <small class="text-muted">Fixed DataTables load errors by safely parsing legacy sync
+                                    timestamps and added toastr feedback for SAP sync and visibility toggles. Admins now
+                                    get clear, non-blocking notifications while keeping lists stable.</small>
+                            </div>
+                        </div>
+                    </div>
                     <div class="feature-item border-warning">
                         <div class="d-flex align-items-start">
                             <i class="fas fa-bolt feature-icon text-warning"></i>

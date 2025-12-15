@@ -54,6 +54,22 @@
 
 ---
 
+### [026] Projects/Departments Admin UI Stabilization (2025-12-15) ✅ COMPLETE
+
+**Context**: New Projects/Departments admin pages (SAP sync + visibility toggles) returned a DataTables Ajax 500 because `synced_at` was stored as a string for legacy rows and was being formatted directly as a Carbon instance.
+
+**Fixes**:
+- Normalize `synced_at` rendering by parsing string/timestamp values via `Carbon::parse` in both ProjectController and DepartmentController.
+- Replaced alert-based feedback with toastr notifications for SAP sync and visibility toggle actions on both admin pages.
+
+**Notes**:
+- Existing data remains untouched; the controllers defensively format `synced_at` to avoid fatal errors on mixed string/datetime content.
+- Front-end feedback now uses toastr; ensure toastr assets are loaded in the base layout.
+
+**Impact**: DataTables now loads without errors on `/admin/projects` and `/admin/departments`; admins get consistent, non-blocking feedback for sync and visibility operations.
+
+---
+
 ### [024] SAP Sync SweetAlert Confirmation + Bulk Script Consolidation (2025-11-20) ✅ COMPLETE
 
 **Challenge**: SAP Sync used two different confirmation patterns: a large Bootstrap modal on the single journal page and native `window.confirm()` prompts for bulk submission + cancel SAP info. This inconsistency caused users to miss critical notes (posting vs draft, retry guidance), made it impossible to show previous SAP errors before re-submitting, and forced us to duplicate DataTable logic across eight project views whenever UX tweaks were required.
