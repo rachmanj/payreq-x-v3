@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-11-20
+Last Updated: 2025-01-XX
 
 ## Architecture Documentation Guidelines
 
@@ -927,12 +927,34 @@ sequenceDiagram
 ### Frontend
 
 -   **UI Framework**: AdminLTE 3.x with responsive design
+-   **Layout**: Sidebar navigation (`sidebar-mini layout-fixed`) for better menu hierarchy and navigation
 -   **JavaScript**: jQuery, DataTables (Yajra DataTables)
 -   **CSS**: Bootstrap 4.x with custom styling and modern gradients
 -   **Charts**: Chart.js for analytics and reporting
 -   **Notifications**: SweetAlert2 for user feedback
 -   **AJAX**: Laravel HTTP Client for API communication
 -   **Animations**: CSS keyframes for smooth transitions and ticker animations
+
+### Navigation Structure
+
+-   **Layout Type**: Sidebar navigation (AdminLTE sidebar-mini layout)
+-   **Main Components**:
+    - Sidebar (`resources/views/templates/partials/sidebar.blade.php`) - Vertical menu with tree structure
+    - Topbar (`resources/views/templates/partials/topbar.blade.php`) - Simplified top navigation with user menu
+-   **Menu Organization**: Hierarchical tree structure with expandable sections
+    - Dashboard
+    - My PayReqs (with sub-items)
+    - Cashier (with sub-items including EOD section)
+    - Accounting (with sub-items)
+    - Approvals (with sub-items)
+    - Admin (with sub-items)
+    - Search
+-   **Features**:
+    - Permission-based menu visibility (Spatie Laravel Permission)
+    - Active route highlighting
+    - Sidebar state persistence (localStorage)
+    - Responsive collapse on mobile devices
+    - Font Awesome icons for visual clarity
 
 ### UI/UX Patterns
 

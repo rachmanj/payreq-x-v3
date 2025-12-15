@@ -51,21 +51,20 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
     </head>
 
-    <body class="hold-transition layout-top-nav layout-navbar-fixed">
+    <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
         <div class="wrapper">
 
-            @include('templates.partials.navbar')
-            {{-- Removed SweetAlert include to prevent duplicate notifications --}}
-            {{-- @include('sweetalert::alert') --}}
+            @include('templates.partials.topbar')
+            @include('templates.partials.sidebar')
 
             <!-- Content Wrapper. Contains page content -->
             <div class="content-wrapper">
                 <!-- Content Header (Page header) -->
                 <div class="content-header">
-                    <div class="container">
+                    <div class="container-fluid">
                         <div class="row mb-2">
                             <div class="col-sm-6">
-                                <h1 class="m-0">@yield('title_page')</small></h1>
+                                <h1 class="m-0">@yield('title_page')</h1>
                             </div><!-- /.col -->
                             @include('templates.partials.breadcrumb')
                         </div><!-- /.row -->
@@ -75,7 +74,7 @@
 
                 <!-- Main content -->
                 <div class="content">
-                    <div class="container">
+                    <div class="container-fluid">
 
                         @yield('content')
 
@@ -153,6 +152,34 @@
 
         <!-- Modals -->
         @yield('modals')
+
+        <!-- Sidebar State Management -->
+        <script>
+            $(document).ready(function() {
+                // Restore sidebar state from localStorage
+                if (localStorage.getItem('sidebar-collapsed') === 'true') {
+                    $('body').addClass('sidebar-collapse');
+                }
+
+                // Save sidebar state when toggled
+                $('[data-widget="pushmenu"]').on('click', function() {
+                    setTimeout(function() {
+                        if ($('body').hasClass('sidebar-collapse')) {
+                            localStorage.setItem('sidebar-collapsed', 'true');
+                        } else {
+                            localStorage.setItem('sidebar-collapsed', 'false');
+                        }
+                    }, 100);
+                });
+
+                // Auto-expand parent menu items if child is active
+                $('.nav-item.has-treeview').each(function() {
+                    if ($(this).find('.nav-link.active').length > 0) {
+                        $(this).addClass('menu-open');
+                    }
+                });
+            });
+        </script>
 
         <!-- Additional Scripts -->
         @stack('scripts')

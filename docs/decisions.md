@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-11-20
+**Last Updated**: 2025-01-XX
 
 # Technical Decision Records
 
@@ -29,6 +29,54 @@ Decision: [Title] - [YYYY-MM-DD]
 ---
 
 ## Recent Decisions
+
+### Decision: Sidebar Navigation Redesign - 2025-01-XX
+
+**Context**: The application used a top navigation bar (`layout-top-nav`) with dropdown menus that limited menu visibility, required multiple clicks to access nested items, and consumed valuable vertical space. With many menu items (My PayReqs, Cashier, Accounting, Approvals, Admin), the horizontal navbar became cluttered, making navigation less intuitive, especially on mobile devices. Users needed better navigation hierarchy and improved access to all features.
+
+**Options Considered**:
+
+1. **Keep Top Navigation Bar with Improved Dropdowns**
+   - ✅ Pros: No major layout changes, users familiar with current design, minimal code changes
+   - ❌ Cons: Still requires multiple clicks, limited visibility of menu items, poor mobile experience, takes vertical space, doesn't scale well with many items
+
+2. **Implement Custom Sidebar Solution**
+   - ✅ Pros: Full control over design and behavior, can customize to exact needs
+   - ❌ Cons: Requires significant development time, need to handle responsive behavior, state management, and accessibility manually, reinventing the wheel
+
+3. **Use AdminLTE 3 Sidebar Layout (Chosen)**
+   - ✅ Pros: Native AdminLTE support, proven enterprise UI pattern, built-in responsive behavior, automatic state management, consistent with framework, better mobile experience, more menu items visible at once
+   - ❌ Cons: Requires converting all menu partials, need to update layout structure
+
+**Decision**: Redesign navigation to use AdminLTE 3's sidebar layout (`sidebar-mini layout-fixed`) with hierarchical tree structure, converting all dropdown menus to expandable sidebar sections.
+
+**Rationale**:
+
+- AdminLTE 3's sidebar layout is a proven enterprise UI pattern that scales well with many menu items
+- Sidebar provides better navigation hierarchy - users can see more menu items at once without clicking
+- Better mobile experience with overlay-style navigation that slides in/out
+- More efficient use of screen space - sidebar doesn't consume vertical space like top navbar
+- Built-in responsive behavior handles mobile/tablet/desktop automatically
+- Sidebar state persistence improves UX by remembering user preferences
+- Active route highlighting and auto-expand functionality help users know exactly where they are
+- Font Awesome icons provide visual clarity and faster menu item recognition
+- Dark, fixed topbar matches sidebar theme and provides consistent navigation experience
+
+**Implementation**:
+
+- Created `resources/views/templates/partials/sidebar.blade.php` with complete sidebar structure using AdminLTE's `nav-sidebar` classes
+- Created `resources/views/templates/partials/topbar.blade.php` with simplified top navigation (toggle button + user menu)
+- Updated `resources/views/templates/main.blade.php`: Changed body class from `layout-top-nav layout-navbar-fixed` to `sidebar-mini layout-fixed layout-navbar-fixed`
+- Converted all menu dropdowns to sidebar tree structure with `has-treeview` and `nav-treeview` classes
+- Implemented active route highlighting using `request()->routeIs()` pattern matching
+- Added JavaScript for sidebar state persistence (localStorage) and auto-expand active parent menus
+- Updated login page to v.4.0 with modern gradient design highlighting sidebar improvements
+- Fixed `/home` route issue by updating `RouteServiceProvider::HOME` constant and adding redirect route
+- Preserved old navbar and menu partials for rollback reference
+
+**Review Date**: 2025-07-XX (evaluate user feedback, assess navigation efficiency, consider additional sidebar enhancements like search or favorites)
+
+---
 
 ### Decision: Direct SAP B1 Journal Entry Submission via Service Layer API - 2025-11-20
 

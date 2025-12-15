@@ -36,6 +36,9 @@ Route::middleware('auth')->group(function () {
     //     return view('templates.dashboard');
     // });
     Route::get('/', [DashboardUserController::class, 'index']);
+    Route::get('/home', function () {
+        return redirect()->route('dashboard.index');
+    });
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 

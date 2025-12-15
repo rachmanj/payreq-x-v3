@@ -1,5 +1,5 @@
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-11-20
+**Last Updated**: 2025-01-XX
 
 ## Task Management Guidelines
 
@@ -46,6 +46,19 @@ Include relevant context in brackets to help with future AI-assisted coding:
 -   [ ] Advanced reporting features
 
 ## Recently Completed
+
+-   [done] P1: Sidebar Menu Redesign - Version 4.0 [resources/views/templates/partials/sidebar.blade.php, resources/views/templates/partials/topbar.blade.php, resources/views/templates/main.blade.php, resources/views/login/index.blade.php] (completed: 2025-01-XX)
+
+    -   Redesigned navigation from top navbar to sidebar layout using AdminLTE 3 sidebar-mini layout
+    -   Converted all dropdown menus to hierarchical sidebar tree structure with expandable sections
+    -   Implemented dark, fixed topbar with sidebar toggle and user menu
+    -   Added Font Awesome icons for all menu items for visual clarity
+    -   Implemented active route highlighting and auto-expand parent menus
+    -   Added sidebar state persistence using localStorage
+    -   Updated login page to v.4.0 with modern gradient design and "What's New" section highlighting sidebar improvements
+    -   Fixed `/home` route issue by updating RouteServiceProvider and adding redirect route
+    -   Files: `resources/views/templates/partials/sidebar.blade.php`, `resources/views/templates/partials/topbar.blade.php`, `resources/views/templates/main.blade.php`, `resources/views/login/index.blade.php`, `app/Providers/RouteServiceProvider.php`, `routes/web.php`
+    -   Documentation: Updated `docs/architecture.md`, `docs/decisions.md`, `MEMORY.md`, `docs/todo.md`
 
 -   [done] P1: SweetAlert confirmations + shared bulk script for SAP Sync [resources/views/accounting/sap-sync/show.blade.php, resources/views/accounting/sap-sync/partials/bulk-table-script.blade.php] (completed: 2025-11-20)
 
