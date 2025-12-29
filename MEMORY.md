@@ -270,6 +270,28 @@
 
 ---
 
+### [029] Cashier Incomings DataTables Bug Fix (2025-12-29) ✅ COMPLETE
+
+**Challenge**: The `/cashier/incomings` route DataTables was failing with "Attempt to read property 'requestor' on null" error, preventing the incoming payments list from loading.
+
+**Solution**: Fixed two critical issues in `CashierIncomingController`:
+
+1. **Role-based Filtering Bug**: Changed incorrect `if (in_array(['superadmin', 'admin'], $userRoles))` to `if (array_intersect(['superadmin', 'admin'], $userRoles))` in the `received_data()` method. The original code used `in_array()` with an array as the first parameter, which never evaluates to true.
+
+2. **Missing Relationship Eager Loading**: Added proper eager loading of relationships (`realization.requestor.department`, `realization.payreq`, `cashier`, `account`) in the `data()` method. The code was trying to access `$incoming->realization->requestor->name` without loading the relationships, causing null reference errors.
+
+**Key Learning**: DataTables implementations require consistent relationship eager loading across all controller methods. Role-based filtering logic must use proper array intersection functions. Silent failures in AJAX endpoints can mask critical data loading issues.
+
+**Technical Implementation**:
+
+- Fixed role checking logic in `received_data()` method
+- Added `->with(['realization.requestor.department', 'realization.payreq', 'cashier', 'account'])` to all query branches in `data()` method
+- Ensured consistent relationship loading between `data()` and `received_data()` methods
+
+**Impact**: Incoming payments DataTables now loads correctly, displaying employee names, departments, realization numbers, amounts, and account information. Users can now view and manage incoming payments without errors.
+
+---
+
 ### [018] Loans-Bilyets Integration with Multi-Payment Method Support (2025-10-23) 🚧 IN PROGRESS
 
 **Challenge**: Loans and Bilyets modules were disconnected. Loan installments tracked payments via text field (`bilyet_no`) instead of proper FK relationship. No way to distinguish loan payment bilyets from operational expense bilyets. No support for auto-debit payments (some loans paid directly from bank without bilyet creation). Users manually entered bilyet information in both systems, leading to data inconsistency. Reporting showed incomplete picture of loan payments.

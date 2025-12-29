@@ -91,16 +91,34 @@ class CashierIncomingController extends Controller
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
-            $incomings = Incoming::whereNull('receive_date')
+            $incomings = Incoming::with([
+                    'realization.requestor.department',
+                    'realization.payreq',
+                    'cashier',
+                    'account'
+                ])
+                ->whereNull('receive_date')
                 ->orderBy('created_at', 'desc')
                 ->get();
         } elseif (in_array('cashier', $userRoles)) {
-            $incomings = Incoming::whereNull('receive_date')
+            $incomings = Incoming::with([
+                    'realization.requestor.department',
+                    'realization.payreq',
+                    'cashier',
+                    'account'
+                ])
+                ->whereNull('receive_date')
                 ->whereIn('project', ['000H', 'APS'])
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
-            $incomings = Incoming::where('project', auth()->user()->project)
+            $incomings = Incoming::with([
+                    'realization.requestor.department',
+                    'realization.payreq',
+                    'cashier',
+                    'account'
+                ])
+                ->where('project', auth()->user()->project)
                 ->whereNull('receive_date')
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -108,22 +126,43 @@ class CashierIncomingController extends Controller
 
         return datatables()->of($incomings)
             ->addColumn('employee', function ($incoming) {
-                if ($incoming->realization_id !== null) {
+                if ($incoming->realization_id !== null && $incoming->realization && $incoming->realization->requestor) {
                     return $incoming->realization->requestor->name;
-                } else {
-                    return $incoming->cashier->name;
                 }
+                
+                if ($incoming->realization_id !== null && !$incoming->realization) {
+                    $realizationNo = $this->extractRealizationNoFromDescription($incoming->description);
+                    if ($realizationNo) {
+                        $realization = \App\Models\Realization::where('nomor', $realizationNo)->first();
+                        if ($realization && $realization->requestor) {
+                            return $realization->requestor->name;
+                        }
+                    }
+                }
+                
+                return $incoming->cashier ? $incoming->cashier->name : '-';
             })
             ->addColumn('dept', function ($incoming) {
-                if ($incoming->realization_id !== null) {
+                if ($incoming->realization_id !== null && $incoming->realization && $incoming->realization->requestor && $incoming->realization->requestor->department) {
                     return $incoming->realization->requestor->department->akronim;
-                } else {
-                    return $incoming->cashier->name;
                 }
+                
+                if ($incoming->realization_id !== null && !$incoming->realization) {
+                    $realizationNo = $this->extractRealizationNoFromDescription($incoming->description);
+                    if ($realizationNo) {
+                        $realization = \App\Models\Realization::where('nomor', $realizationNo)->first();
+                        if ($realization && $realization->requestor && $realization->requestor->department) {
+                            return $realization->requestor->department->akronim;
+                        }
+                    }
+                }
+                
+                return $incoming->cashier ? $incoming->cashier->name : '-';
             })
             ->addColumn('realization_no', function ($incoming) {
-                if ($incoming->realization_id !== null) {
-                    return '<a href="#" style="color: black" title="' . $incoming->realization->payreq->remarks . '">' . $incoming->realization->nomor . '</a>';
+                if ($incoming->realization_id !== null && $incoming->realization) {
+                    $payreqRemarks = $incoming->realization->payreq ? $incoming->realization->payreq->remarks : '';
+                    return '<a href="#" style="color: black" title="' . $payreqRemarks . '">' . $incoming->realization->nomor . '</a>';
                 } else {
                     return $incoming->description;
                 }
@@ -131,8 +170,11 @@ class CashierIncomingController extends Controller
             ->editColumn('amount', function ($incoming) {
                 return number_format($incoming->amount, 2);
             })
+            ->addColumn('project', function ($incoming) {
+                return $incoming->project ?? '-';
+            })
             ->addColumn('account', function ($incoming) {
-                return $incoming->account_id ? $incoming->account->account_number . ' - ' . $incoming->account->account_name : '-';
+                return $incoming->account_id && $incoming->account ? $incoming->account->account_number . ' - ' . $incoming->account->account_name : '-';
             })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.incomings.action')
@@ -154,7 +196,7 @@ class CashierIncomingController extends Controller
         ->whereNotNull('receive_date');
         
         // Apply role-based filtering
-        if (in_array(['superadmin', 'admin'], $userRoles)) {
+        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             // No additional filters for admin
         } elseif (in_array('cashier', $userRoles)) {
             $query->whereIn('project', ['000H', 'APS']);
@@ -205,5 +247,13 @@ class CashierIncomingController extends Controller
             ->addColumn('action', 'cashier.incomings.received.action')
             ->rawColumns(['action', 'status', 'realization_no'])
             ->toJson();
+    }
+
+    private function extractRealizationNoFromDescription($description)
+    {
+        if (preg_match('/realization no\.?\s*(\d+)/i', $description, $matches)) {
+            return $matches[1];
+        }
+        return null;
     }
 }
