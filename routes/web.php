@@ -191,4 +191,5 @@ Route::post('/get_account_name', [AccountController::class, 'get_account_name'])
 // Remove or comment out this line if it exists
 // Route::get('/accounts/list', [AccountController::class, 'getList'])->name('accounts.list');
 
-Route::get('sap-sync/edit-vjdetail/data', [App\Http\Controllers\VerificationJournalController::class, 'editVjDetailData'])->name('accounting.sap-sync.edit_vjdetail_data');
+// Route moved to routes/accounting.php - using SapSyncController instead
+// Route::get('sap-sync/edit-vjdetail/data', [App\Http\Controllers\VerificationJournalController::class, 'editVjDetailData'])->name('accounting.sap-sync.edit_vjdetail_data');

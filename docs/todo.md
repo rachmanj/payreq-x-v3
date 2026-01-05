@@ -47,6 +47,20 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   [done] P1: Verification Journal Detail Editing Enhancement - All Rows Editable [app/Http/Controllers/Accounting/SapSyncController.php, resources/views/accounting/sap-sync/edit-vjdetail/index.blade.php, resources/views/accounting/sap-sync/edit-vjdetail/action.blade.php, routes/web.php] (completed: 2025-01-XX)
+
+    -   Removed restriction preventing editing of credit entries (cash accounts) in verification journal details
+    -   Added visual indicators: DEBIT rows show blue badges, CREDIT rows show red badges
+    -   Implemented account filtering for credit entries to only show cash/bank accounts from VJ's project
+    -   Added warning alert in edit modal for credit entries about account restrictions
+    -   Enhanced backend validation to enforce account type (cash/bank) and project matching for credit entries
+    -   Added SAP posting check to prevent editing of journals already posted to SAP B1
+    -   Fixed duplicate route conflict by commenting out route in web.php
+    -   Added eager loading of verificationJournal relationship to prevent N+1 queries
+    -   Improved AJAX error handling for JSON responses
+    -   Files: `app/Http/Controllers/Accounting/SapSyncController.php`, `resources/views/accounting/sap-sync/edit-vjdetail/index.blade.php`, `resources/views/accounting/sap-sync/edit-vjdetail/action.blade.php`, `routes/web.php`
+    -   Documentation: Updated `MEMORY.md`, `docs/todo.md`, `docs/architecture.md`
+
 -   [done] P1: Sidebar Menu Redesign - Version 4.0 [resources/views/templates/partials/sidebar.blade.php, resources/views/templates/partials/topbar.blade.php, resources/views/templates/main.blade.php, resources/views/login/index.blade.php] (completed: 2025-01-XX)
 
     -   Redesigned navigation from top navbar to sidebar layout using AdminLTE 3 sidebar-mini layout

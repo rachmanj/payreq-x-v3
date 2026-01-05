@@ -1,8 +1,16 @@
-@if ($model->debit_credit === 'debit')
+@php
+    $vj = $vj ?? $model->verificationJournal;
+@endphp
+
+@if ($vj && !$vj->sap_journal_no)
     <button type="button" class="btn btn-xs btn-warning edit-btn" data-toggle="modal"
         data-target="#vjdetail-edit-{{ $model->id }}">
         <i class="fas fa-edit"></i> Edit
     </button>
+@elseif ($vj && $vj->sap_journal_no)
+    <span class="badge badge-secondary" title="Cannot edit: Already posted to SAP">
+        <i class="fas fa-lock"></i> Posted
+    </span>
 @endif
 
 {{-- modal update --}}
@@ -22,13 +30,38 @@
                 @csrf
                 <input type="hidden" name="vj_id" value="{{ $model->verification_journal_id }}">
                 <input type="hidden" name="vj_detail_id" value="{{ $model->id }}">
+                <input type="hidden" name="debit_credit" value="{{ $model->debit_credit }}">
 
                 <div class="modal-body">
+                    @php
+                        $vj = $vj ?? $model->verificationJournal;
+                    @endphp
+                    
+                    @if ($model->debit_credit === 'credit' && $vj)
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Credit Entry:</strong> Only cash or bank accounts from project <strong>{{ $vj->project }}</strong> can be selected.
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    @endif
+
                     <div class="form-group">
                         <label for="account_code">Account Number</label>
                         <select id="account_code-{{ $model->id }}" name="account_code"
                             class="form-control select2-modal">
-                            @foreach (\App\Models\Account::orderBy('account_number')->get() as $item)
+                            @php
+                                if ($model->debit_credit === 'credit' && $vj) {
+                                    $accounts = \App\Models\Account::whereIn('type', ['cash', 'bank'])
+                                        ->where('project', $vj->project)
+                                        ->orderBy('account_number')
+                                        ->get();
+                                } else {
+                                    $accounts = \App\Models\Account::orderBy('account_number')->get();
+                                }
+                            @endphp
+                            @foreach ($accounts as $item)
                                 <option value="{{ $item->account_number }}"
                                     {{ old('account_code', $model->account_code) == $item->account_number ? 'selected' : '' }}>
                                     {{ $item->account_number . ' - ' . $item->account_name }}
@@ -123,80 +156,36 @@
                 url: "{{ route('accounting.sap-sync.update_detail') }}",
                 method: 'POST',
                 data: formData,
-                // Don't set dataType to allow jQuery to auto-detect
-                success: function(response, status, xhr) {
-                    console.log("Response type:", xhr.getResponseHeader('content-type'));
-
-                    // Check if we got JSON or HTML
-                    if (xhr.getResponseHeader('content-type').indexOf('json') !== -1) {
-                        // JSON response
-                        console.log("Success JSON response:", response);
-
-                        // Show success message
-                        window.showAlert(response.message || 'Record updated successfully!',
-                            'success');
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        window.showAlert(response.message || 'Record updated successfully!', 'success');
+                        $('#vjdetail-edit-{{ $model->id }}').modal('hide');
+                        $('#vj_details').DataTable().ajax.reload(null, false);
                     } else {
-                        // HTML response - check for success indicators in the HTML
-                        console.log("Success HTML response received");
-
-                        // Success message based on HTML response
-                        window.showAlert('Record updated successfully!', 'success');
+                        window.showAlert(response.message || 'Update failed', 'danger');
                     }
-
-                    // Hide modal
-                    $('#vjdetail-edit-{{ $model->id }}').modal('hide');
-
-                    // Refresh the datatable
-                    $('#vj_details').DataTable().ajax.reload(null, false);
                 },
                 error: function(xhr, status, error) {
-                    console.error("Error status:", status);
-                    console.error("Error thrown:", error);
-
-                    // Check content type
-                    let contentType = xhr.getResponseHeader('content-type') || '';
-                    console.log("Response content type:", contentType);
-
-                    if (contentType.indexOf('html') !== -1) {
-                        console.log("Received HTML error response");
-
-                        // Check if we can see successful update indicators in the HTML
-                        if (xhr.responseText.indexOf("toastr.success") !== -1 &&
-                            xhr.responseText.indexOf("Detail Updated") !== -1) {
-
-                            console.log("Found success message in HTML response");
-
-                            // This was actually a success, so treat it as such
-                            $('#vjdetail-edit-{{ $model->id }}').modal('hide');
-                            window.showAlert('Record updated successfully!', 'success');
-                            $('#vj_details').DataTable().ajax.reload(null, false);
-
-                            // Reset button and return early
-                            submitBtn.html(originalText);
-                            submitBtn.prop('disabled', false);
-                            return;
-                        }
-                    }
-
-                    // Handle real errors
                     let errorMessage = 'An error occurred while updating';
 
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMessage = xhr.responseJSON.message;
                     } else if (xhr.status === 500) {
-                        errorMessage =
-                            'Server error (500): The update request failed on the server';
+                        errorMessage = 'Server error (500): The update request failed on the server';
                     } else if (xhr.status === 422) {
-                        errorMessage = 'Validation error (422): Please check the form data';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else {
+                            errorMessage = 'Validation error (422): Please check the form data';
+                        }
                     } else if (xhr.status === 419) {
-                        errorMessage =
-                            'CSRF token mismatch (419): Please refresh the page and try again';
+                        errorMessage = 'CSRF token mismatch (419): Please refresh the page and try again';
                     }
 
                     window.showAlert(errorMessage, 'danger');
                 },
                 complete: function() {
-                    // Reset button state (except for the case where we returned early in the error handler)
                     submitBtn.html(originalText);
                     submitBtn.prop('disabled', false);
                 }

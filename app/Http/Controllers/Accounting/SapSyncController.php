@@ -573,8 +573,15 @@ class SapSyncController extends Controller
     public function edit_vjdetail_data()
     {
         $vj_id = request()->query('vj_id');
+        $vj = VerificationJournal::find($vj_id);
 
-        $vj_details = VerificationJournalDetail::where('verification_journal_id', $vj_id)->get();
+        if (!$vj) {
+            return response()->json(['error' => 'Verification Journal not found'], 404);
+        }
+
+        $vj_details = VerificationJournalDetail::with('verificationJournal')
+            ->where('verification_journal_id', $vj_id)
+            ->get();
 
         return datatables()->of($vj_details)
             ->addColumn('akun', function ($vj_detail) {
@@ -583,15 +590,59 @@ class SapSyncController extends Controller
             ->addColumn('cost_center', function ($vj_detail) {
                 return $vj_detail->cost_center . ' <br><small><b> ' . Department::where('sap_code', $vj_detail->cost_center)->first()->akronim . '</b></small>';
             })
+            ->addColumn('debit_credit_badge', function ($vj_detail) {
+                $badgeClass = $vj_detail->debit_credit === 'debit' ? 'badge-primary' : 'badge-danger';
+                $badgeText = strtoupper($vj_detail->debit_credit);
+                return '<span class="badge ' . $badgeClass . '">' . $badgeText . '</span>';
+            })
             ->addIndexColumn()
-            ->addColumn('action', 'accounting.sap-sync.edit-vjdetail.action')
-            ->rawColumns(['akun', 'action', 'cost_center'])
+            ->addColumn('action', function ($vj_detail) use ($vj) {
+                return view('accounting.sap-sync.edit-vjdetail.action', [
+                    'model' => $vj_detail,
+                    'vj' => $vj
+                ])->render();
+            })
+            ->rawColumns(['akun', 'action', 'cost_center', 'debit_credit_badge'])
             ->toJson();
     }
 
     public function update_detail(Request $request)
     {
         $vj_detail = VerificationJournalDetail::find($request->vj_detail_id);
+        $vj = VerificationJournal::find($vj_detail->verification_journal_id);
+
+        if ($vj->sap_journal_no) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot edit. This verification journal has already been posted to SAP.'
+            ], 422);
+        }
+
+        if ($vj_detail->debit_credit === 'credit') {
+            $account = Account::where('account_number', $request->account_code)->first();
+            
+            if (!$account) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Selected account not found.'
+                ], 422);
+            }
+
+            if (!in_array($account->type, ['cash', 'bank'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'For credit entries, only cash or bank accounts can be selected.'
+                ], 422);
+            }
+
+            if ($account->project !== $vj->project) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Selected account must belong to the same project as the verification journal.'
+                ], 422);
+            }
+        }
+
         $vj_detail->account_code = $request->account_code;
         $vj_detail->project = $request->project;
         $vj_detail->cost_center = $request->cost_center;
@@ -599,7 +650,10 @@ class SapSyncController extends Controller
 
         $vj_detail->save();
 
-        return back()->with('success', 'Detail Updated');
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail Updated'
+        ]);
     }
 
     public function vjNotPosted()

@@ -56,11 +56,12 @@
                             <thead class="bg-primary">
                                 <tr>
                                     <th width="5%">#</th>
-                                    <th width="20%">Account / Acc Name</th>
-                                    <th width="25%">Description</th>
-                                    <th width="10%">Project</th>
+                                    <th width="8%">Type</th>
+                                    <th width="18%">Account / Acc Name</th>
+                                    <th width="22%">Description</th>
+                                    <th width="8%">Project</th>
                                     <th width="10%">Cost Center</th>
-                                    <th width="15%">Amount</th>
+                                    <th width="12%">Amount</th>
                                     <th width="10%">Actions</th>
                                 </tr>
                             </thead>
@@ -180,6 +181,11 @@
                         searchable: false
                     },
                     {
+                        data: 'debit_credit_badge',
+                        orderable: true,
+                        searchable: false
+                    },
+                    {
                         data: 'akun'
                     },
                     {
@@ -235,11 +241,11 @@
                 responsive: true,
                 autoWidth: false,
                 columnDefs: [{
-                        "targets": [0, 3, 4, 5, 6],
+                        "targets": [0, 1, 4, 5, 6, 7],
                         "className": "text-center"
                     },
                     {
-                        "targets": [2],
+                        "targets": [3],
                         "className": "text-wrap"
                     }
                 ],

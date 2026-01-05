@@ -190,6 +190,55 @@ sequenceDiagram
 - Config mapping: `config/services.php['sap']`
 - SAP B1 Settings: General Settings → Cash Flow tab → "Assignment in Transactions with All Relevant to Cash Flow" set to "Warning Only" (allows posting without mandatory cash flow assignment)
 
+### Verification Journal Detail Editing
+
+The `SAP Sync` module provides comprehensive editing capabilities for verification journal details through the `/accounting/sap-sync/edit-vjdetail` route. All journal detail rows (both debit and credit entries) can be edited before posting to SAP B1, with appropriate business rule validations and visual indicators.
+
+**Data Flow**:
+
+- `resources/views/accounting/sap-sync/edit-vjdetail/index.blade.php` displays a DataTable of all verification journal details with visual type indicators (DEBIT: blue badge, CREDIT: red badge)
+- DataTable loads data via AJAX from `GET /accounting/sap-sync/edit-vjdetail/data?vj_id={id}` endpoint
+- `SapSyncController::edit_vjdetail_data()` returns DataTables-formatted JSON with enhanced columns:
+  - `debit_credit_badge`: Color-coded badge (blue for debit, red for credit)
+  - `akun`: Account code with account name
+  - `cost_center`: Cost center code with department acronym
+  - `action`: Edit button (or "Posted" badge if journal already posted to SAP)
+- Each row has an Edit button that opens a modal (`resources/views/accounting/sap-sync/edit-vjdetail/action.blade.php`)
+- For credit entries, the modal shows a warning alert and filters account dropdown to only show cash/bank accounts from the VJ's project
+- Form submission posts to `POST /accounting/sap-sync/update-detail` with account_code, project, cost_center, description
+- `SapSyncController::update_detail()` validates:
+  - Journal is not already posted to SAP B1 (prevents editing posted journals)
+  - For credit entries: Account type must be 'cash' or 'bank'
+  - For credit entries: Account project must match VJ project
+- On success: Returns JSON response, DataTable refreshes to show updated data
+- On validation failure: Returns JSON error response with clear error message
+
+**Business Rules**:
+
+1. **Account Type Restriction**: Credit entries can only use accounts with type 'cash' or 'bank'
+2. **Project Matching**: Credit entry accounts must belong to the same project as the verification journal
+3. **SAP Posting Lock**: Journals already posted to SAP B1 (`sap_journal_no` exists) cannot be edited
+4. **Debit Entries**: No account type restrictions (can use any account)
+
+**Visual Indicators**:
+
+- **DEBIT rows**: Blue badge (`badge-primary`) for clear identification
+- **CREDIT rows**: Red badge (`badge-danger`) for clear identification
+- **Posted journals**: "Posted" badge with lock icon instead of edit button
+
+**Key Components**:
+
+- **SapSyncController::edit_vjdetail_data()**: Generates DataTables JSON with badges and action buttons
+- **SapSyncController::update_detail()**: Validates and updates journal detail records with business rule enforcement
+- **Action View**: `resources/views/accounting/sap-sync/edit-vjdetail/action.blade.php` - Modal form with conditional account filtering and warning alerts
+- **Model Relationships**: `VerificationJournalDetail::verificationJournal()` - Used for SAP posting check and project validation
+
+**Routes**:
+
+- `GET /accounting/sap-sync/edit-vjdetail` - Display edit page (`SapSyncController::edit_vjdetail_display`)
+- `GET /accounting/sap-sync/edit-vjdetail/data` - DataTables AJAX endpoint (`SapSyncController::edit_vjdetail_data`)
+- `POST /accounting/sap-sync/update-detail` - Update journal detail (`SapSyncController::update_detail`)
+
 ---
 
 ### SAP Bridge Account Statement Flow
