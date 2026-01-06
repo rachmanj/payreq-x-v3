@@ -28,7 +28,8 @@ class KoranController extends Controller
         if ($page === 'dashboard') {
             $year = request()->query('year', date('Y'));
             $korans = $this->check_koran_files($year);
-            return view($views['dashboard'], compact('giros', 'year', 'korans'));
+            $statistics = $this->calculateStatistics($korans);
+            return view($views['dashboard'], compact('giros', 'year', 'korans', 'statistics'));
         }
 
         return view($views['upload'], compact('giros'));
@@ -74,7 +75,14 @@ class KoranController extends Controller
 
     public function check_koran_files($year)
     {
-        $giros = $this->getGiros(app(UserController::class)->getUserRoles());
+        $userRoles = app(UserController::class)->getUserRoles();
+        
+        if (array_intersect($this->allowedRoles, $userRoles)) {
+            $giros = Giro::with('bank')->orderBy('bank_id', 'asc')->get();
+        } else {
+            $giros = Giro::with('bank')->where('project', auth()->user()->project)->orderBy('bank_id', 'asc')->get();
+        }
+        
         $months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
         $result = [];
 
@@ -88,18 +96,31 @@ class KoranController extends Controller
                     return \Carbon\Carbon::parse($item->periode)->format('m');
                 });
 
-            $giro_data = array_map(function ($month) use ($korans) {
+            $completed_count = 0;
+            $giro_data = array_map(function ($month) use ($korans, &$completed_count) {
                 $koran = $korans->get($month);
+                $has_file = $koran && $koran->filename1 !== null;
+                if ($has_file) {
+                    $completed_count++;
+                }
                 return [
                     'month' => $month,
-                    'status' => $koran && $koran->filename1 !== null,
+                    'status' => $has_file,
                     'filename1' => $koran ? $koran->filename1 : null,
+                    'upload_date' => $koran && $koran->created_at ? \Carbon\Carbon::parse($koran->created_at)->format('d M Y') : null,
                 ];
             }, $months);
 
             $year_data[] = [
                 'giro_id' => $giro->id,
-                'acc_name' => $giro->acc_no . ' - ' . $giro->acc_name . ' - ' . $giro->project,
+                'acc_no' => $giro->acc_no,
+                'acc_name' => $giro->acc_name,
+                'project' => $giro->project,
+                'bank_name' => $giro->bank ? $giro->bank->name : 'N/A',
+                'completed_count' => $completed_count,
+                'total_months' => 12,
+                'completion_percentage' => round(($completed_count / 12) * 100, 1),
+                'acc_name_full' => $giro->acc_no . ' - ' . $giro->acc_name . ' - ' . $giro->project,
                 'data' => $giro_data,
             ];
         }
@@ -110,6 +131,36 @@ class KoranController extends Controller
         ];
 
         return $result;
+    }
+
+    private function calculateStatistics($korans)
+    {
+        $totalAccounts = 0;
+        $totalMonths = 0;
+        $completedMonths = 0;
+
+        foreach ($korans as $koran) {
+            foreach ($koran['giros'] as $giro) {
+                $totalAccounts++;
+                foreach ($giro['data'] as $month) {
+                    $totalMonths++;
+                    if ($month['status']) {
+                        $completedMonths++;
+                    }
+                }
+            }
+        }
+
+        $completionPercentage = $totalMonths > 0 ? round(($completedMonths / $totalMonths) * 100, 1) : 0;
+        $missingMonths = $totalMonths - $completedMonths;
+
+        return [
+            'total_accounts' => $totalAccounts,
+            'total_months' => $totalMonths,
+            'completed_months' => $completedMonths,
+            'missing_months' => $missingMonths,
+            'completion_percentage' => $completionPercentage,
+        ];
     }
 
     public function data()
