@@ -17,8 +17,9 @@
             <div class="card">
                 <div class="card-header text-center">
                     <h3 class="card-title"><b>{{ $year }}</b></h3>
-                    <a
-                        href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => date('Y')]) }}">{{ date('Y') }}</a>
+                    <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => 2026]) }}">2026</a>
+                    |
+                    <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => 2025]) }}">2025</a>
                     |
                     <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => 2024]) }}">2024</a>
                 </div>
