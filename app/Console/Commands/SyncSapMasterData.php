@@ -10,9 +10,10 @@ class SyncSapMasterData extends Command
     protected $signature = 'sap:sync-master-data 
         {--projects : Sync SAP Projects} 
         {--cost-centers : Sync SAP Cost Centers} 
-        {--accounts : Sync SAP GL Accounts}';
+        {--accounts : Sync SAP GL Accounts}
+        {--business-partners : Sync SAP Business Partners}';
 
-    protected $description = 'Sync Projects, Cost Centers, and Accounts from SAP B1 Service Layer';
+    protected $description = 'Sync Projects, Cost Centers, Accounts, and Business Partners from SAP B1 Service Layer';
 
     public function __construct(
         protected SapMasterDataSyncService $syncService
@@ -63,11 +64,16 @@ class SyncSapMasterData extends Command
             $targets[] = ['label' => 'Accounts', 'method' => 'syncAccounts'];
         }
 
+        if ($this->option('business-partners')) {
+            $targets[] = ['label' => 'Business Partners', 'method' => 'syncBusinessPartners'];
+        }
+
         if (empty($targets)) {
             return [
                 ['label' => 'Projects', 'method' => 'syncProjects'],
                 ['label' => 'Cost Centers', 'method' => 'syncCostCenters'],
                 ['label' => 'Accounts', 'method' => 'syncAccounts'],
+                ['label' => 'Business Partners', 'method' => 'syncBusinessPartners'],
             ];
         }
 

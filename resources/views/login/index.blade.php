@@ -246,37 +246,21 @@
             </div>
             <div id="whatsNewCollapse" class="collapse" aria-labelledby="whatsNewHeading">
                 <div class="card-body">
-                    <div class="feature-item border-primary">
-                        <div class="d-flex align-items-start">
-                            <i class="fas fa-bars feature-icon text-primary"></i>
-                            <div>
-                                <strong class="d-block mb-1">Modern Sidebar Navigation</strong>
-                                <small class="text-muted">Completely redesigned navigation with a sleek sidebar menu.
-                                    Better organization, easier access to all features, and improved user experience.
-                                    The sidebar stays visible while you work, making navigation faster and more
-                                    intuitive.</small>
-                            </div>
-                        </div>
-                    </div>
                     <div class="feature-item border-success">
                         <div class="d-flex align-items-start">
-                            <i class="fas fa-palette feature-icon text-success"></i>
+                            <i class="fas fa-users feature-icon text-success"></i>
                             <div>
-                                <strong class="d-block mb-1">Enhanced UI/UX Design</strong>
-                                <small class="text-muted">Dark, fixed navigation bar with modern styling. Improved
-                                    visual hierarchy and better use of screen space. All menu items are now organized
-                                    in an expandable tree structure for quick access.</small>
+                                <strong class="d-block mb-1">SAP Business Partners Sync</strong>
+                                <small class="text-muted">Complete SAP B1 Business Partners synchronization system with Customers, Suppliers, and Leads. Includes unified sync UI, credit limit validation, customer auto-sync, change detection, and comprehensive reporting. Sync all master data from one convenient page!</small>
                             </div>
                         </div>
                     </div>
                     <div class="feature-item border-info">
                         <div class="d-flex align-items-start">
-                            <i class="fas fa-mobile-alt feature-icon text-info"></i>
+                            <i class="fas fa-sync-alt feature-icon text-info"></i>
                             <div>
-                                <strong class="d-block mb-1">Better Mobile Experience</strong>
-                                <small class="text-muted">Responsive sidebar that adapts perfectly to mobile devices.
-                                    Collapsible menu with smooth animations. Your sidebar preferences are remembered
-                                    across sessions.</small>
+                                <strong class="d-block mb-1">Unified Master Data Sync UI</strong>
+                                <small class="text-muted">New centralized SAP Master Data Sync page allows you to sync all SAP master data (Projects, Cost Centers, GL Accounts, Business Partners) from one place. Individual sync buttons for each type plus "Sync All" option for convenience.</small>
                             </div>
                         </div>
                     </div>
@@ -299,6 +283,40 @@
                                 <small class="text-muted">Faster navigation with optimized menu structure. Active route
                                     highlighting and auto-expanding menus help you know exactly where you are in the
                                     system.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feature-item border-info">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-mobile-alt feature-icon text-info"></i>
+                            <div>
+                                <strong class="d-block mb-1">Better Mobile Experience</strong>
+                                <small class="text-muted">Responsive sidebar that adapts perfectly to mobile devices.
+                                    Collapsible menu with smooth animations. Your sidebar preferences are remembered
+                                    across sessions.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feature-item border-success">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-palette feature-icon text-success"></i>
+                            <div>
+                                <strong class="d-block mb-1">Enhanced UI/UX Design</strong>
+                                <small class="text-muted">Dark, fixed navigation bar with modern styling. Improved
+                                    visual hierarchy and better use of screen space. All menu items are now organized
+                                    in an expandable tree structure for quick access.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feature-item border-primary">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-bars feature-icon text-primary"></i>
+                            <div>
+                                <strong class="d-block mb-1">Modern Sidebar Navigation</strong>
+                                <small class="text-muted">Completely redesigned navigation with a sleek sidebar menu.
+                                    Better organization, easier access to all features, and improved user experience.
+                                    The sidebar stays visible while you work, making navigation faster and more
+                                    intuitive.</small>
                             </div>
                         </div>
                     </div>

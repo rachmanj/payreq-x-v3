@@ -54,4 +54,23 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'can:akses_admin'])-
             Route::patch('/{department}/visibility', [DepartmentController::class, 'toggleVisibility'])->name('toggle-visibility');
         });
     });
+
+    // Business Partners Management
+    Route::prefix('business-partners')->name('business-partners.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\BusinessPartnerController::class, 'index'])->name('index');
+        Route::post('/sync', [App\Http\Controllers\Admin\BusinessPartnerController::class, 'syncFromSap'])->name('sync');
+        Route::post('/sync-customers', [App\Http\Controllers\Admin\BusinessPartnerController::class, 'syncCustomers'])->name('sync-customers');
+        Route::get('/statistics', [App\Http\Controllers\Admin\BusinessPartnerController::class, 'statistics'])->name('statistics');
+        Route::get('/changes', [App\Http\Controllers\Admin\BusinessPartnerController::class, 'changes'])->name('changes');
+    });
+
+    // SAP Master Data Sync
+    Route::prefix('sap-master-data-sync')->name('sap-master-data-sync.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\SapMasterDataSyncController::class, 'index'])->name('index');
+        Route::post('/sync-all', [App\Http\Controllers\Admin\SapMasterDataSyncController::class, 'syncAll'])->name('sync-all');
+        Route::post('/sync-projects', [App\Http\Controllers\Admin\SapMasterDataSyncController::class, 'syncProjects'])->name('sync-projects');
+        Route::post('/sync-cost-centers', [App\Http\Controllers\Admin\SapMasterDataSyncController::class, 'syncCostCenters'])->name('sync-cost-centers');
+        Route::post('/sync-accounts', [App\Http\Controllers\Admin\SapMasterDataSyncController::class, 'syncAccounts'])->name('sync-accounts');
+        Route::post('/sync-business-partners', [App\Http\Controllers\Admin\SapMasterDataSyncController::class, 'syncBusinessPartners'])->name('sync-business-partners');
+    });
 });

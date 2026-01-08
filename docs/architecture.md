@@ -98,7 +98,7 @@ The Accounting One system is a comprehensive financial management application bu
     - **DDS API**: Document Distribution System for invoice management
     - **SAP Integration**: General ledger synchronization and journal entry submission
     - **SAP B1 Service Layer**: Direct programmatic submission of verification journals to SAP B1 Journal Entry module via REST API with cookie-based session management, automatic error handling, and comprehensive audit logging
-    - **SAP Master Data Sync**: `SapMasterDataSyncService` + `sap:sync-master-data` command (scheduled daily 02:00) pull Projects, Cost Centers, and GL Accounts from SAP B1 into `sap_projects`, `sap_cost_centers`, `sap_accounts` tables for validation, autocomplete, and audit trails
+    - **SAP Master Data Sync**: `SapMasterDataSyncService` + `sap:sync-master-data` command (scheduled daily 02:00) pulls Projects, Cost Centers, GL Accounts, and Business Partners from SAP B1 into `sap_projects`, `sap_cost_centers`, `sap_accounts`, `sap_business_partners` tables for validation, autocomplete, and audit trails. Includes unified sync UI (`/admin/sap-master-data-sync`), customer auto-sync, change detection, credit limit validation, and comprehensive reporting.
     - **SAP Bridge Account Statements**: Cashier SAP Transactions page fetches GL statement data via `/api/account-statements` using API key headers, translating SAP payloads (opening balance, running balances, summaries) directly into the UI.
     - **LOT Service**: Official travel claim management
     - **BUC Sync**: Budget synchronization system
@@ -275,6 +275,119 @@ sequenceDiagram
 - Environment: `SAP_BRIDGE_URL`, `SAP_BRIDGE_API_KEY`, `SAP_BRIDGE_TIMEOUT`
 - Config mapping: `config/services.php['sap_bridge']`
 - Exception handling: `App\Exceptions\SapBridgeException` standardizes downstream error responses.
+
+### SAP B1 Master Data Sync Flow
+
+The application maintains synchronized copies of SAP B1 master data (Projects, Cost Centers, GL Accounts, Business Partners) locally for fast validation, autocomplete, and offline diagnostics. The sync system includes both command-line and UI-based synchronization.
+
+**Data Flow**:
+
+- `php artisan sap:sync-master-data` command (or UI sync at `/admin/sap-master-data-sync`) triggers `SapMasterDataSyncService`
+- Service calls `SapService` methods (`getProjects()`, `getCostCenters()`, `getAccounts()`, `getBusinessPartners()`) to fetch data from SAP B1 Service Layer
+- `SapMasterDataSyncService` maps SAP fields to local database fields and uses chunked upserts (100 records per chunk) with transaction safety
+- Business Partners sync includes change detection (name changes, status changes) and stores previous values for audit trail
+- Customer/Vendor auto-sync (`CustomerAutoSyncService`) automatically syncs Business Partners to `customers` table
+- Credit limit validation (`FakturController`) checks customer credit limits before creating invoices
+- All sync operations track `last_synced_at` timestamps and store full SAP responses in `metadata` JSON fields
+
+**Tables Synced**:
+
+1. **`sap_projects`**: SAP Projects master data (Code, Name, Status, Active, Start/End dates, Project Manager)
+2. **`sap_cost_centers`**: SAP Profit Centers (CenterCode, CenterName, Segment, Department, Active)
+3. **`sap_accounts`**: SAP GL Accounts (Code, Name, AccountType, Category, Postable, Active)
+4. **`sap_business_partners`**: SAP Business Partners (CardCode, CardName, CardType, Active, VAT Liable, Federal Tax ID, Phone, Email, Address, Credit Limit, Balance, Change Tracking)
+5. **`customers`** (indirect): Synced from Business Partners via `CustomerAutoSyncService`
+
+**Scheduled Sync**:
+
+- Daily at 02:00 via Laravel scheduler: `php artisan sap:sync-master-data`
+- Can be triggered manually via command line or unified UI page
+
+**UI Components**:
+
+- **Unified Sync Page** (`/admin/sap-master-data-sync`): Single page to sync all master data types or individual types
+- **Business Partners Admin** (`/admin/business-partners`): View, filter, and sync Business Partners with statistics and change detection
+- **Projects Admin** (`/admin/projects`): Sync and manage SAP Projects with visibility controls
+- **Departments Admin** (`/admin/departments`): Sync and manage SAP Cost Centers/Departments
+
+**Key Components**:
+
+- **SapMasterDataSyncService** (`app/Services/SapMasterDataSyncService.php`): Core sync service with chunked upserts, transaction safety, and error handling
+- **SapService** (`app/Services/SapService.php`): SAP B1 Service Layer API client with session management
+- **CustomerAutoSyncService** (`app/Services/CustomerAutoSyncService.php`): Auto-syncs Customers and Vendors from Business Partners
+- **BusinessPartnerChangeDetectionService** (`app/Services/BusinessPartnerChangeDetectionService.php`): Tracks changes in Business Partners (name, status)
+- **SapMasterDataSyncController** (`app/Http/Controllers/Admin/SapMasterDataSyncController.php`): Unified UI controller for master data sync
+- **SyncSapMasterData Command** (`app/Console/Commands/SyncSapMasterData.php`): Artisan command with selective sync options
+
+**Field Mapping (Business Partners)**:
+
+- `CardCode` → `code` (unique identifier)
+- `CardName` → `name`
+- `CardType` → `type` (cCustomer, cSupplier, cLead)
+- `Active` → `active` (boolean)
+- `VatLiable` → `vat_liable` (boolean)
+- `FederalTaxID` → `federal_tax_id` (NPWP)
+- `Phone1` → `phone`
+- `Email` → `email`
+- `Address` → `address`
+- `CreditLimit` → `credit_limit` (decimal)
+- `Balance` → `balance` (decimal)
+- Full SAP response → `metadata` (JSON)
+
+**Change Tracking**:
+
+- Tracks name changes: `previous_name`, `name_changed_at`
+- Tracks status changes: `previous_active`, `status_changed_at`
+- Enables audit trail and change detection reporting
+
+**Credit Limit Validation**:
+
+- Validates available credit before Faktur creation
+- Compares invoice amount against credit limit minus current balance
+- Returns clear error messages when credit limit exceeded
+
+```mermaid
+sequenceDiagram
+    participant UI as Admin UI<br/>sap-master-data-sync
+    participant Controller as SapMasterDataSyncController
+    participant Service as SapMasterDataSyncService
+    participant SAP as SAP B1<br/>Service Layer
+    participant DB as Database<br/>(sap_* tables)
+    participant AutoSync as CustomerAutoSyncService
+    participant CustomerDB as customers table
+
+    UI->>Controller: POST /admin/sap-master-data-sync/sync-all
+    Controller->>Service: syncAll()
+    Service->>Service: syncProjects()
+    Service->>SAP: GET /Projects
+    SAP-->>Service: Projects array
+    Service->>DB: Chunked upserts (sap_projects)
+    
+    Service->>Service: syncCostCenters()
+    Service->>SAP: GET /ProfitCenters
+    SAP-->>Service: Cost Centers array
+    Service->>DB: Chunked upserts (sap_cost_centers)
+    
+    Service->>Service: syncAccounts()
+    Service->>SAP: GET /GLAccounts
+    SAP-->>Service: GL Accounts array
+    Service->>DB: Chunked upserts (sap_accounts)
+    
+    Service->>Service: syncBusinessPartners()
+    Service->>SAP: GET /BusinessPartners
+    SAP-->>Service: Business Partners array
+    Service->>Service: Detect changes (name, status)
+    Service->>DB: Chunked upserts (sap_business_partners)
+    
+    alt Auto-sync enabled
+        Service->>AutoSync: syncAll()
+        AutoSync->>DB: Query Business Partners (customers/suppliers)
+        AutoSync->>CustomerDB: Create/update customers/vendors
+    end
+    
+    Service-->>Controller: Sync results
+    Controller-->>UI: Success/Error response
+```
 
 ## Architecture Diagram
 

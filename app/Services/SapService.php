@@ -188,6 +188,11 @@ class SapService
         return $this->fetchAll('ChartOfAccounts');
     }
 
+    public function getBusinessPartners(): array
+    {
+        return $this->fetchAll('BusinessPartners');
+    }
+
     protected function fetchAll(string $endpoint, array $query = [], int $pageSize = 100): array
     {
         $this->ensureSession();

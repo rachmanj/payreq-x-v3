@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SapAccount;
+use App\Models\SapBusinessPartner;
 use App\Models\SapCostCenter;
 use App\Models\SapProject;
 use Carbon\Carbon;
@@ -80,12 +81,55 @@ class SapMasterDataSyncService
         );
     }
 
+    public function syncBusinessPartners(): array
+    {
+        $records = $this->sapService->getBusinessPartners();
+
+        return $this->upsertRecords(
+            SapBusinessPartner::class,
+            $records,
+            function (array $record) {
+                $existing = SapBusinessPartner::where('code', $record['CardCode'] ?? null)->first();
+                
+                $payload = [
+                    'code' => $record['CardCode'] ?? null,
+                    'name' => $record['CardName'] ?? null,
+                    'type' => $record['CardType'] ?? null,
+                    'active' => ($record['Active'] ?? 'tYES') !== 'tNO',
+                    'vat_liable' => ($record['VatLiable'] ?? 'tYES') !== 'tNO',
+                    'federal_tax_id' => $record['FederalTaxID'] ?? null,
+                    'phone' => $record['Phone1'] ?? null,
+                    'email' => $record['Email'] ?? null,
+                    'address' => $record['Address'] ?? null,
+                    'credit_limit' => $this->toDecimal($record['CreditLimit'] ?? null),
+                    'balance' => $this->toDecimal($record['Balance'] ?? null),
+                    'metadata' => $record,
+                ];
+
+                if ($existing) {
+                    if ($existing->name !== $payload['name']) {
+                        $payload['previous_name'] = $existing->name;
+                        $payload['name_changed_at'] = Carbon::now();
+                    }
+                    
+                    if ($existing->active !== $payload['active']) {
+                        $payload['previous_active'] = $existing->active;
+                        $payload['status_changed_at'] = Carbon::now();
+                    }
+                }
+
+                return $payload;
+            }
+        );
+    }
+
     public function syncAll(): array
     {
         return [
             'projects' => $this->syncProjects(),
             'cost_centers' => $this->syncCostCenters(),
             'accounts' => $this->syncAccounts(),
+            'business_partners' => $this->syncBusinessPartners(),
         ];
     }
 
@@ -95,7 +139,7 @@ class SapMasterDataSyncService
         $errors = [];
 
         collect($records)
-            ->filter(fn ($record) => filled(data_get($record, 'Code')) || filled(data_get($record, 'CenterCode')))
+            ->filter(fn ($record) => filled(data_get($record, 'Code')) || filled(data_get($record, 'CenterCode')) || filled(data_get($record, 'CardCode')))
             ->chunk(100)
             ->each(function (Collection $chunk) use ($modelClass, $map, &$synced, &$errors) {
                 DB::beginTransaction();
@@ -136,6 +180,19 @@ class SapMasterDataSyncService
 
         try {
             return Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function toDecimal($value): ?float
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        try {
+            return (float) $value;
         } catch (\Throwable $e) {
             return null;
         }

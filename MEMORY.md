@@ -207,6 +207,44 @@
 
 ---
 
+### [024] SAP Business Partners Sync with Advanced Features (2026-01-08) ✅ COMPLETE
+
+**Challenge**: Business Partners (Customers, Suppliers, Leads) master data was maintained manually in the `customers` table, causing data drift and missing critical information like credit limits, VAT status, and contact details. Faktur creation lacked credit limit validation, and there was no unified UI for syncing all SAP master data.
+
+**Solution**: Extended `SapMasterDataSyncService` with `syncBusinessPartners()` method to sync Business Partners from SAP B1 Service Layer (`/BusinessPartners` endpoint) into `sap_business_partners` table. Implemented change detection tracking (name changes, status changes) with audit trail fields. Created `CustomerAutoSyncService` to automatically sync Customers and Vendors from Business Partners. Added credit limit validation in `FakturController` to prevent invoice creation when credit limit exceeded. Built unified SAP Master Data Sync UI (`/admin/sap-master-data-sync`) allowing admins to sync all master data types (Projects, Cost Centers, Accounts, Business Partners) from one page. Enhanced `BusinessPartnerController` with statistics, change detection, and customer sync endpoints. Integrated Business Partners into `sap:sync-master-data` command as default sync target.
+
+**Key Learning**: Business Partners data is critical for financial operations (credit management, VAT compliance, contact information). Change tracking provides audit trail for compliance and helps identify data drift. Auto-syncing to `customers` table maintains backward compatibility while leveraging rich SAP data. Credit limit validation prevents financial risks proactively. Unified sync UI improves admin experience and reduces manual command-line operations. Change detection service enables proactive monitoring of master data changes without requiring manual comparisons.
+
+**Files Created**:
+- `app/Models/SapBusinessPartner.php` - Business Partner model with type constants and helper methods
+- `database/migrations/2026_01_08_000857_create_sap_business_partners_table.php` - Main Business Partners table
+- `database/migrations/2026_01_08_002446_add_change_tracking_to_sap_business_partners_table.php` - Change tracking fields
+- `app/Services/CustomerAutoSyncService.php` - Auto-sync Customers/Vendors from Business Partners
+- `app/Services/BusinessPartnerChangeDetectionService.php` - Change detection and statistics
+- `app/Http/Controllers/Admin/BusinessPartnerController.php` - Business Partners admin controller
+- `app/Http/Controllers/Admin/SapMasterDataSyncController.php` - Unified sync controller
+- `resources/views/admin/business-partners/index.blade.php` - Business Partners admin view
+- `resources/views/admin/sap-master-data-sync/index.blade.php` - Unified sync UI
+
+**Files Modified**:
+- `app/Services/SapService.php` - Added `getBusinessPartners()` method
+- `app/Services/SapMasterDataSyncService.php` - Added `syncBusinessPartners()` with change detection
+- `app/Console/Commands/SyncSapMasterData.php` - Added `--business-partners` option
+- `app/Http/Controllers/UserPayreq/FakturController.php` - Added credit limit validation
+- `app/Models/Customer.php` - Added `sapBusinessPartner()` relationship
+- `routes/admin.php` - Added Business Partners and unified sync routes
+- `resources/views/templates/partials/sidebar.blade.php` - Added menu items
+
+**Testing Results**:
+- Successfully synced 2,366 Business Partners from SAP B1
+- Credit limit validation working correctly in Faktur creation
+- Customer/Vendor auto-sync functional
+- Unified sync UI allows syncing all master data types
+- Change detection tracks name and status changes
+- Statistics endpoint provides comprehensive Business Partner analytics
+
+---
+
 ### [023] SAP Master Data Sync Foundation (2025-11-20) ✅ COMPLETE
 
 **Challenge**: Verification journals reference SAP Project, Cost Center, and GL Account codes maintained manually, leading to drift between ERP and local system and submission failures when codes are missing or inactive in SAP.

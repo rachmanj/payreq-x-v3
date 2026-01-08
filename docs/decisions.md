@@ -1742,3 +1742,102 @@ php artisan exchange-rates:update --no-expand --force
 ### Review Date
 
 2025-12-05 (2 months from implementation)
+
+---
+
+## ADR-015: SAP Business Partners Sync with Advanced Features - 2026-01-08
+
+**Context**: Business Partners (Customers, Suppliers, Leads) master data was maintained manually in the `customers` table, causing data drift and missing critical information like credit limits, VAT status, and contact details. Faktur creation lacked credit limit validation, and administrators had to use command-line tools to sync SAP master data.
+
+**Options Considered**:
+
+1. **Option A**: Continue manual maintenance of Business Partners data
+   - ✅ Pros: No code changes required, maintains current workflow
+   - ❌ Cons: Data drift, missing critical information, manual errors, no credit limit validation
+
+2. **Option B**: Sync Business Partners only, no advanced features
+   - ✅ Pros: Simpler implementation, addresses core sync need
+   - ❌ Cons: Misses opportunity for change tracking, credit validation, unified UI
+
+3. **Option C**: Complete sync system with advanced features (Chosen)
+   - ✅ Pros: Complete solution with change tracking, credit validation, unified UI, auto-sync to customers table
+   - ❌ Cons: More complex implementation, additional database fields
+
+**Decision**: Implement comprehensive SAP Business Partners sync with advanced features including change detection, credit limit validation, unified sync UI, and automatic customer/vendor synchronization.
+
+**Rationale**:
+
+- Business Partners data is critical for financial operations (credit management, VAT compliance, contact information)
+- Change tracking provides audit trail for compliance and helps identify data drift
+- Credit limit validation prevents financial risks proactively
+- Unified sync UI improves admin experience and reduces manual command-line operations
+- Auto-syncing to `customers` table maintains backward compatibility while leveraging rich SAP data
+- Change detection service enables proactive monitoring of master data changes
+
+**Implementation**:
+
+#### Database Schema
+
+- Created `sap_business_partners` table with comprehensive fields (code, name, type, active, phone, email, address, vat_liable, federal_tax_id, credit_limit, balance, metadata, last_synced_at)
+- Added change tracking fields (previous_name, previous_active, name_changed_at, status_changed_at)
+- Indexes on code (unique), type, active, and last_synced_at for performance
+
+#### Services & Controllers
+
+- **SapService**: Added `getBusinessPartners()` method to fetch from SAP B1 Service Layer
+- **SapMasterDataSyncService**: Extended with `syncBusinessPartners()` method with chunked upserts, change detection, and transaction safety
+- **CustomerAutoSyncService**: Auto-syncs Customers and Vendors from Business Partners
+- **BusinessPartnerChangeDetectionService**: Tracks changes and provides statistics
+- **BusinessPartnerController**: Admin UI with DataTable, filtering, statistics, and sync functionality
+- **SapMasterDataSyncController**: Unified UI for syncing all master data types
+
+#### Integration Features
+
+- Credit limit validation in `FakturController::store()` prevents invoice creation when credit exceeded
+- `Customer` model relationship to `SapBusinessPartner` via code
+- Unified sync UI at `/admin/sap-master-data-sync` for all master data types
+- Statistics endpoints for monitoring and reporting
+- Change detection with audit trail
+
+#### User Interface
+
+- Business Partners admin page with DataTable, type/status filters, and sync button
+- Unified master data sync page with individual and bulk sync options
+- Sidebar menu items for Business Partners and Master Data Sync
+- Real-time sync progress indicators and toastr notifications
+
+**Consequences**:
+
+✅ **Positive**:
+
+- Complete Business Partners data sync from SAP B1 (2,366+ records successfully synced)
+- Proactive credit limit validation prevents financial risks
+- Change tracking provides audit trail for compliance
+- Unified sync UI improves admin experience
+- Auto-sync maintains backward compatibility with existing customers table
+- Statistics and change detection enable proactive monitoring
+
+❌ **Negative**:
+
+- Additional database storage for change tracking fields
+- More complex sync logic requires maintenance
+- Initial sync time for large datasets (2,366+ records)
+
+**Files Created/Modified**:
+
+- `app/Models/SapBusinessPartner.php` - Business Partner model
+- `database/migrations/2026_01_08_000857_create_sap_business_partners_table.php`
+- `database/migrations/2026_01_08_002446_add_change_tracking_to_sap_business_partners_table.php`
+- `app/Services/CustomerAutoSyncService.php`
+- `app/Services/BusinessPartnerChangeDetectionService.php`
+- `app/Http/Controllers/Admin/BusinessPartnerController.php`
+- `app/Http/Controllers/Admin/SapMasterDataSyncController.php`
+- `app/Http/Controllers/UserPayreq/FakturController.php` (credit validation)
+- `resources/views/admin/business-partners/index.blade.php`
+- `resources/views/admin/sap-master-data-sync/index.blade.php`
+- `routes/admin.php` (new routes)
+- `resources/views/templates/partials/sidebar.blade.php` (menu items)
+
+**Review Date**: 2026-04-08 (3 months from implementation)
+
+---

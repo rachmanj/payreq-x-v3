@@ -26,6 +26,24 @@ class FakturController extends Controller
             'dpp' => 'required',
         ]);
 
+        $customer = Customer::findOrFail($validatedData['customer_id']);
+        
+        if ($customer->code) {
+            $sapBP = \App\Models\SapBusinessPartner::where('code', $customer->code)->first();
+            
+            if ($sapBP && $sapBP->credit_limit !== null && $sapBP->credit_limit > 0) {
+                $invoiceAmount = (float) $validatedData['dpp'];
+                $currentBalance = $sapBP->balance ?? 0;
+                $availableCredit = $sapBP->credit_limit - $currentBalance;
+                
+                if ($invoiceAmount > $availableCredit) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', "Credit limit exceeded! Available credit: " . number_format($availableCredit, 2) . ", Invoice amount: " . number_format($invoiceAmount, 2));
+                }
+            }
+        }
+
         $validatedData['remarks'] = $request->remarks;
         $validatedData['created_by'] = auth()->user()->id;
         $validatedData['submit_at'] = now();

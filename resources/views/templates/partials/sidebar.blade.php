@@ -570,6 +570,22 @@
                                         </a>
                                     </li>
                                 @endcan
+                                @can('akses_admin')
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.business-partners.index') }}"
+                                            class="nav-link {{ request()->routeIs('admin.business-partners.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Business Partners</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.sap-master-data-sync.index') }}"
+                                            class="nav-link {{ request()->routeIs('admin.sap-master-data-sync.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>SAP Master Data Sync</p>
+                                        </a>
+                                    </li>
+                                @endcan
                             @endcan
                             <li class="nav-item">
                                 <a href="{{ route('announcements.index') }}"
