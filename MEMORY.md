@@ -360,6 +360,39 @@
 
 ---
 
+### [030] VAT Sales Page Improvements - Incomplete/Complete Tab Filtering (2026-01-XX) ✅ COMPLETE
+
+**Challenge**: The VAT Sales pages used `doc_num` and `faktur_no` fields to determine incomplete vs complete status, but these fields don't accurately reflect SAP B1 submission status. Documents could have `doc_num` set manually without being posted to SAP B1, causing confusion. Users needed clear separation between documents not yet posted to SAP (with Submit button) and documents already posted (showing SAP document numbers). The Complete tab showed generic "DocNum" column instead of specific SAP AR Invoice and Journal Entry numbers.
+
+**Solution**: Changed filtering logic to use `sap_ar_doc_num` field (SAP B1 AR Invoice document number) as the source of truth for submission status. Incomplete tab now shows documents where `sap_ar_doc_num IS NULL` with "Submit to SAP" button. Complete tab shows documents where `sap_ar_doc_num IS NOT NULL` with "AR Invoice DocNum" and "JE Num" columns replacing the generic "DocNum" column. Updated DataTable response to include `sap_ar_doc_num` and `sap_je_num` columns. Modified action views to show Submit button only in incomplete tab, and Submitted badge in complete tab. Documents automatically move to Complete tab after successful SAP submission because `sap_ar_doc_num` is set.
+
+**Key Learning**: Using SAP submission tracking fields (`sap_ar_doc_num`) as the source of truth provides accurate status reflection. Separating incomplete (not posted) from complete (posted) documents improves workflow clarity. Displaying specific SAP document numbers (AR Invoice DocNum, JE Num) instead of generic fields provides better traceability. Action buttons should reflect document status - Submit button only for incomplete documents, Submitted badge for complete documents. Automatic tab movement after submission improves user experience by immediately showing updated status.
+
+**Implementation Details**:
+
+- **Controller Changes** (`app/Http/Controllers/Accounting/VatController.php`):
+  - Updated `data()` method filtering: Incomplete uses `whereNull('sap_ar_doc_num')`, Complete uses `whereNotNull('sap_ar_doc_num')`
+  - Added `sap_ar_doc_num` and `sap_je_num` columns to DataTable response
+  - Removed dependency on `doc_num` and `faktur_no` fields for status determination
+
+- **View Changes**:
+  - **Incomplete Tab** (`resources/views/accounting/vat/ar/incomplete.blade.php`): No changes needed (already shows correct columns)
+  - **Complete Tab** (`resources/views/accounting/vat/ar/complete.blade.php`): 
+    - Removed "DocNum" column from table header
+    - Added "AR Invoice DocNum" and "JE Num" columns
+    - Updated DataTable columns configuration to use `sap_ar_doc_num` and `sap_je_num`
+  - **Incomplete Action** (`resources/views/accounting/vat/ar/action.blade.php`): Added "Submit to SAP" button (links to SAP preview page)
+  - **Complete Action** (`resources/views/accounting/vat/ar/action_complete.blade.php`): Removed "Submit to SAP" button, shows "Submitted" badge instead
+
+**Impact**: Users now have clear workflow separation between documents not yet posted to SAP B1 (Incomplete tab with Submit button) and documents already posted (Complete tab with SAP document numbers). The filtering accurately reflects SAP submission status, eliminating confusion from manually set `doc_num` values. Displaying specific SAP document numbers (AR Invoice DocNum, JE Num) provides better traceability and audit trail.
+
+**Related Documentation**: 
+- `docs/DEPLOYMENT_VAT_SALES_PAGE_IMPROVEMENTS.md` - Complete deployment manual
+- `docs/DEPLOYMENT_CHECKLIST_VAT_SALES.md` - Deployment checklist
+- `docs/architecture.md` - Updated with SAP B1 AR Invoice submission flow
+
+---
+
 ### [029] Cashier Incomings DataTables Bug Fix (2025-12-29) ✅ COMPLETE
 
 **Challenge**: The `/cashier/incomings` route DataTables was failing with "Attempt to read property 'requestor' on null" error, preventing the incoming payments list from loading.
@@ -650,7 +683,7 @@
 -   **Refresh Interval**: Maintained 5-minute update cycle for real-time data
 
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2025-10-22
+**Last Updated**: 2026-01-XX
 
 ## Memory Maintenance Guidelines
 

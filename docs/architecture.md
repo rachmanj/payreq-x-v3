@@ -97,7 +97,7 @@ The Accounting One system is a comprehensive financial management application bu
 
     - **DDS API**: Document Distribution System for invoice management
     - **SAP Integration**: General ledger synchronization and journal entry submission
-    - **SAP B1 Service Layer**: Direct programmatic submission of verification journals to SAP B1 Journal Entry module via REST API with cookie-based session management, automatic error handling, and comprehensive audit logging
+    - **SAP B1 Service Layer**: Direct programmatic submission of verification journals to SAP B1 Journal Entry module via REST API with cookie-based session management, automatic error handling, and comprehensive audit logging. Also supports AR Invoice and Journal Entry creation for VAT Sales fakturs with Withholding Tax (WTax) support via `WithholdingTaxDataCollection` structure.
     - **SAP Master Data Sync**: `SapMasterDataSyncService` + `sap:sync-master-data` command (scheduled daily 02:00) pulls Projects, Cost Centers, GL Accounts, and Business Partners from SAP B1 into `sap_projects`, `sap_cost_centers`, `sap_accounts`, `sap_business_partners` tables for validation, autocomplete, and audit trails. Includes unified sync UI (`/admin/sap-master-data-sync`), customer auto-sync, change detection, credit limit validation, and comprehensive reporting.
     - **SAP Bridge Account Statements**: Cashier SAP Transactions page fetches GL statement data via `/api/account-statements` using API key headers, translating SAP payloads (opening balance, running balances, summaries) directly into the UI.
     - **LOT Service**: Official travel claim management
@@ -189,6 +189,85 @@ sequenceDiagram
 - Environment: `SAP_SERVER_URL`, `SAP_DB_NAME`, `SAP_USER`, `SAP_PASSWORD`
 - Config mapping: `config/services.php['sap']`
 - SAP B1 Settings: General Settings → Cash Flow tab → "Assignment in Transactions with All Relevant to Cash Flow" set to "Warning Only" (allows posting without mandatory cash flow assignment)
+
+### SAP B1 AR Invoice Submission Flow
+
+The VAT Sales module enables direct submission of AR Invoices and Journal Entries to SAP B1 via Service Layer REST API. This feature integrates with the VAT Sales page improvements to provide a complete workflow from faktur creation to SAP B1 posting.
+
+**Data Flow**:
+
+- **Incomplete Tab** (`/accounting/vat?page=sales&status=incomplete`): Shows documents where `sap_ar_doc_num IS NULL` (not yet posted to SAP B1). Action buttons include "Submit to SAP" button that links to SAP preview page.
+- **SAP Preview Page** (`/accounting/vat/fakturs/{id}/sap-preview`): Displays AR Invoice and Journal Entry preview with editable fields (revenue account, project, JE dates). User reviews and confirms submission.
+- **Submission Process**: `VatController::submitToSap()` validates permissions (`submit-sap-ar-invoice`), builds AR Invoice payload via `SapArInvoiceBuilder`, creates AR Invoice in SAP B1, then builds and creates Journal Entry via `SapArInvoiceJeBuilder`.
+- **Success**: Updates `fakturs` table with `sap_ar_doc_num`, `sap_je_num`, `sap_submission_status='completed'`, creates `SapSubmissionLog` entries for both documents.
+- **Complete Tab** (`/accounting/vat?page=sales&status=complete`): Shows documents where `sap_ar_doc_num IS NOT NULL` (already posted). Displays AR Invoice DocNum and JE Num columns instead of old DocNum column.
+
+```mermaid
+sequenceDiagram
+    participant UI as VAT Sales<br/>Incomplete Tab
+    participant Preview as SAP Preview<br/>Page
+    participant Controller as VatController
+    participant ARBuilder as SapArInvoiceBuilder
+    participant JEBuilder as SapArInvoiceJeBuilder
+    participant Service as SapService
+    participant SAP as SAP B1<br/>Service Layer
+    participant DB as Database
+
+    UI->>Preview: Click "Submit to SAP"<br/>(faktur_id)
+    Preview->>Controller: GET /sap-preview<br/>{faktur_id}
+    Controller->>ARBuilder: getPreviewData()
+    Controller->>JEBuilder: getPreviewData()
+    Controller->>Preview: Display preview
+    Preview->>Controller: POST /submit-to-sap<br/>{faktur_id, project, je_dates}
+    Controller->>DB: Begin Transaction
+    Controller->>ARBuilder: build() AR Invoice payload
+    ARBuilder->>ARBuilder: Calculate WTax (2% of DPP)<br/>Build WithholdingTaxDataCollection
+    ARBuilder-->>Controller: Return AR Invoice JSON
+    Controller->>Service: createArInvoice(payload)
+    Service->>SAP: POST /Invoices<br/>(with session cookies)
+    SAP-->>Service: 201 Created<br/>{DocNum, DocEntry}
+    Service-->>Controller: Return AR DocNum
+    Controller->>DB: Update fakturs<br/>(sap_ar_doc_num, sap_ar_doc_entry)
+    Controller->>JEBuilder: build() Journal Entry payload
+    JEBuilder-->>Controller: Return JE JSON
+    Controller->>Service: createJournalEntry(payload)
+    Service->>SAP: POST /JournalEntries<br/>(with session cookies)
+    SAP-->>Service: 201 Created<br/>{Number, DocEntry}
+    Service-->>Controller: Return JE Num
+    Controller->>DB: Update fakturs<br/>(sap_je_num, sap_je_doc_entry,<br/>sap_submission_status='completed')
+    Controller->>DB: Create SapSubmissionLog<br/>(AR Invoice: success)
+    Controller->>DB: Create SapSubmissionLog<br/>(JE: success)
+    Controller->>DB: Commit Transaction
+    Controller-->>Preview: Success response<br/>{ar_doc_num, je_num}
+    Preview->>UI: Redirect to Complete Tab
+```
+
+**Key Components**:
+
+- **SapArInvoiceBuilder** (`app/Services/SapArInvoiceBuilder.php`): Constructs AR Invoice payloads with DPP amount, VAT calculation (11% handled by SAP), WTax calculation (2% of DPP), and `WithholdingTaxDataCollection` structure. Uses AR Account `491` (Perantara Pendapatan Kontrak) and supports custom item codes.
+- **SapArInvoiceJeBuilder** (`app/Services/SapArInvoiceJeBuilder.php`): Constructs Journal Entry payloads with AR Account debit, Revenue Account credit, PPN and WTax lines. Supports custom JE posting dates (defaults to previous end of month).
+- **VatController** (`app/Http/Controllers/Accounting/VatController.php`): Handles VAT Sales page data filtering (`sap_ar_doc_num` based), SAP preview, and submission. Updated `data()` method filters incomplete/complete tabs based on SAP submission status.
+- **Database Schema**: `fakturs` table tracks SAP submission (`sap_ar_doc_num`, `sap_ar_doc_entry`, `sap_je_num`, `sap_je_doc_entry`, `sap_submission_status`, `sap_submission_attempts`, `sap_submission_error`, `sap_submitted_at`, `sap_submitted_by`, `je_posting_date`, `je_tax_date`, `je_due_date`, `revenue_account_code`, `project`). `sap_submission_logs` table stores audit trail for both AR Invoice and Journal Entry submissions.
+
+**SAP B1 Service Layer API Reference**:
+
+- **AR Invoice Endpoint**: `POST /Invoices`
+- **Journal Entry Endpoint**: `POST /JournalEntries`
+- **Withholding Tax Structure**: `WithholdingTaxDataCollection` array with `WTCode` and `WTAmount` at document level. Line level requires `WTaxCode` and `WTaxLiable='Y'`.
+- **Required Fields**: `CardCode`, `DocDate`, `DocDueDate`, `TaxDate`, `DocCurrency`, `DocRate`, `DocumentLines` (with `AccountCode`, `LineTotal`, `WTaxCode`, `WTaxLiable`), `WithholdingTaxDataCollection` (for WTax display).
+- **API Documentation**: Refer to SAP B1 Service Layer API documentation for complete field specifications and data structures. Key references: AR Invoice document structure, Journal Entry document structure, Withholding Tax data collection format.
+
+**Configuration**:
+
+- Environment: `SAP_AR_INVOICE_DEFAULT_AR_ACCOUNT=491`, `SAP_AR_INVOICE_DEFAULT_REVENUE_ACCOUNT=41101`, `SAP_AR_INVOICE_DEFAULT_WTAX_CODE=1019`, `SAP_AR_INVOICE_WTAX_PERCENTAGE=2`
+- Config mapping: `config/services.php['sap']['ar_invoice']`
+- SAP B1 Requirements: WTax code must be assigned to business partner in SAP B1 master data
+
+**View Updates**:
+
+- **Incomplete Tab** (`resources/views/accounting/vat/ar/incomplete.blade.php`): Shows documents not yet posted to SAP. Action buttons include "Submit to SAP" button.
+- **Complete Tab** (`resources/views/accounting/vat/ar/complete.blade.php`): Shows documents already posted. Displays "AR Invoice DocNum" and "JE Num" columns instead of "DocNum".
+- **Action Views**: `resources/views/accounting/vat/ar/action.blade.php` (incomplete - with Submit button), `resources/views/accounting/vat/ar/action_complete.blade.php` (complete - without Submit button)
 
 ### Verification Journal Detail Editing
 

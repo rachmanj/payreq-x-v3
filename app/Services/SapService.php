@@ -193,6 +193,50 @@ class SapService
         return $this->fetchAll('BusinessPartners');
     }
 
+    public function getItems(int $limit = 100): array
+    {
+        try {
+            $this->ensureSession();
+            
+            $response = $this->handleSessionExpiration(function () use ($limit) {
+                return $this->client->get('Items', [
+                    'query' => [
+                        '$select' => 'ItemCode,ItemName,ItemType',
+                        '$top' => $limit,
+                    ],
+                ]);
+            });
+
+            $body = json_decode($response->getBody()->getContents(), true);
+            return $body['value'] ?? (is_array($body) ? $body : []);
+        } catch (\Exception $e) {
+            Log::warning('Failed to query SAP B1 for items', [
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
+    public function getServiceItems(): array
+    {
+        try {
+            $items = $this->getItems(100);
+            
+            // Filter for service items (ItemType = 'S') in PHP
+            $serviceItems = array_filter($items, function ($item) {
+                return isset($item['ItemType']) && $item['ItemType'] === 'S';
+            });
+
+            return array_values($serviceItems);
+        } catch (\Exception $e) {
+            // Log the error but don't throw - allow fallback to configured default
+            Log::warning('Failed to query SAP B1 for service items', [
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
     protected function fetchAll(string $endpoint, array $query = [], int $pageSize = 100): array
     {
         $this->ensureSession();
@@ -224,6 +268,73 @@ class SapService
         } while ($fetched === $pageSize);
 
         return $results;
+    }
+
+    public function createArInvoice(array $invoiceData): array
+    {
+        $this->ensureSession();
+
+        return $this->handleSessionExpiration(function () use ($invoiceData) {
+            try {
+                Log::debug('SAP B1 AR Invoice Request', ['payload' => $invoiceData]);
+
+                $response = $this->client->post('Invoices', [
+                    'json' => $invoiceData,
+                ]);
+
+                $statusCode = $response->getStatusCode();
+                $body = json_decode($response->getBody()->getContents(), true);
+
+                if ($statusCode === 201) {
+                    Log::info('SAP B1 AR Invoice created successfully', [
+                        'doc_entry' => $body['DocEntry'] ?? null,
+                        'doc_num' => $body['DocNum'] ?? null,
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'doc_entry' => $body['DocEntry'] ?? null,
+                        'doc_num' => $this->extractArInvoiceNumber($body),
+                        'data' => $body,
+                    ];
+                }
+
+                $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
+                throw new \Exception('Failed to create AR Invoice. Status: ' . $statusCode . '. Error: ' . $errorMessage);
+            } catch (RequestException $e) {
+                $errorMessage = 'Unknown error';
+                if ($e->getResponse()) {
+                    $errorBody = json_decode($e->getResponse()->getBody()->getContents(), true);
+                    if (isset($errorBody['error']['message']['value'])) {
+                        $errorMessage = $errorBody['error']['message']['value'];
+                    } elseif (isset($errorBody['error']['message'])) {
+                        $errorMessage = is_array($errorBody['error']['message'])
+                            ? ($errorBody['error']['message']['value'] ?? json_encode($errorBody['error']['message']))
+                            : $errorBody['error']['message'];
+                    }
+                }
+                throw new \Exception('SAP B1 Error: ' . $errorMessage, 0, $e);
+            }
+        });
+    }
+
+    protected function extractArInvoiceNumber(array $response): ?string
+    {
+        // Priority: DocNum is the SAP Document Number
+        if (isset($response['DocNum'])) {
+            return (string) $response['DocNum'];
+        }
+
+        if (isset($response['Invoice']['DocNum'])) {
+            return (string) $response['Invoice']['DocNum'];
+        }
+
+        // Fallback to DocEntry
+        if (isset($response['DocEntry'])) {
+            return (string) $response['DocEntry'];
+        }
+
+        return null;
     }
 
     protected function extractJournalNumber(array $response): ?string

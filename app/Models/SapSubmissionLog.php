@@ -11,11 +11,17 @@ class SapSubmissionLog extends Model
 
     protected $fillable = [
         'verification_journal_id',
+        'faktur_id',
+        'document_type',
         'user_id',
+        'submitted_by',
         'status',
         'error_message',
+        'sap_error',
         'sap_response',
         'sap_journal_number',
+        'sap_doc_num',
+        'sap_doc_entry',
         'attempt_number',
     ];
 
@@ -28,8 +34,18 @@ class SapSubmissionLog extends Model
         return $this->belongsTo(VerificationJournal::class);
     }
 
+    public function faktur()
+    {
+        return $this->belongsTo(Faktur::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function submittedBy()
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
     }
 }

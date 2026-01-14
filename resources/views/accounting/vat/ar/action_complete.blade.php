@@ -8,6 +8,12 @@
             class="fas fa-file-pdf"></i></a>
 @endif
 
+@if($model->sap_ar_doc_num)
+    <span class="badge badge-success">
+        <i class="fas fa-check"></i> Submitted
+    </span>
+@endif
+
 <!-- Modal -->
 <div class="modal fade" id="updateModal-{{ $model->id }}" tabindex="-1" role="dialog"
     aria-labelledby="updateModalLabel" aria-hidden="true">

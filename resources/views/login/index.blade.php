@@ -161,7 +161,7 @@
 <body class="hold-transition login-page">
     <div class="login-box">
         <div class="login-logo">
-            <a href="#"><b>Accounting</b>One<small>v.4.0</small></a>
+            <a href="#"><b>Accounting</b>One<small>v.4.1</small></a>
         </div>
         <!-- /.login-logo -->
         <div class="card">
@@ -235,7 +235,7 @@
         <div class="card whats-new-card card-outline mt-3">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-star mr-2"></i>What's New in v.4.0
+                    <i class="fas fa-star mr-2"></i>What's New in v.4.1
                 </h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool text-white" data-toggle="collapse"
@@ -246,6 +246,15 @@
             </div>
             <div id="whatsNewCollapse" class="collapse" aria-labelledby="whatsNewHeading">
                 <div class="card-body">
+                    <div class="feature-item border-primary">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-file-invoice-dollar feature-icon text-primary"></i>
+                            <div>
+                                <strong class="d-block mb-1">VAT Sales Page Improvements</strong>
+                                <small class="text-muted">Enhanced VAT Sales pages with improved workflow. Incomplete tab now shows documents not yet posted to SAP B1 with "Submit to SAP" button. Complete tab displays AR Invoice DocNum and Journal Entry numbers for easy tracking. Documents automatically move to Complete tab after successful SAP submission.</small>
+                            </div>
+                        </div>
+                    </div>
                     <div class="feature-item border-success">
                         <div class="d-flex align-items-start">
                             <i class="fas fa-users feature-icon text-success"></i>

@@ -28,7 +28,8 @@
                                 <th>Customer</th>
                                 <th>Invoice</th>
                                 <th>Faktur</th>
-                                <th>DocNum</th>
+                                <th>AR Invoice DocNum</th>
+                                <th>JE Num</th>
                                 <th>IDR</th>
                                 <td></td>
                             </tr>
@@ -70,7 +71,7 @@
 
     <script>
         $(function() {
-            $("#sales-complete").DataTable({
+            const table = $("#sales-complete").DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
@@ -95,7 +96,10 @@
                         data: 'faktur'
                     },
                     {
-                        data: 'doc_num'
+                        data: 'sap_ar_doc_num'
+                    },
+                    {
+                        data: 'sap_je_num'
                     },
                     {
                         data: 'amount'
@@ -107,11 +111,101 @@
                     }
                 ],
                 fixedHeader: true,
-                // columnDefs: [{
-                //     "targets": [5],
-                //     "className": "text-right"
-                // }]
-            })
+            });
+
+            // Handle Submit to SAP button click
+            $(document).on('click', '.submit-to-sap-btn', function() {
+                const fakturId = $(this).data('faktur-id');
+                const fakturNo = $(this).data('faktur-no');
+                const invoiceNo = $(this).data('invoice-no');
+                const dpp = $(this).data('dpp');
+                const btn = $(this);
+
+                Swal.fire({
+                    title: 'Submit to SAP B1?',
+                    html: `
+                        <div class="text-left">
+                            <p><strong>Invoice No:</strong> ${invoiceNo || fakturNo}</p>
+                            <p><strong>Faktur No:</strong> ${fakturNo || '-'}</p>
+                            <p><strong>DPP Amount:</strong> ${dpp ? new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(dpp) : '-'}</p>
+                            <p class="mt-3">This will create:</p>
+                            <ul>
+                                <li>AR Invoice in SAP B1</li>
+                                <li>Journal Entry (Revenue + AR)</li>
+                            </ul>
+                            <p class="text-warning mt-3"><i class="fas fa-exclamation-triangle"></i> This action cannot be undone.</p>
+                        </div>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, Submit',
+                    cancelButtonText: 'Cancel',
+                    showLoaderOnConfirm: true,
+                    preConfirm: () => {
+                        const url = `{{ route('accounting.vat.submit-to-sap', 0) }}`.replace(/\/fakturs\/0\//, `/fakturs/${fakturId}/`);
+                        return fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({})
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(data => {
+                                    throw new Error(data.message || 'Submission failed');
+                                });
+                            }
+                            return response.json();
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Request failed: ${error.message}`);
+                        });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (result.value.success) {
+                            Swal.fire({
+                                title: 'Success!',
+                                html: `
+                                    <p>AR Invoice and Journal Entry created successfully.</p>
+                                    <p><strong>AR Doc:</strong> ${result.value.ar_doc_num || '-'}</p>
+                                    <p><strong>JE Num:</strong> ${result.value.je_num || '-'}</p>
+                                `,
+                                icon: 'success',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                table.ajax.reload();
+                            });
+                        } else if (result.value.partial) {
+                            Swal.fire({
+                                title: 'Partial Success',
+                                html: `
+                                    <p>AR Invoice created successfully, but Journal Entry failed.</p>
+                                    <p><strong>AR Doc:</strong> ${result.value.ar_doc_num || '-'}</p>
+                                    <p class="text-danger mt-2"><strong>Error:</strong> ${result.value.message}</p>
+                                `,
+                                icon: 'warning',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                table.ajax.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: result.value.message || 'Submission failed',
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    }
+                });
+            });
         });
     </script>
 @endsection

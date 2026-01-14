@@ -113,6 +113,8 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/search/data', [VatController::class, 'search_data'])->name('search.data');
         Route::get('show/{faktur}', [VatController::class, 'show'])->name('show');
         Route::put('update/{faktur}', [VatController::class, 'update'])->name('update');
+        Route::get('/fakturs/{faktur}/sap-preview', [VatController::class, 'previewSapSubmission'])->name('sap-preview');
+        Route::post('/fakturs/{faktur}/submit-to-sap', [VatController::class, 'submitToSap'])->name('submit-to-sap');
     });
 
     // DELIVERY

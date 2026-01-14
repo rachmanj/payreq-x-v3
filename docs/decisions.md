@@ -123,6 +123,47 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ---
 
+### Decision: VAT Sales Page Filtering Based on SAP Submission Status - 2026-01-XX
+
+**Context**: The VAT Sales pages used `doc_num` and `faktur_no` fields to determine incomplete vs complete status, but these fields don't accurately reflect SAP B1 submission status. Documents could have `doc_num` set manually without being posted to SAP B1, causing confusion about which documents are actually submitted. Users needed clear separation between documents not yet posted to SAP (requiring submission) and documents already posted (showing SAP document numbers). The Complete tab showed generic "DocNum" column instead of specific SAP AR Invoice and Journal Entry numbers.
+
+**Options Considered**:
+
+1. **Keep Existing Filtering (doc_num/faktur_no)**
+   - ✅ Pros: No code changes, existing data structure maintained
+   - ❌ Cons: Inaccurate status reflection, manual doc_num can be set without SAP submission, confusion about submission status, generic DocNum column doesn't show SAP-specific numbers
+
+2. **Add New Status Field**
+   - ✅ Pros: Explicit status tracking, clear separation of concerns
+   - ❌ Cons: Requires migration, need to maintain status field separately, potential for status drift
+
+3. **Use SAP Submission Tracking Fields (Chosen)**
+   - ✅ Pros: Accurate status reflection (sap_ar_doc_num directly indicates SAP submission), single source of truth, automatic status update on submission, shows specific SAP document numbers
+   - ❌ Cons: Requires existing SAP submission infrastructure (already implemented)
+
+**Decision**: Change filtering logic to use `sap_ar_doc_num` field (SAP B1 AR Invoice document number) as the source of truth for incomplete vs complete status. Incomplete tab shows documents where `sap_ar_doc_num IS NULL` with "Submit to SAP" button. Complete tab shows documents where `sap_ar_doc_num IS NOT NULL` with "AR Invoice DocNum" and "JE Num" columns replacing generic "DocNum" column.
+
+**Rationale**:
+
+- `sap_ar_doc_num` is set automatically when AR Invoice is successfully created in SAP B1, providing accurate submission status
+- Single source of truth eliminates confusion from manually set `doc_num` values
+- Documents automatically move to Complete tab after successful submission (sap_ar_doc_num is set)
+- Displaying specific SAP document numbers (AR Invoice DocNum, JE Num) provides better traceability and audit trail
+- Action buttons reflect document status - Submit button only for incomplete documents, Submitted badge for complete documents
+- Clear workflow separation improves user experience and reduces errors
+
+**Implementation**:
+
+- Updated `VatController::data()` method: Changed filtering from `doc_num`/`faktur_no` to `sap_ar_doc_num` (NULL for incomplete, NOT NULL for complete)
+- Added `sap_ar_doc_num` and `sap_je_num` columns to DataTable response
+- Updated Complete tab view: Removed "DocNum" column, added "AR Invoice DocNum" and "JE Num" columns
+- Updated action views: Incomplete shows "Submit to SAP" button, Complete shows "Submitted" badge
+- No database changes required (sap_ar_doc_num field already exists from SAP AR Invoice integration)
+
+**Review Date**: 2026-07-XX (evaluate user feedback, assess workflow efficiency, consider additional status indicators or filtering options)
+
+---
+
 ### Decision: SweetAlert2 Confirmation Flow for SAP Sync Submissions - 2025-11-20
 
 **Context**: Phase 2 feedback required replacing browser-native confirmations with a consistent, informative dialog that reiterates posting implications before touching SAP. The existing mix of Bootstrap modals (single submission) and `window.confirm()` (bulk submission + cancel SAP info) led to uneven UX, no structured summary, and no way to show previous errors before re-submitting.

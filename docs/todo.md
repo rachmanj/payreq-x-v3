@@ -47,6 +47,17 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   [done] P1: VAT Sales Page Improvements - Incomplete/Complete Tab Filtering [app/Http/Controllers/Accounting/VatController.php, resources/views/accounting/vat/ar/incomplete.blade.php, resources/views/accounting/vat/ar/complete.blade.php, resources/views/accounting/vat/ar/action.blade.php, resources/views/accounting/vat/ar/action_complete.blade.php] (completed: 2026-01-XX)
+
+    -   Updated filtering logic to use `sap_ar_doc_num` instead of `doc_num`/`faktur_no` for determining incomplete vs complete status
+    -   Incomplete tab: Shows documents where `sap_ar_doc_num IS NULL` with "Submit to SAP" button in action column
+    -   Complete tab: Shows documents where `sap_ar_doc_num IS NOT NULL` with AR Invoice DocNum and JE Num columns (removed DocNum column)
+    -   Added `sap_ar_doc_num` and `sap_je_num` columns to DataTable response
+    -   Updated action views: Incomplete shows Submit button, Complete shows Submitted badge (no Submit button)
+    -   Documents automatically move to Complete tab after successful SAP submission
+    -   Files: `app/Http/Controllers/Accounting/VatController.php`, `resources/views/accounting/vat/ar/incomplete.blade.php`, `resources/views/accounting/vat/ar/complete.blade.php`, `resources/views/accounting/vat/ar/action.blade.php`, `resources/views/accounting/vat/ar/action_complete.blade.php`
+    -   Documentation: Updated `docs/architecture.md`, `docs/DEPLOYMENT_VAT_SALES_PAGE_IMPROVEMENTS.md`, `docs/DEPLOYMENT_CHECKLIST_VAT_SALES.md`, `MEMORY.md`, `docs/todo.md`
+
 -   [done] P1: Verification Journal Detail Editing Enhancement - All Rows Editable [app/Http/Controllers/Accounting/SapSyncController.php, resources/views/accounting/sap-sync/edit-vjdetail/index.blade.php, resources/views/accounting/sap-sync/edit-vjdetail/action.blade.php, routes/web.php] (completed: 2025-01-XX)
 
     -   Removed restriction preventing editing of credit entries (cash accounts) in verification journal details

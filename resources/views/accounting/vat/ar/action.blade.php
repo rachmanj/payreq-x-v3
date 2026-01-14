@@ -8,6 +8,13 @@
         <a href="{{ $model->attachment }}" class="btn btn-primary btn-xs" target="_blank" title="show bupot"><i
                 class="fas fa-file-pdf"></i></a>
     @endif
+    @if(empty($model->sap_ar_doc_num) && $model->faktur_no && $model->faktur_date)
+        <a href="{{ route('accounting.vat.sap-preview', $model->id) }}"
+           class="btn btn-success btn-xs"
+           title="Preview & Submit to SAP B1">
+            <i class="fas fa-paper-plane"></i> Submit to SAP
+        </a>
+    @endif
 </div>
 
 <!-- Modal -->
