@@ -46,8 +46,8 @@ class SapArInvoiceJeBuilder
         // Revenue account: selectable (41101 or 41201)
         $revenueAccountCode = $this->faktur->revenue_account_code ?? ($this->config['default_revenue_account'] ?? '41101');
 
-        // AR Account: fixed at 491 (Perantara Pendapatan Kontrak)
-        $arAccountCode = $this->config['default_ar_account'] ?? '491';
+        // AR Account: fixed at 11401039 (Piutang Usaha Belum Ditagih)
+        $arAccountCode = $this->config['default_ar_account'] ?? '11401039';
 
         // Use DPP amount only (not total with tax)
         $dppAmount = (float) $this->faktur->dpp;
@@ -77,7 +77,7 @@ class SapArInvoiceJeBuilder
                 ],
                 // Line 2: Debit AR
                 [
-                    'AccountCode' => $arAccountCode, // 491 - Perantara Pendapatan Kontrak (fixed)
+                    'AccountCode' => $arAccountCode, // 11401039 - Piutang Usaha Belum Ditagih (fixed)
                     'Debit' => $dppAmount,
                     'Credit' => 0.0,
                     'LineMemo' => "AR for Invoice: {$this->faktur->invoice_no}",
@@ -118,7 +118,7 @@ class SapArInvoiceJeBuilder
         $customer = $this->faktur->customer;
         $invoiceDate = Carbon::parse($this->faktur->invoice_date);
         $revenueAccountCode = $this->faktur->revenue_account_code ?? ($this->config['default_revenue_account'] ?? '41101');
-        $arAccountCode = $this->config['default_ar_account'] ?? '491';
+        $arAccountCode = $this->config['default_ar_account'] ?? '11401039';
         $dppAmount = (float) $this->faktur->dpp;
         $projectCode = $this->faktur->project ?? $customer->project;
         $departmentCode = $this->getDepartmentCode();

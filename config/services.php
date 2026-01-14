@@ -59,7 +59,7 @@ return [
         'ar_invoice' => [
             'default_payment_terms' => env('SAP_AR_INVOICE_DEFAULT_PAYMENT_TERMS', 15),
             'default_revenue_account' => env('SAP_AR_INVOICE_DEFAULT_REVENUE_ACCOUNT', '41101'),
-            'default_ar_account' => env('SAP_AR_INVOICE_DEFAULT_AR_ACCOUNT', '491'),
+            'default_ar_account' => env('SAP_AR_INVOICE_DEFAULT_AR_ACCOUNT', '11401039'),
             'default_item_code' => env('SAP_AR_INVOICE_DEFAULT_ITEM_CODE', 'SERVICE'),
             'default_department_code' => env('SAP_AR_INVOICE_DEFAULT_DEPARTMENT_CODE', '60'),
             'default_wtax_code' => env('SAP_AR_INVOICE_DEFAULT_WTAX_CODE', ''),

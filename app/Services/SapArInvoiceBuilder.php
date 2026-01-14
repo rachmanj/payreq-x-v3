@@ -97,8 +97,8 @@ class SapArInvoiceBuilder
 
     protected function buildDocumentLines(): array
     {
-        // Use AR Account (491 - Perantara Pendapatan Kontrak) instead of Revenue Account as per user requirement
-        $arAccountCode = $this->config['default_ar_account'] ?? '491';
+        // Use AR Account (11401039 - Piutang Usaha Belum Ditagih) instead of Revenue Account as per user requirement
+        $arAccountCode = $this->config['default_ar_account'] ?? '11401039';
 
         // Use passed itemCode, or fallback to configured default, or 'SERVICE'
         $itemCode = $this->itemCode ?? $this->config['default_item_code'] ?? 'SERVICE';
@@ -111,7 +111,7 @@ class SapArInvoiceBuilder
 
         $line = [
             'ItemCode' => $itemCode, // Required by SAP B1 even for G/L Account-based lines
-            'AccountCode' => $arAccountCode, // AR Account (491) - Perantara Pendapatan Kontrak
+            'AccountCode' => $arAccountCode, // AR Account (11401039) - Piutang Usaha Belum Ditagih
             'LineTotal' => $dppAmount, // Unit Price = DPP only (VAT and WTax will be calculated by SAP B1)
             'UseBaseUnits' => 'N', // Indicates G/L Account-based line (no units)
             // Department: Default to 60 (Production), fallback to customer default
@@ -171,7 +171,7 @@ class SapArInvoiceBuilder
 
         $wtaxAmount = $this->calculateWTaxAmount();
         $wtaxCode = $this->config['default_wtax_code'] ?? '';
-        $arAccountCode = $this->config['default_ar_account'] ?? '491'; // AR Invoice line uses AR account (491 - Perantara Pendapatan Kontrak)
+        $arAccountCode = $this->config['default_ar_account'] ?? '11401039'; // AR Invoice line uses AR account (11401039 - Piutang Usaha Belum Ditagih)
         $revenueAccountCode = $this->faktur->revenue_account_code ?? ($this->config['default_revenue_account'] ?? '41101'); // For JE reference
         $departmentCode = $customer->default_department_code ?? $this->config['default_department_code'] ?? '60';
         $projectCode = $this->faktur->project ?? $customer->project;
@@ -198,7 +198,7 @@ class SapArInvoiceBuilder
                     'total' => (float) $this->faktur->dpp + (float) ($this->faktur->ppn ?? 0) - $wtaxAmount,
                 ],
                 'accounts' => [
-                    'ar_account' => $arAccountCode, // AR Invoice line uses AR account (491 - Perantara Pendapatan Kontrak)
+                    'ar_account' => $arAccountCode, // AR Invoice line uses AR account (11401039 - Piutang Usaha Belum Ditagih)
                     'revenue_account' => $revenueAccountCode, // For reference (used in JE)
                 ],
                 'project' => $projectCode,
