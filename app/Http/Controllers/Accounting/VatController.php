@@ -560,11 +560,94 @@ class VatController extends Controller
         ]);
     }
 
+    public function updateSapPreview(Request $request, Faktur $faktur)
+    {
+        // Permission check
+        if (!auth()->user()->can('submit-sap-ar-invoice')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        // Determine which section is being updated
+        $updateType = $request->input('update_type', 'ar_invoice'); // 'ar_invoice' or 'journal_entry'
+
+        if ($updateType === 'ar_invoice') {
+            // Validate AR Invoice fields
+            $request->validate([
+                'invoice_no' => 'required|string|max:255',
+                'faktur_no' => 'required|string|max:255',
+                'faktur_date' => 'required|date',
+            ]);
+
+            // Update faktur fields
+            $faktur->invoice_no = $request->invoice_no;
+            $faktur->faktur_no = $request->faktur_no;
+            $faktur->faktur_date = $request->faktur_date;
+            $faktur->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AR Invoice details updated successfully.',
+                'data' => [
+                    'invoice_no' => $faktur->invoice_no,
+                    'faktur_no' => $faktur->faktur_no,
+                    'faktur_date' => $faktur->faktur_date ? \Carbon\Carbon::parse($faktur->faktur_date)->format('Y-m-d') : null,
+                ],
+            ]);
+        } else {
+            // Validate Journal Entry fields
+            $request->validate([
+                'je_posting_date' => 'required|date',
+                'je_tax_date' => 'required|date',
+                'je_due_date' => 'required|date',
+            ]);
+
+            // Update Journal Entry dates
+            $faktur->je_posting_date = $request->je_posting_date;
+            $faktur->je_tax_date = $request->je_tax_date;
+            $faktur->je_due_date = $request->je_due_date;
+            
+            // Update revenue account if provided
+            if ($request->has('revenue_account_code')) {
+                $validAccounts = ['41101', '41201'];
+                if (in_array($request->revenue_account_code, $validAccounts)) {
+                    $faktur->revenue_account_code = $request->revenue_account_code;
+                }
+            }
+            
+            $faktur->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Journal Entry details updated successfully.',
+                'data' => [
+                    'je_posting_date' => $faktur->je_posting_date ? \Carbon\Carbon::parse($faktur->je_posting_date)->format('Y-m-d') : null,
+                    'je_tax_date' => $faktur->je_tax_date ? \Carbon\Carbon::parse($faktur->je_tax_date)->format('Y-m-d') : null,
+                    'je_due_date' => $faktur->je_due_date ? \Carbon\Carbon::parse($faktur->je_due_date)->format('Y-m-d') : null,
+                    'revenue_account_code' => $faktur->revenue_account_code,
+                ],
+            ]);
+        }
+    }
+
     public function submitToSap(Request $request, Faktur $faktur)
     {
         // Permission check
         if (!auth()->user()->can('submit-sap-ar-invoice')) {
             abort(403, 'Unauthorized action.');
+        }
+
+        // Validate and update editable fields
+        if ($request->has('invoice_no') && !empty($request->invoice_no)) {
+            $faktur->invoice_no = $request->invoice_no;
+        }
+        if ($request->has('faktur_no') && !empty($request->faktur_no)) {
+            $faktur->faktur_no = $request->faktur_no;
+        }
+        if ($request->has('faktur_date') && !empty($request->faktur_date)) {
+            $faktur->faktur_date = $request->faktur_date;
         }
 
         // Validate revenue account code if provided

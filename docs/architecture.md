@@ -197,7 +197,8 @@ The VAT Sales module enables direct submission of AR Invoices and Journal Entrie
 **Data Flow**:
 
 - **Incomplete Tab** (`/accounting/vat?page=sales&status=incomplete`): Shows documents where `sap_ar_doc_num IS NULL` (not yet posted to SAP B1). Action buttons include "Submit to SAP" button that links to SAP preview page.
-- **SAP Preview Page** (`/accounting/vat/fakturs/{id}/sap-preview`): Displays AR Invoice and Journal Entry preview with editable fields (revenue account, project, JE dates). User reviews and confirms submission.
+- **SAP Preview Page** (`/accounting/vat/fakturs/{id}/sap-preview`): Displays AR Invoice and Journal Entry preview with Edit/Update functionality. AR Invoice Details section allows editing of Invoice No, Faktur No, and Faktur Date. Journal Entry section allows editing of Posting Date, Tax Date, and Due Date. Fields are readonly by default, enabled via Edit buttons. Changes are saved to database via AJAX before submission. Submit button is disabled during edit mode to prevent submission with unsaved changes. User reviews, edits if needed, saves changes, and confirms submission.
+- **Edit/Update Process**: `VatController::updateSapPreview()` handles updates for both AR Invoice and Journal Entry sections via `update_type` parameter. AR Invoice updates save `invoice_no`, `faktur_no`, `faktur_date`. Journal Entry updates save `je_posting_date`, `je_tax_date`, `je_due_date`, optionally `revenue_account_code`. Returns JSON responses for AJAX synchronization.
 - **Submission Process**: `VatController::submitToSap()` validates permissions (`submit-sap-ar-invoice`), builds AR Invoice payload via `SapArInvoiceBuilder`, creates AR Invoice in SAP B1, then builds and creates Journal Entry via `SapArInvoiceJeBuilder`.
 - **Success**: Updates `fakturs` table with `sap_ar_doc_num`, `sap_je_num`, `sap_submission_status='completed'`, creates `SapSubmissionLog` entries for both documents.
 - **Complete Tab** (`/accounting/vat?page=sales&status=complete`): Shows documents where `sap_ar_doc_num IS NOT NULL` (already posted). Displays AR Invoice DocNum and JE Num columns instead of old DocNum column.
@@ -244,9 +245,9 @@ sequenceDiagram
 
 **Key Components**:
 
-- **SapArInvoiceBuilder** (`app/Services/SapArInvoiceBuilder.php`): Constructs AR Invoice payloads with DPP amount, VAT calculation (11% handled by SAP), WTax calculation (2% of DPP), and `WithholdingTaxDataCollection` structure. Uses AR Account `491` (Perantara Pendapatan Kontrak) and supports custom item codes.
+- **SapArInvoiceBuilder** (`app/Services/SapArInvoiceBuilder.php`): Constructs AR Invoice payloads with DPP amount, VAT calculation (11% handled by SAP), WTax calculation (2% of DPP), and `WithholdingTaxDataCollection` structure. Uses AR Account `11401039` (Piutang Usaha Belum Ditagih) and supports custom item codes.
 - **SapArInvoiceJeBuilder** (`app/Services/SapArInvoiceJeBuilder.php`): Constructs Journal Entry payloads with AR Account debit, Revenue Account credit, PPN and WTax lines. Supports custom JE posting dates (defaults to previous end of month).
-- **VatController** (`app/Http/Controllers/Accounting/VatController.php`): Handles VAT Sales page data filtering (`sap_ar_doc_num` based), SAP preview, and submission. Updated `data()` method filters incomplete/complete tabs based on SAP submission status.
+- **VatController** (`app/Http/Controllers/Accounting/VatController.php`): Handles VAT Sales page data filtering (`sap_ar_doc_num` based), SAP preview with Edit/Update functionality, and submission. `updateSapPreview()` method handles both AR Invoice and Journal Entry updates via AJAX. `previewSapSubmission()` builds preview data. `submitToSap()` handles final submission to SAP B1. Updated `data()` method filters incomplete/complete tabs based on SAP submission status.
 - **Database Schema**: `fakturs` table tracks SAP submission (`sap_ar_doc_num`, `sap_ar_doc_entry`, `sap_je_num`, `sap_je_doc_entry`, `sap_submission_status`, `sap_submission_attempts`, `sap_submission_error`, `sap_submitted_at`, `sap_submitted_by`, `je_posting_date`, `je_tax_date`, `je_due_date`, `revenue_account_code`, `project`). `sap_submission_logs` table stores audit trail for both AR Invoice and Journal Entry submissions.
 
 **SAP B1 Service Layer API Reference**:
@@ -259,9 +260,16 @@ sequenceDiagram
 
 **Configuration**:
 
-- Environment: `SAP_AR_INVOICE_DEFAULT_AR_ACCOUNT=491`, `SAP_AR_INVOICE_DEFAULT_REVENUE_ACCOUNT=41101`, `SAP_AR_INVOICE_DEFAULT_WTAX_CODE=1019`, `SAP_AR_INVOICE_WTAX_PERCENTAGE=2`
+- Environment: `SAP_AR_INVOICE_DEFAULT_AR_ACCOUNT=11401039`, `SAP_AR_INVOICE_DEFAULT_REVENUE_ACCOUNT=41101`, `SAP_AR_INVOICE_DEFAULT_WTAX_CODE=1019`, `SAP_AR_INVOICE_WTAX_PERCENTAGE=2`
 - Config mapping: `config/services.php['sap']['ar_invoice']`
 - SAP B1 Requirements: WTax code must be assigned to business partner in SAP B1 master data
+
+**Edit/Update Functionality**:
+
+- **AR Invoice Details Section**: Fields (Invoice No, Faktur No, Faktur Date) are readonly by default with `editable-field` class. Edit button enables editing, Update button saves changes via AJAX to `updateSapPreview()` endpoint, Cancel button restores original values. Changes persist to database before submission.
+- **Journal Entry Section**: Date fields (Posting Date, Tax Date, Due Date) are readonly by default with `je-editable-field` class. Edit button enables editing, Update button saves changes via AJAX to `updateSapPreview()` endpoint with `update_type='journal_entry'`, Cancel button restores original values. Changes persist to database before submission.
+- **Submit Protection**: Submit button is disabled when either section is in edit mode (`isEditMode` or `isJeEditMode`). Warning dialog shown if attempting to submit with unsaved changes.
+- **Visual Feedback**: Success/error alerts displayed with auto-hide after 5 seconds. Readonly fields have light background to indicate non-editable state.
 
 **View Updates**:
 

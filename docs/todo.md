@@ -47,6 +47,17 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   [done] P1: SAP Preview Page Edit/Update Functionality [app/Http/Controllers/Accounting/VatController.php, resources/views/accounting/vat/ar/sap_preview.blade.php, routes/accounting.php] (completed: 2026-01-XX)
+
+    -   Added Edit/Update/Cancel buttons for AR Invoice Details section (Invoice No, Faktur No, Faktur Date)
+    -   Added Edit/Update/Cancel buttons for Journal Entry section (Posting Date, Tax Date, Due Date)
+    -   Fields are readonly by default with visual indicators, enabled via Edit button
+    -   Changes saved to database via AJAX before submission to SAP B1
+    -   Submit button disabled during edit mode to prevent submission with unsaved changes
+    -   Added attachment preview button/link in AR Invoice section
+    -   Updated back button to redirect to incomplete tab
+    -   Independent edit states for AR Invoice and Journal Entry sections
+
 -   [done] P1: VAT Sales Page Improvements - Incomplete/Complete Tab Filtering [app/Http/Controllers/Accounting/VatController.php, resources/views/accounting/vat/ar/incomplete.blade.php, resources/views/accounting/vat/ar/complete.blade.php, resources/views/accounting/vat/ar/action.blade.php, resources/views/accounting/vat/ar/action_complete.blade.php] (completed: 2026-01-XX)
 
     -   Updated filtering logic to use `sap_ar_doc_num` instead of `doc_num`/`faktur_no` for determining incomplete vs complete status

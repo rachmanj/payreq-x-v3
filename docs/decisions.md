@@ -1882,3 +1882,87 @@ php artisan exchange-rates:update --no-expand --force
 **Review Date**: 2026-04-08 (3 months from implementation)
 
 ---
+
+### Decision: SAP Preview Page Edit/Update Functionality - 2026-01-XX
+
+**Context**: Users needed to edit faktur details (Invoice No, Faktur No, Faktur Date) and Journal Entry dates (Posting Date, Tax Date, Due Date) on the SAP preview page before submission. The initial implementation only saved changes during submission, making it impossible to review and correct data before committing to SAP B1. This created a risk of submitting incorrect data and required users to cancel, edit elsewhere, and return to the preview page.
+
+**Options Considered**:
+
+1. **Save Changes Only During Submission**
+   - ✅ Pros: Simpler implementation, single save point, less code complexity
+   - ❌ Cons: No way to review/correct data before submission, risk of submitting incorrect data, poor user experience, requires canceling and editing elsewhere
+
+2. **Separate Edit Page Before Preview**
+   - ✅ Pros: Clear separation of concerns, dedicated editing interface
+   - ❌ Cons: Additional page navigation, more complex workflow, users need to navigate between pages
+
+3. **Inline Edit/Update on Preview Page (Chosen)**
+   - ✅ Pros: Single-page workflow, immediate visual feedback, changes saved before submission, better data integrity, independent edit states for different sections
+   - ❌ Cons: More complex JavaScript, need to manage edit states
+
+**Decision**: Implement inline Edit/Update functionality directly on the SAP preview page with separate edit states for AR Invoice Details and Journal Entry sections. Fields are readonly by default, enabled via Edit buttons, and changes are saved to the database immediately via AJAX before submission.
+
+**Rationale**:
+
+- **Data Integrity**: Changes are persisted to the database before submission, ensuring data consistency
+- **User Experience**: Single-page workflow reduces navigation and provides immediate feedback
+- **Error Prevention**: Submit button is disabled during edit mode, preventing submission with unsaved changes
+- **Flexibility**: Independent edit states for AR Invoice and Journal Entry sections allow users to edit only what they need
+- **Visual Feedback**: Readonly fields with light background clearly indicate edit state, alerts provide success/error feedback
+- **Cancel Functionality**: Users can cancel edits and restore original values without saving
+
+**Implementation**:
+
+#### Controller Updates
+
+- **VatController::updateSapPreview()**: Enhanced to handle both AR Invoice and Journal Entry updates via `update_type` parameter
+  - AR Invoice updates: Validates and saves `invoice_no`, `faktur_no`, `faktur_date`
+  - Journal Entry updates: Validates and saves `je_posting_date`, `je_tax_date`, `je_due_date`, optionally `revenue_account_code`
+  - Returns JSON responses with updated data for frontend synchronization
+
+#### Route Updates
+
+- Added `PUT /accounting/vat/fakturs/{faktur}/update-sap-preview` route for updating faktur details
+
+#### View Updates
+
+- **AR Invoice Section**:
+  - Edit/Update/Cancel buttons in card header
+  - Fields readonly by default with `editable-field` class and light background
+  - Alert div for success/error messages
+  - Attachment preview button/link
+- **Journal Entry Section**:
+  - Edit/Update/Cancel buttons in card header
+  - Date fields readonly by default with `je-editable-field` class and light background
+  - Alert div for success/error messages
+- Back button updated to redirect to incomplete tab
+
+#### JavaScript Functionality
+
+- **AR Invoice Edit Mode**: `enableEditMode()`, `cancelEditMode()`, `updateFakturDetails()`, `showAlert()`
+- **Journal Entry Edit Mode**: `enableJeEditMode()`, `cancelJeEditMode()`, `updateJeDetails()`, `showJeAlert()`
+- Independent edit state tracking: `isEditMode` and `isJeEditMode` variables
+- Original values tracking for cancel functionality
+- Submit button protection: Disabled when either section is in edit mode
+- AJAX error handling with user-friendly messages
+- Auto-hiding alerts after 5 seconds
+
+#### User Experience Features
+
+- Fields readonly by default with visual indicators
+- Clear Edit/Update/Cancel button states
+- Success/error alerts with auto-hide
+- Submit button disabled during edit mode
+- Warning dialog if attempting to submit with unsaved changes
+- Independent editing of AR Invoice and Journal Entry sections
+
+**Files Modified**:
+
+- `app/Http/Controllers/Accounting/VatController.php` (updateSapPreview method)
+- `routes/accounting.php` (new update route)
+- `resources/views/accounting/vat/ar/sap_preview.blade.php` (Edit/Update UI and JavaScript)
+
+**Review Date**: 2026-04-XX (3 months from implementation)
+
+---

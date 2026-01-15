@@ -114,6 +114,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('show/{faktur}', [VatController::class, 'show'])->name('show');
         Route::put('update/{faktur}', [VatController::class, 'update'])->name('update');
         Route::get('/fakturs/{faktur}/sap-preview', [VatController::class, 'previewSapSubmission'])->name('sap-preview');
+        Route::put('/fakturs/{faktur}/update-sap-preview', [VatController::class, 'updateSapPreview'])->name('update-sap-preview');
         Route::post('/fakturs/{faktur}/submit-to-sap', [VatController::class, 'submitToSap'])->name('submit-to-sap');
     });
 

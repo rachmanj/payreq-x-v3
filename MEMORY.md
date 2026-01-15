@@ -830,3 +830,61 @@
 -   **Testing Verified**: Confirmed bilyet updates work without TransportException errors
 -   **Database Updates**: Settlement date and status changes persist correctly
 -   **Audit Trail**: Complete change tracking maintained without email dependencies
+
+### [030] SAP Preview Page Edit/Update Functionality (2026-01-XX) ✅ COMPLETE
+
+**Challenge**: Users needed to edit faktur details (Invoice No, Faktur No, Faktur Date) and Journal Entry dates (Posting Date, Tax Date, Due Date) on the SAP preview page before submission. However, changes were only saved during submission, making it impossible to review and correct data before committing to SAP B1. This created a risk of submitting incorrect data and required users to cancel, edit elsewhere, and return to the preview page.
+
+**Solution**: Implemented comprehensive Edit/Update functionality for both AR Invoice Details and Journal Entry sections on the SAP preview page. Fields are readonly by default with visual indicators (light background). Edit buttons enable editing mode, Update buttons save changes via AJAX to the database, and Cancel buttons restore original values. Submit button is disabled during edit mode to prevent submission with unsaved changes. Both sections can be edited independently with separate edit states.
+
+**Key Learning**: Separating edit/save from submission provides better data integrity and user experience. Users can review, edit, and save changes before committing to external systems. Independent edit states for different sections allow flexible editing workflows. Visual feedback (alerts, disabled states) guides users through the editing process. AJAX updates provide immediate feedback without page reloads, improving user experience.
+
+**Implementation Details**:
+
+- **Controller Changes** (`app/Http/Controllers/Accounting/VatController.php`):
+  - Enhanced `updateSapPreview()` method to handle both AR Invoice and Journal Entry updates via `update_type` parameter
+  - AR Invoice updates: Validates and saves `invoice_no`, `faktur_no`, `faktur_date`
+  - Journal Entry updates: Validates and saves `je_posting_date`, `je_tax_date`, `je_due_date`, and optionally `revenue_account_code`
+  - Returns JSON responses with updated data for frontend synchronization
+
+- **Route Changes** (`routes/accounting.php`):
+  - Added `PUT /accounting/vat/fakturs/{faktur}/update-sap-preview` route for updating faktur details
+
+- **View Changes** (`resources/views/accounting/vat/ar/sap_preview.blade.php`):
+  - AR Invoice Section:
+    - Added Edit/Update/Cancel buttons in card header
+    - Made `invoice_no`, `faktur_no`, `faktur_date` fields readonly by default with `editable-field` class
+    - Added alert div for success/error messages
+    - Added attachment preview button/link
+  - Journal Entry Section:
+    - Added Edit/Update/Cancel buttons in card header
+    - Made `je_posting_date`, `je_tax_date`, `je_due_date` fields readonly by default with `je-editable-field` class
+    - Added alert div for success/error messages
+  - Updated back button to redirect to `/accounting/vat?page=sales&status=incomplete`
+
+- **JavaScript Functionality**:
+  - AR Invoice edit mode: `enableEditMode()`, `cancelEditMode()`, `updateFakturDetails()`, `showAlert()`
+  - Journal Entry edit mode: `enableJeEditMode()`, `cancelJeEditMode()`, `updateJeDetails()`, `showJeAlert()`
+  - Independent edit state tracking: `isEditMode` and `isJeEditMode` variables
+  - Original values tracking for both sections to enable cancel functionality
+  - Submit button protection: Disabled when either section is in edit mode, shows warning if submission attempted with unsaved changes
+  - AJAX error handling with user-friendly error messages
+  - Auto-hiding alerts after 5 seconds
+
+**User Experience Enhancements**:
+- Fields are readonly by default with visual indicators (light background)
+- Clear Edit/Update/Cancel button states
+- Success/error alerts with auto-hide
+- Submit button disabled during edit mode prevents accidental submissions
+- Warning dialog if attempting to submit with unsaved changes
+- Independent editing of AR Invoice and Journal Entry sections
+- Changes persist to database before submission, ensuring data integrity
+
+**Business Rules Enforced**:
+1. All changes must be saved before submission to SAP B1
+2. Submit button is disabled when either section is in edit mode
+3. Cancel restores original values without saving
+4. Validation ensures required fields are filled before saving
+5. Changes are persisted to database immediately upon Update, not deferred to submission
+
+**Impact**: Users can now review and edit faktur details and Journal Entry dates directly on the SAP preview page before submission. Changes are saved to the database immediately, ensuring data integrity and allowing users to verify correctness before committing to SAP B1. The independent edit states for AR Invoice and Journal Entry sections provide flexibility in editing workflows. The improved user experience reduces errors and provides better control over the submission process.
