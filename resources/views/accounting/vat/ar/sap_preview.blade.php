@@ -326,8 +326,8 @@
     <script>
         $(function() {
             const fakturId = {{ $faktur->id }};
-            const submitUrl = `{{ route('accounting.vat.submit-to-sap', $faktur->id) }}`;
-            const updateUrl = `{{ route('accounting.vat.update-sap-preview', $faktur->id) }}`;
+            const submitUrl = `{{ route('accounting.vat.submit-to-sap', $faktur) }}`;
+            const updateUrl = `{{ route('accounting.vat.update-sap-preview', $faktur) }}`;
             
             let isEditMode = false;
             let isJeEditMode = false;

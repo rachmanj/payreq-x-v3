@@ -257,6 +257,7 @@ sequenceDiagram
 - **Withholding Tax Structure**: `WithholdingTaxDataCollection` array with `WTCode` and `WTAmount` at document level. Line level requires `WTaxCode` and `WTaxLiable='Y'`.
 - **Required Fields**: `CardCode`, `DocDate`, `DocDueDate`, `TaxDate`, `DocCurrency`, `DocRate`, `DocumentLines` (with `AccountCode`, `LineTotal`, `WTaxCode`, `WTaxLiable`), `WithholdingTaxDataCollection` (for WTax display).
 - **API Documentation**: Refer to SAP B1 Service Layer API documentation for complete field specifications and data structures. Key references: AR Invoice document structure, Journal Entry document structure, Withholding Tax data collection format.
+- **Developer Reference Guide**: See `docs/SAP_B1_AR_INVOICE_DEVELOPER_GUIDE.md` for comprehensive technical reference, code examples, troubleshooting, and best practices.
 
 **Configuration**:
 
