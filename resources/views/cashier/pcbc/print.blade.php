@@ -80,16 +80,16 @@
             <!-- title row -->
             <div class="row">
                 <div class="col-12">
-                    <table class="table">
+                    <table class="table" style="border: none;">
                         <tr>
-                            <td>
-                                <h4>PT Arkananta Apta Pratista</h4>
-                                <h6>Project: {{ $pcbc->project }}</h6>
+                            <td width="50%">
+                                <h4 class="mb-1"><strong>PT Arkananta Apta Pratista</strong></h4>
+                                <h6 class="mb-0"><strong>Project:</strong> {{ $pcbc->project }}</h6>
                             </td>
-                            <td rowspan="2">
-                                <h3><b>Petty Cash Balance Control</b></h3>
-                                <h4>No. {{ $pcbc->nomor }}</h4>
-                                <h6>Date: {{ date('d-M-Y', strtotime($pcbc->pcbc_date)) }}</h6>
+                            <td width="50%" class="text-right">
+                                <h3 class="mb-1"><strong>Petty Cash Balance Control</strong></h3>
+                                <h4 class="mb-1"><strong>No. {{ $pcbc->nomor }}</strong></h4>
+                                <h6 class="mb-0"><strong>Date:</strong> {{ \Carbon\Carbon::parse($pcbc->pcbc_date)->format('d-M-Y') }}</h6>
                             </td>
                         </tr>
                     </table>
@@ -112,39 +112,54 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="text-center">100,000</td>
-                                <td class="text-center">{{ number_format($pcbc->kertas_100rb) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->kertas_100rb * 100000) }}</td>
+                                <td class="text-center"><strong>100,000</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_100rb ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_100rb ?? 0) * 100000) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">50,000</td>
-                                <td class="text-center">{{ number_format($pcbc->kertas_50rb) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->kertas_50rb * 50000) }}</td>
+                                <td class="text-center"><strong>50,000</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_50rb ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_50rb ?? 0) * 50000) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">20,000</td>
-                                <td class="text-center">{{ number_format($pcbc->kertas_20rb) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->kertas_20rb * 20000) }}</td>
+                                <td class="text-center"><strong>20,000</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_20rb ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_20rb ?? 0) * 20000) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">10,000</td>
-                                <td class="text-center">{{ number_format($pcbc->kertas_10rb) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->kertas_10rb * 10000) }}</td>
+                                <td class="text-center"><strong>10,000</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_10rb ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_10rb ?? 0) * 10000) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">5,000</td>
-                                <td class="text-center">{{ number_format($pcbc->kertas_5rb) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->kertas_5rb * 5000) }}</td>
+                                <td class="text-center"><strong>5,000</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_5rb ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_5rb ?? 0) * 5000) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">2,000</td>
-                                <td class="text-center">{{ number_format($pcbc->kertas_2rb) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->kertas_2rb * 2000) }}</td>
+                                <td class="text-center"><strong>2,000</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_2rb ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_2rb ?? 0) * 2000) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">1,000</td>
-                                <td class="text-center">{{ number_format($pcbc->kertas_1rb) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->kertas_1rb * 1000) }}</td>
+                                <td class="text-center"><strong>1,000</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_1rb ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_1rb ?? 0) * 1000) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center"><strong>500</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_500 ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_500 ?? 0) * 500) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center"><strong>100</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->kertas_100 ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->kertas_100 ?? 0) * 100) }}</td>
+                            </tr>
+                            <tr class="bg-light">
+                                <td class="text-center"><strong>TOTAL</strong></td>
+                                <td class="text-center"><strong>{{ number_format(($pcbc->kertas_100rb ?? 0) + ($pcbc->kertas_50rb ?? 0) + ($pcbc->kertas_20rb ?? 0) + ($pcbc->kertas_10rb ?? 0) + ($pcbc->kertas_5rb ?? 0) + ($pcbc->kertas_2rb ?? 0) + ($pcbc->kertas_1rb ?? 0) + ($pcbc->kertas_500 ?? 0) + ($pcbc->kertas_100 ?? 0)) }}</strong></td>
+                                <td class="text-right"><strong>{{ number_format((($pcbc->kertas_100rb ?? 0) * 100000) + (($pcbc->kertas_50rb ?? 0) * 50000) + (($pcbc->kertas_20rb ?? 0) * 20000) + (($pcbc->kertas_10rb ?? 0) * 10000) + (($pcbc->kertas_5rb ?? 0) * 5000) + (($pcbc->kertas_2rb ?? 0) * 2000) + (($pcbc->kertas_1rb ?? 0) * 1000) + (($pcbc->kertas_500 ?? 0) * 500) + (($pcbc->kertas_100 ?? 0) * 100)) }}</strong></td>
                             </tr>
                         </tbody>
                     </table>
@@ -164,34 +179,39 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="text-center">1,000</td>
-                                <td class="text-center">{{ number_format($pcbc->logam_1rb) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->logam_1rb * 1000) }}</td>
+                                <td class="text-center"><strong>1,000</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->logam_1rb ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->logam_1rb ?? 0) * 1000) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">500</td>
-                                <td class="text-center">{{ number_format($pcbc->logam_500) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->logam_500 * 500) }}</td>
+                                <td class="text-center"><strong>500</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->logam_500 ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->logam_500 ?? 0) * 500) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">200</td>
-                                <td class="text-center">{{ number_format($pcbc->logam_200) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->logam_200 * 200) }}</td>
+                                <td class="text-center"><strong>200</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->logam_200 ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->logam_200 ?? 0) * 200) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">100</td>
-                                <td class="text-center">{{ number_format($pcbc->logam_100) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->logam_100 * 100) }}</td>
+                                <td class="text-center"><strong>100</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->logam_100 ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->logam_100 ?? 0) * 100) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">50</td>
-                                <td class="text-center">{{ number_format($pcbc->logam_50) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->logam_50 * 50) }}</td>
+                                <td class="text-center"><strong>50</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->logam_50 ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->logam_50 ?? 0) * 50) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-center">25</td>
-                                <td class="text-center">{{ number_format($pcbc->logam_25) }}</td>
-                                <td class="text-right">{{ number_format($pcbc->logam_25 * 25) }}</td>
+                                <td class="text-center"><strong>25</strong></td>
+                                <td class="text-center">{{ number_format($pcbc->logam_25 ?? 0) }}</td>
+                                <td class="text-right money-cell">{{ number_format(($pcbc->logam_25 ?? 0) * 25) }}</td>
+                            </tr>
+                            <tr class="bg-light">
+                                <td class="text-center"><strong>TOTAL</strong></td>
+                                <td class="text-center"><strong>{{ number_format(($pcbc->logam_1rb ?? 0) + ($pcbc->logam_500 ?? 0) + ($pcbc->logam_200 ?? 0) + ($pcbc->logam_100 ?? 0) + ($pcbc->logam_50 ?? 0) + ($pcbc->logam_25 ?? 0)) }}</strong></td>
+                                <td class="text-right"><strong>{{ number_format((($pcbc->logam_1rb ?? 0) * 1000) + (($pcbc->logam_500 ?? 0) * 500) + (($pcbc->logam_200 ?? 0) * 200) + (($pcbc->logam_100 ?? 0) * 100) + (($pcbc->logam_50 ?? 0) * 50) + (($pcbc->logam_25 ?? 0) * 25)) }}</strong></td>
                             </tr>
                         </tbody>
                     </table>
@@ -201,52 +221,161 @@
             <!-- Summary Section -->
             <div class="row mt-4">
                 <div class="col-12">
-                    <table class="table table-bordered" style="border-width: 2px;">
-                        <tr>
-                            <th class="bg-light text-right">System Amount:</th>
-                            <td class="text-right">{{ number_format($pcbc->system_amount, 2) }}</td>
-                            <td>{{ number_format($pcbc->fisik_amount, 2) }} <br>
-                                <small>({{ $terbilang }})</small>
-                            </td>
-                            <th class="bg-light">Physical Amount</th>
-                        </tr>
-                    </table>
+                    <div class="card card-outline card-success">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-calculator"></i> Amount Summary</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-bordered mb-0" style="border-width: 2px;">
+                                <tr>
+                                    <th class="bg-light text-right" width="20%">System Amount:</th>
+                                    <td class="text-right money-cell font-weight-bold" width="25%">
+                                        Rp {{ number_format($pcbc->system_amount ?? 0, 2) }}
+                                    </td>
+                                    <th class="bg-light text-right" width="20%">Physical Amount:</th>
+                                    <td class="text-right money-cell font-weight-bold text-success" width="35%">
+                                        Rp {{ number_format($pcbc->fisik_amount ?? 0, 2) }}
+                                        <br>
+                                        <small class="text-muted">({{ $terbilang }})</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-right">SAP Amount:</th>
+                                    <td class="text-right money-cell font-weight-bold">
+                                        Rp {{ number_format($pcbc->sap_amount ?? 0, 2) }}
+                                    </td>
+                                    <th class="bg-light text-right">System Variance:</th>
+                                    <td class="text-right money-cell font-weight-bold 
+                                        @if(abs(($pcbc->system_amount ?? 0) - ($pcbc->fisik_amount ?? 0)) < 0.01) 
+                                            text-success 
+                                        @elseif(abs(($pcbc->system_amount ?? 0) - ($pcbc->fisik_amount ?? 0)) <= 1000) 
+                                            text-warning 
+                                        @else 
+                                            text-danger 
+                                        @endif">
+                                        Rp {{ number_format(($pcbc->system_amount ?? 0) - ($pcbc->fisik_amount ?? 0), 2) }}
+                                    </td>
+                                </tr>
+                                @if($pcbc->sap_amount)
+                                <tr>
+                                    <th class="bg-light text-right">SAP Variance:</th>
+                                    <td class="text-right money-cell font-weight-bold 
+                                        @if(abs(($pcbc->sap_amount ?? 0) - ($pcbc->fisik_amount ?? 0)) < 0.01) 
+                                            text-success 
+                                        @elseif(abs(($pcbc->sap_amount ?? 0) - ($pcbc->fisik_amount ?? 0)) <= 1000) 
+                                            text-warning 
+                                        @else 
+                                            text-danger 
+                                        @endif">
+                                        Rp {{ number_format(($pcbc->sap_amount ?? 0) - ($pcbc->fisik_amount ?? 0), 2) }}
+                                    </td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                @endif
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Signature Section -->
-            <div class="row mt-4">
+            <div class="row mt-5">
                 <div class="col-12">
-                    <table class="table">
-                        <tr>
-                            <th class="text-center">Prepared by</th>
-                            <th class="text-center">Checked by</th>
-                            <th class="text-center">Approved by</th>
-                        </tr>
-                        <tr>
-                            <td class="text-center" height="100"></td>
-                            <td class="text-center"></td>
-                            <td class="text-center"></td>
-                        </tr>
-                        <tr>
-                            <td class="text-center">({{ $pcbc->createdBy->name }})</td>
-                            <td class="text-center">({{ $pcbc->pemeriksa1 }})</td>
-                            <td class="text-center">({{ $pcbc->approved_by }})</td>
-                        </tr>
-                        <tr>
-                            <td class="text-center">Date: ________________</td>
-                            <td class="text-center">Date: ________________</td>
-                            <td class="text-center">Date: ________________</td>
-                        </tr>
+                    <table class="table" style="border: none;">
+                        <thead>
+                            <tr>
+                                <th class="text-center" width="33.33%">Prepared by</th>
+                                <th class="text-center" width="33.33%">Checked by</th>
+                                <th class="text-center" width="33.33%">Approved by</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-center" height="80" style="border-bottom: 1px solid #000;">
+                                    <div style="border-bottom: 1px dotted #000; margin-bottom: 10px; height: 60px;"></div>
+                                </td>
+                                <td class="text-center" style="border-bottom: 1px solid #000;">
+                                    <div style="border-bottom: 1px dotted #000; margin-bottom: 10px; height: 60px;"></div>
+                                </td>
+                                <td class="text-center" style="border-bottom: 1px solid #000;">
+                                    <div style="border-bottom: 1px dotted #000; margin-bottom: 10px; height: 60px;"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">
+                                    <strong>({{ $pcbc->createdBy->name ?? 'N/A' }})</strong><br>
+                                    <small>Cashier</small>
+                                </td>
+                                <td class="text-center">
+                                    <strong>({{ $pcbc->pemeriksa1 ?? 'N/A' }})</strong><br>
+                                    <small>Checker</small>
+                                </td>
+                                <td class="text-center">
+                                    <strong>({{ $pcbc->approved_by ?? 'N/A' }})</strong><br>
+                                    <small>Approver</small>
+                                </td>
+                            </tr>
+                            @if($pcbc->pemeriksa2)
+                            <tr>
+                                <td colspan="3" class="text-center pt-3">
+                                    <strong>Second Checker:</strong> {{ $pcbc->pemeriksa2 }}
+                                </td>
+                            </tr>
+                            @endif
+                            <tr>
+                                <td class="text-center pt-3">
+                                    <small>Date: ________________</small>
+                                </td>
+                                <td class="text-center pt-3">
+                                    <small>Date: ________________</small>
+                                </td>
+                                <td class="text-center pt-3">
+                                    <small>Date: ________________</small>
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="row mt-4 no-print">
+                <div class="col-12">
+                    <div class="text-center">
+                        <button onclick="window.print()" class="btn btn-primary">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                        <a href="{{ route('cashier.pcbc.index', ['page' => 'list']) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Print Footer -->
+            <div class="row mt-4" style="page-break-inside: avoid;">
+                <div class="col-12">
+                    <hr style="border-top: 1px solid #000;">
+                    <div class="text-center">
+                        <small>
+                            <strong>Printed on:</strong> {{ \Carbon\Carbon::now()->format('d-M-Y H:i:s') }} | 
+                            <strong>Printed by:</strong> {{ auth()->user()->name ?? 'System' }} |
+                            <strong>Document ID:</strong> {{ $pcbc->id }}
+                        </small>
+                        <br>
+                        <small class="text-muted">This is a computer-generated document</small>
+                    </div>
                 </div>
             </div>
         </section>
     </div>
 
-    <script>
-        window.addEventListener("load", window.print());
-    </script>
+    <div class="no-print">
+        <script>
+            // Auto-print can be disabled by commenting out the line below
+            // window.addEventListener("load", window.print());
+        </script>
+    </div>
 </body>
 
 </html>

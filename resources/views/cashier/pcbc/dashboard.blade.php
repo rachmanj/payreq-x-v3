@@ -17,11 +17,19 @@
             <div class="card">
                 <div class="card-header text-center">
                     <h3 class="card-title"><b>{{ $year }}</b></h3>
-                    <a href="{{ route('cashier.pcbc.index', ['page' => 'dashboard', 'year' => 2026]) }}">2026</a>
-                    |
-                    <a href="{{ route('cashier.pcbc.index', ['page' => 'dashboard', 'year' => 2025]) }}">2025</a>
-                    |
-                    <a href="{{ route('cashier.pcbc.index', ['page' => 'dashboard', 'year' => 2024]) }}">2024</a>
+                    @php
+                        $currentYear = (int) date('Y');
+                        $availableYears = range($currentYear - 2, $currentYear + 1);
+                    @endphp
+                    @foreach($availableYears as $availableYear)
+                        <a href="{{ route('cashier.pcbc.index', ['page' => 'dashboard', 'year' => $availableYear]) }}"
+                            class="{{ $year == $availableYear ? 'font-weight-bold' : '' }}">
+                            {{ $availableYear }}
+                        </a>
+                        @if(!$loop->last)
+                            |
+                        @endif
+                    @endforeach
                 </div>
 
                 <div class="card-body p-0">

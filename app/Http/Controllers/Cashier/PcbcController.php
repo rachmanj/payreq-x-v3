@@ -2,28 +2,51 @@
 
 namespace App\Http\Controllers\Cashier;
 
+use App\Exports\PcbcExport;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\ToolController;
 use App\Http\Controllers\UserController;
+use App\Http\Requests\StorePcbcRequest;
+use App\Http\Requests\UpdatePcbcRequest;
 use App\Models\Dokumen;
 use App\Models\Pcbc;
 use App\Models\Project;
+use App\Services\PcbcService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PcbcController extends Controller
 {
     protected $allowedRoles = ['admin', 'superadmin', 'cashier'];
     protected $projects;
-    protected $years = ['2024', '2025'];
+    protected $years;
     protected $months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+    protected $pcbcService;
 
-    public function __construct()
+    public function __construct(PcbcService $pcbcService)
     {
         $this->projects = Project::orderBy('code')->pluck('code');
+        $this->years = $this->getAvailableYears();
+        $this->pcbcService = $pcbcService;
+    }
+
+    protected function getAvailableYears(): array
+    {
+        $currentYear = (int) date('Y');
+        return array_map('strval', range($currentYear - 2, $currentYear + 1));
+    }
+
+    protected function getProjects(array $userRoles): \Illuminate\Support\Collection
+    {
+        if (array_intersect($this->allowedRoles, $userRoles)) {
+            return $this->projects;
+        } else {
+            return collect(explode(',', auth()->user()->project));
+        }
     }
 
     public function index(Request $request)
@@ -48,16 +71,8 @@ class PcbcController extends Controller
         return view($views[$page]);
     }
 
-    public function getProjects($userRoles)
-    {
-        if (array_intersect($this->allowedRoles, $userRoles)) {
-            return $this->projects;
-        } else {
-            return explode(',', auth()->user()->project);
-        }
-    }
 
-    public function check_pcbc_files($year)
+    public function check_pcbc_files(string $year): array
     {
         $projects = $this->getProjects(app(UserController::class)->getUserRoles());
         $months = $this->months;
@@ -129,12 +144,33 @@ class PcbcController extends Controller
 
     public function update(Request $request, $id)
     {
-        $dokumen = Dokumen::find($id);
+        $dokumen = Dokumen::findOrFail($id);
+        
+        // Authorization check
+        $userRoles = app(UserController::class)->getUserRoles();
+        $isAuthorized = array_intersect($this->allowedRoles, $userRoles) 
+            || $dokumen->created_by === auth()->id();
+        
+        if (!$isAuthorized) {
+            abort(403, 'Unauthorized action.');
+        }
 
         if ($request->hasFile('attachment')) {
             // Delete the old file
-            if (file_exists(public_path('dokumens/' . $dokumen->filename1))) {
-                unlink(public_path('dokumens/' . $dokumen->filename1));
+            if ($dokumen->filename1 && file_exists(public_path('dokumens/' . $dokumen->filename1))) {
+                try {
+                    unlink(public_path('dokumens/' . $dokumen->filename1));
+                    Log::info('PCBC file replaced', [
+                        'old_file' => $dokumen->filename1,
+                        'user_id' => auth()->id()
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to delete old PCBC file', [
+                        'file' => $dokumen->filename1,
+                        'error' => $e->getMessage(),
+                        'user_id' => auth()->id()
+                    ]);
+                }
             }
 
             // Upload the new file
@@ -152,29 +188,47 @@ class PcbcController extends Controller
         return redirect()->back()->with('success', 'Record updated successfully.');
     }
 
-    private function uploadFile($file)
+    private function uploadFile($file): string
     {
-        $extension = $file->getClientOriginalExtension();
-        $filename = 'pcbc' . rand() . '.' . $extension;
-        $file->move(public_path('dokumens'), $filename);
-        return $filename;
+        return $this->pcbcService->uploadFile($file);
     }
 
     public function destroy($id)
     {
-        $dokumen = Dokumen::find($id);
+        $dokumen = Dokumen::findOrFail($id);
+        
+        // Delete physical file
+        if ($dokumen->filename1) {
+            $this->pcbcService->deleteFile($dokumen->filename1);
+        }
+        
         $dokumen->delete();
 
         return redirect()->back()->with('success', 'File deleted successfully.');
     }
 
-    public function data()
+    public function data(Request $request)
     {
         $userRoles = app(UserController::class)->getUserRoles();
-        $query = Dokumen::where('type', 'pcbc')->orderBy('dokumen_date', 'desc');
+        $query = Dokumen::where('type', 'pcbc')
+            ->with('createdBy')
+            ->orderBy('dokumen_date', 'desc');
 
         if (!array_intersect($userRoles, ['superadmin', 'admin', 'cashier'])) {
             $query->where('project', auth()->user()->project);
+        }
+
+        // Advanced filtering
+        if ($request->has('project') && $request->project) {
+            $query->where('project', $request->project);
+        }
+
+        if ($request->has('date_from') && $request->date_from) {
+            $query->whereDate('dokumen_date', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && $request->date_to) {
+            $query->whereDate('dokumen_date', '<=', $request->date_to);
         }
 
         $dokumens = $query->get();
@@ -189,10 +243,37 @@ class PcbcController extends Controller
             ->toJson();
     }
 
-    public function your_data()
+    public function your_data(Request $request)
     {
         $userId = auth()->id();
-        $query = Pcbc::where('created_by', $userId)->orderBy('pcbc_date', 'desc');
+        $query = Pcbc::where('created_by', $userId)
+            ->with('createdBy')
+            ->orderBy('pcbc_date', 'desc');
+
+        // Advanced filtering
+        if ($request->has('project') && $request->project) {
+            $query->where('project', $request->project);
+        }
+
+        if ($request->has('date_from') && $request->date_from) {
+            $query->whereDate('pcbc_date', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && $request->date_to) {
+            $query->whereDate('pcbc_date', '<=', $request->date_to);
+        }
+
+        if ($request->has('has_variance') && $request->has_variance == '1') {
+            $query->whereRaw('ABS(system_amount - fisik_amount) > 0.01 OR ABS(sap_amount - fisik_amount) > 0.01');
+        }
+
+        if ($request->has('amount_min') && $request->amount_min) {
+            $query->where('fisik_amount', '>=', $request->amount_min);
+        }
+
+        if ($request->has('amount_max') && $request->amount_max) {
+            $query->where('fisik_amount', '<=', $request->amount_max);
+        }
 
         $pcbcs = $query->get();
 
@@ -209,15 +290,13 @@ class PcbcController extends Controller
             ->toJson();
     }
 
-    public function store(Request $request)
+    public function store(StorePcbcRequest $request)
     {
-        $this->validatePcbcRequest($request);
-
         try {
             DB::beginTransaction();
 
-            $nomor = $this->generatePcbcNumber($request->project);
-            $fisik_amount = $this->calculateFisikAmount($request);
+            $nomor = $this->pcbcService->generateDocumentNumber($request->project);
+            $fisik_amount = $this->pcbcService->calculateFisikAmount($request);
 
             $pcbc = new Pcbc();
             $this->fillBasicInfo($pcbc, $request, $nomor);
@@ -243,59 +322,8 @@ class PcbcController extends Controller
         }
     }
 
-    private function validatePcbcRequest(Request $request)
-    {
-        return $request->validate([
-            'pcbc_date' => 'required|date',
-            'project' => 'required|string',
-            'kertas_100rb' => 'nullable|integer|min:0',
-            'kertas_50rb' => 'nullable|integer|min:0',
-            'kertas_20rb' => 'nullable|integer|min:0',
-            'kertas_10rb' => 'nullable|integer|min:0',
-            'kertas_5rb' => 'nullable|integer|min:0',
-            'kertas_2rb' => 'nullable|integer|min:0',
-            'kertas_1rb' => 'nullable|integer|min:0',
-            'kertas_500' => 'nullable|integer|min:0',
-            'kertas_100' => 'nullable|integer|min:0',
-            'logam_1rb' => 'nullable|integer|min:0',
-            'logam_500' => 'nullable|integer|min:0',
-            'logam_200' => 'nullable|integer|min:0',
-            'logam_100' => 'nullable|integer|min:0',
-            'logam_50' => 'nullable|integer|min:0',
-            'logam_25' => 'nullable|integer|min:0',
-            'system_amount' => 'nullable|string',
-            'sap_amount' => 'nullable|string',
-            'pemeriksa1' => 'required|string',
-            'pemeriksa2' => 'nullable|string',
-            'approved_by' => 'nullable|string',
-        ]);
-    }
 
-    private function generatePcbcNumber($project)
-    {
-        return app(DocumentNumberController::class)->generate_document_number('pcbc', $project);
-    }
-
-    private function calculateFisikAmount(Request $request)
-    {
-        return ($request->kertas_100rb * 100000) +
-            ($request->kertas_50rb * 50000) +
-            ($request->kertas_20rb * 20000) +
-            ($request->kertas_10rb * 10000) +
-            ($request->kertas_5rb * 5000) +
-            ($request->kertas_2rb * 2000) +
-            ($request->kertas_1rb * 1000) +
-            ($request->kertas_500 * 500) +
-            ($request->kertas_100 * 100) +
-            ($request->logam_1rb * 1000) +
-            ($request->logam_500 * 500) +
-            ($request->logam_200 * 200) +
-            ($request->logam_100 * 100) +
-            ($request->logam_50 * 50) +
-            ($request->logam_25 * 25);
-    }
-
-    private function fillBasicInfo(Pcbc $pcbc, Request $request, $nomor)
+    private function fillBasicInfo(Pcbc $pcbc, Request $request, string $nomor): void
     {
         $pcbc->nomor = $nomor;
         $pcbc->pcbc_date = $request->pcbc_date;
@@ -303,7 +331,7 @@ class PcbcController extends Controller
         $pcbc->project = $request->project;
     }
 
-    private function fillDenominations(Pcbc $pcbc, Request $request)
+    private function fillDenominations(Pcbc $pcbc, Request $request): void
     {
         // Paper money
         $pcbc->kertas_100rb = $request->kertas_100rb;
@@ -325,14 +353,14 @@ class PcbcController extends Controller
         $pcbc->logam_25 = $request->logam_25;
     }
 
-    private function fillAmounts(Pcbc $pcbc, Request $request, $fisik_amount)
+    private function fillAmounts(Pcbc $pcbc, Request $request, float $fisik_amount): void
     {
         $pcbc->system_amount = floatval(str_replace(',', '.', str_replace('.', '', $request->system_amount)));
         $pcbc->fisik_amount = $fisik_amount;
         $pcbc->sap_amount = floatval(str_replace(',', '.', str_replace('.', '', $request->sap_amount)));
     }
 
-    private function fillApprovalInfo(Pcbc $pcbc, Request $request)
+    private function fillApprovalInfo(Pcbc $pcbc, Request $request): void
     {
         $pcbc->pemeriksa1 = $request->pemeriksa1;
         $pcbc->pemeriksa2 = $request->pemeriksa2;
@@ -347,35 +375,21 @@ class PcbcController extends Controller
         return view('cashier.pcbc.edit', compact('pcbc'));
     }
 
-    public function update_pcbc(Request $request, $id)
+    public function update_pcbc(UpdatePcbcRequest $request, $id)
     {
-        $request->validate([
-            'pcbc_date' => 'required|date',
-            'kertas_100rb' => 'nullable|integer|min:0',
-            'kertas_50rb' => 'nullable|integer|min:0',
-            'kertas_20rb' => 'nullable|integer|min:0',
-            'kertas_10rb' => 'nullable|integer|min:0',
-            'kertas_5rb' => 'nullable|integer|min:0',
-            'kertas_2rb' => 'nullable|integer|min:0',
-            'kertas_1rb' => 'nullable|integer|min:0',
-            'kertas_500' => 'nullable|integer|min:0',
-            'kertas_100' => 'nullable|integer|min:0',
-            'logam_1rb' => 'nullable|integer|min:0',
-            'logam_500' => 'nullable|integer|min:0',
-            'logam_200' => 'nullable|integer|min:0',
-            'logam_100' => 'nullable|integer|min:0',
-            'logam_50' => 'nullable|integer|min:0',
-            'logam_25' => 'nullable|integer|min:0',
-            'system_amount' => 'nullable|string',
-            'sap_amount' => 'nullable|string',
-            'pemeriksa1' => 'required|string',
-            'approved_by' => 'nullable|string',
-        ]);
-
         try {
             DB::beginTransaction();
 
             $pcbc = Pcbc::findOrFail($id);
+            
+            // Authorization check
+            $userRoles = app(UserController::class)->getUserRoles();
+            $isAuthorized = array_intersect($this->allowedRoles, $userRoles) 
+                || $pcbc->created_by === auth()->id();
+            
+            if (!$isAuthorized) {
+                abort(403, 'Unauthorized action.');
+            }
 
             // Update basic info
             $pcbc->pcbc_date = $request->pcbc_date;
@@ -384,7 +398,7 @@ class PcbcController extends Controller
             $this->fillDenominations($pcbc, $request);
 
             // Calculate physical amount
-            $fisik_amount = $this->calculatePhysicalAmount($request);
+            $fisik_amount = $this->pcbcService->calculateFisikAmount($request);
 
             // Update amounts
             $this->fillAmounts($pcbc, $request, $fisik_amount);
@@ -392,6 +406,10 @@ class PcbcController extends Controller
             // Update approval info
             $pcbc->pemeriksa1 = $request->pemeriksa1;
             $pcbc->approved_by = $request->approved_by;
+            
+            // Set audit trail
+            $pcbc->updated_by = auth()->id();
+            $pcbc->modified_at = now();
 
             $pcbc->save();
 
@@ -411,24 +429,6 @@ class PcbcController extends Controller
         }
     }
 
-    private function calculatePhysicalAmount(Request $request)
-    {
-        return ($request->kertas_100rb * 100000) +
-            ($request->kertas_50rb * 50000) +
-            ($request->kertas_20rb * 20000) +
-            ($request->kertas_10rb * 10000) +
-            ($request->kertas_5rb * 5000) +
-            ($request->kertas_2rb * 2000) +
-            ($request->kertas_1rb * 1000) +
-            ($request->kertas_500 * 500) +
-            ($request->kertas_100 * 100) +
-            ($request->logam_1rb * 1000) +
-            ($request->logam_500 * 500) +
-            ($request->logam_200 * 200) +
-            ($request->logam_100 * 100) +
-            ($request->logam_50 * 50) +
-            ($request->logam_25 * 25);
-    }
 
     public function print($id)
     {
@@ -441,8 +441,52 @@ class PcbcController extends Controller
     public function destroy_pcbc($id)
     {
         $pcbc = Pcbc::findOrFail($id);
+        
+        // Authorization check
+        $userRoles = app(UserController::class)->getUserRoles();
+        $isAuthorized = array_intersect($this->allowedRoles, $userRoles) 
+            || $pcbc->created_by === auth()->id();
+        
+        if (!$isAuthorized) {
+            abort(403, 'Unauthorized action.');
+        }
+        
         $pcbc->delete();
 
         return redirect()->back()->with('success', 'PCBC deleted successfully');
+    }
+
+    public function export(Request $request)
+    {
+        try {
+            $query = Pcbc::query();
+
+            // Apply filters from request
+            if ($request->filled('project')) {
+                $query->where('project', $request->project);
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('pcbc_date', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('pcbc_date', '<=', $request->date_to);
+            }
+
+            if ($request->filled('has_variance') && $request->has_variance == '1') {
+                $query->whereRaw('ABS(system_amount - fisik_amount) > 0.01 OR ABS(sap_amount - fisik_amount) > 0.01');
+            }
+
+            // Generate filename with timestamp
+            $timestamp = now()->format('Y-m-d_H-i-s');
+            $filename = "pcbc_export_{$timestamp}.xlsx";
+
+            return Excel::download(new PcbcExport($query), $filename);
+        } catch (\Exception $e) {
+            Log::error('PCBC Export Error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to export Excel file: ' . $e->getMessage());
+        }
     }
 }

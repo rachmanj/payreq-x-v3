@@ -130,6 +130,14 @@ class UserPayreqController extends Controller
                 'approvers'
             ]));
         } else {
+            if ($payreq->project == '022C' && $payreq->type == 'advance') {
+                return view('user-payreqs.advance.print_pdf_signed_advance_022c', compact([
+                    'payreq',
+                    'terbilang',
+                    'approvers'
+                ]));
+            }
+
             if ($payreq->project == '000H' || $payreq->project == 'APS') {
                 return view('user-payreqs.advance.print_pdf_signed_advance', compact([
                     'payreq',
@@ -212,7 +220,7 @@ class UserPayreqController extends Controller
             })
             ->editColumn('status', function ($payreq) {
                 $statusText = '';
-                
+
                 if ($payreq->status === 'submitted') {
                     $statusText = 'Waiting Approval';
                 } elseif ($payreq->status === 'approved') {
@@ -238,12 +246,12 @@ class UserPayreqController extends Controller
                 } else {
                     $statusText = ucfirst($payreq->status);
                 }
-                
+
                 // Add indicator if realization was modified by approver (for reimburse type)
                 if ($payreq->type === 'reimburse' && $payreq->realization && $payreq->realization->modified_by_approver) {
                     $statusText .= ' <span class="badge badge-warning" title="Modified by approver on ' . $payreq->realization->modified_by_approver_at->format('d-M-Y H:i') . '"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
                 }
-                
+
                 return $statusText;
             })
             ->editColumn('amount', function ($payreq) {

@@ -1,6 +1,14 @@
 <!-- Paper Money Section -->
-<!-- Start of Selection -->
-<h5 class="mt-4">Paper Money</h5>
+<div class="card card-outline card-primary mt-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-money-bill-wave"></i> Paper Money (Uang Kertas)</h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool btn-sm" onclick="clearSection('kertas')" title="Clear All">
+                <i class="fas fa-times"></i> Clear All
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
 <div class="row">
     <div class="col-md-4">
         <div class="form-group row">
@@ -113,6 +121,15 @@
             </div>
             <div class="col-sm-4">
                 <input type="text" class="form-control money-result text-right" id="kertas_100_result" readonly>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+    <div class="card-footer">
+        <div class="row">
+            <div class="col-md-12 text-right">
+                <strong>Paper Money Subtotal: <span id="kertas-subtotal" class="text-primary">Rp 0</span></strong>
             </div>
         </div>
     </div>

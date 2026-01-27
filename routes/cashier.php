@@ -82,6 +82,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::prefix('pcbc')->name('pcbc.')->group(function () {
         Route::get('/data', [PcbcController::class, 'data'])->name('data');
         Route::get('/your-data', [PcbcController::class, 'your_data'])->name('your_data');
+        Route::get('/export', [PcbcController::class, 'export'])->name('export');
         Route::get('/{id}/print', [PcbcController::class, 'print'])->name('print');
         Route::put('/{id}/update-pcbc', [PcbcController::class, 'update_pcbc'])->name('update_pcbc');
         Route::delete('/{id}/destroy-pcbc', [PcbcController::class, 'destroy_pcbc'])->name('destroy_pcbc');

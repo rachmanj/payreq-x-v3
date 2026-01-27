@@ -1,5 +1,14 @@
 <!-- Coin Money Section -->
-<h5 class="mt-4">Coin Money</h5>
+<div class="card card-outline card-secondary mt-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-coins"></i> Coin Money (Uang Logam)</h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool btn-sm" onclick="clearSection('logam')" title="Clear All">
+                <i class="fas fa-times"></i> Clear All
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
 <div class="row">
     <div class="col-md-4">
         <div class="form-group row">
@@ -70,6 +79,13 @@
             </div>
             <div class="col-sm-4">
                 <input type="text" class="form-control money-result text-right" id="logam_25_result" readonly>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="row">
+            <div class="col-md-12 text-right">
+                <strong>Coin Money Subtotal: <span id="logam-subtotal" class="text-secondary">Rp 0</span></strong>
             </div>
         </div>
     </div>
