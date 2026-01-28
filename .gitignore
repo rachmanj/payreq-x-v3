@@ -24,4 +24,4 @@ yarn-error.log
 /public/dokumens
 /database/seeders/sql
 api.rest
-
+/docs

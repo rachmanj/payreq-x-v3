@@ -16,6 +16,7 @@ Both documents must be created automatically after faktur completion, with prope
 ### AR Invoice Screenshot Analysis
 
 **Key Fields Observed:**
+
 - **Invoice No**: 2025
 - **Customer Code**: `CGRPKIDR01` (GRAHA PANCA KARSA)
 - **Posting Date**: 05.11.2025
@@ -30,6 +31,7 @@ Both documents must be created automatically after faktur completion, with prope
 - **Description**: `034/Arka-022C/XI/2025` (contract number)
 
 **AR Invoice Structure:**
+
 - Uses G/L Account `11401039` directly in document line (not item-based)
 - Contains Faktur Pajak information (tax invoice number and date)
 - References contract/order number
@@ -38,6 +40,7 @@ Both documents must be created automatically after faktur completion, with prope
 ### Journal Entry Screenshot Analysis
 
 **Key Fields Observed:**
+
 - **Journal Entry Number**: 257650595
 - **Posting Date**: 31.10.2025
 - **Project**: 022C
@@ -45,19 +48,21 @@ Both documents must be created automatically after faktur completion, with prope
 - **Remarks**: `GPK No.034/Arka-022C/XI/202022C`
 
 **Journal Entry Lines:**
+
 1. **Line 1 (Credit)**:
-   - Account: `41101` (Pendapatan Kontrak - Contract Revenue)
-   - Credit: `30,420,173,701.00`
-   - Project: 022C
-   - Department: 60
+    - Account: `41101` (Pendapatan Kontrak - Contract Revenue)
+    - Credit: `30,420,173,701.00`
+    - Project: 022C
+    - Department: 60
 
 2. **Line 2 (Debit)**:
-   - Account: `11401039` (Piutang Usaha Belum Ditagih - AR Not Yet Billed)
-   - Debit: `30,420,173,701.00`
-   - Project: 022C
-   - Department: 60
+    - Account: `11401039` (Piutang Usaha Belum Ditagih - AR Not Yet Billed)
+    - Debit: `30,420,173,701.00`
+    - Project: 022C
+    - Department: 60
 
 **Key Observations:**
+
 - Journal Entry amount (`30,420,173,701.00`) matches DPP (Tax Base) from AR Invoice
 - AR Invoice Total (`33,766,392,808.11`) = DPP + Tax - WTax
 - Journal Entry only records DPP amount (revenue recognition)
@@ -154,32 +159,34 @@ Both documents must be created automatically after faktur completion, with prope
 **From Screenshot**: AR Invoice shows G/L Account `11401039` directly in the line, suggesting **account-based** structure.
 
 **Recommendation**: Use G/L Account-based structure:
+
 ```json
 {
-  "DocumentLines": [
-    {
-      "AccountCode": "11401039",
-      "LineTotal": 30420173701.00,
-      "ProjectCode": "022C",
-      "CostingCode": "60"
-    }
-  ]
+    "DocumentLines": [
+        {
+            "AccountCode": "11401039",
+            "LineTotal": 30420173701.0,
+            "ProjectCode": "022C",
+            "CostingCode": "60"
+        }
+    ]
 }
 ```
 
 **OR** if SAP requires item-based:
+
 ```json
 {
-  "DocumentLines": [
-    {
-      "ItemCode": "SERVICE",
-      "AccountCode": "11401039",
-      "Quantity": 1,
-      "UnitPrice": 30420173701.00,
-      "ProjectCode": "022C",
-      "CostingCode": "60"
-    }
-  ]
+    "DocumentLines": [
+        {
+            "ItemCode": "SERVICE",
+            "AccountCode": "11401039",
+            "Quantity": 1,
+            "UnitPrice": 30420173701.0,
+            "ProjectCode": "022C",
+            "CostingCode": "60"
+        }
+    ]
 }
 ```
 
@@ -190,36 +197,41 @@ Both documents must be created automatically after faktur completion, with prope
 **Question**: Are these account codes fixed or configurable per customer/project?
 
 **From Screenshot**:
+
 - Revenue Account: `41101` (Pendapatan Kontrak)
 - AR Account: `11401039` (Piutang Usaha Belum Ditagih)
 
-**Recommendation**: 
+**Recommendation**:
+
 - Make accounts configurable via:
-  - Customer-level configuration (preferred)
-  - Project-level configuration
-  - System-wide defaults
+    - Customer-level configuration (preferred)
+    - Project-level configuration
+    - System-wide defaults
 - Add fields to `customers` table:
-  - `revenue_account_code` (default: 41101)
-  - `ar_account_code` (default: 11401039)
+    - `revenue_account_code` (default: 41101)
+    - `ar_account_code` (default: 11401039)
 
 ### 3. Project and Department Mapping
 
 **Question**: How to determine Project and Department for Journal Entry?
 
-**From Screenshot**: 
+**From Screenshot**:
+
 - Project: `022C` (from contract/order)
 - Department: `60` (not visible in AR Invoice, but present in JE)
 
 **Current Data Available**:
+
 - `Customer->project` field exists
 - Department not directly available in Faktur
 
 **Recommendation**:
+
 - **Project**: Use `Customer->project` field (already exists)
-- **Department**: 
-  - Option A: Add `department_id` to fakturs table
-  - Option B: Use default department from customer
-  - Option C: Use user's department (`auth()->user()->department_id`)
+- **Department**:
+    - Option A: Add `department_id` to fakturs table
+    - Option B: Use default department from customer
+    - Option C: Use user's department (`auth()->user()->department_id`)
 
 **Action Required**: Confirm source of Department code (60) for fakturs.
 
@@ -228,16 +240,19 @@ Both documents must be created automatically after faktur completion, with prope
 **Question**: What amount should be used in Journal Entry?
 
 **From Screenshot**:
+
 - AR Invoice Total: `33,766,392,808.11` (includes tax, minus WTax)
 - Journal Entry Amount: `30,420,173,701.00` (DPP only)
 
 **Analysis**:
+
 - DPP = `30,420,173,701.00`
 - PPN = `3,346,219,107.11` (11% of DPP)
 - WTax = `608,403,474.00`
 - Total = DPP + PPN - WTax = `33,158,193,334.11` (close to screenshot total)
 
-**Recommendation**: 
+**Recommendation**:
+
 - **Journal Entry**: Use **DPP amount only** (tax base, excluding VAT and WTax)
 - This matches revenue recognition principle (revenue = DPP, VAT is liability)
 
@@ -248,6 +263,7 @@ Both documents must be created automatically after faktur completion, with prope
 **From Screenshot**: WTax Amount: `IDR 608,403,474.00`
 
 **Recommendation**:
+
 - Include WTax in AR Invoice if faktur has WTax data
 - Journal Entry should NOT include WTax (it's a separate liability)
 - If WTax exists, may need additional JE line for WTax liability account
@@ -258,14 +274,15 @@ Both documents must be created automatically after faktur completion, with prope
 
 **Question**: What happens if AR Invoice succeeds but Journal Entry fails?
 
-**Recommendation**: 
+**Recommendation**:
+
 - **Option A (Recommended)**: Create both in single transaction
-  - If JE fails, cancel/delete AR Invoice
-  - Requires SAP B1 API support for cancellation
+    - If JE fails, cancel/delete AR Invoice
+    - Requires SAP B1 API support for cancellation
 - **Option B**: Create AR Invoice first, then JE
-  - If JE fails, mark faktur with partial status
-  - Allow manual JE creation later
-  - Store AR Invoice DocNum even if JE fails
+    - If JE fails, mark faktur with partial status
+    - Allow manual JE creation later
+    - Store AR Invoice DocNum even if JE fails
 
 **Action Required**: Confirm if SAP B1 Service Layer supports AR Invoice cancellation/deletion.
 
@@ -273,11 +290,13 @@ Both documents must be created automatically after faktur completion, with prope
 
 **Question**: Why is Journal Entry date (31.10.2025) different from AR Invoice date (05.11.2025)?
 
-**From Screenshot**: 
+**From Screenshot**:
+
 - AR Invoice Posting Date: 05.11.2025
 - Journal Entry Posting Date: 31.10.2025
 
 **Recommendation**:
+
 - Use **same posting date** for both documents (AR Invoice date)
 - If different dates are required, add `je_posting_date` field to fakturs table
 - Default: Use `invoice_date` for both
@@ -294,11 +313,11 @@ Schema::table('fakturs', function (Blueprint $table) {
     // SAP AR Invoice tracking
     $table->string('sap_ar_doc_num')->nullable()->after('doc_num');
     $table->string('sap_ar_doc_entry')->nullable()->after('sap_ar_doc_num');
-    
+
     // SAP Journal Entry tracking
     $table->string('sap_je_num')->nullable()->after('sap_ar_doc_entry');
     $table->string('sap_je_doc_entry')->nullable()->after('sap_je_num');
-    
+
     // Submission tracking
     $table->enum('sap_submission_status', ['pending', 'ar_created', 'je_created', 'completed', 'failed'])
         ->nullable()->after('status');
@@ -306,11 +325,11 @@ Schema::table('fakturs', function (Blueprint $table) {
     $table->text('sap_submission_error')->nullable();
     $table->timestamp('sap_submitted_at')->nullable();
     $table->foreignId('sap_submitted_by')->nullable();
-    
+
     // Project/Department for JE
     $table->string('project', 10)->nullable()->after('customer_id');
     $table->foreignId('department_id')->nullable()->after('project');
-    
+
     // WTax (if not exists)
     $table->decimal('wtax_amount', 20, 2)->nullable()->after('ppn');
 });
@@ -381,7 +400,7 @@ class SapArInvoiceBuilder
     {
         $customer = $this->faktur->customer;
         $arAccountCode = $customer->ar_account_code ?? $this->config['default_ar_account'];
-        
+
         $line = [
             'AccountCode' => $arAccountCode, // 11401039 from screenshot
             'LineTotal' => (float) $this->faktur->dpp + (float) ($this->faktur->ppn ?? 0),
@@ -476,10 +495,10 @@ class SapArInvoiceJeBuilder
     {
         $customer = $this->faktur->customer;
         $invoiceDate = Carbon::parse($this->faktur->invoice_date);
-        
+
         $revenueAccountCode = $customer->revenue_account_code ?? $this->config['default_revenue_account'];
         $arAccountCode = $customer->ar_account_code ?? $this->config['default_ar_account'];
-        
+
         $dppAmount = (float) $this->faktur->dpp;
 
         $journalEntry = [
@@ -578,7 +597,7 @@ public function submitToSap(Request $request, Faktur $faktur)
         // Step 1: Build and validate AR Invoice
         $arInvoiceBuilder = new SapArInvoiceBuilder($faktur);
         $arErrors = $arInvoiceBuilder->validate();
-        
+
         if (!empty($arErrors)) {
             return response()->json([
                 'success' => false,
@@ -587,11 +606,11 @@ public function submitToSap(Request $request, Faktur $faktur)
         }
 
         $arInvoiceData = $arInvoiceBuilder->build();
-        
+
         // Step 2: Create AR Invoice in SAP B1
         $sapService = app(SapService::class);
         $arResult = $sapService->createArInvoice($arInvoiceData);
-        
+
         if (!($arResult['success'] ?? false)) {
             throw new \Exception('Failed to create AR Invoice: ' . ($arResult['message'] ?? 'Unknown error'));
         }
@@ -605,15 +624,15 @@ public function submitToSap(Request $request, Faktur $faktur)
         // Step 4: Build and validate Journal Entry
         $jeBuilder = new SapArInvoiceJeBuilder($faktur);
         $jeErrors = $jeBuilder->validate();
-        
+
         if (!empty($jeErrors)) {
             // AR Invoice created but JE failed - mark as partial
             $faktur->sap_submission_status = 'ar_created';
             $faktur->sap_submission_error = 'JE Validation failed: ' . implode(', ', $jeErrors);
             $faktur->save();
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'AR Invoice created but Journal Entry failed: ' . implode(', ', $jeErrors),
@@ -622,18 +641,18 @@ public function submitToSap(Request $request, Faktur $faktur)
         }
 
         $jeData = $jeBuilder->build();
-        
+
         // Step 5: Create Journal Entry in SAP B1
         $jeResult = $sapService->createJournalEntry($jeData);
-        
+
         if (!($jeResult['success'] ?? false)) {
             // AR Invoice created but JE failed
             $faktur->sap_submission_status = 'ar_created';
             $faktur->sap_submission_error = 'JE Creation failed: ' . ($jeResult['message'] ?? 'Unknown error');
             $faktur->save();
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'AR Invoice created but Journal Entry failed: ' . ($jeResult['message'] ?? 'Unknown error'),
@@ -682,7 +701,7 @@ public function submitToSap(Request $request, Faktur $faktur)
 
     } catch (\Exception $e) {
         DB::rollBack();
-        
+
         // Log error
         Log::error('SAP AR Invoice submission failed', [
             'faktur_id' => $faktur->id,
@@ -734,6 +753,43 @@ SAP_AR_INVOICE_DEFAULT_AR_ACCOUNT=11401039
 
 ---
 
-**Document Version**: 2.0  
-**Last Updated**: 2025-01-XX  
-**Status**: Updated based on SAP B1 screenshots - Pending Review
+---
+
+## Date Validation Fix (2026-01-28)
+
+### Issue: SAP B1 Error 10000047 - "Date deviates from permissible range"
+
+**Problem**: SAP B1 has strict date validation rules that prevent posting documents with dates that are:
+
+- Too far in the past (typically more than 1-2 years)
+- In the future (beyond current fiscal period)
+
+**Root Cause**: The `SapArInvoiceBuilder` was using `invoice_date` directly for `DocDate` and `TaxDate` without validating against SAP B1's date restrictions.
+
+**Solution Implemented**:
+
+1. **Date Validation Logic** in `SapArInvoiceBuilder::build()`:
+    - Priority: `faktur_date` (if within last 2 years and not future) > `invoice_date` (if not future) > today's date
+    - Automatically adjusts dates that are too old (>2 years) or in the future to valid ranges
+    - Ensures `DocDate` and `TaxDate` are always within SAP B1's acceptable range
+
+2. **Preview Data Consistency**: Updated `getPreviewData()` to use the same date logic, ensuring preview matches actual submission
+
+3. **Enhanced Validation**: Added date range checks in `validate()` method to warn users before submission
+
+**Code Changes**:
+
+- `app/Services/SapArInvoiceBuilder.php`: Updated `build()` and `getPreviewData()` methods with date validation logic
+- Dates are now automatically adjusted to be within 2 years from today and not in the future
+
+**Testing**:
+
+- Test with faktur ID 12904 (faktur_no: 04002600001054241)
+- Verify that dates are adjusted correctly if they fall outside acceptable range
+- Confirm SAP B1 accepts the submission without date errors
+
+---
+
+**Document Version**: 2.1  
+**Last Updated**: 2026-01-28  
+**Status**: Updated with date validation fix - Ready for Testing

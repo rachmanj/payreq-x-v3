@@ -156,7 +156,6 @@
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>
                                             SAP Transactions
-                                            <span class="badge badge-success right">Beta</span>
                                         </p>
                                     </a>
                                 </li>
@@ -165,8 +164,7 @@
                                         class="nav-link {{ request()->routeIs('cashier.cashonhand-transactions.*') ? 'active' : '' }}">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>
-                                            Cash On-Hand Transaction
-                                            <span class="badge badge-success right">Beta</span>
+                                            Cash On-Hand Tx
                                         </p>
                                     </a>
                                 </li>
@@ -176,7 +174,6 @@
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>
                                             Bank Transaction
-                                            <span class="badge badge-success right">Beta</span>
                                         </p>
                                     </a>
                                 </li>
@@ -199,7 +196,7 @@
                                     </a>
                                 </li>
                             @endcan
-                            <li class="nav-header">EOD</li>
+                            {{-- <li class="nav-header">EOD</li> --}}
                             @can('akses_bilyet')
                                 <li class="nav-item">
                                     <a href="{{ route('cashier.bilyets.index', ['page' => 'dashboard']) }}"

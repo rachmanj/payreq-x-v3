@@ -9,6 +9,7 @@ use App\Http\Controllers\ToolController;
 use App\Http\Controllers\UserController;
 use App\Http\Requests\StorePcbcRequest;
 use App\Http\Requests\UpdatePcbcRequest;
+use App\Models\Account;
 use App\Models\Dokumen;
 use App\Models\Pcbc;
 use App\Models\Project;
@@ -97,7 +98,7 @@ class PcbcController extends Controller
                     'total_files' => $pcbc ? $pcbc->count() : 0,
                     'files' => $pcbc ? $pcbc->map(function ($file) {
                         return [
-                            'filename' => $file->filename1,
+                            'filename' => $file->filename1, // Accessor returns full URL
                             'document_date' => $file->dokumen_date,
                         ];
                     })->toArray() : [],
@@ -139,38 +140,37 @@ class PcbcController extends Controller
 
     public function create()
     {
-        return view('cashier.pcbc.create');
+        // Get default system amount from cash account's app_balance
+        $defaultSystemAmount = 0;
+        $cashAccount = Account::where('project', auth()->user()->project)
+            ->where('type', 'cash')
+            ->first();
+
+        if ($cashAccount && isset($cashAccount->app_balance)) {
+            $defaultSystemAmount = $cashAccount->app_balance;
+        }
+
+        return view('cashier.pcbc.create', compact('defaultSystemAmount'));
     }
 
     public function update(Request $request, $id)
     {
         $dokumen = Dokumen::findOrFail($id);
-        
+
         // Authorization check
         $userRoles = app(UserController::class)->getUserRoles();
-        $isAuthorized = array_intersect($this->allowedRoles, $userRoles) 
+        $isAuthorized = array_intersect($this->allowedRoles, $userRoles)
             || $dokumen->created_by === auth()->id();
-        
+
         if (!$isAuthorized) {
             abort(403, 'Unauthorized action.');
         }
 
         if ($request->hasFile('attachment')) {
-            // Delete the old file
-            if ($dokumen->filename1 && file_exists(public_path('dokumens/' . $dokumen->filename1))) {
-                try {
-                    unlink(public_path('dokumens/' . $dokumen->filename1));
-                    Log::info('PCBC file replaced', [
-                        'old_file' => $dokumen->filename1,
-                        'user_id' => auth()->id()
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to delete old PCBC file', [
-                        'file' => $dokumen->filename1,
-                        'error' => $e->getMessage(),
-                        'user_id' => auth()->id()
-                    ]);
-                }
+            // Delete the old file - use getOriginal to get raw filename
+            $oldFilename = $dokumen->getOriginal('filename1');
+            if ($oldFilename) {
+                $this->pcbcService->deleteFile($oldFilename);
             }
 
             // Upload the new file
@@ -196,12 +196,13 @@ class PcbcController extends Controller
     public function destroy($id)
     {
         $dokumen = Dokumen::findOrFail($id);
-        
-        // Delete physical file
-        if ($dokumen->filename1) {
-            $this->pcbcService->deleteFile($dokumen->filename1);
+
+        // Delete physical file - use getOriginal to get raw filename (not accessor URL)
+        $rawFilename = $dokumen->getOriginal('filename1');
+        if ($rawFilename) {
+            $this->pcbcService->deleteFile($rawFilename);
         }
-        
+
         $dokumen->delete();
 
         return redirect()->back()->with('success', 'File deleted successfully.');
@@ -209,38 +210,52 @@ class PcbcController extends Controller
 
     public function data(Request $request)
     {
-        $userRoles = app(UserController::class)->getUserRoles();
-        $query = Dokumen::where('type', 'pcbc')
-            ->with('createdBy')
-            ->orderBy('dokumen_date', 'desc');
+        try {
+            $userRoles = app(UserController::class)->getUserRoles();
+            $query = Dokumen::where('type', 'pcbc')
+                ->with('createdBy')
+                ->orderBy('dokumen_date', 'desc');
 
-        if (!array_intersect($userRoles, ['superadmin', 'admin', 'cashier'])) {
-            $query->where('project', auth()->user()->project);
+            if (!array_intersect($userRoles, ['superadmin', 'admin', 'cashier'])) {
+                $query->where('project', auth()->user()->project);
+            }
+
+            // Advanced filtering
+            if ($request->has('project') && $request->project) {
+                $query->where('project', $request->project);
+            }
+
+            if ($request->has('date_from') && $request->date_from) {
+                $query->whereDate('dokumen_date', '>=', $request->date_from);
+            }
+
+            if ($request->has('date_to') && $request->date_to) {
+                $query->whereDate('dokumen_date', '<=', $request->date_to);
+            }
+
+            $dokumens = $query->get();
+
+            return datatables()->of($dokumens)
+                ->editColumn('dokumen_date', function ($dokumen) {
+                    return $dokumen->dokumen_date ? Carbon::parse($dokumen->dokumen_date)->format('d M Y') : '-';
+                })
+                ->editColumn('created_by', function ($dokumen) {
+                    return $dokumen->created_by_name ?? '-';
+                })
+                ->addIndexColumn()
+                ->addColumn('action', 'cashier.pcbc.action')
+                ->rawColumns(['action'])
+                ->toJson();
+        } catch (\Exception $e) {
+            Log::error('PCBC DataTable Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'An error occurred while loading data.',
+                'message' => config('app.debug') ? $e->getMessage() : 'Please contact administrator.'
+            ], 500);
         }
-
-        // Advanced filtering
-        if ($request->has('project') && $request->project) {
-            $query->where('project', $request->project);
-        }
-
-        if ($request->has('date_from') && $request->date_from) {
-            $query->whereDate('dokumen_date', '>=', $request->date_from);
-        }
-
-        if ($request->has('date_to') && $request->date_to) {
-            $query->whereDate('dokumen_date', '<=', $request->date_to);
-        }
-
-        $dokumens = $query->get();
-
-        return datatables()->of($dokumens)
-            ->editColumn('created_by', function ($dokumen) {
-                return $dokumen->created_by_name;
-            })
-            ->addIndexColumn()
-            ->addColumn('action', 'cashier.pcbc.action')
-            ->rawColumns(['action'])
-            ->toJson();
     }
 
     public function your_data(Request $request)
@@ -381,12 +396,12 @@ class PcbcController extends Controller
             DB::beginTransaction();
 
             $pcbc = Pcbc::findOrFail($id);
-            
+
             // Authorization check
             $userRoles = app(UserController::class)->getUserRoles();
-            $isAuthorized = array_intersect($this->allowedRoles, $userRoles) 
+            $isAuthorized = array_intersect($this->allowedRoles, $userRoles)
                 || $pcbc->created_by === auth()->id();
-            
+
             if (!$isAuthorized) {
                 abort(403, 'Unauthorized action.');
             }
@@ -406,7 +421,7 @@ class PcbcController extends Controller
             // Update approval info
             $pcbc->pemeriksa1 = $request->pemeriksa1;
             $pcbc->approved_by = $request->approved_by;
-            
+
             // Set audit trail
             $pcbc->updated_by = auth()->id();
             $pcbc->modified_at = now();
@@ -435,22 +450,28 @@ class PcbcController extends Controller
         $pcbc = Pcbc::findOrFail($id);
         $terbilang = app(ToolController::class)->terbilang($pcbc->fisik_amount);
 
-        return view('cashier.pcbc.print', compact('pcbc', 'terbilang'));
+        // Get design parameter, default to 1 (classic design)
+        $design = request('design', '1');
+
+        // Load the appropriate view based on design selection
+        $viewName = $design == '2' ? 'cashier.pcbc.print_v2' : 'cashier.pcbc.print';
+
+        return view($viewName, compact('pcbc', 'terbilang'));
     }
 
     public function destroy_pcbc($id)
     {
         $pcbc = Pcbc::findOrFail($id);
-        
+
         // Authorization check
         $userRoles = app(UserController::class)->getUserRoles();
-        $isAuthorized = array_intersect($this->allowedRoles, $userRoles) 
+        $isAuthorized = array_intersect($this->allowedRoles, $userRoles)
             || $pcbc->created_by === auth()->id();
-        
+
         if (!$isAuthorized) {
             abort(403, 'Unauthorized action.');
         }
-        
+
         $pcbc->delete();
 
         return redirect()->back()->with('success', 'PCBC deleted successfully');

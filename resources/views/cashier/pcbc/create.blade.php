@@ -15,7 +15,8 @@
             <div class="alert alert-info alert-dismissible">
                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                 <h5><i class="icon fas fa-info"></i> Petty Cash Balance Control (PCBC)</h5>
-                Record physical cash count by denomination and compare with system and SAP amounts. All amounts are in Indonesian Rupiah (IDR).
+                Record physical cash count by denomination and compare with system and SAP amounts. All amounts are in
+                Indonesian Rupiah (IDR).
             </div>
 
             <div class="card card-primary card-outline">
@@ -42,8 +43,9 @@
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
                                                 </div>
-                                                <input type="text" class="form-control @error('nomor') is-invalid @enderror"
-                                                    id="nomor" name="nomor" value="auto generate" readonly
+                                                <input type="text"
+                                                    class="form-control @error('nomor') is-invalid @enderror" id="nomor"
+                                                    name="nomor" value="auto generate" readonly
                                                     style="background-color: #e9ecef;">
                                             </div>
                                             <small class="form-text text-muted">Auto-generated on save</small>
@@ -54,11 +56,13 @@
                                             <label for="pcbc_date">PCBC Date <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                                    <span class="input-group-text"><i
+                                                            class="fas fa-calendar-alt"></i></span>
                                                 </div>
-                                                <input type="date" class="form-control @error('pcbc_date') is-invalid @enderror"
-                                                    id="pcbc_date" name="pcbc_date" value="{{ old('pcbc_date', date('Y-m-d')) }}"
-                                                    required>
+                                                <input type="date"
+                                                    class="form-control @error('pcbc_date') is-invalid @enderror"
+                                                    id="pcbc_date" name="pcbc_date"
+                                                    value="{{ old('pcbc_date', date('Y-m-d')) }}" required>
                                             </div>
                                             @error('pcbc_date')
                                                 <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -72,9 +76,11 @@
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text"><i class="fas fa-building"></i></span>
                                                 </div>
-                                                <input type="text" class="form-control @error('project') is-invalid @enderror"
-                                                    id="project" name="project" value="{{ old('project', auth()->user()->project) }}"
-                                                    readonly style="background-color: #e9ecef;">
+                                                <input type="text"
+                                                    class="form-control @error('project') is-invalid @enderror"
+                                                    id="project" name="project"
+                                                    value="{{ old('project', auth()->user()->project) }}" readonly
+                                                    style="background-color: #e9ecef;">
                                             </div>
                                         </div>
                                     </div>
@@ -95,7 +101,8 @@
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="info-box">
-                                            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-server"></i></span>
+                                            <span class="info-box-icon bg-info elevation-1"><i
+                                                    class="fas fa-server"></i></span>
                                             <div class="info-box-content">
                                                 <span class="info-box-text">System Amount</span>
                                                 <span class="info-box-number" id="system-amount-display">Rp 0,00</span>
@@ -103,16 +110,17 @@
                                             </div>
                                         </div>
                                         <div class="form-group mt-2">
-                                            <label for="system_amount">Enter System Amount 
-                                                <i class="fas fa-info-circle" data-toggle="tooltip" 
-                                                   title="Enter amount from accounting system. Use comma (,) as decimal separator."></i>
+                                            <label for="system_amount">Enter System Amount
+                                                <i class="fas fa-info-circle" data-toggle="tooltip"
+                                                    title="Enter amount from accounting system. Use comma (,) as decimal separator."></i>
                                             </label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text">Rp</span>
                                                 </div>
                                                 <input type="text" class="form-control text-center" id="system_amount"
-                                                    name="system_amount" value="{{ old('system_amount') }}"
+                                                    name="system_amount"
+                                                    value="{{ old('system_amount', $defaultSystemAmount ? number_format($defaultSystemAmount, 2, ',', '.') : '') }}"
                                                     placeholder="0,00"
                                                     oninput="formatAmountInput(this); updateAmountSummary();">
                                             </div>
@@ -120,10 +128,12 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="info-box">
-                                            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-bill-wave"></i></span>
+                                            <span class="info-box-icon bg-success elevation-1"><i
+                                                    class="fas fa-money-bill-wave"></i></span>
                                             <div class="info-box-content">
                                                 <span class="info-box-text">Physical Amount</span>
-                                                <span class="info-box-number text-success" id="fisik-amount-display">Rp 0</span>
+                                                <span class="info-box-number text-success" id="fisik-amount-display">Rp
+                                                    0</span>
                                                 <small class="text-muted">Auto-calculated from denominations</small>
                                             </div>
                                         </div>
@@ -133,14 +143,15 @@
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text">Rp</span>
                                                 </div>
-                                                <input type="text" class="form-control text-center bg-light" id="fisik_amount"
-                                                    name="fisik_amount" readonly>
+                                                <input type="text" class="form-control text-center bg-light"
+                                                    id="fisik_amount" name="fisik_amount" readonly>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="info-box">
-                                            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-sap"></i></span>
+                                            <span class="info-box-icon bg-warning elevation-1"><i
+                                                    class="fas fa-sap"></i></span>
                                             <div class="info-box-content">
                                                 <span class="info-box-text">SAP Amount</span>
                                                 <span class="info-box-number" id="sap-amount-display">Rp 0,00</span>
@@ -148,23 +159,22 @@
                                             </div>
                                         </div>
                                         <div class="form-group mt-2">
-                                            <label for="sap_amount">Enter SAP Amount 
-                                                <i class="fas fa-info-circle" data-toggle="tooltip" 
-                                                   title="Enter amount from SAP system. Use comma (,) as decimal separator."></i>
+                                            <label for="sap_amount">Enter SAP Amount
+                                                <i class="fas fa-info-circle" data-toggle="tooltip"
+                                                    title="Enter amount from SAP system. Use comma (,) as decimal separator."></i>
                                             </label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text">Rp</span>
                                                 </div>
-                                                <input type="text" class="form-control text-center" id="sap_amount" name="sap_amount"
-                                                    value="{{ old('sap_amount') }}"
-                                                    placeholder="0,00"
+                                                <input type="text" class="form-control text-center" id="sap_amount"
+                                                    name="sap_amount" value="{{ old('sap_amount') }}" placeholder="0,00"
                                                     oninput="formatAmountInput(this); updateAmountSummary();">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Variance Alert -->
                                 <div class="alert alert-warning mt-3" id="variance-alert" style="display:none;">
                                     <h5><i class="icon fas fa-exclamation-triangle"></i> Variance Detected</h5>
@@ -187,21 +197,24 @@
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
                                                 </div>
-                                                <input type="text" class="form-control bg-light" id="cashier" name="cashier"
-                                                    value="{{ auth()->user()->name }}" readonly>
+                                                <input type="text" class="form-control bg-light" id="cashier"
+                                                    name="cashier" value="{{ auth()->user()->name }}" readonly>
                                             </div>
                                             <small class="form-text text-muted">Current logged-in user</small>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label for="pemeriksa1">Pemeriksa (Checker) <span class="text-danger">*</span></label>
+                                            <label for="pemeriksa1">Pemeriksa (Checker) <span
+                                                    class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text"><i class="fas fa-user-check"></i></span>
+                                                    <span class="input-group-text"><i
+                                                            class="fas fa-user-check"></i></span>
                                                 </div>
-                                                <input type="text" class="form-control @error('pemeriksa1') is-invalid @enderror"
-                                                    id="pemeriksa1" name="pemeriksa1" value="{{ old('pemeriksa1') }}" 
+                                                <input type="text"
+                                                    class="form-control @error('pemeriksa1') is-invalid @enderror"
+                                                    id="pemeriksa1" name="pemeriksa1" value="{{ old('pemeriksa1') }}"
                                                     placeholder="Enter checker name" required>
                                             </div>
                                             @error('pemeriksa1')
@@ -212,13 +225,16 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label for="approved_by">Approved By <span class="text-danger">*</span></label>
+                                            <label for="approved_by">Approved By <span
+                                                    class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text"><i class="fas fa-user-shield"></i></span>
+                                                    <span class="input-group-text"><i
+                                                            class="fas fa-user-shield"></i></span>
                                                 </div>
-                                                <input type="text" class="form-control @error('approved_by') is-invalid @enderror"
-                                                    value="{{ old('approved_by') }}" id="approved_by" name="approved_by" 
+                                                <input type="text"
+                                                    class="form-control @error('approved_by') is-invalid @enderror"
+                                                    value="{{ old('approved_by') }}" id="approved_by" name="approved_by"
                                                     placeholder="Enter approver name" required>
                                             </div>
                                             @error('approved_by')
@@ -277,7 +293,7 @@
         }
 
         .info-box {
-            box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+            box-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .2);
             border-radius: 0.25rem;
             background-color: #fff;
             display: -ms-flexbox;
@@ -352,7 +368,7 @@
             .info-box {
                 margin-bottom: 0.5rem;
             }
-            
+
             .col-md-4 {
                 margin-bottom: 1rem;
             }
@@ -365,9 +381,15 @@
         $(document).ready(function() {
             // Initialize tooltips
             $('[data-toggle="tooltip"]').tooltip();
-            
-            // Initialize all money inputs with value 0
-            $('.money-input').val(0);
+
+            // Initialize all money inputs with value 0 (except system_amount which has default value)
+            $('.money-input').not('#system_amount').val(0);
+
+            // Format system_amount if it has a default value
+            const systemAmountInput = $('#system_amount');
+            if (systemAmountInput.val()) {
+                formatAmountInput(systemAmountInput[0]);
+            }
 
             // Calculate all results on page load
             calculateAllResults();
@@ -537,15 +559,17 @@
 
         function clearSection(type) {
             if (confirm(`Clear all ${type === 'kertas' ? 'paper money' : 'coin'} denominations?`)) {
-                const prefixes = type === 'kertas' 
-                    ? ['kertas_100rb', 'kertas_50rb', 'kertas_20rb', 'kertas_10rb', 'kertas_5rb', 'kertas_2rb', 'kertas_1rb', 'kertas_500', 'kertas_100']
-                    : ['logam_1rb', 'logam_500', 'logam_200', 'logam_100', 'logam_50', 'logam_25'];
-                
+                const prefixes = type === 'kertas' ?
+                    ['kertas_100rb', 'kertas_50rb', 'kertas_20rb', 'kertas_10rb', 'kertas_5rb', 'kertas_2rb', 'kertas_1rb',
+                        'kertas_500', 'kertas_100'
+                    ] :
+                    ['logam_1rb', 'logam_500', 'logam_200', 'logam_100', 'logam_50', 'logam_25'];
+
                 prefixes.forEach(function(prefix) {
                     $('#' + prefix).val(0);
                     $('#' + prefix + '_result').val('');
                 });
-                
+
                 calculateAllResults();
                 updateAmountSummary();
             }

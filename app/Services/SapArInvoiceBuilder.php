@@ -22,12 +22,40 @@ class SapArInvoiceBuilder
     {
         $customer = $this->faktur->customer;
         $invoiceDate = Carbon::parse($this->faktur->invoice_date);
+        $today = Carbon::today();
 
         // Due date: 30 days after Faktur Date (not invoice_date)
         $fakturDate = $this->faktur->faktur_date
             ? Carbon::parse($this->faktur->faktur_date)
             : $invoiceDate;
         $dueDate = $fakturDate->copy()->addDays(30);
+
+        // Determine posting date: SAP B1 has strict date validation
+        // Priority: faktur_date (if valid) > invoice_date (if not future) > today
+        // SAP B1 typically doesn't allow posting dates more than 1-2 years in the past or in the future
+        $maxPastYears = 2; // SAP B1 usually allows up to 2 years in the past
+        $postingDate = $invoiceDate;
+
+        // Check if faktur_date is valid and within acceptable range
+        if ($this->faktur->faktur_date) {
+            $fakturDateParsed = Carbon::parse($this->faktur->faktur_date);
+            $minAllowedDate = $today->copy()->subYears($maxPastYears);
+
+            if ($fakturDateParsed->gte($minAllowedDate) && $fakturDateParsed->lte($today)) {
+                // Use faktur_date if it's within the last 2 years and not in the future
+                $postingDate = $fakturDateParsed;
+            }
+        }
+
+        // If posting date is still invalid, adjust it
+        $minAllowedDate = $today->copy()->subYears($maxPastYears);
+        if ($postingDate->lt($minAllowedDate)) {
+            // Too old, use minimum allowed date
+            $postingDate = $minAllowedDate;
+        } elseif ($postingDate->gt($today)) {
+            // Future date, use today
+            $postingDate = $today;
+        }
 
         // Calculate WTax once for reuse
         $wtaxAmount = $this->calculateWTaxAmount();
@@ -36,9 +64,9 @@ class SapArInvoiceBuilder
         // G/L Account-based structure
         $invoice = [
             'CardCode' => $customer->code, // SAP Business Partner Code
-            'DocDate' => $invoiceDate->format('Y-m-d'),
+            'DocDate' => $postingDate->format('Y-m-d'),
             'DocDueDate' => $dueDate->format('Y-m-d'),
-            'TaxDate' => $invoiceDate->format('Y-m-d'),
+            'TaxDate' => $postingDate->format('Y-m-d'),
             'DocCurrency' => $this->getCurrency(),
             'DocRate' => $this->faktur->kurs ?? 1.0,
 
@@ -162,12 +190,33 @@ class SapArInvoiceBuilder
     {
         $customer = $this->faktur->customer;
         $invoiceDate = Carbon::parse($this->faktur->invoice_date);
+        $today = Carbon::today();
 
         // Due date: 30 days after Faktur Date
         $fakturDate = $this->faktur->faktur_date
             ? Carbon::parse($this->faktur->faktur_date)
             : $invoiceDate;
         $dueDate = $fakturDate->copy()->addDays(30);
+
+        // Use same date logic as build() method for consistency
+        $maxPastYears = 2;
+        $postingDate = $invoiceDate;
+
+        if ($this->faktur->faktur_date) {
+            $fakturDateParsed = Carbon::parse($this->faktur->faktur_date);
+            $minAllowedDate = $today->copy()->subYears($maxPastYears);
+
+            if ($fakturDateParsed->gte($minAllowedDate) && $fakturDateParsed->lte($today)) {
+                $postingDate = $fakturDateParsed;
+            }
+        }
+
+        $minAllowedDate = $today->copy()->subYears($maxPastYears);
+        if ($postingDate->lt($minAllowedDate)) {
+            $postingDate = $minAllowedDate;
+        } elseif ($postingDate->gt($today)) {
+            $postingDate = $today;
+        }
 
         $wtaxAmount = $this->calculateWTaxAmount();
         $wtaxCode = $this->config['default_wtax_code'] ?? '';
@@ -183,9 +232,9 @@ class SapArInvoiceBuilder
                     'name' => $customer->name ?? '',
                 ],
                 'dates' => [
-                    'posting_date' => $invoiceDate->format('Y-m-d'),
+                    'posting_date' => $postingDate->format('Y-m-d'),
                     'due_date' => $dueDate->format('Y-m-d'),
-                    'tax_date' => $invoiceDate->format('Y-m-d'),
+                    'tax_date' => $postingDate->format('Y-m-d'),
                 ],
                 'invoice_no' => $this->faktur->invoice_no,
                 'faktur_no' => $this->faktur->faktur_no,
@@ -239,6 +288,29 @@ class SapArInvoiceBuilder
         $revenueAccount = $this->faktur->revenue_account_code ?? ($this->config['default_revenue_account'] ?? '41101');
         if (!in_array($revenueAccount, $validRevenueAccounts)) {
             $errors[] = 'Invalid revenue account code. Must be 41101 or 41201.';
+        }
+
+        // Validate dates are within SAP B1 acceptable range
+        $today = Carbon::today();
+        $maxPastYears = 2;
+        $minAllowedDate = $today->copy()->subYears($maxPastYears);
+
+        if ($this->faktur->faktur_date) {
+            $fakturDate = Carbon::parse($this->faktur->faktur_date);
+            if ($fakturDate->lt($minAllowedDate)) {
+                $errors[] = "Faktur date ({$fakturDate->format('Y-m-d')}) is too old. SAP B1 allows dates within the last {$maxPastYears} years only.";
+            } elseif ($fakturDate->gt($today)) {
+                $errors[] = "Faktur date ({$fakturDate->format('Y-m-d')}) cannot be in the future.";
+            }
+        }
+
+        if ($this->faktur->invoice_date) {
+            $invoiceDate = Carbon::parse($this->faktur->invoice_date);
+            if ($invoiceDate->lt($minAllowedDate)) {
+                $errors[] = "Invoice date ({$invoiceDate->format('Y-m-d')}) is too old. SAP B1 allows dates within the last {$maxPastYears} years only.";
+            } elseif ($invoiceDate->gt($today)) {
+                $errors[] = "Invoice date ({$invoiceDate->format('Y-m-d')}) cannot be in the future.";
+            }
         }
 
         return $errors;

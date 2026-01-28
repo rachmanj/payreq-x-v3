@@ -1,3 +1,49 @@
+### [028] PCBC Print Design Optimization & Create Form Enhancement (2026-01-28) ✅ COMPLETE
+
+**Challenge**: The PCBC print designs were not optimized for single-page printing, requiring multiple pages and external font dependencies. Additionally, the create form required manual entry of system amount, which could be automatically populated from the cash account balance.
+
+**Solution**: Implemented comprehensive print design optimizations and enhanced the create form with automatic default values. Optimized both print designs (Classic and Modern) to fit on a single A4 page by reducing spacing, margins, and font sizes while maintaining readability. Removed Google Fonts dependency and replaced with system font stack for better performance and offline capability. Converted signature and summary sections to horizontal flex layouts in Design 2 for better space utilization. Added automatic population of system amount from cash account's `app_balance` field based on the logged-in cashier's project.
+
+**Key Learning**: Single-page print optimization requires careful balance between compactness and readability. System fonts provide better performance and eliminate external dependencies. Horizontal layouts can significantly improve space efficiency in print designs. Auto-populating form fields from related data reduces user effort and potential errors. Using `old()` helper with default values ensures form state persistence across validation errors.
+
+**Implementation Details**:
+
+- **Print Design Optimizations**:
+    - Reduced page margins from `0.5cm` to `0.3cm`
+    - Reduced row spacing from `1rem` to `0.2-0.3rem`
+    - Reduced table cell padding from `0.5rem` to `0.1-0.15rem`
+    - Reduced font sizes (headers: `0.9rem`, tables: `0.65-0.7rem`, footer: `0.55rem`)
+    - Removed Google Fonts CDN, implemented system font stack
+    - Converted Design 2 summary and signatures to horizontal flex layouts
+    - Estimated space savings: ~200-250px vertical space
+
+- **Controller Changes** (`app/Http/Controllers/Cashier/PcbcController.php`):
+    - Updated `create()` method to fetch cash account's `app_balance`
+    - Added `Account` model import
+    - Passes `$defaultSystemAmount` to view with proper null handling
+
+- **View Changes** (`resources/views/cashier/pcbc/create.blade.php`):
+    - Updated `system_amount` input to use default value from `$defaultSystemAmount`
+    - Value formatted using `number_format()` with Indonesian format (comma as decimal separator)
+    - Updated JavaScript to preserve default value and format on page load
+    - Auto-updates display summary with default value
+
+- **Print View Changes**:
+    - `resources/views/cashier/pcbc/print.blade.php`: Removed Google Fonts, added system fonts, compact layout
+    - `resources/views/cashier/pcbc/print_v2.blade.php`: Removed Google Fonts, horizontal layouts, compact design
+
+**Benefits**:
+
+- Single-page printing reduces paper usage and improves document handling
+- Local assets eliminate external dependencies and improve loading speed
+- Horizontal layouts maximize space efficiency
+- Auto-populated system amount reduces manual entry and potential errors
+- System fonts provide consistent appearance across platforms
+
+**Impact**: Print designs now fit on single page, load faster without external dependencies, and provide better user experience. Create form automatically populates system amount, reducing user effort and improving data accuracy. All improvements maintain professional appearance and readability.
+
+---
+
 ### [027] Verification Journal Detail Editing Enhancement - All Rows Editable (2025-01-XX) ✅ COMPLETE
 
 **Challenge**: The verification journal detail editing page (`/accounting/sap-sync/edit-vjdetail`) only allowed editing of debit entries. Credit entries (cash accounts) were completely locked from editing, preventing users from correcting account assignments, project codes, cost centers, or descriptions for credit-side entries. This limitation was problematic because credit entries often need adjustments before posting to SAP B1, and users had no way to modify them through the UI.
@@ -9,39 +55,41 @@
 **Implementation Details**:
 
 - **Controller Changes** (`app/Http/Controllers/Accounting/SapSyncController.php`):
-  - Updated `edit_vjdetail_data()` to add `debit_credit_badge` column with color-coded badges
-  - Modified action column to pass `$vj` (VerificationJournal) to action view for SAP posting check
-  - Added eager loading of `verificationJournal` relationship to prevent N+1 queries
-  - Enhanced `update_detail()` method with comprehensive validation:
-    - Checks if VJ is already posted to SAP (prevents editing)
-    - Validates account type for credit entries (must be cash or bank)
-    - Validates account project matches VJ project for credit entries
-    - Returns JSON responses with clear error messages
+    - Updated `edit_vjdetail_data()` to add `debit_credit_badge` column with color-coded badges
+    - Modified action column to pass `$vj` (VerificationJournal) to action view for SAP posting check
+    - Added eager loading of `verificationJournal` relationship to prevent N+1 queries
+    - Enhanced `update_detail()` method with comprehensive validation:
+        - Checks if VJ is already posted to SAP (prevents editing)
+        - Validates account type for credit entries (must be cash or bank)
+        - Validates account project matches VJ project for credit entries
+        - Returns JSON responses with clear error messages
 
 - **View Changes** (`resources/views/accounting/sap-sync/edit-vjdetail/index.blade.php`):
-  - Added "Type" column header to DataTable
-  - Updated column definitions to include `debit_credit_badge` column
-  - Adjusted column widths to accommodate new Type column
+    - Added "Type" column header to DataTable
+    - Updated column definitions to include `debit_credit_badge` column
+    - Adjusted column widths to accommodate new Type column
 
 - **Action View Changes** (`resources/views/accounting/sap-sync/edit-vjdetail/action.blade.php`):
-  - Removed `@if ($model->debit_credit === 'debit')` restriction allowing all rows to be editable
-  - Added SAP posting check - shows "Posted" badge with lock icon if `sap_journal_no` exists
-  - Added fallback to use `$model->verificationJournal` relationship if `$vj` variable not available
-  - Implemented account filtering for credit entries:
-    - For credit entries: Only shows accounts with `type IN ('cash', 'bank')` matching VJ project
-    - For debit entries: Shows all accounts (unchanged behavior)
-  - Added warning alert in modal body for credit entries: "Credit Entry: Only cash or bank accounts from project [PROJECT] can be selected."
-  - Improved AJAX error handling to properly handle JSON responses from backend
+    - Removed `@if ($model->debit_credit === 'debit')` restriction allowing all rows to be editable
+    - Added SAP posting check - shows "Posted" badge with lock icon if `sap_journal_no` exists
+    - Added fallback to use `$model->verificationJournal` relationship if `$vj` variable not available
+    - Implemented account filtering for credit entries:
+        - For credit entries: Only shows accounts with `type IN ('cash', 'bank')` matching VJ project
+        - For debit entries: Shows all accounts (unchanged behavior)
+    - Added warning alert in modal body for credit entries: "Credit Entry: Only cash or bank accounts from project [PROJECT] can be selected."
+    - Improved AJAX error handling to properly handle JSON responses from backend
 
 - **Route Fix** (`routes/web.php`):
-  - Commented out duplicate route definition that was conflicting with route in `routes/accounting.php`
+    - Commented out duplicate route definition that was conflicting with route in `routes/accounting.php`
 
 **Visual Enhancements**:
+
 - DEBIT rows: Blue badge (`badge-primary`) for clear visual distinction
 - CREDIT rows: Red badge (`badge-danger`) for clear visual distinction
 - Posted journals: "Posted" badge with lock icon instead of edit button
 
 **Business Rules Enforced**:
+
 1. Only accounts with type 'cash' or 'bank' can be selected for credit entries
 2. Selected account must belong to the same project as the verification journal (for credit entries)
 3. Verification journals already posted to SAP B1 cannot be edited (prevents data inconsistency)
@@ -61,42 +109,44 @@
 **Implementation Details**:
 
 - **New Components**:
-  - `resources/views/templates/partials/sidebar.blade.php`: Complete sidebar with all menu items in tree structure
-  - `resources/views/templates/partials/topbar.blade.php`: Simplified top navigation with toggle and user menu
+    - `resources/views/templates/partials/sidebar.blade.php`: Complete sidebar with all menu items in tree structure
+    - `resources/views/templates/partials/topbar.blade.php`: Simplified top navigation with toggle and user menu
 
 - **Layout Changes**:
-  - Updated `resources/views/templates/main.blade.php`: Changed body class from `layout-top-nav layout-navbar-fixed` to `sidebar-mini layout-fixed`
-  - Replaced navbar include with sidebar + topbar includes
-  - Changed container to `container-fluid` for better sidebar layout compatibility
+    - Updated `resources/views/templates/main.blade.php`: Changed body class from `layout-top-nav layout-navbar-fixed` to `sidebar-mini layout-fixed`
+    - Replaced navbar include with sidebar + topbar includes
+    - Changed container to `container-fluid` for better sidebar layout compatibility
 
 - **Menu Structure**:
-  - Dashboard (with conditional routing based on permissions)
-  - My PayReqs (tree with Submissions, Realizations, LOT Claims, RAB, Histories, Faktur, Rekening Koran, Reports)
-  - Cashier (tree with transactions, verifications, EOD section)
-  - Accounting (tree with SAP Sync, Accounts, Exchange Rates, Giro, Project Payreqs, VAT, WTax 23, Delivery, Loans, Reports)
-  - Approvals (tree with Approval Stages, Payment Request, Realizations, RAB, Reports)
-  - Admin (tree with Accounts, Currencies, Sync functions, User/Role/Permission management, Document Numbering, Parameters, API Keys, Announcements)
-  - Search (direct link)
+    - Dashboard (with conditional routing based on permissions)
+    - My PayReqs (tree with Submissions, Realizations, LOT Claims, RAB, Histories, Faktur, Rekening Koran, Reports)
+    - Cashier (tree with transactions, verifications, EOD section)
+    - Accounting (tree with SAP Sync, Accounts, Exchange Rates, Giro, Project Payreqs, VAT, WTax 23, Delivery, Loans, Reports)
+    - Approvals (tree with Approval Stages, Payment Request, Realizations, RAB, Reports)
+    - Admin (tree with Accounts, Currencies, Sync functions, User/Role/Permission management, Document Numbering, Parameters, API Keys, Announcements)
+    - Search (direct link)
 
 - **Features**:
-  - Permission-based visibility using existing `@can` and `@hasanyrole` directives
-  - Active state highlighting using `request()->routeIs()` pattern matching
-  - Auto-expand parent menus when child route is active
-  - Sidebar toggle functionality (AdminLTE built-in `data-widget="pushmenu"`)
-  - Sidebar state persistence (localStorage) to remember collapsed/expanded state
-  - User panel in sidebar showing name and project
-  - Font Awesome icons for all menu items
+    - Permission-based visibility using existing `@can` and `@hasanyrole` directives
+    - Active state highlighting using `request()->routeIs()` pattern matching
+    - Auto-expand parent menus when child route is active
+    - Sidebar toggle functionality (AdminLTE built-in `data-widget="pushmenu"`)
+    - Sidebar state persistence (localStorage) to remember collapsed/expanded state
+    - User panel in sidebar showing name and project
+    - Font Awesome icons for all menu items
 
 - **JavaScript Enhancements**:
-  - Sidebar state management with localStorage
-  - Auto-expand functionality for active menu parents
-  - Smooth transitions handled by AdminLTE
+    - Sidebar state management with localStorage
+    - Auto-expand functionality for active menu parents
+    - Smooth transitions handled by AdminLTE
 
 **Preserved Files** (for rollback if needed):
+
 - `resources/views/templates/partials/navbar.blade.php` - Old navbar
 - `resources/views/templates/partials/menu/*.blade.php` - Old menu partials
 
 **Additional Improvements**:
+
 - Updated login page to v.4.0 with modern gradient design
 - Added "What's New" section highlighting sidebar improvements (collapsed by default)
 - Fixed `/home` route 404 issue by updating `RouteServiceProvider::HOME` constant
@@ -111,10 +161,12 @@
 **Context**: New Projects/Departments admin pages (SAP sync + visibility toggles) returned a DataTables Ajax 500 because `synced_at` was stored as a string for legacy rows and was being formatted directly as a Carbon instance.
 
 **Fixes**:
+
 - Normalize `synced_at` rendering by parsing string/timestamp values via `Carbon::parse` in both ProjectController and DepartmentController.
 - Replaced alert-based feedback with toastr notifications for SAP sync and visibility toggle actions on both admin pages.
 
 **Notes**:
+
 - Existing data remains untouched; the controllers defensively format `synced_at` to avoid fatal errors on mixed string/datetime content.
 - Front-end feedback now uses toastr; ensure toastr assets are loaded in the base layout.
 
@@ -149,44 +201,45 @@
 **Technical Implementation**:
 
 - **Service Layer Integration**:
-  - `SapService`: Handles SAP B1 Service Layer authentication, session management, and journal entry creation
-  - Cookie-based session management using Guzzle CookieJar
-  - Automatic session expiration handling with re-login on 401 errors
-  - Journal entry payload construction and submission via POST to `/JournalEntries` endpoint
-  - SAP Document Number extraction from response (`Number` field prioritized over `JdtNum`)
+    - `SapService`: Handles SAP B1 Service Layer authentication, session management, and journal entry creation
+    - Cookie-based session management using Guzzle CookieJar
+    - Automatic session expiration handling with re-login on 401 errors
+    - Journal entry payload construction and submission via POST to `/JournalEntries` endpoint
+    - SAP Document Number extraction from response (`Number` field prioritized over `JdtNum`)
 
 - **Journal Entry Builder**:
-  - `SapJournalEntryBuilder`: Constructs journal entry payloads from `VerificationJournal` and `VerificationJournalDetail` records
-  - Validates journal balance (debits = credits) and required fields
-  - Maps local account codes, projects, cost centers to SAP B1 format
-  - Handles date formatting (ReferenceDate, TaxDate, DueDate)
+    - `SapJournalEntryBuilder`: Constructs journal entry payloads from `VerificationJournal` and `VerificationJournalDetail` records
+    - Validates journal balance (debits = credits) and required fields
+    - Maps local account codes, projects, cost centers to SAP B1 format
+    - Handles date formatting (ReferenceDate, TaxDate, DueDate)
 
 - **Database Schema**:
-  - Migration: Added `sap_submission_attempts`, `sap_submission_status`, `sap_submission_error`, `sap_submitted_at`, `sap_submitted_by` to `verification_journals` table
-  - Migration: Created `sap_submission_logs` table for audit trail with status, error messages, SAP response, journal number, attempt number
+    - Migration: Added `sap_submission_attempts`, `sap_submission_status`, `sap_submission_error`, `sap_submitted_at`, `sap_submitted_by` to `verification_journals` table
+    - Migration: Created `sap_submission_logs` table for audit trail with status, error messages, SAP response, journal number, attempt number
 
 - **Controller Logic**:
-  - `SapSyncController::submitToSap()`: Validates permissions, prevents resubmission, initiates transaction, builds journal entry, submits to SAP, updates local records on success
-  - Database transaction ensures atomicity - all updates roll back on failure
-  - Updates `sap_journal_no`, `posted_by`, `posted_at` on successful submission
-  - Creates `SapSubmissionLog` entry for each attempt (success or failure)
+    - `SapSyncController::submitToSap()`: Validates permissions, prevents resubmission, initiates transaction, builds journal entry, submits to SAP, updates local records on success
+    - Database transaction ensures atomicity - all updates roll back on failure
+    - Updates `sap_journal_no`, `posted_by`, `posted_at` on successful submission
+    - Creates `SapSubmissionLog` entry for each attempt (success or failure)
 
 - **UI Enhancements**:
-  - Submit button only visible when `sap_journal_no` is empty
-  - Confirmation modal displays journal summary, important notes, and previous submission attempts
-  - Cancel SAP Info button disabled once journal is posted to SAP B1
-  - Success/error messages displayed to user
-  - Status indicators show posted status
+    - Submit button only visible when `sap_journal_no` is empty
+    - Confirmation modal displays journal summary, important notes, and previous submission attempts
+    - Cancel SAP Info button disabled once journal is posted to SAP B1
+    - Success/error messages displayed to user
+    - Status indicators show posted status
 
 - **Configuration**:
-  - Environment variables: `SAP_SERVER_URL`, `SAP_DB_NAME`, `SAP_USER`, `SAP_PASSWORD`
-  - Config mapping: `config/services.php['sap']`
+    - Environment variables: `SAP_SERVER_URL`, `SAP_DB_NAME`, `SAP_USER`, `SAP_PASSWORD`
+    - Config mapping: `config/services.php['sap']`
 
 - **SAP B1 Configuration**:
-  - General Settings → Cash Flow tab → "Assignment in Transactions with All Relevant to Cash Flow" set to "Warning Only"
-  - This allows journal entries to be posted without mandatory cash flow assignment while still showing warnings
+    - General Settings → Cash Flow tab → "Assignment in Transactions with All Relevant to Cash Flow" set to "Warning Only"
+    - This allows journal entries to be posted without mandatory cash flow assignment while still showing warnings
 
 **Files Created**:
+
 - `app/Services/SapService.php`
 - `app/Services/SapJournalEntryBuilder.php`
 - `app/Models/SapSubmissionLog.php`
@@ -194,12 +247,14 @@
 - `database/migrations/2025_11_20_015249_create_sap_submission_logs_table.php`
 
 **Files Modified**:
+
 - `app/Http/Controllers/Accounting/SapSyncController.php` (added `submitToSap()` method)
 - `resources/views/accounting/sap-sync/show.blade.php` (added submit button, confirmation modal, status indicators)
 - `config/services.php` (added SAP configuration)
 - `routes/accounting.php` (added submit-to-sap route)
 
 **Testing Results**:
+
 - Successfully submitted Verification Journal No 25VJ02501731 → SAP Journal Number: 257644473
 - Successfully submitted Verification Journal No 25VJ00001727 → SAP Journal Number: 257644474 (after resolving cash flow assignment requirement)
 - All error scenarios properly handled with transaction rollback
@@ -216,6 +271,7 @@
 **Key Learning**: Business Partners data is critical for financial operations (credit management, VAT compliance, contact information). Change tracking provides audit trail for compliance and helps identify data drift. Auto-syncing to `customers` table maintains backward compatibility while leveraging rich SAP data. Credit limit validation prevents financial risks proactively. Unified sync UI improves admin experience and reduces manual command-line operations. Change detection service enables proactive monitoring of master data changes without requiring manual comparisons.
 
 **Files Created**:
+
 - `app/Models/SapBusinessPartner.php` - Business Partner model with type constants and helper methods
 - `database/migrations/2026_01_08_000857_create_sap_business_partners_table.php` - Main Business Partners table
 - `database/migrations/2026_01_08_002446_add_change_tracking_to_sap_business_partners_table.php` - Change tracking fields
@@ -227,6 +283,7 @@
 - `resources/views/admin/sap-master-data-sync/index.blade.php` - Unified sync UI
 
 **Files Modified**:
+
 - `app/Services/SapService.php` - Added `getBusinessPartners()` method
 - `app/Services/SapMasterDataSyncService.php` - Added `syncBusinessPartners()` with change detection
 - `app/Console/Commands/SyncSapMasterData.php` - Added `--business-partners` option
@@ -236,6 +293,7 @@
 - `resources/views/templates/partials/sidebar.blade.php` - Added menu items
 
 **Testing Results**:
+
 - Successfully synced 2,366 Business Partners from SAP B1
 - Credit limit validation working correctly in Faktur creation
 - Customer/Vendor auto-sync functional
@@ -275,86 +333,80 @@
 
 **Technical Implementation**:
 
--   **Database Schema**:
+- **Database Schema**:
+    - Migration: create api_keys table with SHA256 key hashing, usage tracking, application identification
+    - Fields: name, key (64-char hash), application, description, is_active, last_used_at, created_by, permissions (JSON for future)
+    - Composite index on (key, is_active) for fast authentication lookups
 
-    -   Migration: create api_keys table with SHA256 key hashing, usage tracking, application identification
-    -   Fields: name, key (64-char hash), application, description, is_active, last_used_at, created_by, permissions (JSON for future)
-    -   Composite index on (key, is_active) for fast authentication lookups
+- **Authentication System**:
+    - Middleware: AuthenticateApiKey validates X-API-Key header against hashed keys
+    - Model: ApiKey with generate(), validate(), markAsUsed() methods
+    - Security: One-way hashing, instant activation/deactivation, usage tracking
+    - Async last_used_at updates via afterResponse() to avoid request slowdown
 
--   **Authentication System**:
+- **API Endpoints**:
+    - GET /api/payreqs - List with comprehensive filtering (project, department, status, dates, amounts)
+    - GET /api/payreqs/{id} - Retrieve single payreq with all relationships
+    - POST /api/payreqs/advance - Create advance payment request
+    - POST /api/payreqs/reimburse - Create reimburse with multiple detail items
+    - POST /api/payreqs/{id}/cancel - Cancel draft payreqs only
 
-    -   Middleware: AuthenticateApiKey validates X-API-Key header against hashed keys
-    -   Model: ApiKey with generate(), validate(), markAsUsed() methods
-    -   Security: One-way hashing, instant activation/deactivation, usage tracking
-    -   Async last_used_at updates via afterResponse() to avoid request slowdown
+- **Request Validation**:
+    - StoreAdvancePayreqRequest: employee_id, remarks, amount, rab_id (conditional), submit flag
+    - StoreReimbursePayreqRequest: employee_id, remarks, details array (description, amount, vehicle info), rab_id, submit
+    - Custom error responses with 422 status for validation failures
 
--   **API Endpoints**:
+- **Business Rules Enforcement**:
+    - RAB Validation: Required for projects 000H/APS when submit=true
+    - Approval Plans: Auto-create if available, keep as draft with error if missing
+    - Project/Department: Auto-extracted from employee record (security + consistency)
+    - Amount Calculation: Reimburse type auto-sums detail amounts
+    - Document Numbers: Draft numbers during creation, official numbers on submission
 
-    -   GET /api/payreqs - List with comprehensive filtering (project, department, status, dates, amounts)
-    -   GET /api/payreqs/{id} - Retrieve single payreq with all relationships
-    -   POST /api/payreqs/advance - Create advance payment request
-    -   POST /api/payreqs/reimburse - Create reimburse with multiple detail items
-    -   POST /api/payreqs/{id}/cancel - Cancel draft payreqs only
+- **Admin Interface**:
+    - Controller: ApiKeyController with DataTables integration
+    - View: Admin panel at /admin/api-keys for key management
+    - Features: Generate (with one-time display), activate/deactivate, delete, usage stats
+    - Security: Only users with 'akses_admin' permission can manage keys
 
--   **Request Validation**:
-
-    -   StoreAdvancePayreqRequest: employee_id, remarks, amount, rab_id (conditional), submit flag
-    -   StoreReimbursePayreqRequest: employee_id, remarks, details array (description, amount, vehicle info), rab_id, submit
-    -   Custom error responses with 422 status for validation failures
-
--   **Business Rules Enforcement**:
-
-    -   RAB Validation: Required for projects 000H/APS when submit=true
-    -   Approval Plans: Auto-create if available, keep as draft with error if missing
-    -   Project/Department: Auto-extracted from employee record (security + consistency)
-    -   Amount Calculation: Reimburse type auto-sums detail amounts
-    -   Document Numbers: Draft numbers during creation, official numbers on submission
-
--   **Admin Interface**:
-
-    -   Controller: ApiKeyController with DataTables integration
-    -   View: Admin panel at /admin/api-keys for key management
-    -   Features: Generate (with one-time display), activate/deactivate, delete, usage stats
-    -   Security: Only users with 'akses_admin' permission can manage keys
-
--   **Documentation**:
-    -   PAYREQ_API_DOCUMENTATION.md: Complete API reference with cURL examples
-    -   architecture.md: Updated with API architecture diagrams and sequence flows
-    -   Includes: Authentication guide, endpoint specs, business rules, error handling, example workflows
+- **Documentation**:
+    - PAYREQ_API_DOCUMENTATION.md: Complete API reference with cURL examples
+    - architecture.md: Updated with API architecture diagrams and sequence flows
+    - Includes: Authentication guide, endpoint specs, business rules, error handling, example workflows
 
 **Files Created**:
 
--   database/migrations/2025_10_27_053857_create_api_keys_table.php
--   app/Models/ApiKey.php
--   app/Http/Middleware/AuthenticateApiKey.php
--   app/Http/Requests/Api/StoreAdvancePayreqRequest.php
--   app/Http/Requests/Api/StoreReimbursePayreqRequest.php
--   app/Http/Controllers/Api/PayreqApiController.php
--   app/Http/Controllers/Admin/ApiKeyController.php
--   resources/views/admin/api-keys/index.blade.php
--   docs/PAYREQ_API_DOCUMENTATION.md
+- database/migrations/2025_10_27_053857_create_api_keys_table.php
+- app/Models/ApiKey.php
+- app/Http/Middleware/AuthenticateApiKey.php
+- app/Http/Requests/Api/StoreAdvancePayreqRequest.php
+- app/Http/Requests/Api/StoreReimbursePayreqRequest.php
+- app/Http/Controllers/Api/PayreqApiController.php
+- app/Http/Controllers/Admin/ApiKeyController.php
+- resources/views/admin/api-keys/index.blade.php
+- docs/PAYREQ_API_DOCUMENTATION.md
 
 **Files Modified**:
 
--   app/Http/Kernel.php (registered auth.apikey middleware)
--   routes/api.php (added payreq API routes)
--   routes/admin.php (added API key management routes)
--   docs/architecture.md (added Payment Request REST API Architecture section)
+- app/Http/Kernel.php (registered auth.apikey middleware)
+- routes/api.php (added payreq API routes)
+- routes/admin.php (added API key management routes)
+- docs/architecture.md (added Payment Request REST API Architecture section)
 
 **Testing Checklist**:
 
--   Migration ran successfully creating api_keys table
--   No linter errors in any created files
--   API key generation includes random 40-char string with 'ak\_' prefix
--   SHA256 hashing implemented correctly
--   Middleware properly validates keys and updates usage timestamp
--   Request validation catches missing/invalid fields
--   RAB enforcement works for 000H/APS projects
--   Approval plan integration creates plans when available
--   Draft workflow keeps payreqs editable
--   Submit workflow locks payreqs and generates official numbers
--   Admin UI allows key generation and management
--   Documentation complete with examples
+- Migration ran successfully creating api_keys table
+- No linter errors in any created files
+- API key generation includes random 40-char string with 'ak\_' prefix
+- SHA256 hashing implemented correctly
+- Middleware properly validates keys and updates usage timestamp
+- Request validation catches missing/invalid fields
+- RAB enforcement works for 000H/APS projects
+- Approval plan integration creates plans when available
+- Draft workflow keeps payreqs editable
+- Submit workflow locks payreqs and generates official numbers
+- Admin UI allows key generation and management
+- Documentation complete with examples
 
 **Review Date**: 2025-11-27 (after 1 month of external app integration to gather feedback and assess reliability)
 
@@ -371,22 +423,23 @@
 **Implementation Details**:
 
 - **Controller Changes** (`app/Http/Controllers/Accounting/VatController.php`):
-  - Updated `data()` method filtering: Incomplete uses `whereNull('sap_ar_doc_num')`, Complete uses `whereNotNull('sap_ar_doc_num')`
-  - Added `sap_ar_doc_num` and `sap_je_num` columns to DataTable response
-  - Removed dependency on `doc_num` and `faktur_no` fields for status determination
+    - Updated `data()` method filtering: Incomplete uses `whereNull('sap_ar_doc_num')`, Complete uses `whereNotNull('sap_ar_doc_num')`
+    - Added `sap_ar_doc_num` and `sap_je_num` columns to DataTable response
+    - Removed dependency on `doc_num` and `faktur_no` fields for status determination
 
 - **View Changes**:
-  - **Incomplete Tab** (`resources/views/accounting/vat/ar/incomplete.blade.php`): No changes needed (already shows correct columns)
-  - **Complete Tab** (`resources/views/accounting/vat/ar/complete.blade.php`): 
-    - Removed "DocNum" column from table header
-    - Added "AR Invoice DocNum" and "JE Num" columns
-    - Updated DataTable columns configuration to use `sap_ar_doc_num` and `sap_je_num`
-  - **Incomplete Action** (`resources/views/accounting/vat/ar/action.blade.php`): Added "Submit to SAP" button (links to SAP preview page)
-  - **Complete Action** (`resources/views/accounting/vat/ar/action_complete.blade.php`): Removed "Submit to SAP" button, shows "Submitted" badge instead
+    - **Incomplete Tab** (`resources/views/accounting/vat/ar/incomplete.blade.php`): No changes needed (already shows correct columns)
+    - **Complete Tab** (`resources/views/accounting/vat/ar/complete.blade.php`):
+        - Removed "DocNum" column from table header
+        - Added "AR Invoice DocNum" and "JE Num" columns
+        - Updated DataTable columns configuration to use `sap_ar_doc_num` and `sap_je_num`
+    - **Incomplete Action** (`resources/views/accounting/vat/ar/action.blade.php`): Added "Submit to SAP" button (links to SAP preview page)
+    - **Complete Action** (`resources/views/accounting/vat/ar/action_complete.blade.php`): Removed "Submit to SAP" button, shows "Submitted" badge instead
 
 **Impact**: Users now have clear workflow separation between documents not yet posted to SAP B1 (Incomplete tab with Submit button) and documents already posted (Complete tab with SAP document numbers). The filtering accurately reflects SAP submission status, eliminating confusion from manually set `doc_num` values. Displaying specific SAP document numbers (AR Invoice DocNum, JE Num) provides better traceability and audit trail.
 
-**Related Documentation**: 
+**Related Documentation**:
+
 - `docs/DEPLOYMENT_VAT_SALES_PAGE_IMPROVEMENTS.md` - Complete deployment manual
 - `docs/DEPLOYMENT_CHECKLIST_VAT_SALES.md` - Deployment checklist
 - `docs/architecture.md` - Updated with SAP B1 AR Invoice submission flow
@@ -425,77 +478,70 @@
 
 **Technical Implementation**:
 
--   **Database Schema**:
+- **Database Schema**:
+    - Migration: add bilyet_id (nullable FK) + payment_method enum to installments
+    - Migration: add purpose enum to bilyets (loan_payment|operational|other)
+    - Migration: create loan_audits table (mirrors bilyet_audits structure)
+    - Indexes on bilyet_id, payment_method, purpose for query performance
 
-    -   Migration: add bilyet_id (nullable FK) + payment_method enum to installments
-    -   Migration: add purpose enum to bilyets (loan_payment|operational|other)
-    -   Migration: create loan_audits table (mirrors bilyet_audits structure)
-    -   Indexes on bilyet_id, payment_method, purpose for query performance
+- **Models Enhanced**:
+    - Installment: Added payment method constants, bilyet() relationship, isPaid() method, scopes (paid/unpaid/byPaymentMethod)
+    - Bilyet: Added purpose constants, installment() relationship, purpose scopes (loanPayments/operational)
+    - Loan: Added audits() relationship
+    - LoanAudit: New model with change tracking helpers
 
--   **Models Enhanced**:
+- **Service Layer**:
+    - LoanPaymentService: Validation, linking, unlinking logic
+    - InstallmentPaymentService: createBilyetAndPay(), markAsAutoDebitPaid() workflows
+    - All operations wrapped in DB transactions for data integrity
 
-    -   Installment: Added payment method constants, bilyet() relationship, isPaid() method, scopes (paid/unpaid/byPaymentMethod)
-    -   Bilyet: Added purpose constants, installment() relationship, purpose scopes (loanPayments/operational)
-    -   Loan: Added audits() relationship
-    -   LoanAudit: New model with change tracking helpers
+- **Controllers**:
+    - LoanController: Added dashboard(), history(), auditIndex(), auditShow() + event triggers
+    - InstallmentController: Added createBilyetForPayment(), markAsAutoDebitPaid() + payment_method column in DataTable
 
--   **Service Layer**:
+- **Events & Listeners**:
+    - Events: LoanCreated, LoanUpdated, LoanStatusChanged
+    - Listener: LogLoanAudit (handles all loan events)
+    - Registered in EventServiceProvider
 
-    -   LoanPaymentService: Validation, linking, unlinking logic
-    -   InstallmentPaymentService: createBilyetAndPay(), markAsAutoDebitPaid() workflows
-    -   All operations wrapped in DB transactions for data integrity
+- **Views & UI**:
+    - Updated accounting/loans/show: Added "Payment Method" column
+    - Updated installments/action: Added "Bilyet" and "Auto-Debit" buttons for unpaid installments
+    - Created modals: Create Bilyet (full form pre-filled) and Mark as Auto-Debit (simple date selection)
+    - Created loan-links navigation component (Dashboard|Loans|Audit|Reports)
+    - Created loan dashboard with statistics, upcoming installments, payment method chart
+    - Created audit trail views (index + detail) matching bilyet pattern
+    - Created loan history view with timeline
 
--   **Controllers**:
+- **Routes**:
+    - POST /accounting/loans/installments/{id}/create-bilyet
+    - POST /accounting/loans/installments/{id}/mark-auto-debit
+    - GET /accounting/loans/dashboard
+    - GET /accounting/loans/{id}/history
+    - GET /accounting/loans/audit + /audit/{id}
 
-    -   LoanController: Added dashboard(), history(), auditIndex(), auditShow() + event triggers
-    -   InstallmentController: Added createBilyetForPayment(), markAsAutoDebitPaid() + payment_method column in DataTable
-
--   **Events & Listeners**:
-
-    -   Events: LoanCreated, LoanUpdated, LoanStatusChanged
-    -   Listener: LogLoanAudit (handles all loan events)
-    -   Registered in EventServiceProvider
-
--   **Views & UI**:
-
-    -   Updated accounting/loans/show: Added "Payment Method" column
-    -   Updated installments/action: Added "Bilyet" and "Auto-Debit" buttons for unpaid installments
-    -   Created modals: Create Bilyet (full form pre-filled) and Mark as Auto-Debit (simple date selection)
-    -   Created loan-links navigation component (Dashboard|Loans|Audit|Reports)
-    -   Created loan dashboard with statistics, upcoming installments, payment method chart
-    -   Created audit trail views (index + detail) matching bilyet pattern
-    -   Created loan history view with timeline
-
--   **Routes**:
-
-    -   POST /accounting/loans/installments/{id}/create-bilyet
-    -   POST /accounting/loans/installments/{id}/mark-auto-debit
-    -   GET /accounting/loans/dashboard
-    -   GET /accounting/loans/{id}/history
-    -   GET /accounting/loans/audit + /audit/{id}
-
--   **Form Requests**:
-    -   Updated StoreBilyetRequest: Added purpose and loan_id validation
-    -   Updated SuperAdminUpdateBilyetRequest: Added purpose validation
+- **Form Requests**:
+    - Updated StoreBilyetRequest: Added purpose and loan_id validation
+    - Updated SuperAdminUpdateBilyetRequest: Added purpose validation
 
 **Browser Testing Results**:
 
--   ✅ Payment Method column successfully displays in installments table
--   ✅ Bilyet (green) and Auto-Debit (blue) buttons appear ONLY for unpaid installments
--   ✅ Paid installments show edit/delete buttons, NOT payment buttons
--   ✅ Auto-Debit modal displays correctly with installment details and warning message
--   ✅ Create Bilyet modal shows with all data pre-filled (amount=26,039,000, date=due_date, remarks="Loan payment for installment #33")
--   ✅ Select2 dropdowns working in modals
--   ✅ No PHP linter errors
+- ✅ Payment Method column successfully displays in installments table
+- ✅ Bilyet (green) and Auto-Debit (blue) buttons appear ONLY for unpaid installments
+- ✅ Paid installments show edit/delete buttons, NOT payment buttons
+- ✅ Auto-Debit modal displays correctly with installment details and warning message
+- ✅ Create Bilyet modal shows with all data pre-filled (amount=26,039,000, date=due_date, remarks="Loan payment for installment #33")
+- ✅ Select2 dropdowns working in modals
+- ✅ No PHP linter errors
 
 **Pending Work**:
 
--   Run migrations to apply database changes (blocked by production environment confirmation)
--   Add purpose dropdown to bilyet create/edit forms in UI
--   Implement advanced filtering on loans index page
--   Add bulk operations for loans
--   Implement enhanced reporting with payment method breakdown
--   Create comprehensive user guide documentation
+- Run migrations to apply database changes (blocked by production environment confirmation)
+- Add purpose dropdown to bilyet create/edit forms in UI
+- Implement advanced filtering on loans index page
+- Add bulk operations for loans
+- Implement enhanced reporting with payment method breakdown
+- Create comprehensive user guide documentation
 
 **Review Date**: 2025-11-23 (after 1 month of usage to gather feedback and assess reporting needs)
 
@@ -511,28 +557,28 @@
 
 **Technical Implementation**:
 
--   **Loan Info Box**: Added alert-info section displaying principal (formatted currency), tenor, and creditor name from loan record
--   **Enhanced Labels**: Updated all field labels with Indonesian translations and descriptive text, added required field indicators (red asterisks)
--   **Account Dropdown**: Modified to show "account_number - account_name" format (e.g., "11201001 - Mandiri IDR - 149.0004194751")
--   **Auto-calculation**: Installment amount pre-filled with `round($loan->principal / $loan->tenor, 0)` formula
--   **Smart Defaults**: Start due date defaults to `now()->addMonth()->startOfMonth()`, start number defaults to 1
--   **Generation Summary**: JavaScript-powered real-time preview showing number of installments, installment range (#X to #Y), start date (formatted Indonesian), amount per month, total amount, and selected account
--   **Form Validation**: Client-side validation checking required fields before submission, server-side validation via Laravel request validation
--   **Select2 Integration**: Searchable dropdown with Bootstrap 4 theme for account selection
--   **Loading States**: Button text changes to "Generating..." with spinner icon during submission
--   **Responsive Layout**: Proper form grid with col-4 and col-8 layouts, IDR input group prefix for currency clarity
+- **Loan Info Box**: Added alert-info section displaying principal (formatted currency), tenor, and creditor name from loan record
+- **Enhanced Labels**: Updated all field labels with Indonesian translations and descriptive text, added required field indicators (red asterisks)
+- **Account Dropdown**: Modified to show "account_number - account_name" format (e.g., "11201001 - Mandiri IDR - 149.0004194751")
+- **Auto-calculation**: Installment amount pre-filled with `round($loan->principal / $loan->tenor, 0)` formula
+- **Smart Defaults**: Start due date defaults to `now()->addMonth()->startOfMonth()`, start number defaults to 1
+- **Generation Summary**: JavaScript-powered real-time preview showing number of installments, installment range (#X to #Y), start date (formatted Indonesian), amount per month, total amount, and selected account
+- **Form Validation**: Client-side validation checking required fields before submission, server-side validation via Laravel request validation
+- **Select2 Integration**: Searchable dropdown with Bootstrap 4 theme for account selection
+- **Loading States**: Button text changes to "Generating..." with spinner icon during submission
+- **Responsive Layout**: Proper form grid with col-4 and col-8 layouts, IDR input group prefix for currency clarity
 
 **Browser Testing Results**:
 
--   ✅ Loan information box displays correctly with formatted amounts
--   ✅ All fields show helpful descriptive text
--   ✅ Account dropdown shows simplified but clear format (number + name)
--   ✅ Installment amount auto-calculates correctly (6,156,576,000 ÷ 36 = 171,016,000)
--   ✅ Generation summary updates in real-time as fields change
--   ✅ Validation prevents submission with missing required fields
--   ✅ Confirmation dialog appears before generation
--   ✅ Select2 dropdown is searchable and responsive
--   ✅ No linter errors in updated Blade template
+- ✅ Loan information box displays correctly with formatted amounts
+- ✅ All fields show helpful descriptive text
+- ✅ Account dropdown shows simplified but clear format (number + name)
+- ✅ Installment amount auto-calculates correctly (6,156,576,000 ÷ 36 = 171,016,000)
+- ✅ Generation summary updates in real-time as fields change
+- ✅ Validation prevents submission with missing required fields
+- ✅ Confirmation dialog appears before generation
+- ✅ Select2 dropdown is searchable and responsive
+- ✅ No linter errors in updated Blade template
 
 **Impact**: User confidence increased through preview functionality, data entry time reduced via auto-calculation and smart defaults, errors minimized through validation and confirmation, account selection simplified with descriptive dropdown options.
 
@@ -548,15 +594,15 @@
 
 **Technical Implementation**:
 
--   **Exchange Rate Ticker**: Modern CSS animation replacing marquee, purple gradient background with rotating icon
--   **Announcements**: Pink/red gradient headers, enhanced badges, improved metadata display
--   **Approval Widget**: Orange gradient info-box with clock icon and View Approvals CTA
--   **Statistics Widgets**: Green/red/blue gradients for completion days and VJ sync with status indicators
--   **Payreqs/Realizations Cards**: Purple and pink/yellow gradients, status badges (draft/submitted/approved/paid/overdue), empty states, proper currency formatting with type casting
--   **VJ Activities Chart**: Cyan gradient, doughnut chart (65% cutout), percentage tooltips
--   **Team Section**: Teal/purple gradient, avatar initials, grouped member display, amount formatting fixed (2 decimals)
--   **Monthly Chart**: Purple gradient header, enhanced line chart with smooth curves and better data points
--   **Chart Scripts**: Modern tooltips with Indonesian currency formatting, smooth animations (1000ms easeInOutQuart), improved color schemes
+- **Exchange Rate Ticker**: Modern CSS animation replacing marquee, purple gradient background with rotating icon
+- **Announcements**: Pink/red gradient headers, enhanced badges, improved metadata display
+- **Approval Widget**: Orange gradient info-box with clock icon and View Approvals CTA
+- **Statistics Widgets**: Green/red/blue gradients for completion days and VJ sync with status indicators
+- **Payreqs/Realizations Cards**: Purple and pink/yellow gradients, status badges (draft/submitted/approved/paid/overdue), empty states, proper currency formatting with type casting
+- **VJ Activities Chart**: Cyan gradient, doughnut chart (65% cutout), percentage tooltips
+- **Team Section**: Teal/purple gradient, avatar initials, grouped member display, amount formatting fixed (2 decimals)
+- **Monthly Chart**: Purple gradient header, enhanced line chart with smooth curves and better data points
+- **Chart Scripts**: Modern tooltips with Indonesian currency formatting, smooth animations (1000ms easeInOutQuart), improved color schemes
 
 **Bug Fixes**: Corrected route name from `user-realizations.index` to `user-payreqs.realizations.index`, fixed number_format() type errors by casting amounts to float, resolved team section double-formatting issue by updating controller to format with 2 decimals.
 
@@ -572,15 +618,15 @@
 
 **Technical Implementation**:
 
--   **Database Schema**: Project field in realization_details table (not realizations), tracking fields on realizations (modified_by_approver, modified_by_approver_at, modified_by_approver_id)
--   **Permission System**: Single `edit-submitted-realization` permission guards both realization and payreq approval edit features
--   **Dual Controller Enhancement**: Both ApprovalRequestRealizationController and ApprovalRequestPayreqController updated - eager load outgoings for payment status, pass projects list, validate project per detail, save project to realization_details
--   **Frontend Editing**: Project dropdown per detail row with real-time editing, add/delete rows, expandable unit info, amount/variance display, warning system
--   **Advance Info Redesign**: Compact single-row layout with timestamps below parent fields using <small> tags and muted styling, FontAwesome icons (fa-clock, fa-money-bill-wave, fa-hourglass-half)
--   **User Notifications**: UserRealizationController and UserPayreqController display "⚠ Needs Reprint" badges for modified documents
--   **AJAX Implementation**: No page refresh during edit, smooth UX with real-time total and variance calculation
--   **Model Relationships**: approverModifier() on Realization, outgoings() on Payreq for payment tracking
--   **Date Formatting**: Submit dates with time (d-M-Y H:i + 8 hours WITA), paid dates without time (d-M-Y)
+- **Database Schema**: Project field in realization_details table (not realizations), tracking fields on realizations (modified_by_approver, modified_by_approver_at, modified_by_approver_id)
+- **Permission System**: Single `edit-submitted-realization` permission guards both realization and payreq approval edit features
+- **Dual Controller Enhancement**: Both ApprovalRequestRealizationController and ApprovalRequestPayreqController updated - eager load outgoings for payment status, pass projects list, validate project per detail, save project to realization_details
+- **Frontend Editing**: Project dropdown per detail row with real-time editing, add/delete rows, expandable unit info, amount/variance display, warning system
+- **Advance Info Redesign**: Compact single-row layout with timestamps below parent fields using <small> tags and muted styling, FontAwesome icons (fa-clock, fa-money-bill-wave, fa-hourglass-half)
+- **User Notifications**: UserRealizationController and UserPayreqController display "⚠ Needs Reprint" badges for modified documents
+- **AJAX Implementation**: No page refresh during edit, smooth UX with real-time total and variance calculation
+- **Model Relationships**: approverModifier() on Realization, outgoings() on Payreq for payment tracking
+- **Date Formatting**: Submit dates with time (d-M-Y H:i + 8 hours WITA), paid dates without time (d-M-Y)
 
 ### [012] Roles Table Enhancement with Permission Display (2025-01-15) ✅ COMPLETE
 
@@ -592,11 +638,11 @@
 
 **Technical Implementation**:
 
--   **Controller Enhancement**: Updated RoleController::data() to eager load permissions and generate permission categories, counts, and previews
--   **Table Redesign**: Added 4 new columns (Permissions Count, Permission Categories, Sample Permissions, Enhanced Actions)
--   **Visual Enhancement**: Modern card-based layout with gradient headers, responsive design, and professional styling
--   **Interactive Features**: View permissions modal, enhanced action buttons, and improved DataTable configuration
--   **Permission Categorization**: Automatic grouping of permissions into logical categories with badge display
+- **Controller Enhancement**: Updated RoleController::data() to eager load permissions and generate permission categories, counts, and previews
+- **Table Redesign**: Added 4 new columns (Permissions Count, Permission Categories, Sample Permissions, Enhanced Actions)
+- **Visual Enhancement**: Modern card-based layout with gradient headers, responsive design, and professional styling
+- **Interactive Features**: View permissions modal, enhanced action buttons, and improved DataTable configuration
+- **Permission Categorization**: Automatic grouping of permissions into logical categories with badge display
 
 ### [011] Role Edit Page Redesign with Grouped Permissions (2025-01-15) ✅ COMPLETE
 
@@ -608,11 +654,11 @@
 
 **Technical Implementation**:
 
--   **Controller Enhancement**: Added permission grouping logic in RoleController::edit() method with 16 feature-based categories
--   **UI Redesign**: Modern card-based layout with collapsible groups, gradient headers, and status badges
--   **Interactive Features**: Quick action buttons, group-specific controls, and auto-expansion functionality
--   **Responsive Design**: Optimized for different screen sizes with proper column layouts
--   **Visual Feedback**: Permission count tracking, selection status indicators, and monospace permission names
+- **Controller Enhancement**: Added permission grouping logic in RoleController::edit() method with 16 feature-based categories
+- **UI Redesign**: Modern card-based layout with collapsible groups, gradient headers, and status badges
+- **Interactive Features**: Quick action buttons, group-specific controls, and auto-expansion functionality
+- **Responsive Design**: Optimized for different screen sizes with proper column layouts
+- **Visual Feedback**: Permission count tracking, selection status indicators, and monospace permission names
 
 ### [010] Exchange Rate Automation System Implementation (2025-10-05) ✅ COMPLETE
 
@@ -624,13 +670,13 @@
 
 **Technical Implementation**:
 
--   **Database**: Added automation fields (kmk_number, kmk_effective_from/to, source, change_from_previous, scraped_at) with proper indexes
--   **Service**: ExchangeRateScraperService with DOMDocument/XPath parsing, Indonesian date parsing, and configurable currency targeting
--   **Command**: UpdateExchangeRates with --currencies, --force, --no-expand options for flexible operation
--   **Scheduler**: Weekly (Wednesday 10:00) and daily (11:00) automated updates with overlap protection
--   **Configuration**: config/exchange_rates.php with EXCHANGE_RATES_TARGET environment variable
--   **UI Enhancement**: Automation status badge with last update time and KMK number display
--   **Model Updates**: Enhanced ExchangeRate model with new fillable fields and casts
+- **Database**: Added automation fields (kmk_number, kmk_effective_from/to, source, change_from_previous, scraped_at) with proper indexes
+- **Service**: ExchangeRateScraperService with DOMDocument/XPath parsing, Indonesian date parsing, and configurable currency targeting
+- **Command**: UpdateExchangeRates with --currencies, --force, --no-expand options for flexible operation
+- **Scheduler**: Weekly (Wednesday 10:00) and daily (11:00) automated updates with overlap protection
+- **Configuration**: config/exchange_rates.php with EXCHANGE_RATES_TARGET environment variable
+- **UI Enhancement**: Automation status badge with last update time and KMK number display
+- **Model Updates**: Enhanced ExchangeRate model with new fillable fields and casts
 
 ### [013] Dashboard Dual Exchange Rate Display Implementation (2025-10-05) ✅ COMPLETE
 
@@ -642,12 +688,12 @@
 
 **Technical Implementation**:
 
--   **API Endpoint**: Created `/api/dashboard/exchange-rate-usd` route with inline controller logic for fetching today's USD rate
--   **Frontend Enhancement**: Updated `resources/views/dashboard/run-text.blade.php` JavaScript to fetch both external and internal rates
--   **Dual Display**: Modified running text to show both rates with source attribution and timestamps
--   **Error Handling**: Implemented graceful fallback when internal rate is unavailable
--   **Formatting**: Applied Indonesian number formatting to both rates for consistency
--   **Real-time Updates**: Maintained 5-minute refresh interval for both rate sources
+- **API Endpoint**: Created `/api/dashboard/exchange-rate-usd` route with inline controller logic for fetching today's USD rate
+- **Frontend Enhancement**: Updated `resources/views/dashboard/run-text.blade.php` JavaScript to fetch both external and internal rates
+- **Dual Display**: Modified running text to show both rates with source attribution and timestamps
+- **Error Handling**: Implemented graceful fallback when internal rate is unavailable
+- **Formatting**: Applied Indonesian number formatting to both rates for consistency
+- **Real-time Updates**: Maintained 5-minute refresh interval for both rate sources
 
 ### [015] Dashboard Exchange Rate API Route Helper Conversion (2025-10-08) ✅ COMPLETE
 
@@ -659,11 +705,11 @@
 
 **Technical Implementation**:
 
--   **Route Naming**: Added `->name('api.dashboard.exchange-rate-usd')` to API route definition in `routes/api.php`
--   **Blade Template Update**: Changed `fetch('/api/dashboard/exchange-rate-usd')` to `fetch('{{ route('api.dashboard.exchange-rate-usd') }}')`
--   **Testing**: Verified URL generation, network requests, data fetching, and running text display all working correctly
--   **Generated URL**: Route helper correctly generates full URL `http://localhost:8000/api/dashboard/exchange-rate-usd`
--   **No Breaking Changes**: Complete backward compatibility maintained with zero functional impact
+- **Route Naming**: Added `->name('api.dashboard.exchange-rate-usd')` to API route definition in `routes/api.php`
+- **Blade Template Update**: Changed `fetch('/api/dashboard/exchange-rate-usd')` to `fetch('{{ route('api.dashboard.exchange-rate-usd') }}')`
+- **Testing**: Verified URL generation, network requests, data fetching, and running text display all working correctly
+- **Generated URL**: Route helper correctly generates full URL `http://localhost:8000/api/dashboard/exchange-rate-usd`
+- **No Breaking Changes**: Complete backward compatibility maintained with zero functional impact
 
 ### [014] Dashboard Exchange Rate Simplification (2025-10-05) ✅ COMPLETE
 
@@ -675,12 +721,12 @@
 
 **Technical Implementation**:
 
--   **Frontend Simplification**: Removed external API call to exchangerate-api.com, simplified JavaScript function
--   **Display Format**: Updated to show only Kemenkeu rate with clear source attribution
--   **Error Handling**: Maintained graceful fallback when internal rate unavailable
--   **Formatting**: Preserved Indonesian number formatting and timestamp display
--   **API Endpoint**: Continued using `/api/dashboard/exchange-rate-usd` for internal rate fetching
--   **Refresh Interval**: Maintained 5-minute update cycle for real-time data
+- **Frontend Simplification**: Removed external API call to exchangerate-api.com, simplified JavaScript function
+- **Display Format**: Updated to show only Kemenkeu rate with clear source attribution
+- **Error Handling**: Maintained graceful fallback when internal rate unavailable
+- **Formatting**: Preserved Indonesian number formatting and timestamp display
+- **API Endpoint**: Continued using `/api/dashboard/exchange-rate-usd` for internal rate fetching
+- **Refresh Interval**: Maintained 5-minute update cycle for real-time data
 
 **Purpose**: AI's persistent knowledge base for project context and learnings
 **Last Updated**: 2026-01-XX
@@ -689,23 +735,23 @@
 
 ### Structure Standards
 
--   Entry Format: ### [ID] [Title (YYYY-MM-DD)] ✅ STATUS
--   Required Fields: Date, Challenge/Decision, Solution, Key Learning
--   Length Limit: 3-6 lines per entry (excluding sub-bullets)
--   Status Indicators: ✅ COMPLETE, ⚠️ PARTIAL, ❌ BLOCKED
+- Entry Format: ### [ID] [Title (YYYY-MM-DD)] ✅ STATUS
+- Required Fields: Date, Challenge/Decision, Solution, Key Learning
+- Length Limit: 3-6 lines per entry (excluding sub-bullets)
+- Status Indicators: ✅ COMPLETE, ⚠️ PARTIAL, ❌ BLOCKED
 
 ### Content Guidelines
 
--   Focus: Architecture decisions, critical bugs, security fixes, major technical challenges
--   Exclude: Routine features, minor bug fixes, documentation updates
--   Learning: Each entry must include actionable learning or decision rationale
--   Redundancy: Remove duplicate information, consolidate similar issues
+- Focus: Architecture decisions, critical bugs, security fixes, major technical challenges
+- Exclude: Routine features, minor bug fixes, documentation updates
+- Learning: Each entry must include actionable learning or decision rationale
+- Redundancy: Remove duplicate information, consolidate similar issues
 
 ### File Management
 
--   Archive Trigger: When file exceeds 500 lines or 6 months old
--   Archive Format: `memory-YYYY-MM.md` (e.g., `memory-2025-01.md`)
--   New File: Start fresh with current date and carry forward only active decisions
+- Archive Trigger: When file exceeds 500 lines or 6 months old
+- Archive Format: `memory-YYYY-MM.md` (e.g., `memory-2025-01.md`)
+- New File: Start fresh with current date and carry forward only active decisions
 
 ---
 
@@ -721,15 +767,15 @@
 
 **Technical Findings**:
 
--   **Models**: 56 models with comprehensive Eloquent relationships and proper foreign key constraints
--   **Controllers**: 106 controllers organized by functional modules with clear separation of concerns
--   **Database**: 85+ migrations covering all financial entities with performance-optimized indexes
--   **Routes**: Modular route organization across 9 separate files for different functional areas
--   **Services**: Dedicated service layer for complex business logic (LotService, etc.)
--   **Middleware**: Comprehensive middleware stack for authentication, authorization, and security
--   **Import/Export**: 7 export classes and 7 import classes for data processing with Laravel Excel
--   **View Components**: 7 reusable Blade components for consistent UI patterns
--   **External APIs**: DDS, SAP, LOT, and BUC integrations with proper error handling and logging
+- **Models**: 56 models with comprehensive Eloquent relationships and proper foreign key constraints
+- **Controllers**: 106 controllers organized by functional modules with clear separation of concerns
+- **Database**: 85+ migrations covering all financial entities with performance-optimized indexes
+- **Routes**: Modular route organization across 9 separate files for different functional areas
+- **Services**: Dedicated service layer for complex business logic (LotService, etc.)
+- **Middleware**: Comprehensive middleware stack for authentication, authorization, and security
+- **Import/Export**: 7 export classes and 7 import classes for data processing with Laravel Excel
+- **View Components**: 7 reusable Blade components for consistent UI patterns
+- **External APIs**: DDS, SAP, LOT, and BUC integrations with proper error handling and logging
 
 ### [002] Per-User DDS Department Code Implementation (2025-09-09) ✅ COMPLETE
 
@@ -773,12 +819,12 @@
 
 **Technical Fixes Applied**:
 
--   **Validation Service**: Relaxed account validation to log warnings instead of blocking imports
--   **Date Formatting**: Implemented proper Carbon date parsing for database compatibility
--   **Transaction Handling**: Removed problematic database transactions causing silent rollbacks
--   **Syntax Errors**: Fixed missing try-catch braces causing parse errors
--   **Enhanced Logging**: Added comprehensive logging at each import stage for debugging
--   **Error Handling**: Implemented detailed error reporting with actionable user feedback
+- **Validation Service**: Relaxed account validation to log warnings instead of blocking imports
+- **Date Formatting**: Implemented proper Carbon date parsing for database compatibility
+- **Transaction Handling**: Removed problematic database transactions causing silent rollbacks
+- **Syntax Errors**: Fixed missing try-catch braces causing parse errors
+- **Enhanced Logging**: Added comprehensive logging at each import stage for debugging
+- **Error Handling**: Implemented detailed error reporting with actionable user feedback
 
 ### [007] Bilyet Edit Dialog Date Field Population Fix (2025-09-16) ✅ COMPLETE
 
@@ -790,10 +836,10 @@
 
 **Technical Details**:
 
--   **Root Cause**: Laravel date casting returns Carbon objects, HTML date inputs need strings
--   **Solution**: Added `.format('Y-m-d')` with null checks in Blade template
--   **Files Modified**: `resources/views/cashier/bilyets/list_action.blade.php`
--   **Impact**: Complete bilyet edit workflow now functions correctly with proper date field population
+- **Root Cause**: Laravel date casting returns Carbon objects, HTML date inputs need strings
+- **Solution**: Added `.format('Y-m-d')` with null checks in Blade template
+- **Files Modified**: `resources/views/cashier/bilyets/list_action.blade.php`
+- **Impact**: Complete bilyet edit workflow now functions correctly with proper date field population
 
 ### [008] Superadmin Bilyet Edit Feature with Enhanced Status Validation (2025-09-16) ✅ COMPLETE
 
@@ -805,13 +851,13 @@
 
 **Technical Implementation**:
 
--   **Routes**: Added `GET /edit` and `PUT /superadmin` routes for superadmin operations
--   **Controller**: Enhanced BilyetController with `edit()` and `superAdminUpdate()` methods
--   **Validation**: Created SuperAdminUpdateBilyetRequest with comprehensive field validation
--   **Status Logic**: Implemented existing business rules with superadmin override capability
--   **UI Enhancement**: Added dynamic status transition rules display and justification guidance
--   **Audit Trail**: Comprehensive logging of all changes with context and justification
--   **Security**: Role-based access control ensuring only superadmins can access edit functionality
+- **Routes**: Added `GET /edit` and `PUT /superadmin` routes for superadmin operations
+- **Controller**: Enhanced BilyetController with `edit()` and `superAdminUpdate()` methods
+- **Validation**: Created SuperAdminUpdateBilyetRequest with comprehensive field validation
+- **Status Logic**: Implemented existing business rules with superadmin override capability
+- **UI Enhancement**: Added dynamic status transition rules display and justification guidance
+- **Audit Trail**: Comprehensive logging of all changes with context and justification
+- **Security**: Role-based access control ensuring only superadmins can access edit functionality
 
 ### [009] Email Notification System Disabled for Development (2025-09-16) ✅ COMPLETE
 
@@ -823,13 +869,13 @@
 
 **Technical Implementation**:
 
--   **EventServiceProvider**: Commented out SendBilyetStatusNotification listener registration
--   **Documentation**: Added clear comments explaining the disable and re-enable process
--   **Preserved Functionality**: Audit logging continues to work normally
--   **Future Ready**: Easy to re-enable when mail server is configured
--   **Testing Verified**: Confirmed bilyet updates work without TransportException errors
--   **Database Updates**: Settlement date and status changes persist correctly
--   **Audit Trail**: Complete change tracking maintained without email dependencies
+- **EventServiceProvider**: Commented out SendBilyetStatusNotification listener registration
+- **Documentation**: Added clear comments explaining the disable and re-enable process
+- **Preserved Functionality**: Audit logging continues to work normally
+- **Future Ready**: Easy to re-enable when mail server is configured
+- **Testing Verified**: Confirmed bilyet updates work without TransportException errors
+- **Database Updates**: Settlement date and status changes persist correctly
+- **Audit Trail**: Complete change tracking maintained without email dependencies
 
 ### [030] SAP Preview Page Edit/Update Functionality (2026-01-XX) ✅ COMPLETE
 
@@ -842,36 +888,37 @@
 **Implementation Details**:
 
 - **Controller Changes** (`app/Http/Controllers/Accounting/VatController.php`):
-  - Enhanced `updateSapPreview()` method to handle both AR Invoice and Journal Entry updates via `update_type` parameter
-  - AR Invoice updates: Validates and saves `invoice_no`, `faktur_no`, `faktur_date`
-  - Journal Entry updates: Validates and saves `je_posting_date`, `je_tax_date`, `je_due_date`, and optionally `revenue_account_code`
-  - Returns JSON responses with updated data for frontend synchronization
+    - Enhanced `updateSapPreview()` method to handle both AR Invoice and Journal Entry updates via `update_type` parameter
+    - AR Invoice updates: Validates and saves `invoice_no`, `faktur_no`, `faktur_date`
+    - Journal Entry updates: Validates and saves `je_posting_date`, `je_tax_date`, `je_due_date`, and optionally `revenue_account_code`
+    - Returns JSON responses with updated data for frontend synchronization
 
 - **Route Changes** (`routes/accounting.php`):
-  - Added `PUT /accounting/vat/fakturs/{faktur}/update-sap-preview` route for updating faktur details
+    - Added `PUT /accounting/vat/fakturs/{faktur}/update-sap-preview` route for updating faktur details
 
 - **View Changes** (`resources/views/accounting/vat/ar/sap_preview.blade.php`):
-  - AR Invoice Section:
-    - Added Edit/Update/Cancel buttons in card header
-    - Made `invoice_no`, `faktur_no`, `faktur_date` fields readonly by default with `editable-field` class
-    - Added alert div for success/error messages
-    - Added attachment preview button/link
-  - Journal Entry Section:
-    - Added Edit/Update/Cancel buttons in card header
-    - Made `je_posting_date`, `je_tax_date`, `je_due_date` fields readonly by default with `je-editable-field` class
-    - Added alert div for success/error messages
-  - Updated back button to redirect to `/accounting/vat?page=sales&status=incomplete`
+    - AR Invoice Section:
+        - Added Edit/Update/Cancel buttons in card header
+        - Made `invoice_no`, `faktur_no`, `faktur_date` fields readonly by default with `editable-field` class
+        - Added alert div for success/error messages
+        - Added attachment preview button/link
+    - Journal Entry Section:
+        - Added Edit/Update/Cancel buttons in card header
+        - Made `je_posting_date`, `je_tax_date`, `je_due_date` fields readonly by default with `je-editable-field` class
+        - Added alert div for success/error messages
+    - Updated back button to redirect to `/accounting/vat?page=sales&status=incomplete`
 
 - **JavaScript Functionality**:
-  - AR Invoice edit mode: `enableEditMode()`, `cancelEditMode()`, `updateFakturDetails()`, `showAlert()`
-  - Journal Entry edit mode: `enableJeEditMode()`, `cancelJeEditMode()`, `updateJeDetails()`, `showJeAlert()`
-  - Independent edit state tracking: `isEditMode` and `isJeEditMode` variables
-  - Original values tracking for both sections to enable cancel functionality
-  - Submit button protection: Disabled when either section is in edit mode, shows warning if submission attempted with unsaved changes
-  - AJAX error handling with user-friendly error messages
-  - Auto-hiding alerts after 5 seconds
+    - AR Invoice edit mode: `enableEditMode()`, `cancelEditMode()`, `updateFakturDetails()`, `showAlert()`
+    - Journal Entry edit mode: `enableJeEditMode()`, `cancelJeEditMode()`, `updateJeDetails()`, `showJeAlert()`
+    - Independent edit state tracking: `isEditMode` and `isJeEditMode` variables
+    - Original values tracking for both sections to enable cancel functionality
+    - Submit button protection: Disabled when either section is in edit mode, shows warning if submission attempted with unsaved changes
+    - AJAX error handling with user-friendly error messages
+    - Auto-hiding alerts after 5 seconds
 
 **User Experience Enhancements**:
+
 - Fields are readonly by default with visual indicators (light background)
 - Clear Edit/Update/Cancel button states
 - Success/error alerts with auto-hide
@@ -881,6 +928,7 @@
 - Changes persist to database before submission, ensuring data integrity
 
 **Business Rules Enforced**:
+
 1. All changes must be saved before submission to SAP B1
 2. Submit button is disabled when either section is in edit mode
 3. Cancel restores original values without saving

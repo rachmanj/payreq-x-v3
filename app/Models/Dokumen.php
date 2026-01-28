@@ -31,14 +31,34 @@ class Dokumen extends Model
         return asset('file_upload/' . $value);
     }
 
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
     public function getCreatedByNameAttribute()
     {
-        return $this->belongsTo(User::class, 'created_by')->first()->name;
+        if ($this->relationLoaded('createdBy') && $this->createdBy) {
+            return $this->createdBy->name;
+        }
+        
+        $user = $this->createdBy;
+        return $user ? $user->name : '-';
     }
 
     public function getUpdatedByNameAttribute()
     {
-        return $this->belongsTo(User::class, 'updated_by')->first()->name;
+        if ($this->relationLoaded('updatedBy') && $this->updatedBy) {
+            return $this->updatedBy->name;
+        }
+        
+        $user = $this->updatedBy;
+        return $user ? $user->name : '-';
     }
 
     public function giro()
