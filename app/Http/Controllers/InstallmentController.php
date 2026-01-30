@@ -7,7 +7,9 @@ use App\Models\Installment;
 use App\Models\Loan;
 use App\Models\Giro;
 use App\Services\InstallmentPaymentService;
+use App\Services\LoanSapIntegrationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class InstallmentController extends Controller
 {
@@ -103,8 +105,32 @@ class InstallmentController extends Controller
             ->addColumn('payment_method', function ($instalment) {
                 return $instalment->payment_method_label;
             })
+            ->addColumn('sap_status', function ($instalment) {
+                $badges = [
+                    'pending' => '<span class="badge badge-secondary">Pending</span>',
+                    'ap_created' => '<span class="badge badge-info">AP Created</span>',
+                    'payment_created' => '<span class="badge badge-warning">Payment Created</span>',
+                    'completed' => '<span class="badge badge-success">Completed</span>',
+                ];
+                $status = $instalment->sap_sync_status ?? 'pending';
+                return $badges[$status] ?? '<span class="badge badge-secondary">' . ucfirst($status) . '</span>';
+            })
+            ->addColumn('sap_documents', function ($instalment) {
+                $html = '';
+                if ($instalment->sap_ap_doc_num) {
+                    $html .= '<small class="text-muted">AP: ' . $instalment->sap_ap_doc_num . '</small><br>';
+                }
+                if ($instalment->sap_payment_doc_num) {
+                    $html .= '<small class="text-muted">Payment: ' . $instalment->sap_payment_doc_num . '</small>';
+                }
+                if (empty($html)) {
+                    $html = '<small class="text-muted">-</small>';
+                }
+                return $html;
+            })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.loans.installments.action')
+            ->rawColumns(['sap_status', 'sap_documents', 'action'])
             ->toJson();
     }
 
@@ -131,6 +157,27 @@ class InstallmentController extends Controller
         }
     }
 
+    public function linkExistingBilyet(Request $request, $installment_id)
+    {
+        try {
+            $request->validate([
+                'bilyet_id' => 'required|exists:bilyets,id',
+            ]);
+
+            $loanPaymentService = app(\App\Services\LoanPaymentService::class);
+            $loanPaymentService->linkExistingBilyetToInstallment($request->bilyet_id, $installment_id);
+
+            return redirect()->back()->with('success', 'Existing bilyet linked to installment successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to link existing bilyet', [
+                'installment_id' => $installment_id,
+                'bilyet_id' => $request->bilyet_id,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()->with('error', 'Failed to link bilyet: ' . $e->getMessage());
+        }
+    }
+
     public function markAsAutoDebitPaid(Request $request, $installment_id)
     {
         try {
@@ -143,6 +190,71 @@ class InstallmentController extends Controller
             return redirect()->back()->with('success', 'Installment marked as paid via auto-debit');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to mark as paid: ' . $e->getMessage());
+        }
+    }
+
+    public function createSapApInvoice(Request $request, $installment_id)
+    {
+        try {
+            $installment = Installment::findOrFail($installment_id);
+
+            // Validate prerequisites
+            if ($installment->paid_date) {
+                return redirect()->back()->with('error', 'Cannot create AP Invoice for paid installment');
+            }
+
+            if (!in_array($installment->payment_method, ['bilyet', 'auto_debit'])) {
+                return redirect()->back()->with('error', 'AP Invoice can only be created for bilyet or auto-debit payment methods');
+            }
+
+            if ($installment->sap_ap_doc_num) {
+                return redirect()->back()->with('error', 'AP Invoice already exists for this installment');
+            }
+
+            $integrationService = app(LoanSapIntegrationService::class);
+            $result = $integrationService->createApInvoiceForInstallment($installment_id);
+
+            return redirect()->back()->with('success', 'SAP AP Invoice created successfully. DocNum: ' . $result['doc_num']);
+        } catch (\Exception $e) {
+            Log::error('Failed to create SAP AP Invoice', [
+                'installment_id' => $installment_id,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()->with('error', 'Failed to create SAP AP Invoice: ' . $e->getMessage());
+        }
+    }
+
+    public function linkSapApInvoice(Request $request, $installment_id)
+    {
+        try {
+            $request->validate([
+                'sap_ap_doc_num' => 'required|string',
+                'sap_ap_doc_entry' => 'required|integer',
+            ]);
+
+            $installment = Installment::findOrFail($installment_id);
+
+            // Allow linking even if AP Invoice already exists (to update it)
+            $installment->sap_ap_doc_num = $request->sap_ap_doc_num;
+            $installment->sap_ap_doc_entry = $request->sap_ap_doc_entry;
+
+            // Update sync status
+            if ($installment->sap_payment_doc_num) {
+                $installment->sap_sync_status = 'completed';
+            } else {
+                $installment->sap_sync_status = 'ap_created';
+            }
+
+            $installment->sap_error_message = null;
+            $installment->save();
+
+            return redirect()->back()->with('success', 'SAP AP Invoice linked successfully. DocNum: ' . $request->sap_ap_doc_num);
+        } catch (\Exception $e) {
+            Log::error('Failed to link SAP AP Invoice', [
+                'installment_id' => $installment_id,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()->with('error', 'Failed to link SAP AP Invoice: ' . $e->getMessage());
         }
     }
 }

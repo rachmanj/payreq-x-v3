@@ -169,14 +169,18 @@
                 btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Syncing...');
                 resetStatus(type.replace('-', '-'));
 
+                const routeMap = {
+                    'projects': '{{ route("admin.sap-master-data-sync.sync-projects") }}',
+                    'cost-centers': '{{ route("admin.sap-master-data-sync.sync-cost-centers") }}',
+                    'accounts': '{{ route("admin.sap-master-data-sync.sync-accounts") }}',
+                    'business-partners': '{{ route("admin.sap-master-data-sync.sync-business-partners") }}'
+                };
+
                 $.ajax({
-                    url: `/admin/sap-master-data-sync/sync`,
+                    url: routeMap[type],
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    data: {
-                        type: type
                     },
                     success: function(response) {
                         if (response.success) {
@@ -218,7 +222,7 @@
                 });
 
                 $.ajax({
-                    url: `/admin/sap-master-data-sync/sync-all`,
+                    url: '{{ route("admin.sap-master-data-sync.sync-all") }}',
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')

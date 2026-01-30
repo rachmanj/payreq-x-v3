@@ -59,10 +59,10 @@ class SapService
             return false;
         } catch (RequestException $e) {
             $this->isLoggedIn = false;
-            $errorMessage = $e->getResponse() 
-                ? $e->getResponse()->getBody()->getContents() 
+            $errorMessage = $e->getResponse()
+                ? $e->getResponse()->getBody()->getContents()
                 : $e->getMessage();
-            
+
             Log::error('SAP B1 login failed', [
                 'error' => $errorMessage,
                 'company_db' => $this->config['db_name'],
@@ -118,7 +118,7 @@ class SapService
         return $this->handleSessionExpiration(function () use ($journalData) {
             try {
                 Log::debug('SAP B1 Journal Entry Request', ['payload' => $journalData]);
-                
+
                 $response = $this->client->post('JournalEntries', [
                     'json' => $journalData,
                 ]);
@@ -149,7 +149,7 @@ class SapService
                     if (isset($errorBody['error']['message']['value'])) {
                         $errorMessage = $errorBody['error']['message']['value'];
                     } elseif (isset($errorBody['error']['message'])) {
-                        $errorMessage = is_array($errorBody['error']['message']) 
+                        $errorMessage = is_array($errorBody['error']['message'])
                             ? ($errorBody['error']['message']['value'] ?? json_encode($errorBody['error']['message']))
                             : $errorBody['error']['message'];
                     }
@@ -197,7 +197,7 @@ class SapService
     {
         try {
             $this->ensureSession();
-            
+
             $response = $this->handleSessionExpiration(function () use ($limit) {
                 return $this->client->get('Items', [
                     'query' => [
@@ -221,7 +221,7 @@ class SapService
     {
         try {
             $items = $this->getItems(100);
-            
+
             // Filter for service items (ItemType = 'S') in PHP
             $serviceItems = array_filter($items, function ($item) {
                 return isset($item['ItemType']) && $item['ItemType'] === 'S';
@@ -318,6 +318,102 @@ class SapService
         });
     }
 
+    public function createApInvoice(array $invoiceData): array
+    {
+        $this->ensureSession();
+
+        return $this->handleSessionExpiration(function () use ($invoiceData) {
+            try {
+                Log::debug('SAP B1 AP Invoice Request', ['payload' => $invoiceData]);
+
+                $response = $this->client->post('PurchaseInvoices', [
+                    'json' => $invoiceData,
+                ]);
+
+                $statusCode = $response->getStatusCode();
+                $body = json_decode($response->getBody()->getContents(), true);
+
+                if ($statusCode === 201) {
+                    Log::info('SAP B1 AP Invoice created successfully', [
+                        'doc_entry' => $body['DocEntry'] ?? null,
+                        'doc_num' => $body['DocNum'] ?? null,
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'doc_entry' => $body['DocEntry'] ?? null,
+                        'doc_num' => $this->extractApInvoiceNumber($body),
+                        'data' => $body,
+                    ];
+                }
+
+                $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
+                throw new \Exception('Failed to create AP Invoice. Status: ' . $statusCode . '. Error: ' . $errorMessage);
+            } catch (RequestException $e) {
+                $errorMessage = 'Unknown error';
+                if ($e->getResponse()) {
+                    $errorBody = json_decode($e->getResponse()->getBody()->getContents(), true);
+                    if (isset($errorBody['error']['message']['value'])) {
+                        $errorMessage = $errorBody['error']['message']['value'];
+                    } elseif (isset($errorBody['error']['message'])) {
+                        $errorMessage = is_array($errorBody['error']['message'])
+                            ? ($errorBody['error']['message']['value'] ?? json_encode($errorBody['error']['message']))
+                            : $errorBody['error']['message'];
+                    }
+                }
+                throw new \Exception('SAP B1 Error: ' . $errorMessage, 0, $e);
+            }
+        });
+    }
+
+    public function createOutgoingPayment(array $paymentData): array
+    {
+        $this->ensureSession();
+
+        return $this->handleSessionExpiration(function () use ($paymentData) {
+            try {
+                Log::debug('SAP B1 Outgoing Payment Request', ['payload' => $paymentData]);
+
+                $response = $this->client->post('Payments', [
+                    'json' => $paymentData,
+                ]);
+
+                $statusCode = $response->getStatusCode();
+                $body = json_decode($response->getBody()->getContents(), true);
+
+                if ($statusCode === 201) {
+                    Log::info('SAP B1 Outgoing Payment created successfully', [
+                        'doc_entry' => $body['DocEntry'] ?? null,
+                        'doc_num' => $body['DocNum'] ?? null,
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'doc_entry' => $body['DocEntry'] ?? null,
+                        'doc_num' => $this->extractPaymentNumber($body),
+                        'data' => $body,
+                    ];
+                }
+
+                $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
+                throw new \Exception('Failed to create Outgoing Payment. Status: ' . $statusCode . '. Error: ' . $errorMessage);
+            } catch (RequestException $e) {
+                $errorMessage = 'Unknown error';
+                if ($e->getResponse()) {
+                    $errorBody = json_decode($e->getResponse()->getBody()->getContents(), true);
+                    if (isset($errorBody['error']['message']['value'])) {
+                        $errorMessage = $errorBody['error']['message']['value'];
+                    } elseif (isset($errorBody['error']['message'])) {
+                        $errorMessage = is_array($errorBody['error']['message'])
+                            ? ($errorBody['error']['message']['value'] ?? json_encode($errorBody['error']['message']))
+                            : $errorBody['error']['message'];
+                    }
+                }
+                throw new \Exception('SAP B1 Error: ' . $errorMessage, 0, $e);
+            }
+        });
+    }
+
     protected function extractArInvoiceNumber(array $response): ?string
     {
         // Priority: DocNum is the SAP Document Number
@@ -330,6 +426,40 @@ class SapService
         }
 
         // Fallback to DocEntry
+        if (isset($response['DocEntry'])) {
+            return (string) $response['DocEntry'];
+        }
+
+        return null;
+    }
+
+    protected function extractApInvoiceNumber(array $response): ?string
+    {
+        if (isset($response['DocNum'])) {
+            return (string) $response['DocNum'];
+        }
+
+        if (isset($response['PurchaseInvoice']['DocNum'])) {
+            return (string) $response['PurchaseInvoice']['DocNum'];
+        }
+
+        if (isset($response['DocEntry'])) {
+            return (string) $response['DocEntry'];
+        }
+
+        return null;
+    }
+
+    protected function extractPaymentNumber(array $response): ?string
+    {
+        if (isset($response['DocNum'])) {
+            return (string) $response['DocNum'];
+        }
+
+        if (isset($response['Payment']['DocNum'])) {
+            return (string) $response['Payment']['DocNum'];
+        }
+
         if (isset($response['DocEntry'])) {
             return (string) $response['DocEntry'];
         }
@@ -371,4 +501,3 @@ class SapService
         }
     }
 }
-

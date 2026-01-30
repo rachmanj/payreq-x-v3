@@ -59,4 +59,32 @@ class SapBusinessPartner extends Model
     {
         return $this->type === self::TYPE_LEAD;
     }
+
+    /**
+     * Relationship to Creditors
+     */
+    public function creditors()
+    {
+        return $this->hasMany(Creditor::class);
+    }
+
+    /**
+     * Scope for suppliers/vendors only
+     * Handles both 'S' and 'cSupplier' formats
+     */
+    public function scopeSuppliers($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('type', 'S')
+              ->orWhere('type', self::TYPE_SUPPLIER);
+        });
+    }
+
+    /**
+     * Scope for active partners only
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('active', true);
+    }
 }

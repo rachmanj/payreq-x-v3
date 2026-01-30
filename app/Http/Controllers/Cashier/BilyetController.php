@@ -15,13 +15,13 @@ use App\Models\BilyetTemp;
 use App\Models\Giro;
 use App\Models\Loan;
 use App\Models\Project;
+use App\Models\User;
 use App\Services\BilyetService;
 use Carbon\Carbon;
 use App\Events\BilyetCreated;
 use App\Events\BilyetUpdated;
 use App\Events\BilyetStatusChanged;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -122,7 +122,8 @@ class BilyetController extends Controller
     public function edit($id)
     {
         // Check if user has superadmin role
-        if (!auth()->user()->hasRole('superadmin')) {
+        $user = auth()->user();
+        if (!$user instanceof User || !$user->hasRole('superadmin')) {
             abort(403, 'Access denied. Superadmin role required.');
         }
 
@@ -166,6 +167,10 @@ class BilyetController extends Controller
 
             $oldValues = $bilyet->toArray();
             $data['status'] = $newStatus;
+
+            // Check if user wants to create SAP payment (for loan payment bilyets)
+            $createSapPayment = $request->has('create_sap_payment') && $request->create_sap_payment == '1';
+
             $bilyet->update($data);
 
             // Fire events for audit trail
@@ -173,7 +178,22 @@ class BilyetController extends Controller
 
             // Fire status change event if status changed
             if ($oldValues['status'] !== $newStatus) {
-                event(new BilyetStatusChanged($bilyet, auth()->user(), $oldValues['status'], $newStatus));
+                // If status changed to 'cair' and user wants to create payment, do it
+                if ($newStatus === 'cair' && $createSapPayment && $bilyet->purpose === 'loan_payment') {
+                    try {
+                        $integrationService = app(\App\Services\LoanSapIntegrationService::class);
+                        $integrationService->handleBilyetCair($bilyet->fresh());
+                    } catch (\Exception $e) {
+                        Log::error('Failed to create SAP payment when bilyet marked as cair', [
+                            'bilyet_id' => $bilyet->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                        // Don't fail the update, just log the error
+                    }
+                }
+
+                // Always fire the event for audit trail
+                event(new BilyetStatusChanged($bilyet->fresh(), auth()->user(), $oldValues['status'], $newStatus));
             }
         }
 
@@ -183,7 +203,8 @@ class BilyetController extends Controller
     public function superAdminUpdate(SuperAdminUpdateBilyetRequest $request, $id)
     {
         // Check if user has superadmin role
-        if (!auth()->user()->hasRole('superadmin')) {
+        $user = auth()->user();
+        if (!$user instanceof User || !$user->hasRole('superadmin')) {
             abort(403, 'Access denied. Superadmin role required.');
         }
 
@@ -480,6 +501,9 @@ class BilyetController extends Controller
         $bilyets = $this->bilyetService->getFilteredBilyets($filters, $userRoles, auth()->user()->project);
 
         \Illuminate\Support\Facades\Log::info('Bilyet data result count: ' . $bilyets->count());
+
+        // Eager load installment relationship for loan payment bilyets
+        $bilyets->load('installment');
 
         return datatables()->of($bilyets)
             ->editColumn('account', function ($bilyet) {

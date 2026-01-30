@@ -87,7 +87,7 @@
                                 <label for="amount">Amount</label>
                                 <input type="text" name="amount"
                                     class="form-control{{ $isReleaseErrorContext && $errors->has('amount') ? ' is-invalid' : '' }}"
-                                    value="{{ $isReleaseErrorContext ? old('amount') : ($model->amount ?? '') }}">
+                                    value="{{ $isReleaseErrorContext ? old('amount') : $model->amount ?? '' }}">
                                 @if ($isReleaseErrorContext && $errors->has('amount'))
                                     <small class="text-danger">{{ $errors->first('amount') }}</small>
                                 @endif
@@ -141,6 +141,21 @@
                                 <label for="remarks">Purpose</label>
                                 <textarea name="remarks" class="form-control" readonly>{{ $model->remarks }}</textarea>
                             </div>
+                            @if ($model->purpose == 'loan_payment' && $model->installment)
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input"
+                                            id="create_sap_payment_{{ $model->id }}" name="create_sap_payment"
+                                            value="1" checked>
+                                        <label class="form-check-label" for="create_sap_payment_{{ $model->id }}">
+                                            <strong>Create SAP Outgoing Payment</strong>
+                                            <br>
+                                            <small class="text-muted">If checked, will automatically create Outgoing
+                                                Payment in SAP B1 for the linked installment's AP Invoice.</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

@@ -64,14 +64,14 @@ return [
             'default_department_code' => env('SAP_AR_INVOICE_DEFAULT_DEPARTMENT_CODE', '60'),
             'default_wtax_code' => env('SAP_AR_INVOICE_DEFAULT_WTAX_CODE', ''),
             'wtax_percentage' => env('SAP_AR_INVOICE_WTAX_PERCENTAGE', 2), // Default 2%
-            
+
             // Faktur Pajak fields (system-wide)
             'faktur_pajak' => [
                 'authorized_name_invoice' => env('SAP_AR_INVOICE_AUTHORIZED_NAME_INVOICE', ''),
                 'authorized_name_faktur_pajak' => env('SAP_AR_INVOICE_AUTHORIZED_NAME_FP', ''),
                 'kode_transaksi_fp' => env('SAP_AR_INVOICE_KODE_TRANSAKSI_FP', '01'),
             ],
-            
+
             // Bank account fields (system-wide)
             'bank_accounts' => [
                 'usd' => [
@@ -83,6 +83,10 @@ return [
                     'bank_account' => env('SAP_AR_INVOICE_BANK_ACCOUNT_IDR', ''),
                 ],
             ],
+        ],
+        'ap_invoice' => [
+            'default_account' => env('SAP_AP_INVOICE_DEFAULT_ACCOUNT', '21101'), // Accounts Payable or Loan Liability
+            'default_payment_method' => env('SAP_AP_INVOICE_DEFAULT_PAYMENT_METHOD', 'C'), // C=Check, T=Transfer
         ],
     ],
 

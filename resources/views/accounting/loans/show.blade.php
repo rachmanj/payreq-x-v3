@@ -55,6 +55,8 @@
                                 <th>Amount</th>
                                 <th>Payment Method</th>
                                 <th>Status</th>
+                                <th>SAP Status</th>
+                                <th>SAP Documents</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -125,6 +127,16 @@
                         data: 'status'
                     },
                     {
+                        data: 'sap_status',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'sap_documents',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'action',
                         orderable: false,
                         searchable: false
@@ -140,7 +152,7 @@
                         "className": "text-right"
                     },
                     {
-                        "targets": [6, 7],
+                        "targets": [6, 7, 8],
                         "className": "text-center"
                     },
                 ]

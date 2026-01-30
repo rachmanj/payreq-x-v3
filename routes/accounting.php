@@ -67,7 +67,10 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
             Route::post('/update', [InstallmentController::class, 'update'])->name('update');
             Route::delete('/{id}/destroy', [InstallmentController::class, 'destroy'])->name('destroy');
             Route::post('/{installment_id}/create-bilyet', [InstallmentController::class, 'createBilyetForPayment'])->name('create_bilyet');
+            Route::post('/{installment_id}/link-existing-bilyet', [InstallmentController::class, 'linkExistingBilyet'])->name('link_existing_bilyet');
             Route::post('/{installment_id}/mark-auto-debit', [InstallmentController::class, 'markAsAutoDebitPaid'])->name('mark_auto_debit');
+            Route::post('/{installment_id}/create-sap-ap-invoice', [InstallmentController::class, 'createSapApInvoice'])->name('create_sap_ap_invoice');
+            Route::post('/{installment_id}/link-sap-ap-invoice', [InstallmentController::class, 'linkSapApInvoice'])->name('link_sap_ap_invoice');
         });
     });
 

@@ -4,13 +4,31 @@
             data-target="#create-bilyet-{{ $model->id }}" title="Create Bilyet Payment">
             <i class="fas fa-file-invoice"></i> Bilyet
         </button>
-        <button type="button" class="btn btn-xs btn-info" data-toggle="modal" data-target="#mark-autodebit-{{ $model->id }}"
-            title="Mark as Auto-Debit Paid">
+        <button type="button" class="btn btn-xs btn-outline-success" data-toggle="modal"
+            data-target="#link-bilyet-{{ $model->id }}" title="Link Existing Bilyet">
+            <i class="fas fa-link"></i> Link Bilyet
+        </button>
+        <button type="button" class="btn btn-xs btn-info" data-toggle="modal"
+            data-target="#mark-autodebit-{{ $model->id }}" title="Mark as Auto-Debit Paid">
             <i class="fas fa-university"></i> Auto-Debit
         </button>
     @endif
 
-    <button type="submit" class="btn btn-xs btn-warning" data-toggle="modal"
+    @if (!$model->paid_date && in_array($model->payment_method, ['bilyet', 'auto_debit']) && !$model->sap_ap_doc_num)
+        <button type="button" class="btn btn-xs btn-primary" data-toggle="modal"
+            data-target="#create-sap-ap-{{ $model->id }}" title="Create SAP AP Invoice">
+            <i class="fas fa-file-invoice-dollar"></i> Create AP
+        </button>
+    @endif
+
+    @if (!$model->paid_date && in_array($model->payment_method, ['bilyet', 'auto_debit']))
+        <button type="button" class="btn btn-xs btn-secondary" data-toggle="modal"
+            data-target="#link-sap-ap-{{ $model->id }}" title="Link SAP AP Invoice">
+            <i class="fas fa-link"></i> Link AP
+        </button>
+    @endif
+
+    <button type="button" class="btn btn-xs btn-warning" data-toggle="modal"
         data-target="#installment-edit-{{ $model->id }}">
         <i class="fas fa-edit"></i>
     </button>
@@ -210,6 +228,98 @@
     </div> <!-- /.modal-dialog -->
 </div>
 
+{{-- Modal Link Existing Bilyet --}}
+<div class="modal fade" id="link-bilyet-{{ $model->id }}">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Link Existing Bilyet for Installment #{{ $model->angsuran_ke }}</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <form action="{{ route('accounting.loans.installments.link_existing_bilyet', $model->id) }}"
+                method="POST">
+                @csrf
+
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Installment Details:</strong><br>
+                        <strong>Amount:</strong> IDR {{ number_format($model->bilyet_amount, 2) }}<br>
+                        <strong>Due Date:</strong> {{ date('d-M-Y', strtotime($model->due_date)) }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bilyet_id">Select Existing Bilyet <span class="text-danger">*</span></label>
+                        <select name="bilyet_id" id="bilyet_id_{{ $model->id }}" class="form-control select2bs4"
+                            required style="width: 100%;">
+                            <option value="">-- select bilyet --</option>
+                            @foreach (\App\Models\Bilyet::with('giro')->where('status', 'onhand')->where('project', auth()->user()->project)->where('purpose', 'loan_payment')->orderBy('bilyet_date', 'desc')->orderBy('nomor', 'asc')->get() as $bilyet)
+                                <option value="{{ $bilyet->id }}" data-giro="{{ $bilyet->giro->acc_no ?? '' }}"
+                                    data-type="{{ $bilyet->type }}"
+                                    data-nomor="{{ $bilyet->prefix . $bilyet->nomor }}">
+                                    {{ $bilyet->prefix . $bilyet->nomor }}
+                                    ({{ strtoupper($bilyet->type) }})
+                                    - {{ $bilyet->giro->acc_no ?? 'N/A' }}
+                                    @if ($bilyet->bilyet_date)
+                                        - {{ date('d-M-Y', strtotime($bilyet->bilyet_date)) }}
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">Only bilyets with status "On Hand" are shown.</small>
+                    </div>
+
+                    <div id="bilyet-details-{{ $model->id }}" style="display: none;">
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h5 class="card-title">Selected Bilyet Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Bilyet Number:</dt>
+                                    <dd class="col-sm-8" id="selected-nomor-{{ $model->id }}">-</dd>
+                                    <dt class="col-sm-4">Type:</dt>
+                                    <dd class="col-sm-8" id="selected-type-{{ $model->id }}">-</dd>
+                                    <dt class="col-sm-4">Account:</dt>
+                                    <dd class="col-sm-8" id="selected-account-{{ $model->id }}">-</dd>
+                                    <dt class="col-sm-4">Bilyet Date:</dt>
+                                    <dd class="col-sm-8" id="selected-date-{{ $model->id }}">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer float-left">
+                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-link"></i> Link
+                        Bilyet</button>
+                </div>
+            </form>
+
+        </div> <!-- /.modal-content -->
+    </div> <!-- /.modal-dialog -->
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('#bilyet_id_{{ $model->id }}').on('change', function() {
+            var selectedOption = $(this).find('option:selected');
+            if (selectedOption.val()) {
+                $('#selected-nomor-{{ $model->id }}').text(selectedOption.data('nomor'));
+                $('#selected-type-{{ $model->id }}').text(selectedOption.data('type')
+            .toUpperCase());
+                $('#selected-account-{{ $model->id }}').text(selectedOption.data('giro'));
+                $('#bilyet-details-{{ $model->id }}').show();
+            } else {
+                $('#bilyet-details-{{ $model->id }}').hide();
+            }
+        });
+    });
+</script>
+
 {{-- Modal Mark as Auto-Debit Paid --}}
 <div class="modal fade" id="mark-autodebit-{{ $model->id }}">
     <div class="modal-dialog modal-md">
@@ -256,6 +366,119 @@
                     <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-check"></i> Mark as
                         Paid</button>
+                </div>
+            </form>
+
+        </div> <!-- /.modal-content -->
+    </div> <!-- /.modal-dialog -->
+</div>
+
+{{-- Modal Create SAP AP Invoice --}}
+<div class="modal fade" id="create-sap-ap-{{ $model->id }}">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Create SAP AP Invoice</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <form action="{{ route('accounting.loans.installments.create_sap_ap_invoice', $model->id) }}"
+                method="POST">
+                @csrf
+
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Create SAP AP Invoice</strong><br>
+                        This will create an AP Invoice in SAP B1 for this installment.
+                    </div>
+
+                    <div class="form-group">
+                        <label>Installment Details:</label>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Installment #:</dt>
+                            <dd class="col-sm-7">{{ $model->angsuran_ke }}</dd>
+                            <dt class="col-sm-5">Due Date:</dt>
+                            <dd class="col-sm-7">{{ date('d-M-Y', strtotime($model->due_date)) }}</dd>
+                            <dt class="col-sm-5">Amount:</dt>
+                            <dd class="col-sm-7">IDR {{ number_format($model->bilyet_amount, 2) }}</dd>
+                            <dt class="col-sm-5">Payment Method:</dt>
+                            <dd class="col-sm-7">{{ $model->payment_method_label }}</dd>
+                            <dt class="col-sm-5">Creditor:</dt>
+                            <dd class="col-sm-7">{{ $model->loan->creditor->name ?? '-' }}</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="modal-footer float-left">
+                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Create AP
+                        Invoice</button>
+                </div>
+            </form>
+
+        </div> <!-- /.modal-content -->
+    </div> <!-- /.modal-dialog -->
+</div>
+
+{{-- Modal Link SAP AP Invoice --}}
+<div class="modal fade" id="link-sap-ap-{{ $model->id }}">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Link SAP AP Invoice</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <form action="{{ route('accounting.loans.installments.link_sap_ap_invoice', $model->id) }}"
+                method="POST">
+                @csrf
+
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Link Existing SAP AP Invoice</strong><br>
+                        Enter the SAP AP Invoice document numbers if the invoice was already created in SAP B1.
+                    </div>
+
+                    <div class="form-group">
+                        <label>Installment Details:</label>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Installment #:</dt>
+                            <dd class="col-sm-7">{{ $model->angsuran_ke }}</dd>
+                            <dt class="col-sm-5">Amount:</dt>
+                            <dd class="col-sm-7">IDR {{ number_format($model->bilyet_amount, 2) }}</dd>
+                            @if ($model->sap_ap_doc_num)
+                                <dt class="col-sm-5">Current AP DocNum:</dt>
+                                <dd class="col-sm-7"><span
+                                        class="badge badge-info">{{ $model->sap_ap_doc_num }}</span></dd>
+                            @endif
+                        </dl>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sap_ap_doc_num">SAP AP Invoice Document Number <span
+                                class="text-danger">*</span></label>
+                        <input type="text" name="sap_ap_doc_num" class="form-control"
+                            value="{{ $model->sap_ap_doc_num }}" required placeholder="e.g., 12345">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sap_ap_doc_entry">SAP AP Invoice DocEntry <span
+                                class="text-danger">*</span></label>
+                        <input type="number" name="sap_ap_doc_entry" class="form-control"
+                            value="{{ $model->sap_ap_doc_entry }}" required placeholder="e.g., 123456">
+                    </div>
+                </div>
+
+                <div class="modal-footer float-left">
+                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-sm btn-secondary"><i class="fas fa-link"></i> Link AP
+                        Invoice</button>
                 </div>
             </form>
 

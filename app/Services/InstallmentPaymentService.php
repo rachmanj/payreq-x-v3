@@ -87,7 +87,8 @@ class InstallmentPaymentService
             $installment->save();
 
             DB::commit();
-            return $installment;
+
+            return $installment->fresh();
         } catch (Exception $e) {
             DB::rollBack();
             throw $e;
