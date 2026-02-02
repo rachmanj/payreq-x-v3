@@ -73,7 +73,7 @@ class InstallmentPaymentService
         }
     }
 
-    public function markAsAutoDebitPaid(int $installmentId, $paidDate = null): Installment
+    public function markAsAutoDebitPaid(int $installmentId, $paidDate = null, $accountId = null): Installment
     {
         try {
             DB::beginTransaction();
@@ -81,9 +81,15 @@ class InstallmentPaymentService
             $installment = Installment::findOrFail($installmentId);
 
             $installment->payment_method = 'auto_debit';
-            $installment->paid_date = $paidDate ?? now();
-            $installment->status = 'paid';
+            $installment->paid_date = $paidDate; // Allow null - will be set later when payment is realized
+            // Only mark as paid if paid_date is provided
+            $installment->status = $paidDate ? 'paid' : null;
             $installment->bilyet_id = null;
+            
+            if ($accountId) {
+                $installment->account_id = $accountId;
+            }
+
             $installment->save();
 
             DB::commit();

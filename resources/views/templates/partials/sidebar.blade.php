@@ -444,9 +444,9 @@
                 <!-- Admin -->
                 @can('akses_admin')
                     <li
-                        class="nav-item has-treeview {{ request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*') || request()->routeIs('accounts.index') || request()->routeIs('currencies.*') || request()->routeIs('rabs.*') || request()->routeIs('equipments.*') || request()->routeIs('document-number.*') || request()->routeIs('parameters.*') || request()->routeIs('admin.*') || request()->routeIs('announcements.*') || request()->routeIs('document-overdue.*') ? 'menu-open' : '' }}">
+                        class="nav-item has-treeview {{ request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*') || request()->routeIs('accounts.index') || request()->routeIs('currencies.*') || request()->routeIs('rabs.*') || request()->routeIs('equipments.*') || request()->routeIs('document-number.*') || request()->routeIs('parameters.*') || request()->routeIs('admin.*') || request()->routeIs('announcements.*') || request()->routeIs('document-overdue.*') || request()->routeIs('admin.creditors.*') ? 'menu-open' : '' }}">
                         <a href="#"
-                            class="nav-link {{ request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*') || request()->routeIs('accounts.index') || request()->routeIs('currencies.*') || request()->routeIs('rabs.*') || request()->routeIs('equipments.*') || request()->routeIs('document-number.*') || request()->routeIs('parameters.*') || request()->routeIs('admin.*') || request()->routeIs('announcements.*') || request()->routeIs('document-overdue.*') ? 'active' : '' }}">
+                            class="nav-link {{ request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*') || request()->routeIs('accounts.index') || request()->routeIs('currencies.*') || request()->routeIs('rabs.*') || request()->routeIs('equipments.*') || request()->routeIs('document-number.*') || request()->routeIs('parameters.*') || request()->routeIs('admin.*') || request()->routeIs('announcements.*') || request()->routeIs('document-overdue.*') || request()->routeIs('admin.creditors.*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-cog"></i>
                             <p>
                                 Admin
@@ -573,6 +573,13 @@
                                             class="nav-link {{ request()->routeIs('admin.business-partners.*') ? 'active' : '' }}">
                                             <i class="far fa-circle nav-icon"></i>
                                             <p>Business Partners</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.creditors.index') }}"
+                                            class="nav-link {{ request()->routeIs('admin.creditors.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Creditors</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

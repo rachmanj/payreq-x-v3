@@ -1,16 +1,8 @@
 @hasanyrole('superadmin|admin|cashier')
     @if (!$model->paid_date)
-        <button type="button" class="btn btn-xs btn-success" data-toggle="modal"
-            data-target="#create-bilyet-{{ $model->id }}" title="Create Bilyet Payment">
-            <i class="fas fa-file-invoice"></i> Bilyet
-        </button>
-        <button type="button" class="btn btn-xs btn-outline-success" data-toggle="modal"
-            data-target="#link-bilyet-{{ $model->id }}" title="Link Existing Bilyet">
-            <i class="fas fa-link"></i> Link Bilyet
-        </button>
-        <button type="button" class="btn btn-xs btn-info" data-toggle="modal"
-            data-target="#mark-autodebit-{{ $model->id }}" title="Mark as Auto-Debit Paid">
-            <i class="fas fa-university"></i> Auto-Debit
+        <button type="button" class="btn btn-xs btn-primary" data-toggle="modal"
+            data-target="#payment-method-{{ $model->id }}" title="Set Payment Method">
+            <i class="fas fa-credit-card"></i> Payment Method
         </button>
     @endif
 
@@ -131,247 +123,267 @@
     </div> <!-- /.modal-dialog -->
 </div>
 
-{{-- Modal Create Bilyet for Payment --}}
-<div class="modal fade" id="create-bilyet-{{ $model->id }}">
+{{-- Modal Payment Method --}}
+<div class="modal fade" id="payment-method-{{ $model->id }}">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Create Bilyet for Installment #{{ $model->angsuran_ke }}</h4>
+                <h4 class="modal-title">Set Payment Method for Installment #{{ $model->angsuran_ke }}</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
 
-            <form action="{{ route('accounting.loans.installments.create_bilyet', $model->id) }}" method="POST">
-                @csrf
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>Installment Details:</strong><br>
+                    <strong>Amount:</strong> IDR {{ number_format($model->bilyet_amount, 2) }}<br>
+                    <strong>Due Date:</strong> {{ date('d-M-Y', strtotime($model->due_date)) }}
+                </div>
 
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <strong>Installment Amount:</strong> IDR {{ number_format($model->bilyet_amount, 2) }}<br>
-                        <strong>Due Date:</strong> {{ date('d-M-Y', strtotime($model->due_date)) }}
+                <div class="form-group">
+                    <label>Select Payment Method <span class="text-danger">*</span></label>
+                    <div class="form-check">
+                        <input class="form-check-input payment-method-radio" type="radio" name="payment_method_{{ $model->id }}" 
+                            id="link_existing_{{ $model->id }}" value="link_existing" checked>
+                        <label class="form-check-label" for="link_existing_{{ $model->id }}">
+                            <i class="fas fa-link text-success"></i> Link Existing Bilyet Giro
+                        </label>
                     </div>
-
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="form-group">
-                                <label for="giro_id">Bank Account <span class="text-danger">*</span></label>
-                                <select name="giro_id" class="form-control select2bs4" required>
-                                    <option value="">-- select bank account --</option>
-                                    @foreach (\App\Models\Giro::where('project', auth()->user()->project)->get() as $giro)
-                                        <option value="{{ $giro->id }}"
-                                            {{ $giro->id == $model->account_id ? 'selected' : '' }}>
-                                            {{ $giro->acc_no }} - {{ $giro->acc_name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-3">
-                            <div class="form-group">
-                                <label for="type">Type <span class="text-danger">*</span></label>
-                                <select name="type" class="form-control" required>
-                                    <option value="cek">Cek</option>
-                                    <option value="bg">BG</option>
-                                    <option value="loa">LOA</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-3">
-                            <div class="form-group">
-                                <label for="bilyet_date">Bilyet Date <span class="text-danger">*</span></label>
-                                <input type="date" name="bilyet_date" class="form-control"
-                                    value="{{ $model->due_date }}" required>
-                            </div>
-                        </div>
+                    <div class="form-check">
+                        <input class="form-check-input payment-method-radio" type="radio" name="payment_method_{{ $model->id }}" 
+                            id="create_new_{{ $model->id }}" value="create_new">
+                        <label class="form-check-label" for="create_new_{{ $model->id }}">
+                            <i class="fas fa-file-invoice text-success"></i> Create New Bilyet Giro
+                        </label>
                     </div>
-
-                    <div class="row">
-                        <div class="col-3">
-                            <div class="form-group">
-                                <label for="prefix">Prefix</label>
-                                <input type="text" name="prefix" class="form-control" maxlength="10">
-                            </div>
-                        </div>
-
-                        <div class="col-5">
-                            <div class="form-group">
-                                <label for="nomor">Bilyet Number <span class="text-danger">*</span></label>
-                                <input type="text" name="nomor" class="form-control" maxlength="30" required>
-                            </div>
-                        </div>
-
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="amount">Amount <span class="text-danger">*</span></label>
-                                <input type="number" name="amount" class="form-control" step="0.01"
-                                    value="{{ $model->bilyet_amount }}" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="remarks">Remarks</label>
-                        <textarea name="remarks" class="form-control" rows="2">Loan payment for installment #{{ $model->angsuran_ke }}</textarea>
+                    <div class="form-check">
+                        <input class="form-check-input payment-method-radio" type="radio" name="payment_method_{{ $model->id }}" 
+                            id="auto_debit_{{ $model->id }}" value="auto_debit">
+                        <label class="form-check-label" for="auto_debit_{{ $model->id }}">
+                            <i class="fas fa-university text-info"></i> Auto-Debit
+                        </label>
                     </div>
                 </div>
 
-                <div class="modal-footer float-left">
-                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-save"></i> Create
-                        Bilyet</button>
+                {{-- Link Existing Bilyet Form --}}
+                <div id="form-link-existing-{{ $model->id }}" class="payment-form">
+                    <form action="{{ route('accounting.loans.installments.link_existing_bilyet', $model->id) }}" method="POST" id="link-existing-form-{{ $model->id }}">
+                        @csrf
+                        <div class="form-group">
+                            <label for="bilyet_id_{{ $model->id }}">Select Existing Bilyet <span class="text-danger">*</span></label>
+                            <select name="bilyet_id" id="bilyet_id_{{ $model->id }}" class="form-control select2bs4" required style="width: 100%;">
+                                <option value="">-- select bilyet --</option>
+                                @foreach (\App\Models\Bilyet::with('giro')->where('status', 'onhand')->where('project', auth()->user()->project)->where('purpose', 'loan_payment')->orderBy('bilyet_date', 'desc')->orderBy('nomor', 'asc')->get() as $bilyet)
+                                    <option value="{{ $bilyet->id }}" data-giro="{{ $bilyet->giro->acc_no ?? '' }}"
+                                        data-type="{{ $bilyet->type }}"
+                                        data-nomor="{{ $bilyet->prefix . $bilyet->nomor }}"
+                                        data-date="{{ $bilyet->bilyet_date ? date('d-M-Y', strtotime($bilyet->bilyet_date)) : '' }}">
+                                        {{ $bilyet->prefix . $bilyet->nomor }}
+                                        ({{ strtoupper($bilyet->type) }})
+                                        - {{ $bilyet->giro->acc_no ?? 'N/A' }}
+                                        @if ($bilyet->bilyet_date)
+                                            - {{ date('d-M-Y', strtotime($bilyet->bilyet_date)) }}
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Only bilyets with status "On Hand" are shown.</small>
+                        </div>
+
+                        <div id="bilyet-details-{{ $model->id }}" style="display: none;">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h5 class="card-title">Selected Bilyet Details</h5>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-4">Bilyet Number:</dt>
+                                        <dd class="col-sm-8" id="selected-nomor-{{ $model->id }}">-</dd>
+                                        <dt class="col-sm-4">Type:</dt>
+                                        <dd class="col-sm-8" id="selected-type-{{ $model->id }}">-</dd>
+                                        <dt class="col-sm-4">Account:</dt>
+                                        <dd class="col-sm-8" id="selected-account-{{ $model->id }}">-</dd>
+                                        <dt class="col-sm-4">Bilyet Date:</dt>
+                                        <dd class="col-sm-8" id="selected-date-{{ $model->id }}">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-            </form>
 
-        </div> <!-- /.modal-content -->
-    </div> <!-- /.modal-dialog -->
-</div>
+                {{-- Create New Bilyet Form --}}
+                <div id="form-create-new-{{ $model->id }}" class="payment-form" style="display: none;">
+                    <form action="{{ route('accounting.loans.installments.create_bilyet', $model->id) }}" method="POST" id="create-new-form-{{ $model->id }}">
+                        @csrf
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="giro_id_new_{{ $model->id }}">Bank Account <span class="text-danger">*</span></label>
+                                    <select name="giro_id" id="giro_id_new_{{ $model->id }}" class="form-control select2bs4" required>
+                                        <option value="">-- select bank account --</option>
+                                        @foreach (\App\Models\Giro::where('project', auth()->user()->project)->get() as $giro)
+                                            <option value="{{ $giro->id }}"
+                                                {{ $giro->id == $model->account_id ? 'selected' : '' }}>
+                                                {{ $giro->acc_no }} - {{ $giro->acc_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
 
-{{-- Modal Link Existing Bilyet --}}
-<div class="modal fade" id="link-bilyet-{{ $model->id }}">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">Link Existing Bilyet for Installment #{{ $model->angsuran_ke }}</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                            <div class="col-3">
+                                <div class="form-group">
+                                    <label for="type_new_{{ $model->id }}">Type <span class="text-danger">*</span></label>
+                                    <select name="type" id="type_new_{{ $model->id }}" class="form-control" required>
+                                        <option value="cek">Cek</option>
+                                        <option value="bg">BG</option>
+                                        <option value="loa">LOA</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-3">
+                                <div class="form-group">
+                                    <label for="bilyet_date_new_{{ $model->id }}">Bilyet Date <span class="text-danger">*</span></label>
+                                    <input type="date" name="bilyet_date" id="bilyet_date_new_{{ $model->id }}" class="form-control"
+                                        value="{{ $model->due_date }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <div class="form-group">
+                                    <label for="prefix_new_{{ $model->id }}">Prefix</label>
+                                    <input type="text" name="prefix" id="prefix_new_{{ $model->id }}" class="form-control" maxlength="10">
+                                </div>
+                            </div>
+
+                            <div class="col-5">
+                                <div class="form-group">
+                                    <label for="nomor_new_{{ $model->id }}">Bilyet Number <span class="text-danger">*</span></label>
+                                    <input type="text" name="nomor" id="nomor_new_{{ $model->id }}" class="form-control" maxlength="30" required>
+                                </div>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="form-group">
+                                    <label for="amount_new_{{ $model->id }}">Amount <span class="text-danger">*</span></label>
+                                    <input type="number" name="amount" id="amount_new_{{ $model->id }}" class="form-control" step="0.01"
+                                        value="{{ $model->bilyet_amount }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="remarks_new_{{ $model->id }}">Remarks</label>
+                            <textarea name="remarks" id="remarks_new_{{ $model->id }}" class="form-control" rows="2">Loan payment for installment #{{ $model->angsuran_ke }}</textarea>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Auto-Debit Form --}}
+                <div id="form-auto-debit-{{ $model->id }}" class="payment-form" style="display: none;">
+                    <form action="{{ route('accounting.loans.installments.mark_auto_debit', $model->id) }}" method="POST" id="auto-debit-form-{{ $model->id }}">
+                        @csrf
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Auto-Debit Payment</strong><br>
+                            This will mark the installment as paid via automatic bank debit. No bilyet will be created.
+                        </div>
+
+                        <div class="form-group">
+                            <label for="account_id_auto_{{ $model->id }}">Bank Account <span class="text-danger">*</span></label>
+                            <select name="account_id" id="account_id_auto_{{ $model->id }}" class="form-control select2bs4" required>
+                                <option value="">-- select bank account --</option>
+                                @foreach (\App\Models\Account::where('type', 'bank')->get() as $account)
+                                    <option value="{{ $account->id }}"
+                                        {{ $account->id == $model->account_id ? 'selected' : '' }}>
+                                        {{ $account->account_number }} - {{ $account->account_name ?? 'N/A' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Select the bank account from which the auto-debit will be processed.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="paid_date_auto_{{ $model->id }}">Paid Date</label>
+                            <input type="date" name="paid_date" id="paid_date_auto_{{ $model->id }}" class="form-control">
+                            <small class="text-muted">Leave empty to set later when payment is realized. You can update the payment date later.</small>
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <form action="{{ route('accounting.loans.installments.link_existing_bilyet', $model->id) }}"
-                method="POST">
-                @csrf
-
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <strong>Installment Details:</strong><br>
-                        <strong>Amount:</strong> IDR {{ number_format($model->bilyet_amount, 2) }}<br>
-                        <strong>Due Date:</strong> {{ date('d-M-Y', strtotime($model->due_date)) }}
-                    </div>
-
-                    <div class="form-group">
-                        <label for="bilyet_id">Select Existing Bilyet <span class="text-danger">*</span></label>
-                        <select name="bilyet_id" id="bilyet_id_{{ $model->id }}" class="form-control select2bs4"
-                            required style="width: 100%;">
-                            <option value="">-- select bilyet --</option>
-                            @foreach (\App\Models\Bilyet::with('giro')->where('status', 'onhand')->where('project', auth()->user()->project)->where('purpose', 'loan_payment')->orderBy('bilyet_date', 'desc')->orderBy('nomor', 'asc')->get() as $bilyet)
-                                <option value="{{ $bilyet->id }}" data-giro="{{ $bilyet->giro->acc_no ?? '' }}"
-                                    data-type="{{ $bilyet->type }}"
-                                    data-nomor="{{ $bilyet->prefix . $bilyet->nomor }}">
-                                    {{ $bilyet->prefix . $bilyet->nomor }}
-                                    ({{ strtoupper($bilyet->type) }})
-                                    - {{ $bilyet->giro->acc_no ?? 'N/A' }}
-                                    @if ($bilyet->bilyet_date)
-                                        - {{ date('d-M-Y', strtotime($bilyet->bilyet_date)) }}
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
-                        <small class="text-muted">Only bilyets with status "On Hand" are shown.</small>
-                    </div>
-
-                    <div id="bilyet-details-{{ $model->id }}" style="display: none;">
-                        <div class="card card-info">
-                            <div class="card-header">
-                                <h5 class="card-title">Selected Bilyet Details</h5>
-                            </div>
-                            <div class="card-body">
-                                <dl class="row mb-0">
-                                    <dt class="col-sm-4">Bilyet Number:</dt>
-                                    <dd class="col-sm-8" id="selected-nomor-{{ $model->id }}">-</dd>
-                                    <dt class="col-sm-4">Type:</dt>
-                                    <dd class="col-sm-8" id="selected-type-{{ $model->id }}">-</dd>
-                                    <dt class="col-sm-4">Account:</dt>
-                                    <dd class="col-sm-8" id="selected-account-{{ $model->id }}">-</dd>
-                                    <dt class="col-sm-4">Bilyet Date:</dt>
-                                    <dd class="col-sm-8" id="selected-date-{{ $model->id }}">-</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal-footer float-left">
-                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-link"></i> Link
-                        Bilyet</button>
-                </div>
-            </form>
-
+            <div class="modal-footer float-left">
+                <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-sm btn-primary" id="submit-payment-{{ $model->id }}">
+                    <i class="fas fa-save"></i> Save Payment Method
+                </button>
+            </div>
         </div> <!-- /.modal-content -->
     </div> <!-- /.modal-dialog -->
 </div>
 
 <script>
     $(document).ready(function() {
-        $('#bilyet_id_{{ $model->id }}').on('change', function() {
+        const installmentId = {{ $model->id }};
+        
+        // Handle payment method selection
+        $('input[name="payment_method_' + installmentId + '"]').on('change', function() {
+            const selectedMethod = $(this).val();
+            
+            // Hide all forms
+            $('.payment-form').hide();
+            
+            // Show selected form
+            if (selectedMethod === 'link_existing') {
+                $('#form-link-existing-' + installmentId).show();
+            } else if (selectedMethod === 'create_new') {
+                $('#form-create-new-' + installmentId).show();
+            } else if (selectedMethod === 'auto_debit') {
+                $('#form-auto-debit-' + installmentId).show();
+            }
+        });
+
+        // Handle bilyet selection change for link existing
+        $('#bilyet_id_' + installmentId).on('change', function() {
             var selectedOption = $(this).find('option:selected');
             if (selectedOption.val()) {
-                $('#selected-nomor-{{ $model->id }}').text(selectedOption.data('nomor'));
-                $('#selected-type-{{ $model->id }}').text(selectedOption.data('type')
-            .toUpperCase());
-                $('#selected-account-{{ $model->id }}').text(selectedOption.data('giro'));
-                $('#bilyet-details-{{ $model->id }}').show();
+                $('#selected-nomor-' + installmentId).text(selectedOption.data('nomor'));
+                $('#selected-type-' + installmentId).text(selectedOption.data('type').toUpperCase());
+                $('#selected-account-' + installmentId).text(selectedOption.data('giro'));
+                $('#selected-date-' + installmentId).text(selectedOption.data('date'));
+                $('#bilyet-details-' + installmentId).show();
             } else {
-                $('#bilyet-details-{{ $model->id }}').hide();
+                $('#bilyet-details-' + installmentId).hide();
             }
+        });
+
+        // Handle submit button
+        $('#submit-payment-' + installmentId).on('click', function() {
+            const selectedMethod = $('input[name="payment_method_' + installmentId + '"]:checked').val();
+            
+            if (selectedMethod === 'link_existing') {
+                $('#link-existing-form-' + installmentId).submit();
+            } else if (selectedMethod === 'create_new') {
+                $('#create-new-form-' + installmentId).submit();
+            } else if (selectedMethod === 'auto_debit') {
+                $('#auto-debit-form-' + installmentId).submit();
+            }
+        });
+
+        // Initialize Select2 when modal is shown
+        $('#payment-method-' + installmentId).on('shown.bs.modal', function() {
+            $('.select2bs4').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
         });
     });
 </script>
-
-{{-- Modal Mark as Auto-Debit Paid --}}
-<div class="modal fade" id="mark-autodebit-{{ $model->id }}">
-    <div class="modal-dialog modal-md">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">Mark Installment as Auto-Debit Paid</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-
-            <form action="{{ route('accounting.loans.installments.mark_auto_debit', $model->id) }}" method="POST">
-                @csrf
-
-                <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Auto-Debit Payment</strong><br>
-                        This will mark the installment as paid via automatic bank debit. No bilyet will be created.
-                    </div>
-
-                    <div class="form-group">
-                        <label>Installment Details:</label>
-                        <dl class="row mb-0">
-                            <dt class="col-sm-5">Installment #:</dt>
-                            <dd class="col-sm-7">{{ $model->angsuran_ke }}</dd>
-                            <dt class="col-sm-5">Due Date:</dt>
-                            <dd class="col-sm-7">{{ date('d-M-Y', strtotime($model->due_date)) }}</dd>
-                            <dt class="col-sm-5">Amount:</dt>
-                            <dd class="col-sm-7">IDR {{ number_format($model->bilyet_amount, 2) }}</dd>
-                            <dt class="col-sm-5">Account:</dt>
-                            <dd class="col-sm-7">{{ $model->account->account_number ?? '-' }}</dd>
-                        </dl>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="paid_date">Paid Date <span class="text-danger">*</span></label>
-                        <input type="date" name="paid_date" class="form-control" value="{{ date('Y-m-d') }}"
-                            required>
-                    </div>
-                </div>
-
-                <div class="modal-footer float-left">
-                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-check"></i> Mark as
-                        Paid</button>
-                </div>
-            </form>
-
-        </div> <!-- /.modal-content -->
-    </div> <!-- /.modal-dialog -->
-</div>
 
 {{-- Modal Create SAP AP Invoice --}}
 <div class="modal fade" id="create-sap-ap-{{ $model->id }}">

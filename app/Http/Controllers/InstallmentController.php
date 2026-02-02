@@ -182,10 +182,11 @@ class InstallmentController extends Controller
     {
         try {
             $request->validate([
-                'paid_date' => 'required|date',
+                'paid_date' => 'nullable|date',
+                'account_id' => 'required|exists:accounts,id',
             ]);
 
-            $this->installmentPaymentService->markAsAutoDebitPaid($installment_id, $request->paid_date);
+            $this->installmentPaymentService->markAsAutoDebitPaid($installment_id, $request->paid_date, $request->account_id);
 
             return redirect()->back()->with('success', 'Installment marked as paid via auto-debit');
         } catch (\Exception $e) {

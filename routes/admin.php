@@ -73,4 +73,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'can:akses_admin'])-
         Route::post('/sync-accounts', [App\Http\Controllers\Admin\SapMasterDataSyncController::class, 'syncAccounts'])->name('sync-accounts');
         Route::post('/sync-business-partners', [App\Http\Controllers\Admin\SapMasterDataSyncController::class, 'syncBusinessPartners'])->name('sync-business-partners');
     });
+
+    // Creditors Management
+    Route::prefix('creditors')->name('creditors.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\CreditorController::class, 'index'])->name('index');
+        Route::get('/data', [App\Http\Controllers\Admin\CreditorController::class, 'data'])->name('data');
+        Route::get('/create', [App\Http\Controllers\Admin\CreditorController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\Admin\CreditorController::class, 'store'])->name('store');
+        Route::get('/{creditor}', [App\Http\Controllers\Admin\CreditorController::class, 'show'])->name('show');
+        Route::get('/{creditor}/edit', [App\Http\Controllers\Admin\CreditorController::class, 'edit'])->name('edit');
+        Route::put('/{creditor}', [App\Http\Controllers\Admin\CreditorController::class, 'update'])->name('update');
+        Route::delete('/{creditor}', [App\Http\Controllers\Admin\CreditorController::class, 'destroy'])->name('destroy');
+    });
 });

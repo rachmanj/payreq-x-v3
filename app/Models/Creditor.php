@@ -53,4 +53,12 @@ class Creditor extends Model
     {
         return $query->whereNull('sap_business_partner_id');
     }
+
+    /**
+     * Relationship to Loans
+     */
+    public function loans()
+    {
+        return $this->hasMany(Loan::class);
+    }
 }

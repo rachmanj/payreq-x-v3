@@ -94,7 +94,7 @@ class LoanController extends Controller
 
     public function create()
     {
-        $creditors = Creditor::get();
+        $creditors = Creditor::with('sapBusinessPartner')->get();
 
         return view('accounting.loans.create', compact('creditors'));
     }
@@ -126,7 +126,7 @@ class LoanController extends Controller
     public function edit($id)
     {
         $loan = Loan::find($id);
-        $creditors = Creditor::get();
+        $creditors = Creditor::with('sapBusinessPartner')->get();
 
         return view('accounting.loans.edit', compact(['loan', 'creditors']));
     }

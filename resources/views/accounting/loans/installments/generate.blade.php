@@ -95,10 +95,10 @@
                             </div>
                             <div class="col-8">
                                 <div class="form-group">
-                                    <label for="account_id">Account Pembebanan <span class="text-danger">*</span></label>
+                                    <label for="account_id">Account Pembebanan</label>
                                     <select name="account_id"
-                                        class="form-control select2bs4 @error('account_id') is-invalid @enderror" required>
-                                        <option value="">-- pilih bank account untuk pembayaran --</option>
+                                        class="form-control select2bs4 @error('account_id') is-invalid @enderror">
+                                        <option value="">-- pilih bank account untuk pembayaran (opsional) --</option>
                                         @foreach ($accounts as $account)
                                             <option value="{{ $account->id }}"
                                                 {{ $account->id == old('account_id') ? 'selected' : '' }}>
@@ -109,8 +109,7 @@
                                     @error('account_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                    <small class="form-text text-muted">Rekening bank yang akan digunakan untuk membayar
-                                        angsuran ini</small>
+                                    <small class="form-text text-muted">Rekening bank akan otomatis terisi saat linking dengan bilyet giro atau auto debit. Kosongkan jika akan di-link kemudian.</small>
                                 </div>
                             </div>
                         </div>
@@ -170,7 +169,7 @@
             // Initialize Select2 with better formatting
             $('.select2bs4').select2({
                 theme: 'bootstrap4',
-                placeholder: '-- pilih bank account untuk pembayaran --',
+                placeholder: '-- pilih bank account untuk pembayaran (opsional) --',
                 allowClear: true,
                 width: '100%'
             });
@@ -191,6 +190,9 @@
                     const totalAmount = tenor * amount;
                     const endNumber = startNumber + tenor - 1;
 
+                    const selectedAccount = $('#account_id').val();
+                    const accountText = selectedAccount ? $('#account_id option:selected').text() : '<em class="text-muted">Akan di-set saat linking dengan bilyet giro/auto debit</em>';
+                    
                     let summaryHtml = `
             <div class="row">
               <div class="col-md-6">
@@ -201,7 +203,7 @@
               <div class="col-md-6">
                 <p><strong>Amount per Bulan:</strong> IDR ${formatNumber(amount)}</p>
                 <p><strong>Total Amount:</strong> IDR ${formatNumber(totalAmount)}</p>
-                <p><strong>Account:</strong> ${$('#account_id option:selected').text()}</p>
+                <p><strong>Account:</strong> ${accountText}</p>
               </div>
             </div>
           `;
@@ -240,9 +242,8 @@
                 const tenor = parseInt($('input[name="tenor"]').val());
                 const amount = parseFloat($('input[name="installment_amount"]').val());
                 const startDate = $('input[name="start_due_date"]').val();
-                const accountId = $('#account_id').val();
 
-                if (!tenor || !amount || !startDate || !accountId) {
+                if (!tenor || !amount || !startDate) {
                     e.preventDefault();
                     alert('Please fill in all required fields (marked with *)');
                     return false;

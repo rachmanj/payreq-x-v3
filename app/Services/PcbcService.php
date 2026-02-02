@@ -34,8 +34,11 @@ class PcbcService
 
     public function uploadFile($file): string
     {
+        // Get file size before moving (required for logging)
+        $fileSize = $file->getSize();
+
         // Validate file size (max 5MB)
-        if ($file->getSize() > 5 * 1024 * 1024) {
+        if ($fileSize > 5 * 1024 * 1024) {
             throw new \Exception('File size exceeds 5MB limit.');
         }
 
@@ -48,23 +51,23 @@ class PcbcService
         // Generate unique filename
         $extension = $file->getClientOriginalExtension();
         $filename = 'pcbc_' . uniqid() . '_' . time() . '.' . $extension;
-        
+
         // Move file to storage
         $file->move(public_path('dokumens'), $filename);
-        
+
         Log::info('PCBC file uploaded', [
             'filename' => $filename,
-            'size' => $file->getSize(),
+            'size' => $fileSize,
             'user_id' => auth()->id()
         ]);
-        
+
         return $filename;
     }
 
     public function deleteFile(string $filename): bool
     {
         $filePath = public_path('dokumens/' . $filename);
-        
+
         if (file_exists($filePath)) {
             try {
                 unlink($filePath);
@@ -82,7 +85,7 @@ class PcbcService
                 return false;
             }
         }
-        
+
         return false;
     }
 
@@ -90,7 +93,7 @@ class PcbcService
     {
         $systemVariance = $systemAmount - $fisikAmount;
         $sapVariance = $sapAmount - $fisikAmount;
-        
+
         return [
             'system_variance' => $systemVariance,
             'sap_variance' => $sapVariance,
