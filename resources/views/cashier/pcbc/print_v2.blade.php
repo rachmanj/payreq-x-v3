@@ -325,7 +325,8 @@
         <label for="design-select"><i class="fas fa-palette"></i> Print Design:</label>
         <select id="design-select" onchange="changeDesign(this.value)">
             <option value="1" {{ request('design') == '1' ? 'selected' : '' }}>Design 1 (Classic)</option>
-            <option value="2" {{ request('design', '2') == '2' ? 'selected' : '' }}>Design 2 (Modern)</option>
+            <option value="2" {{ request('design') == '2' ? 'selected' : '' }}>Design 2 (Modern)</option>
+            <option value="3" {{ request('design', '3') == '3' ? 'selected' : '' }}>Design 3 (ARKA Format)</option>
         </select>
     </div>
 

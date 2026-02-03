@@ -450,13 +450,29 @@ class PcbcController extends Controller
         $pcbc = Pcbc::findOrFail($id);
         $terbilang = app(ToolController::class)->terbilang($pcbc->fisik_amount);
 
-        // Get design parameter, default to 1 (classic design)
-        $design = request('design', '1');
+        // Get design parameter, default to 3 (ARKA format)
+        $design = request('design', '3');
+
+        // For Design 3, get system balance from cash account
+        $systemBalance = 0;
+        if ($design == '3') {
+            $cashAccount = Account::where('project', $pcbc->project)
+                ->where('type', 'cash')
+                ->first();
+
+            if ($cashAccount && isset($cashAccount->app_balance)) {
+                $systemBalance = $cashAccount->app_balance;
+            }
+        }
 
         // Load the appropriate view based on design selection
-        $viewName = $design == '2' ? 'cashier.pcbc.print_v2' : 'cashier.pcbc.print';
+        $viewName = match ($design) {
+            '2' => 'cashier.pcbc.print_v2',
+            '3' => 'cashier.pcbc.print_v3',
+            default => 'cashier.pcbc.print',
+        };
 
-        return view($viewName, compact('pcbc', 'terbilang'));
+        return view($viewName, compact('pcbc', 'terbilang', 'systemBalance'));
     }
 
     public function destroy_pcbc($id)
