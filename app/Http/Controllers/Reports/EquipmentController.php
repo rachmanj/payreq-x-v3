@@ -17,7 +17,7 @@ class EquipmentController extends Controller
 
     public function index()
     {
-        $years = range(date('Y'), date('Y') - 5);
+        $years = range(date('Y'), 2024);
         return view('reports.equipment.index', compact('years'));
     }
 
