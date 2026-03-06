@@ -169,7 +169,7 @@ class ReportIndexController extends Controller
                 'protector' => null,
                 'subMenu' => [
                     [
-                        'name' => 'Sum Expense by Equipment',
+                        'name' => 'Summary Unit Expense Report via Payreq System',
                         'url' => route('reports.equipment.index'),
                         'protector' => 'akses_sum_expense_by_equipment',
                     ],

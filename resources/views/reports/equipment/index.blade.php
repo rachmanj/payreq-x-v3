@@ -1,11 +1,11 @@
 @extends('templates.main')
 
 @section('title_page')
-    Reports
+    Summary Unit Expense Report via Payreq System
 @endsection
 
 @section('breadcrumb_title')
-    reports / equipements
+    reports / summary unit expense
 @endsection
 
 @section('content')
@@ -13,9 +13,22 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Expense by Equipment</h3>
-                    <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary float-right"><i
-                            class="fas fa-arrow-left"></i> Back to Index</a>
+                    <h3 class="card-title">Summary Unit Expense Report via Payreq System</h3>
+                    <div class="card-tools">
+                        <div class="input-group input-group-sm mr-2" style="width: 120px;">
+                            <select id="yearFilter" class="form-control">
+                                @foreach ($years as $y)
+                                    <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <a href="#" id="exportExcel" class="btn btn-sm btn-success mr-2">
+                            <i class="fas fa-file-excel"></i> Export to Excel
+                        </a>
+                        <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-arrow-left"></i> Back to Index
+                        </a>
+                    </div>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
@@ -24,11 +37,17 @@
                             <thead>
                                 <tr>
                                     <th width="5%">#</th>
-                                    <th width="15%">Unit No</th>
-                                    <th width="30%">FCPKM</th>
-                                    <th width="15%">Project</th>
-                                    <th width="15%">Last KM</th>
-                                    <th width="20%">Expense</th>
+                                    <th width="12%">Unit No</th>
+                                    <th width="12%">Fuel</th>
+                                    <th width="12%">Service</th>
+                                    <th width="12%">Other</th>
+                                    <th width="12%">Tax</th>
+                                    <th width="12%">Total</th>
+                                    {{-- FCPKM, Est. FCPL, Last KM - commented for later use
+                                    <th width="15%">FCPKM</th>
+                                    <th width="10%">Est. FCPL</th>
+                                    <th width="8%">Last KM</th>
+                                    --}}
                                 </tr>
                             </thead>
                             <tbody>
@@ -122,19 +141,17 @@
                 stateSave: true,
                 retrieve: true,
                 searching: true,
+                order: [[1, 'asc']],
                 orderCellsTop: true,
-                autoWidth: false, // Better performance by disabling auto-width
-                scroller: true, // Enable virtual scrolling for better performance
-                scrollY: '65vh', // Virtual scroll height
-                scrollCollapse: true,
+                autoWidth: false,
                 ajax: {
                     url: '{{ route('reports.equipment.data') }}',
                     type: 'GET',
                     data: function(d) {
-                        d.cache_key = '{{ auth()->user()->project }}_equipment_{{ auth()->user()->id }}';
+                        d.year = $('#yearFilter').val();
                     },
                     cache: true,
-                    timeout: 15000, // 15 second timeout
+                    timeout: 15000,
                     error: function(xhr, error, thrown) {
                         console.log('DataTables error: ' + error + ' - ' + thrown);
                         alert('An error occurred while loading data. Please try refreshing the page.');
@@ -145,21 +162,16 @@
                         orderable: false,
                         searchable: false
                     },
-                    {
-                        data: 'unit_no'
-                    },
-                    {
-                        data: 'fuel_cost_per_km'
-                    },
-                    {
-                        data: 'project'
-                    },
-                    {
-                        data: 'last_km'
-                    },
-                    {
-                        data: 'total_amount'
-                    },
+                    { data: 'unit_no' },
+                    { data: 'fuel_amount', className: 'text-right' },
+                    { data: 'service_amount', className: 'text-right' },
+                    { data: 'other_amount', className: 'text-right' },
+                    { data: 'tax_amount', className: 'text-right' },
+                    { data: 'total_amount', className: 'text-right' }
+                    // FCPKM, Est. FCPL, Last KM - commented for later use
+                    // , { data: 'fuel_cost_per_km' },
+                    // { data: 'estimated_fcpl', className: 'text-right' },
+                    // { data: 'last_km', className: 'text-right' }
                 ],
                 fixedHeader: false, // Disable for better performance
                 responsive: {
@@ -178,7 +190,7 @@
                     [10, 25, 50, 100]
                 ],
                 columnDefs: [{
-                    "targets": [2, 4, 5],
+                    "targets": [2, 3, 4, 5, 6],
                     "className": "text-right"
                 }],
                 createdRow: function(row, data, dataIndex) {
@@ -214,16 +226,25 @@
                 }
             });
 
-            // Optimize event listeners with event delegation
+            $('#yearFilter').on('change', function() {
+                table.ajax.reload();
+            });
+
+            $('#exportExcel').on('click', function(e) {
+                e.preventDefault();
+                const year = $('#yearFilter').val();
+                window.location.href = '{{ route('reports.equipment.export') }}?year=' + year;
+            });
+
             document.addEventListener('click', function(e) {
                 const target = e.target.closest('a[href*="equipment.detail"]');
                 if (target) {
-                    // Prefetch detail page data on hover
                     const unitNo = target.closest('tr').getAttribute('data-unit-no');
                     if (unitNo) {
+                        const year = $('#yearFilter').val();
                         const prefetchLink = document.createElement('link');
                         prefetchLink.rel = 'prefetch';
-                        prefetchLink.href = '{{ route('reports.equipment.detail') }}?unit_no=' + unitNo;
+                        prefetchLink.href = '{{ route('reports.equipment.detail') }}?unit_no=' + unitNo + '&year=' + year;
                         document.head.appendChild(prefetchLink);
                     }
                 }

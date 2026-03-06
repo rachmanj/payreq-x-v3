@@ -1,3 +1,25 @@
+### [031] Summary Unit Expense Report via Payreq System (2026-03-06) ✅ COMPLETE
+
+**Challenge**: Users needed a report for fuel consumption and other expenses per unit_no (equipment) for a specific year, with Excel export capability. The existing Equipment report showed all-time data without year filter and lacked Excel export.
+
+**Solution**: Enhanced the Equipment report with year filter based on `verification_journals.sap_posting_date`, restricted to `realization_details` where `verification_journal_id IS NOT NULL` (posted to SAP). Added separate columns for Fuel, Service, Other, Tax and Excel export. Renamed to "Summary Unit Expense Report via Payreq System".
+
+**Key Learning**: Using `verification_journals.sap_posting_date` as year filter ensures only SAP-posted realization details are included, aligning with accounting period. The join `realization_details` → `verification_journals` is required for this scope. Cache keys must include year when data is year-filtered.
+
+**Implementation Details**:
+- **EquipmentController**: Join realization_details to verification_journals, filter by verification_journal_id IS NOT NULL and YEAR(sap_posting_date). Updated data(), detail(), unit_histories(), getLastKM(), fuelCostPerKM(), km_array() to accept year parameter.
+- **SummaryUnitExpenseExport**: Same query logic for Excel export with columns Unit No | Fuel | Service | Other | Tax | Total.
+- **Views**: Year dropdown, Export to Excel button, updated table columns, detail view with year and tax section.
+- **ReportIndexController**: Renamed menu item to "Summary Unit Expense Report via Payreq System".
+
+**Improvements & Fixes**:
+- **Ambiguous column fix**: Both `realization_details` and `verification_journals` have `type` and `unit_no`. Use `realization_details.type` and `realization_details.unit_no` explicitly in joins and GROUP BY.
+- **Excel number format**: Export view must output raw numeric values (no `number_format`). Indonesian format "800.000" is stored as string; Excel interprets it as 800. Use raw 800000 and apply `#,##0` format in cells.
+- **FCPKM, Est. FCPL, Last KM**: Columns implemented but commented out in index, detail, and export for later use. `fuel_qty` added for FCPL calculation.
+- **DataTable**: Removed `scroller: true` and `scrollY: '65vh'` (Scroller plugin not loaded). Default sort `order: [[1, 'asc']]` for unit_no.
+
+---
+
 ### [029] PCBC Print Design 3 - ARKA Format Implementation (2026-01-28) ✅ COMPLETE
 
 **Challenge**: Users needed a third print design option that matches the ARKA company format, with specific layout requirements including ARKA logo, centered header with project, system balance from cash account, and a formal document structure.

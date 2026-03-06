@@ -78,6 +78,37 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ---
 
+### Decision: Summary Unit Expense Report - Data Scope and Excel Format - 2026-03-06
+
+**Context**: Users needed a report for fuel consumption and other expenses per unit_no (equipment) for a specific year with Excel export. The existing Equipment report showed all-time data without year filter and lacked Excel export. Implementation required decisions on data scope, year filtering, and Excel number formatting.
+
+**Options Considered**:
+
+1. **Filter by realization date**
+   - ✅ Pros: Simpler query, no join to verification_journals
+   - ❌ Cons: Does not align with accounting period; includes unrealized/posted items
+
+2. **Filter by verification_journals.sap_posting_date (Chosen)**
+   - ✅ Pros: Aligns with accounting period; only includes posted-to-SAP realization details
+   - ❌ Cons: Requires join to verification_journals; slightly more complex query
+
+3. **Excel export with number_format()**
+   - ❌ Cons: Produces "800.000" (Indonesian format) which Excel interprets as 800, not 800000
+
+4. **Excel export with raw numeric values + cell format (Chosen)**
+   - ✅ Pros: Excel stores 800000 correctly; `#,##0` format displays properly
+   - Implementation: Export view outputs raw numbers; Excel applies format in cells
+
+**Decision**: Use `verification_journal_id IS NOT NULL` and `YEAR(verification_journals.sap_posting_date)` for data scope. Use raw numeric values in Excel export with `#,##0` cell format. Qualify ambiguous columns (`realization_details.type`, `realization_details.unit_no`) in joins.
+
+**Rationale**: Accounting reports should reflect posted data only. SAP posting date is the authoritative source for period alignment. Excel requires numeric values for correct calculations; formatted strings cause incorrect interpretation.
+
+**Implementation**: EquipmentController and SummaryUnitExpenseExport share query logic. Export view `summary_unit_expense.blade.php` outputs raw values. FCPKM, Est. FCPL, Last KM columns implemented but commented for later use.
+
+**Review Date**: 2026-09-XX (evaluate need for FCPKM/FCPL columns, project filter)
+
+---
+
 ### Decision: Direct SAP B1 Journal Entry Submission via Service Layer API - 2025-11-20
 
 **Context**: Users were manually exporting verification journals to Excel and copy-pasting data into SAP B1 Journal Entry module. This workflow was time-consuming, error-prone, lacked audit trail, and required manual updates of SAP journal numbers in the local system. Business needed automated submission with proper error handling, transaction safety, and complete audit logging.

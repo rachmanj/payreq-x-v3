@@ -47,6 +47,18 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   [done] P1: Summary Unit Expense Report via Payreq System [app/Http/Controllers/Reports/EquipmentController.php, app/Exports/SummaryUnitExpenseExport.php, resources/views/reports/equipment/index.blade.php, resources/views/reports/equipment/detail.blade.php, resources/views/exports/summary_unit_expense.blade.php, app/Http/Controllers/Reports/ReportIndexController.php, routes/reports.php] (completed: 2026-03-06)
+
+    -   Report shows fuel, service, other, tax expenses per unit_no filtered by year
+    -   Data scope: realization_details with verification_journal_id IS NOT NULL, joined to verification_journals
+    -   Year filter based on YEAR(verification_journals.sap_posting_date)
+    -   Excel export with same columns: Unit No | Fuel | Service | Other | Tax | Total; raw numeric values in export view so Excel stores 800000 correctly (not "800.000" → 800)
+    -   Report title: "Summary Unit Expense Report via Payreq System" under Reports > Equipment Related
+    -   Detail view includes year in header and tax section
+    -   Fixed ambiguous column: uses realization_details.type and realization_details.unit_no in joins
+    -   Removed scroller/scrollY (Scroller plugin not loaded); default sort by unit_no
+    -   FCPKM, Est. FCPL, Last KM columns commented out for later use; fuel_qty added for FCPL
+
 -   [done] P1: SAP Preview Page Edit/Update Functionality [app/Http/Controllers/Accounting/VatController.php, resources/views/accounting/vat/ar/sap_preview.blade.php, routes/accounting.php] (completed: 2026-01-XX)
 
     -   Added Edit/Update/Cancel buttons for AR Invoice Details section (Invoice No, Faktur No, Faktur Date)

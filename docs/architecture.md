@@ -92,6 +92,7 @@ The Accounting One system is a comprehensive financial management application bu
     - Export functionality (Excel, PDF) with Laravel Excel
     - Performance-optimized queries with database indexing
     - Real-time dashboard analytics
+    - **Summary Unit Expense Report via Payreq System**: Equipment expense report under Reports > Equipment Related. Year-filtered by `verification_journals.sap_posting_date`, includes only `realization_details` with `verification_journal_id IS NOT NULL`. Columns: Unit No | Fuel | Service | Other | Tax | Total. Excel export with raw numeric values and `#,##0` format. Default sort by unit_no. FCPKM, Est. FCPL, Last KM columns available but commented for later use.
 
 6. **External Integrations**
 
@@ -326,6 +327,34 @@ The `SAP Sync` module provides comprehensive editing capabilities for verificati
 - `GET /accounting/sap-sync/edit-vjdetail` - Display edit page (`SapSyncController::edit_vjdetail_display`)
 - `GET /accounting/sap-sync/edit-vjdetail/data` - DataTables AJAX endpoint (`SapSyncController::edit_vjdetail_data`)
 - `POST /accounting/sap-sync/update-detail` - Update journal detail (`SapSyncController::update_detail`)
+
+---
+
+### Summary Unit Expense Report via Payreq System
+
+The Equipment report under Reports > Equipment Related provides fuel consumption and other expenses per `unit_no` for a given year, with Excel export. Data is sourced from posted realization details only.
+
+**Data Flow**:
+
+- `resources/views/reports/equipment/index.blade.php` displays year dropdown, Export to Excel button, and DataTable with columns: Unit No | Fuel | Service | Other | Tax | Total
+- Year filter defaults to current year; user selects year to filter data
+- `EquipmentController::index()` and `data()` join `realization_details` to `verification_journals` on `verification_journal_id`
+- Filter: `verification_journal_id IS NOT NULL` and `YEAR(verification_journals.sap_posting_date) = ?`
+- Group by `realization_details.unit_no` with `SUM(CASE WHEN type='fuel'...)` for fuel, service, other, tax
+- Excel export via `SummaryUnitExpenseExport` uses same query logic; route `GET /reports/equipment/export?year=YYYY`
+- Export view `resources/views/exports/summary_unit_expense.blade.php` outputs raw numeric values (no `number_format`) so Excel stores numbers correctly; applies `#,##0` format in cells
+
+**Key Components**:
+
+- **EquipmentController** (`app/Http/Controllers/Reports/EquipmentController.php`): `data()`, `detail()`, `unit_histories()`, `getLastKM()`, `fuelCostPerKM()`, `km_array()` accept year parameter. Uses `realization_details.type` and `realization_details.unit_no` explicitly to avoid ambiguous column errors when joining with `verification_journals`.
+- **SummaryUnitExpenseExport** (`app/Exports/SummaryUnitExpenseExport.php`): Same query logic as controller for consistent Excel output.
+- **ReportIndexController**: Menu item "Summary Unit Expense Report via Payreq System" under Equipment Related.
+
+**Technical Notes**:
+
+- FCPKM, Est. FCPL, Last KM columns are implemented but commented out for later use.
+- Excel export must use raw numeric values; `number_format` produces strings like "800.000" which Excel interprets as 800.
+- Cache keys include year when data is year-filtered.
 
 ---
 
