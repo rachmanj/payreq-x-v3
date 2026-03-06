@@ -1,3 +1,13 @@
+### [032] Summary Unit Expense Report - Monthly View & MySQL `dec` Fix (2026-03-06) ✅ COMPLETE
+
+**Challenge**: Users needed monthly drill-down and a Monthly Breakdown view (Jan–Dec columns) for the Summary Unit Expense Report. Initial implementation caused 500 error on Monthly Breakdown tab.
+
+**Solution**: Added month filter for yearly drill-down and Monthly Breakdown tab with pivoted Jan–Dec columns. Fixed SQL error: `dec` is a MySQL reserved keyword; use backticks `as \`dec\`` in raw SQL.
+
+**Key Learning**: When using month abbreviations as column aliases, avoid MySQL reserved words. `dec` (December), `oct` (October) can conflict. Use backticks or rename (e.g. `m_dec`).
+
+---
+
 ### [031] Summary Unit Expense Report via Payreq System (2026-03-06) ✅ COMPLETE
 
 **Challenge**: Users needed a report for fuel consumption and other expenses per unit_no (equipment) for a specific year, with Excel export capability. The existing Equipment report showed all-time data without year filter and lacked Excel export.

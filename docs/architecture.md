@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-01-XX
+Last Updated: 2026-03-06
 
 ## Architecture Documentation Guidelines
 
@@ -92,7 +92,7 @@ The Accounting One system is a comprehensive financial management application bu
     - Export functionality (Excel, PDF) with Laravel Excel
     - Performance-optimized queries with database indexing
     - Real-time dashboard analytics
-    - **Summary Unit Expense Report via Payreq System**: Equipment expense report under Reports > Equipment Related. Year-filtered by `verification_journals.sap_posting_date`, includes only `realization_details` with `verification_journal_id IS NOT NULL`. Columns: Unit No | Fuel | Service | Other | Tax | Total. Excel export with raw numeric values and `#,##0` format. Default sort by unit_no. FCPKM, Est. FCPL, Last KM columns available but commented for later use.
+    - **Summary Unit Expense Report via Payreq System**: Equipment expense report under Reports > Equipment Related. Year-filtered by `verification_journals.sap_posting_date`, optional month filter for drill-down. Two views: Yearly Summary (Fuel | Service | Other | Tax | Total) and Monthly Breakdown (Jan–Dec | Total). Excel export for both. FCPKM, Est. FCPL, Last KM columns available but commented for later use.
 
 6. **External Integrations**
 
@@ -336,25 +336,27 @@ The Equipment report under Reports > Equipment Related provides fuel consumption
 
 **Data Flow**:
 
-- `resources/views/reports/equipment/index.blade.php` displays year dropdown, Export to Excel button, and DataTable with columns: Unit No | Fuel | Service | Other | Tax | Total
-- Year filter defaults to current year; user selects year to filter data
-- `EquipmentController::index()` and `data()` join `realization_details` to `verification_journals` on `verification_journal_id`
-- Filter: `verification_journal_id IS NOT NULL` and `YEAR(verification_journals.sap_posting_date) = ?`
-- Group by `realization_details.unit_no` with `SUM(CASE WHEN type='fuel'...)` for fuel, service, other, tax
-- Excel export via `SummaryUnitExpenseExport` uses same query logic; route `GET /reports/equipment/export?year=YYYY`
-- Export view `resources/views/exports/summary_unit_expense.blade.php` outputs raw numeric values (no `number_format`) so Excel stores numbers correctly; applies `#,##0` format in cells
+- `resources/views/reports/equipment/index.blade.php` displays year dropdown, optional month dropdown (Full Year or Jan–Dec), Export to Excel, Export Monthly buttons, and two tabs: Yearly Summary | Monthly Breakdown
+- **Yearly Summary** (default): DataTable with Unit No | Fuel | Service | Other | Tax | Total. Month filter (when set) narrows to that month. Route `GET /reports/equipment/data`
+- **Monthly Breakdown**: DataTable with Unit No | Jan | Feb | ... | Dec | Total. Each month column shows total expense for that month. Route `GET /reports/equipment/data-monthly`
+- `EquipmentController::index()`, `data()`, `dataMonthly()` join `realization_details` to `verification_journals` on `verification_journal_id`
+- Filter: `verification_journal_id IS NOT NULL` and `YEAR(verification_journals.sap_posting_date) = ?`; optional `MONTH(...) = ?` for yearly drill-down
+- Excel export: `GET /reports/equipment/export?year=YYYY&month=MM` (yearly); `GET /reports/equipment/export-monthly?year=YYYY` (monthly breakdown)
+- Export views output raw numeric values; Excel applies `#,##0` format in cells
 
 **Key Components**:
 
-- **EquipmentController** (`app/Http/Controllers/Reports/EquipmentController.php`): `data()`, `detail()`, `unit_histories()`, `getLastKM()`, `fuelCostPerKM()`, `km_array()` accept year parameter. Uses `realization_details.type` and `realization_details.unit_no` explicitly to avoid ambiguous column errors when joining with `verification_journals`.
-- **SummaryUnitExpenseExport** (`app/Exports/SummaryUnitExpenseExport.php`): Same query logic as controller for consistent Excel output.
+- **EquipmentController**: `data()`, `detail()`, `unit_histories()`, `getLastKM()`, `fuelCostPerKM()`, `km_array()` accept year and optional month. `dataMonthly()` returns pivoted Jan–Dec totals per unit.
+- **SummaryUnitExpenseExport**: Yearly export with optional month filter.
+- **SummaryUnitExpenseMonthlyExport**: Monthly breakdown export with Jan–Dec columns.
 - **ReportIndexController**: Menu item "Summary Unit Expense Report via Payreq System" under Equipment Related.
 
 **Technical Notes**:
 
 - FCPKM, Est. FCPL, Last KM columns are implemented but commented out for later use.
 - Excel export must use raw numeric values; `number_format` produces strings like "800.000" which Excel interprets as 800.
-- Cache keys include year when data is year-filtered.
+- Cache keys include year and month when data is filtered.
+- **MySQL reserved keyword**: Column alias `dec` (December) is reserved in MySQL. Use backticks: `as \`dec\`` in raw SQL for `dataMonthly()` and `SummaryUnitExpenseMonthlyExport`.
 
 ---
 

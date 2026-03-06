@@ -12,8 +12,8 @@
     <div class="row">
         <div class="col-md-12">
             <div class="box-header mb-3">
-                <h3 class="box-title">Expense Detail of Unit No: {{ $unit_no }} (Year: {{ $year ?? date('Y') }})</h3>
-                <a href="{{ route('reports.equipment.index') }}" class="btn btn-sm btn-primary float-right">
+                <h3 class="box-title">Expense Detail of Unit No: {{ $unit_no }} (Year: {{ $year ?? date('Y') }}{{ isset($month) && $month ? ', Month: ' . \Carbon\Carbon::createFromDate($year ?? date('Y'), (int)$month, 1)->format('M') : '' }})</h3>
+                <a href="{{ route('reports.equipment.index') }}{{ isset($month) && $month ? '?year=' . ($year ?? date('Y')) . '&month=' . (strlen((string)$month) === 1 ? '0' . $month : $month) : '' }}" class="btn btn-sm btn-primary float-right">
                     <i class="fas fa-arrow-left"></i> Back to Report
                 </a>
             </div>

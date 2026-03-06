@@ -35,8 +35,10 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::prefix('equipment')->name('equipment.')->group(function () {
         Route::get('/', [EquipmentController::class, 'index'])->name('index');
         Route::get('/data', [EquipmentController::class, 'data'])->name('data');
+        Route::get('/data-monthly', [EquipmentController::class, 'dataMonthly'])->name('data-monthly');
         Route::get('/unit_no', [EquipmentController::class, 'detail'])->name('detail');
         Route::get('/export', [EquipmentController::class, 'export'])->name('export');
+        Route::get('/export-monthly', [EquipmentController::class, 'exportMonthly'])->name('export-monthly');
     });
 
     Route::prefix('loan')->name('loan.')->group(function () {

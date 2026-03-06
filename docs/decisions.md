@@ -109,6 +109,30 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ---
 
+### Decision: Monthly Breakdown Column Alias - MySQL Reserved Keyword `dec` - 2026-03-06
+
+**Context**: The Summary Unit Expense Report Monthly Breakdown view uses column aliases `jan`, `feb`, ..., `dec` for monthly totals. The `dataMonthly()` query and `SummaryUnitExpenseMonthlyExport` caused SQLSTATE 1064: "Column 'dec' in where clause is ambiguous" / syntax error near 'dec'.
+
+**Options Considered**:
+
+1. **Rename alias to `m_dec` or `dec_amount`**
+   - ✅ Pros: Avoids reserved keyword entirely
+   - ❌ Cons: Requires mapping in DataTables columns, export view, and editColumn callbacks
+
+2. **Use backticks in raw SQL (Chosen)**
+   - ✅ Pros: Keeps `dec` as display name; minimal change; `as \`dec\`` in DB::raw() passes through to MySQL
+   - ❌ Cons: Backtick escaping must be correct in PHP string
+
+**Decision**: Use `DB::raw("... END) as \`dec\`")` in both `EquipmentController::dataMonthly()` and `SummaryUnitExpenseMonthlyExport`. The backticks tell MySQL to treat `dec` as an identifier, not a reserved word.
+
+**Rationale**: `dec` is a MySQL reserved keyword (decimal). Using backticks is the standard way to use reserved words as identifiers. Renaming would require more code changes across controller, view, and export.
+
+**Implementation**: Single-line change in two files. PHP object property remains `$row->dec` (backticks affect SQL only).
+
+**Review Date**: N/A (one-time fix)
+
+---
+
 ### Decision: Direct SAP B1 Journal Entry Submission via Service Layer API - 2025-11-20
 
 **Context**: Users were manually exporting verification journals to Excel and copy-pasting data into SAP B1 Journal Entry module. This workflow was time-consuming, error-prone, lacked audit trail, and required manual updates of SAP journal numbers in the local system. Business needed automated submission with proper error handling, transaction safety, and complete audit logging.

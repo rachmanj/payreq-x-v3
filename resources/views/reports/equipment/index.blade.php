@@ -18,12 +18,23 @@
                         <div class="input-group input-group-sm mr-2" style="width: 120px;">
                             <select id="yearFilter" class="form-control">
                                 @foreach ($years as $y)
-                                    <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
+                                    <option value="{{ $y }}" {{ $y == ($preselectedYear ?? date('Y')) ? 'selected' : '' }}>{{ $y }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <a href="#" id="exportExcel" class="btn btn-sm btn-success mr-2">
+                        <div class="input-group input-group-sm mr-2" style="width: 100px;">
+                            <select id="monthFilter" class="form-control">
+                                <option value="">Full Year</option>
+                                @foreach (['01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr', '05' => 'May', '06' => 'Jun', '07' => 'Jul', '08' => 'Aug', '09' => 'Sep', '10' => 'Oct', '11' => 'Nov', '12' => 'Dec'] as $m => $label)
+                                    <option value="{{ $m }}" {{ ($preselectedMonth ?? '') == $m ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <a href="#" id="exportExcel" class="btn btn-sm btn-success mr-2" title="Export Yearly Summary">
                             <i class="fas fa-file-excel"></i> Export to Excel
+                        </a>
+                        <a href="#" id="exportExcelMonthly" class="btn btn-sm btn-outline-success mr-2" title="Export Monthly Breakdown">
+                            <i class="fas fa-file-excel"></i> Export Monthly
                         </a>
                         <a href="{{ route('reports.index') }}" class="btn btn-sm btn-primary">
                             <i class="fas fa-arrow-left"></i> Back to Index
@@ -32,8 +43,18 @@
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="equipments" class="table table-bordered table-striped table-hover">
+                    <ul class="nav nav-tabs mb-3" id="viewTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="yearly-tab" data-toggle="tab" href="#yearly-pane" role="tab">Yearly Summary</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="monthly-tab" data-toggle="tab" href="#monthly-pane" role="tab">Monthly Breakdown</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="viewTabContent">
+                        <div class="tab-pane fade show active" id="yearly-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table id="equipments" class="table table-bordered table-striped table-hover">
                             <thead>
                                 <tr>
                                     <th width="5%">#</th>
@@ -54,6 +75,34 @@
                                 <!-- DataTables will populate this -->
                             </tbody>
                         </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="monthly-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table id="equipmentsMonthly" class="table table-bordered table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th width="4%">#</th>
+                                            <th width="8%">Unit No</th>
+                                            <th width="6%">Jan</th>
+                                            <th width="6%">Feb</th>
+                                            <th width="6%">Mar</th>
+                                            <th width="6%">Apr</th>
+                                            <th width="6%">May</th>
+                                            <th width="6%">Jun</th>
+                                            <th width="6%">Jul</th>
+                                            <th width="6%">Aug</th>
+                                            <th width="6%">Sep</th>
+                                            <th width="6%">Oct</th>
+                                            <th width="6%">Nov</th>
+                                            <th width="6%">Dec</th>
+                                            <th width="8%">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <!-- /.card-body -->
@@ -82,7 +131,8 @@
             text-align: right !important;
         }
 
-        #equipments_processing {
+        #equipments_processing,
+        #equipmentsMonthly_processing {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -119,7 +169,6 @@
         });
 
         function initializeTable() {
-            // Debounce function with better performance
             function debounce(func, wait) {
                 let timeout;
                 return function() {
@@ -132,7 +181,6 @@
                 };
             }
 
-            // Improved performance DataTable initialization
             var table = $("#equipments").DataTable({
                 processing: true,
                 serverSide: true,
@@ -149,6 +197,8 @@
                     type: 'GET',
                     data: function(d) {
                         d.year = $('#yearFilter').val();
+                        const month = $('#monthFilter').val();
+                        if (month) d.month = month;
                     },
                     cache: true,
                     timeout: 15000,
@@ -226,25 +276,103 @@
                 }
             });
 
-            $('#yearFilter').on('change', function() {
+            var tableMonthly = $("#equipmentsMonthly").DataTable({
+                processing: true,
+                serverSide: true,
+                deferRender: true,
+                pageLength: 25,
+                stateSave: false,
+                searching: true,
+                order: [[1, 'asc']],
+                autoWidth: false,
+                ajax: {
+                    url: '{{ route('reports.equipment.data-monthly') }}',
+                    type: 'GET',
+                    data: function(d) {
+                        d.year = $('#yearFilter').val();
+                    },
+                    cache: true,
+                    timeout: 15000,
+                    error: function(xhr, error, thrown) {
+                        console.log('DataTables error: ' + error + ' - ' + thrown);
+                        alert('An error occurred while loading data. Please try refreshing the page.');
+                    }
+                },
+                columns: [
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'unit_no' },
+                    { data: 'jan', className: 'text-right' },
+                    { data: 'feb', className: 'text-right' },
+                    { data: 'mar', className: 'text-right' },
+                    { data: 'apr', className: 'text-right' },
+                    { data: 'may', className: 'text-right' },
+                    { data: 'jun', className: 'text-right' },
+                    { data: 'jul', className: 'text-right' },
+                    { data: 'aug', className: 'text-right' },
+                    { data: 'sep', className: 'text-right' },
+                    { data: 'oct', className: 'text-right' },
+                    { data: 'nov', className: 'text-right' },
+                    { data: 'dec', className: 'text-right' },
+                    { data: 'total_amount', className: 'text-right' }
+                ],
+                dom: '<"row"<"col-md-6"l><"col-md-6"f>>rt<"row"<"col-md-6"i><"col-md-6"p>>',
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                columnDefs: [{ targets: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], className: 'text-right' }],
+                createdRow: function(row, data) {
+                    $(row).attr('data-unit-no', data.unit_no);
+                }
+            });
+
+            $('#yearFilter, #monthFilter').on('change', function() {
                 table.ajax.reload();
+            });
+
+            $('#yearFilter').on('change', function() {
+                if ($('#monthly-tab').hasClass('active')) {
+                    tableMonthly.ajax.reload();
+                }
+            });
+
+            $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+                if (e.target.getAttribute('href') === '#monthly-pane') {
+                    $('#monthFilter').closest('.input-group').hide();
+                    tableMonthly.ajax.reload();
+                    tableMonthly.columns.adjust();
+                } else {
+                    $('#monthFilter').closest('.input-group').show();
+                }
             });
 
             $('#exportExcel').on('click', function(e) {
                 e.preventDefault();
                 const year = $('#yearFilter').val();
-                window.location.href = '{{ route('reports.equipment.export') }}?year=' + year;
+                let url = '{{ route('reports.equipment.export') }}?year=' + year;
+                const month = $('#monthFilter').val();
+                if (month) url += '&month=' + month;
+                window.location.href = url;
+            });
+
+            $('#exportExcelMonthly').on('click', function(e) {
+                e.preventDefault();
+                const year = $('#yearFilter').val();
+                window.location.href = '{{ route('reports.equipment.export-monthly') }}?year=' + year;
             });
 
             document.addEventListener('click', function(e) {
                 const target = e.target.closest('a[href*="equipment.detail"]');
                 if (target) {
-                    const unitNo = target.closest('tr').getAttribute('data-unit-no');
+                    const row = target.closest('tr');
+                    const unitNo = row ? row.getAttribute('data-unit-no') : null;
                     if (unitNo) {
                         const year = $('#yearFilter').val();
+                        let href = '{{ route('reports.equipment.detail') }}?unit_no=' + unitNo + '&year=' + year;
+                        if ($('#yearly-tab').hasClass('active')) {
+                            const month = $('#monthFilter').val();
+                            if (month) href += '&month=' + month;
+                        }
                         const prefetchLink = document.createElement('link');
                         prefetchLink.rel = 'prefetch';
-                        prefetchLink.href = '{{ route('reports.equipment.detail') }}?unit_no=' + unitNo + '&year=' + year;
+                        prefetchLink.href = href;
                         document.head.appendChild(prefetchLink);
                     }
                 }
@@ -276,11 +404,9 @@
                 }
             }
 
-            // Memory management
             window.addEventListener('beforeunload', function() {
-                if (table && typeof table.destroy === 'function') {
-                    table.destroy();
-                }
+                if (table && typeof table.destroy === 'function') table.destroy();
+                if (tableMonthly && typeof tableMonthly.destroy === 'function') tableMonthly.destroy();
             });
         }
     </script>

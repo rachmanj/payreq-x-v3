@@ -14,18 +14,25 @@ class SummaryUnitExpenseExport implements FromView, WithTitle, WithStyles, Shoul
 {
     protected int $year;
 
-    public function __construct(int $year)
+    protected ?int $month;
+
+    public function __construct(int $year, ?int $month = null)
     {
         $this->year = $year;
+        $this->month = $month;
     }
 
     public function view(): View
     {
-        $data = DB::table('realization_details')
+        $query = DB::table('realization_details')
             ->join('verification_journals', 'realization_details.verification_journal_id', '=', 'verification_journals.id')
             ->whereNotNull('realization_details.verification_journal_id')
             ->whereNotNull('realization_details.unit_no')
-            ->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$this->year])
+            ->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$this->year]);
+        if ($this->month) {
+            $query->whereRaw('MONTH(verification_journals.sap_posting_date) = ?', [$this->month]);
+        }
+        $data = $query
             ->select(
                 'realization_details.unit_no',
                 DB::raw("SUM(CASE WHEN realization_details.type = 'fuel' THEN realization_details.amount ELSE 0 END) as fuel_amount"),
@@ -40,12 +47,18 @@ class SummaryUnitExpenseExport implements FromView, WithTitle, WithStyles, Shoul
             ->get();
 
         $year = $this->year;
-        return view('exports.summary_unit_expense', compact('data', 'year'));
+        $month = $this->month;
+        return view('exports.summary_unit_expense', compact('data', 'year', 'month'));
     }
 
     public function title(): string
     {
-        return 'Summary Unit Expense ' . $this->year;
+        $title = 'Summary Unit Expense ' . $this->year;
+        if ($this->month) {
+            $monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            $title .= ' ' . $monthNames[$this->month];
+        }
+        return $title;
     }
 
     public function styles(Worksheet $sheet)

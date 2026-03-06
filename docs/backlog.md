@@ -1,5 +1,5 @@
 **Purpose**: Future features and improvements prioritized by value
-**Last Updated**: 2025-01-15
+**Last Updated**: 2026-03-06
 
 # Project Backlog
 
@@ -94,6 +94,12 @@
 -   [ ] **Social Features**: Social collaboration features for payment approvals
 
 ## Completed Features
+
+### Summary Unit Expense Report (2026-03-06)
+
+-   [x] **Year-filtered Equipment Expense Report**: Fuel, Service, Other, Tax per unit_no via Payreq system
+-   [x] **Monthly View Enhancement**: Optional month filter, Monthly Breakdown tab (Jan–Dec columns), Excel export
+-   [x] **MySQL `dec` Fix**: Use backticks `as \`dec\`` for December column alias in raw SQL
 
 ### Invoice Payment Core (2025-09-04)
 

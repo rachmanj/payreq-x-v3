@@ -1,5 +1,5 @@
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-01-XX
+**Last Updated**: 2026-03-06
 
 ## Task Management Guidelines
 
@@ -46,6 +46,14 @@ Include relevant context in brackets to help with future AI-assisted coding:
 -   [ ] Advanced reporting features
 
 ## Recently Completed
+
+-   [done] P1: Summary Unit Expense Report - Monthly View Enhancement [app/Http/Controllers/Reports/EquipmentController.php, app/Exports/SummaryUnitExpenseMonthlyExport.php, resources/views/reports/equipment/index.blade.php, resources/views/exports/summary_unit_expense_monthly.blade.php, routes/reports.php] (completed: 2026-03-06)
+
+    -   Month filter: optional Jan–Dec dropdown for yearly drill-down; "Full Year" keeps yearly totals
+    -   Monthly Breakdown tab: Unit No | Jan | Feb | ... | Dec | Total; each month shows total expense
+    -   Export Monthly button and route GET /reports/equipment/export-monthly?year=YYYY
+    -   Detail view shows month in header when filtered; back link preserves year/month
+    -   Fixed MySQL reserved keyword: `dec` (December) causes SQL syntax error; use backticks `as \`dec\`` in dataMonthly() and SummaryUnitExpenseMonthlyExport
 
 -   [done] P1: Summary Unit Expense Report via Payreq System [app/Http/Controllers/Reports/EquipmentController.php, app/Exports/SummaryUnitExpenseExport.php, resources/views/reports/equipment/index.blade.php, resources/views/reports/equipment/detail.blade.php, resources/views/exports/summary_unit_expense.blade.php, app/Http/Controllers/Reports/ReportIndexController.php, routes/reports.php] (completed: 2026-03-06)
 

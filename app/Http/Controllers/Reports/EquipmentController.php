@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Exports\SummaryUnitExpenseExport;
+use App\Exports\SummaryUnitExpenseMonthlyExport;
 use App\Http\Controllers\Controller;
 use App\Models\Equipment;
 use App\Models\RealizationDetail;
@@ -15,35 +16,38 @@ class EquipmentController extends Controller
 {
     protected $cacheTTL = 1800;
 
-    public function index()
+    public function index(Request $request)
     {
         $years = range(date('Y'), 2024);
-        return view('reports.equipment.index', compact('years'));
+        $preselectedYear = $request->get('year', date('Y'));
+        $preselectedMonth = $request->get('month');
+        return view('reports.equipment.index', compact('years', 'preselectedYear', 'preselectedMonth'));
     }
 
     public function detail(Request $request)
     {
         $unit_no = $request->unit_no;
         $year = $request->get('year', date('Y'));
-        $cacheKey = 'equipment_detail_' . $unit_no . '_' . $year;
+        $month = $request->get('month');
+        $cacheKey = 'equipment_detail_' . $unit_no . '_' . $year . '_' . ($month ?? 'all');
 
-        $result = Cache::remember($cacheKey, $this->cacheTTL, function () use ($unit_no, $year) {
-            $fuelDetails = $this->unit_histories($unit_no, $year)
+        $result = Cache::remember($cacheKey, $this->cacheTTL, function () use ($unit_no, $year, $month) {
+            $fuelDetails = $this->unit_histories($unit_no, $year, $month)
                 ->where('realization_details.type', 'fuel')
                 ->get();
 
-            $serviceDetails = $this->unit_histories($unit_no, $year)
+            $serviceDetails = $this->unit_histories($unit_no, $year, $month)
                 ->where('realization_details.type', 'service')
                 ->get();
 
-            $otherDetails = $this->unit_histories($unit_no, $year)
+            $otherDetails = $this->unit_histories($unit_no, $year, $month)
                 ->where(function ($query) {
                     $query->whereNull('realization_details.type')
                         ->orWhere('realization_details.type', 'other');
                 })
                 ->get();
 
-            $taxDetails = $this->unit_histories($unit_no, $year)
+            $taxDetails = $this->unit_histories($unit_no, $year, $month)
                 ->where('realization_details.type', 'tax')
                 ->get();
 
@@ -67,10 +71,10 @@ class EquipmentController extends Controller
             ];
         });
 
-        return view('reports.equipment.detail', compact('unit_no', 'year', 'result'));
+        return view('reports.equipment.detail', compact('unit_no', 'year', 'month', 'result'));
     }
 
-    public function unit_histories($unit_no, $year = null)
+    public function unit_histories($unit_no, $year = null, $month = null)
     {
         $query = RealizationDetail::select('realization_details.id', 'realization_details.unit_no', 'realization_details.type', 'realization_details.qty', 'realization_details.description', 'realization_details.km_position', 'realization_details.amount', 'realization_details.created_at', 'realization_details.uom')
             ->join('verification_journals', 'realization_details.verification_journal_id', '=', 'verification_journals.id')
@@ -80,6 +84,9 @@ class EquipmentController extends Controller
         if ($year) {
             $query->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year]);
         }
+        if ($month) {
+            $query->whereRaw('MONTH(verification_journals.sap_posting_date) = ?', [$month]);
+        }
 
         return $query->orderBy('realization_details.created_at', 'desc');
     }
@@ -87,7 +94,8 @@ class EquipmentController extends Controller
     public function data(Request $request)
     {
         $year = $request->get('year', date('Y'));
-        $cacheKey = 'equipment_data_' . $year . '_' .
+        $month = $request->get('month');
+        $cacheKey = 'equipment_data_' . $year . '_' . ($month ?? 'all') . '_' .
             request()->input('draw', 0) . '_' .
             request()->input('start', 0) . '_' .
             request()->input('length', 10) . '_' .
@@ -95,12 +103,16 @@ class EquipmentController extends Controller
             request()->input('order.0.column', 0) . '_' .
             request()->input('order.0.dir', 'asc');
 
-        return Cache::remember($cacheKey, 60, function () use ($year) {
-            $expense_by_unit = DB::table('realization_details')
+        return Cache::remember($cacheKey, 60, function () use ($year, $month) {
+            $query = DB::table('realization_details')
                 ->join('verification_journals', 'realization_details.verification_journal_id', '=', 'verification_journals.id')
                 ->whereNotNull('realization_details.verification_journal_id')
                 ->whereNotNull('realization_details.unit_no')
-                ->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year])
+                ->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year]);
+            if ($month) {
+                $query->whereRaw('MONTH(verification_journals.sap_posting_date) = ?', [$month]);
+            }
+            $expense_by_unit = $query
                 ->select(
                     'realization_details.unit_no',
                     DB::raw("SUM(CASE WHEN realization_details.type = 'fuel' THEN realization_details.amount ELSE 0 END) as fuel_amount"),
@@ -115,8 +127,12 @@ class EquipmentController extends Controller
                 ->get();
 
             return datatables()->of($expense_by_unit)
-                ->editColumn('unit_no', function ($row) use ($year) {
-                    $url = route('reports.equipment.detail', ['unit_no' => $row->unit_no, 'year' => $year]);
+                ->editColumn('unit_no', function ($row) use ($year, $month) {
+                    $params = ['unit_no' => $row->unit_no, 'year' => $year];
+                    if ($month) {
+                        $params['month'] = $month;
+                    }
+                    $url = route('reports.equipment.detail', $params);
                     return '<a href="' . $url . '" style="color: black" title="Click to see detail" target="_blank">' . e($row->unit_no) . '</a>';
                 })
                 // FCPKM, Est. FCPL, Last KM - commented for later use
@@ -137,8 +153,8 @@ class EquipmentController extends Controller
                 //     $cost_per_km = '<small> FCPKM: Rp.' . number_format($fuelCost['cost_per_km'], 0, ',', '.') . '</small>';
                 //     return $total_km . '<br>' . $total_cost . '<br>' . $cost_per_km;
                 // })
-                ->addColumn('project', function ($row) use ($year) {
-                    $cacheKey = 'equipment_project_' . $row->unit_no . '_' . $year;
+                ->addColumn('project', function ($row) use ($year, $month) {
+                    $cacheKey = 'equipment_project_' . $row->unit_no . '_' . $year . '_' . ($month ?? 'all');
                     return Cache::remember($cacheKey, $this->cacheTTL, function () use ($row) {
                         $equipment = Equipment::where('unit_code', $row->unit_no)->first();
                         return $equipment ? $equipment->project : '-';
@@ -163,7 +179,68 @@ class EquipmentController extends Controller
         });
     }
 
-    public function getLastKM($unit_no, $year = null)
+    public function dataMonthly(Request $request)
+    {
+        $year = $request->get('year', date('Y'));
+        $cacheKey = 'equipment_data_monthly_' . $year . '_' .
+            request()->input('draw', 0) . '_' .
+            request()->input('start', 0) . '_' .
+            request()->input('length', 10) . '_' .
+            request()->input('search.value', '') . '_' .
+            request()->input('order.0.column', 0) . '_' .
+            request()->input('order.0.dir', 'asc');
+
+        return Cache::remember($cacheKey, 60, function () use ($year) {
+            $monthly_by_unit = DB::table('realization_details')
+                ->join('verification_journals', 'realization_details.verification_journal_id', '=', 'verification_journals.id')
+                ->whereNotNull('realization_details.verification_journal_id')
+                ->whereNotNull('realization_details.unit_no')
+                ->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year])
+                ->select(
+                    'realization_details.unit_no',
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 1 THEN realization_details.amount ELSE 0 END) as jan"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 2 THEN realization_details.amount ELSE 0 END) as feb"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 3 THEN realization_details.amount ELSE 0 END) as mar"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 4 THEN realization_details.amount ELSE 0 END) as apr"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 5 THEN realization_details.amount ELSE 0 END) as may"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 6 THEN realization_details.amount ELSE 0 END) as jun"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 7 THEN realization_details.amount ELSE 0 END) as jul"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 8 THEN realization_details.amount ELSE 0 END) as aug"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 9 THEN realization_details.amount ELSE 0 END) as sep"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 10 THEN realization_details.amount ELSE 0 END) as oct"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 11 THEN realization_details.amount ELSE 0 END) as nov"),
+                    DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 12 THEN realization_details.amount ELSE 0 END) as `dec`"),
+                    DB::raw('SUM(realization_details.amount) as total_amount')
+                )
+                ->groupBy('realization_details.unit_no')
+                ->orderBy('realization_details.unit_no')
+                ->get();
+
+            return datatables()->of($monthly_by_unit)
+                ->editColumn('unit_no', function ($row) use ($year) {
+                    $url = route('reports.equipment.detail', ['unit_no' => $row->unit_no, 'year' => $year]);
+                    return '<a href="' . $url . '" style="color: black" title="Click to see detail" target="_blank">' . e($row->unit_no) . '</a>';
+                })
+                ->editColumn('jan', fn ($row) => number_format($row->jan, 0, ',', '.'))
+                ->editColumn('feb', fn ($row) => number_format($row->feb, 0, ',', '.'))
+                ->editColumn('mar', fn ($row) => number_format($row->mar, 0, ',', '.'))
+                ->editColumn('apr', fn ($row) => number_format($row->apr, 0, ',', '.'))
+                ->editColumn('may', fn ($row) => number_format($row->may, 0, ',', '.'))
+                ->editColumn('jun', fn ($row) => number_format($row->jun, 0, ',', '.'))
+                ->editColumn('jul', fn ($row) => number_format($row->jul, 0, ',', '.'))
+                ->editColumn('aug', fn ($row) => number_format($row->aug, 0, ',', '.'))
+                ->editColumn('sep', fn ($row) => number_format($row->sep, 0, ',', '.'))
+                ->editColumn('oct', fn ($row) => number_format($row->oct, 0, ',', '.'))
+                ->editColumn('nov', fn ($row) => number_format($row->nov, 0, ',', '.'))
+                ->editColumn('dec', fn ($row) => number_format($row->dec, 0, ',', '.'))
+                ->editColumn('total_amount', fn ($row) => number_format($row->total_amount, 0, ',', '.'))
+                ->addIndexColumn()
+                ->rawColumns(['unit_no'])
+                ->toJson();
+        });
+    }
+
+    public function getLastKM($unit_no, $year = null, $month = null)
     {
         $query = RealizationDetail::select('realization_details.km_position')
             ->join('verification_journals', 'realization_details.verification_journal_id', '=', 'verification_journals.id')
@@ -174,15 +251,18 @@ class EquipmentController extends Controller
         if ($year) {
             $query->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year]);
         }
+        if ($month) {
+            $query->whereRaw('MONTH(verification_journals.sap_posting_date) = ?', [$month]);
+        }
 
         return $query->orderBy('realization_details.km_position', 'desc')->first();
     }
 
-    public function fuelCostPerKM($unit_no, $year = null)
+    public function fuelCostPerKM($unit_no, $year = null, $month = null)
     {
-        $cacheKey = 'km_array_' . $unit_no . '_' . ($year ?? 'all');
-        $km_positions = Cache::remember($cacheKey, $this->cacheTTL, function () use ($unit_no, $year) {
-            return $this->km_array($unit_no, $year);
+        $cacheKey = 'km_array_' . $unit_no . '_' . ($year ?? 'all') . '_' . ($month ?? 'all');
+        $km_positions = Cache::remember($cacheKey, $this->cacheTTL, function () use ($unit_no, $year, $month) {
+            return $this->km_array($unit_no, $year, $month);
         });
 
         $filtered_km_positions = array_filter($km_positions, fn ($v) => $v !== null && $v > 0);
@@ -190,14 +270,17 @@ class EquipmentController extends Controller
         $highest_km = !empty($filtered_km_positions) ? max($filtered_km_positions) : 0;
         $total_km = $highest_km - $lowest_km;
 
-        $cacheKeyCost = 'fuel_cost_' . $unit_no . '_' . ($year ?? 'all');
-        $total_cost = Cache::remember($cacheKeyCost, $this->cacheTTL, function () use ($unit_no, $year) {
+        $cacheKeyCost = 'fuel_cost_' . $unit_no . '_' . ($year ?? 'all') . '_' . ($month ?? 'all');
+        $total_cost = Cache::remember($cacheKeyCost, $this->cacheTTL, function () use ($unit_no, $year, $month) {
             $query = RealizationDetail::where('realization_details.unit_no', $unit_no)
                 ->where('realization_details.type', 'fuel')
                 ->join('verification_journals', 'realization_details.verification_journal_id', '=', 'verification_journals.id')
                 ->whereNotNull('realization_details.verification_journal_id');
             if ($year) {
                 $query->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year]);
+            }
+            if ($month) {
+                $query->whereRaw('MONTH(verification_journals.sap_posting_date) = ?', [$month]);
             }
             return $query->sum('realization_details.amount');
         });
@@ -209,7 +292,7 @@ class EquipmentController extends Controller
         ];
     }
 
-    public function km_array($unit_no, $year = null)
+    public function km_array($unit_no, $year = null, $month = null)
     {
         $query = RealizationDetail::where('realization_details.unit_no', $unit_no)
             ->whereNotNull('realization_details.km_position')
@@ -219,6 +302,9 @@ class EquipmentController extends Controller
         if ($year) {
             $query->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year]);
         }
+        if ($month) {
+            $query->whereRaw('MONTH(verification_journals.sap_posting_date) = ?', [$month]);
+        }
 
         return $query->pluck('realization_details.km_position', 'realization_details.id')->toArray();
     }
@@ -226,11 +312,25 @@ class EquipmentController extends Controller
     public function export(Request $request)
     {
         $year = (int) $request->get('year', date('Y'));
+        $month = $request->get('month') ? (int) $request->get('month') : null;
         if ($year < 2000 || $year > 2100) {
             return redirect()->back()->with('error', 'Invalid year.');
         }
-        $filename = 'summary_unit_expense_' . $year . '.xlsx';
-        return Excel::download(new SummaryUnitExpenseExport($year), $filename);
+        if ($month !== null && ($month < 1 || $month > 12)) {
+            return redirect()->back()->with('error', 'Invalid month.');
+        }
+        $filename = 'summary_unit_expense_' . $year . ($month ? '_' . str_pad($month, 2, '0', STR_PAD_LEFT) : '') . '.xlsx';
+        return Excel::download(new SummaryUnitExpenseExport($year, $month), $filename);
+    }
+
+    public function exportMonthly(Request $request)
+    {
+        $year = (int) $request->get('year', date('Y'));
+        if ($year < 2000 || $year > 2100) {
+            return redirect()->back()->with('error', 'Invalid year.');
+        }
+        $filename = 'summary_unit_expense_monthly_' . $year . '.xlsx';
+        return Excel::download(new SummaryUnitExpenseMonthlyExport($year), $filename);
     }
 
     /**
