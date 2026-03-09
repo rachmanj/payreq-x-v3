@@ -58,6 +58,7 @@
                             <thead>
                                 <tr>
                                     <th width="5%">#</th>
+                                    <th width="10%">Project</th>
                                     <th width="12%">Unit No</th>
                                     <th width="12%">Fuel</th>
                                     <th width="12%">Service</th>
@@ -83,6 +84,7 @@
                                     <thead>
                                         <tr>
                                             <th width="4%">#</th>
+                                            <th width="8%">Project</th>
                                             <th width="8%">Unit No</th>
                                             <th width="6%">Jan</th>
                                             <th width="6%">Feb</th>
@@ -144,6 +146,12 @@
         .select2-container--bootstrap4 .select2-selection {
             height: calc(1.8125rem + 2px) !important;
         }
+
+        tr.dtrg-group td {
+            font-weight: 600;
+            background-color: #f4f6f9;
+            border-top: 2px solid #dee2e6;
+        }
     </style>
 @endsection
 
@@ -152,6 +160,7 @@
     <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}" defer></script>
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}" defer></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}" defer></script>
+    <script src="{{ asset('adminlte/plugins/datatables-rowgroup/js/dataTables.rowGroup.min.js') }}" defer></script>
 
     <script>
         // Initialize table after all resources are loaded
@@ -189,9 +198,10 @@
                 stateSave: true,
                 retrieve: true,
                 searching: true,
-                order: [[1, 'asc']],
+                order: [[1, 'asc'], [2, 'asc']],
                 orderCellsTop: true,
                 autoWidth: false,
+                rowGroup: { dataSrc: 1, emptyDataGroup: '-' },
                 ajax: {
                     url: '{{ route('reports.equipment.data') }}',
                     type: 'GET',
@@ -212,6 +222,7 @@
                         orderable: false,
                         searchable: false
                     },
+                    { data: 'project' },
                     { data: 'unit_no' },
                     { data: 'fuel_amount', className: 'text-right' },
                     { data: 'service_amount', className: 'text-right' },
@@ -240,7 +251,7 @@
                     [10, 25, 50, 100]
                 ],
                 columnDefs: [{
-                    "targets": [2, 3, 4, 5, 6],
+                    "targets": [3, 4, 5, 6, 7],
                     "className": "text-right"
                 }],
                 createdRow: function(row, data, dataIndex) {
@@ -283,8 +294,9 @@
                 pageLength: 25,
                 stateSave: false,
                 searching: true,
-                order: [[1, 'asc']],
+                order: [[1, 'asc'], [2, 'asc']],
                 autoWidth: false,
+                rowGroup: { dataSrc: 1, emptyDataGroup: '-' },
                 ajax: {
                     url: '{{ route('reports.equipment.data-monthly') }}',
                     type: 'GET',
@@ -300,6 +312,7 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'project' },
                     { data: 'unit_no' },
                     { data: 'jan', className: 'text-right' },
                     { data: 'feb', className: 'text-right' },
@@ -317,7 +330,7 @@
                 ],
                 dom: '<"row"<"col-md-6"l><"col-md-6"f>>rt<"row"<"col-md-6"i><"col-md-6"p>>',
                 lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-                columnDefs: [{ targets: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], className: 'text-right' }],
+                columnDefs: [{ targets: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], className: 'text-right' }],
                 createdRow: function(row, data) {
                     $(row).attr('data-unit-no', data.unit_no);
                 }

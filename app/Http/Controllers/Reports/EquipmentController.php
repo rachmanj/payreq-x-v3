@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Reports;
 use App\Exports\SummaryUnitExpenseExport;
 use App\Exports\SummaryUnitExpenseMonthlyExport;
 use App\Http\Controllers\Controller;
-use App\Models\Equipment;
 use App\Models\RealizationDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -106,6 +105,7 @@ class EquipmentController extends Controller
         return Cache::remember($cacheKey, 60, function () use ($year, $month) {
             $query = DB::table('realization_details')
                 ->join('verification_journals', 'realization_details.verification_journal_id', '=', 'verification_journals.id')
+                ->leftJoin('equipments', 'equipments.unit_code', '=', 'realization_details.unit_no')
                 ->whereNotNull('realization_details.verification_journal_id')
                 ->whereNotNull('realization_details.unit_no')
                 ->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year]);
@@ -115,6 +115,7 @@ class EquipmentController extends Controller
             $expense_by_unit = $query
                 ->select(
                     'realization_details.unit_no',
+                    DB::raw("COALESCE(MAX(equipments.project), '-') as project"),
                     DB::raw("SUM(CASE WHEN realization_details.type = 'fuel' THEN realization_details.amount ELSE 0 END) as fuel_amount"),
                     DB::raw("SUM(CASE WHEN realization_details.type = 'fuel' AND realization_details.qty > 0 THEN realization_details.qty ELSE 0 END) as fuel_qty"),
                     DB::raw("SUM(CASE WHEN realization_details.type = 'service' THEN realization_details.amount ELSE 0 END) as service_amount"),
@@ -123,6 +124,7 @@ class EquipmentController extends Controller
                     DB::raw('SUM(realization_details.amount) as total_amount')
                 )
                 ->groupBy('realization_details.unit_no')
+                ->orderBy(DB::raw("COALESCE(MAX(equipments.project), '-')"))
                 ->orderBy('realization_details.unit_no')
                 ->get();
 
@@ -134,31 +136,6 @@ class EquipmentController extends Controller
                     }
                     $url = route('reports.equipment.detail', $params);
                     return '<a href="' . $url . '" style="color: black" title="Click to see detail" target="_blank">' . e($row->unit_no) . '</a>';
-                })
-                // FCPKM, Est. FCPL, Last KM - commented for later use
-                // ->addColumn('last_km', function ($row) use ($year) {
-                //     $cacheKey = 'equipment_last_km_' . $row->unit_no . '_' . $year;
-                //     $lastKM = Cache::remember($cacheKey, $this->cacheTTL, function () use ($row, $year) {
-                //         return $this->getLastKM($row->unit_no, $year);
-                //     });
-                //     return $lastKM !== null ? number_format($lastKM->km_position, 0, ',', '.') : 0;
-                // })
-                // ->addColumn('fuel_cost_per_km', function ($row) use ($year) {
-                //     $cacheKey = 'equipment_fcpkm_' . $row->unit_no . '_' . $year;
-                //     $fuelCost = Cache::remember($cacheKey, $this->cacheTTL, function () use ($row, $year) {
-                //         return $this->fuelCostPerKM($row->unit_no, $year);
-                //     });
-                //     $total_km = '<small>total km: ' . $fuelCost['total_km'] . ' km</small>';
-                //     $total_cost = '<small>total fuel cost: Rp.' . number_format($fuelCost['total_cost'], 0, ',', '.') . '</small>';
-                //     $cost_per_km = '<small> FCPKM: Rp.' . number_format($fuelCost['cost_per_km'], 0, ',', '.') . '</small>';
-                //     return $total_km . '<br>' . $total_cost . '<br>' . $cost_per_km;
-                // })
-                ->addColumn('project', function ($row) use ($year, $month) {
-                    $cacheKey = 'equipment_project_' . $row->unit_no . '_' . $year . '_' . ($month ?? 'all');
-                    return Cache::remember($cacheKey, $this->cacheTTL, function () use ($row) {
-                        $equipment = Equipment::where('unit_code', $row->unit_no)->first();
-                        return $equipment ? $equipment->project : '-';
-                    });
                 })
                 ->editColumn('fuel_amount', fn ($row) => number_format($row->fuel_amount, 0, ',', '.'))
                 // ->addColumn('estimated_fcpl', function ($row) {
@@ -193,11 +170,13 @@ class EquipmentController extends Controller
         return Cache::remember($cacheKey, 60, function () use ($year) {
             $monthly_by_unit = DB::table('realization_details')
                 ->join('verification_journals', 'realization_details.verification_journal_id', '=', 'verification_journals.id')
+                ->leftJoin('equipments', 'equipments.unit_code', '=', 'realization_details.unit_no')
                 ->whereNotNull('realization_details.verification_journal_id')
                 ->whereNotNull('realization_details.unit_no')
                 ->whereRaw('YEAR(verification_journals.sap_posting_date) = ?', [$year])
                 ->select(
                     'realization_details.unit_no',
+                    DB::raw("COALESCE(MAX(equipments.project), '-') as project"),
                     DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 1 THEN realization_details.amount ELSE 0 END) as jan"),
                     DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 2 THEN realization_details.amount ELSE 0 END) as feb"),
                     DB::raw("SUM(CASE WHEN MONTH(verification_journals.sap_posting_date) = 3 THEN realization_details.amount ELSE 0 END) as mar"),
@@ -213,6 +192,7 @@ class EquipmentController extends Controller
                     DB::raw('SUM(realization_details.amount) as total_amount')
                 )
                 ->groupBy('realization_details.unit_no')
+                ->orderBy(DB::raw("COALESCE(MAX(equipments.project), '-')"))
                 ->orderBy('realization_details.unit_no')
                 ->get();
 
