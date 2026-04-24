@@ -1,31 +1,30 @@
 <?php
 
-use App\Http\Controllers\Cashier\BilyetController;
+use App\Http\Controllers\Cashier\BankTransactionController;
 use App\Http\Controllers\Cashier\BilyetAuditController;
+use App\Http\Controllers\Cashier\BilyetController;
 use App\Http\Controllers\Cashier\BilyetReportController;
 use App\Http\Controllers\Cashier\BilyetTempController;
 use App\Http\Controllers\Cashier\CashierDokumenController;
 use App\Http\Controllers\Cashier\CashierModalController;
+use App\Http\Controllers\Cashier\CashOnHandTransactionController;
 use App\Http\Controllers\Cashier\KoranController;
 use App\Http\Controllers\Cashier\PcbcController;
+use App\Http\Controllers\Cashier\SapTransactionController;
 use App\Http\Controllers\Cashier\TransaksiController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CashierApprovedController;
-use App\Http\Controllers\CashierOutgoingController;
-use App\Http\Controllers\CashierIncomingController;
 use App\Http\Controllers\CashierDashboardController;
-use App\Http\Controllers\CashOpnameController;
+use App\Http\Controllers\CashierIncomingController;
+use App\Http\Controllers\CashierOutgoingController;
+use App\Http\Controllers\InvoicePaymentController;
 use App\Http\Controllers\Migrasi\MigrasiBucController;
 use App\Http\Controllers\Migrasi\MigrasiIndexController;
 use App\Http\Controllers\Migrasi\MigrasiPayreqController;
-use App\Http\Controllers\Cashier\SapTransactionController;
-use App\Http\Controllers\Cashier\CashOnHandTransactionController;
-use App\Http\Controllers\Cashier\BankTransactionController;
-use App\Http\Controllers\InvoicePaymentController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
     // APPROVEDS PAYREQS -> ready to pay
-    Route::prefix('approveds')->name('approveds.')->group(function () {
+    Route::prefix('approveds')->name('approveds.')->middleware('pcbc.weekly_compliance')->group(function () {
         Route::get('/data', [CashierApprovedController::class, 'data'])->name('data');
         Route::get('/', [CashierApprovedController::class, 'index'])->name('index');
         Route::put('/{id}/auto', [CashierApprovedController::class, 'auto_outgoing'])->name('auto_outgoing');
@@ -42,7 +41,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/payment', [CashierOutgoingController::class, 'payment'])->name('payment');
     });
 
-    Route::prefix('incomings')->name('incomings.')->group(function () {
+    Route::prefix('incomings')->name('incomings.')->middleware('pcbc.weekly_compliance')->group(function () {
         Route::get('/data', [CashierIncomingController::class, 'data'])->name('data');
         Route::get('/', [CashierIncomingController::class, 'index'])->name('index');
         Route::post('/receive', [CashierIncomingController::class, 'receive'])->name('receive');

@@ -7,6 +7,15 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Project documentation
+
+This repository’s **internal** technical notes, architecture, and task history live in:
+
+- [docs/architecture.md](docs/architecture.md) — current module structure and flows
+- [docs/decisions.md](docs/decisions.md) — design decisions (ADRs)
+- [docs/todo.md](docs/todo.md) / [docs/backlog.md](docs/backlog.md) — task tracking
+- [MEMORY.md](MEMORY.md) — significant fixes and learnings (numbered log)
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

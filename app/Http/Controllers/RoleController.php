@@ -11,16 +11,17 @@ class RoleController extends Controller
     public function index()
     {
         $roles = Role::all();
+
         return view('roles.index', compact('roles'));
     }
 
-
     public function create()
     {
+        $this->ensurePcbcWarningPermissionExists();
         $permissions = Permission::orderBy('name', 'asc')->get();
+
         return view('roles.create', compact('permissions'));
     }
-
 
     public function store(Request $request)
     {
@@ -35,18 +36,17 @@ class RoleController extends Controller
         return redirect()->route('roles.index')->with('success', 'Role created successfully');
     }
 
-
     public function show($id)
     {
         //
     }
 
-
     public function edit($id)
     {
-        $role               = Role::find($id);
-        $permissions        = Permission::orderBy('name', 'asc')->get();
-        $rolePermissions    = $role->permissions()->get()->pluck('id')->toArray();
+        $this->ensurePcbcWarningPermissionExists();
+        $role = Role::find($id);
+        $permissions = Permission::orderBy('name', 'asc')->get();
+        $rolePermissions = $role->permissions()->get()->pluck('id')->toArray();
 
         // Group permissions by feature categories
         $permissionGroups = [
@@ -55,7 +55,7 @@ class RoleController extends Controller
                 'akses_permission',
                 'akses_role',
                 'akses_user',
-                'edit_user'
+                'edit_user',
             ],
             'Dashboard Access' => [
                 'akses_dashboard_000H',
@@ -65,7 +65,7 @@ class RoleController extends Controller
                 'akses_dashboard_022C',
                 'akses_dashboard_023C',
                 'akses_dashboard_025C',
-                'cashier_dashboard'
+                'cashier_dashboard',
             ],
             'Accounting Operations' => [
                 'akses_accounting_menu',
@@ -75,7 +75,7 @@ class RoleController extends Controller
                 'akses_anggarans',
                 'akses_periode_anggaran',
                 'edit_verification_project',
-                'see_vj_not_posted'
+                'see_vj_not_posted',
             ],
             'Cashier Operations' => [
                 'akses_cashier_menu',
@@ -83,25 +83,25 @@ class RoleController extends Controller
                 'akses_cashier_modal',
                 'akses_transaksi_cashier',
                 'akses_today_transaction',
-                'akses_cash_journal'
+                'akses_cash_journal',
             ],
             'Payreq Management' => [
                 'akses_my_payreqs',
                 'akses_project_payreqs',
                 'akses_payreq_aging',
                 'recalculate_release',
-                'rab_select'
+                'rab_select',
             ],
             'Approval System' => [
                 'akses_approvals',
                 'akses_approval_request',
-                'akses_approval_stage'
+                'akses_approval_stage',
             ],
             'Bilyet Management' => [
                 'akses_bilyet',
                 'add_bilyet',
                 'delete_bilyet',
-                'see_bilyet_dashboard'
+                'see_bilyet_dashboard',
             ],
             'Exchange Rates' => [
                 'akses_exchange_rates',
@@ -109,33 +109,34 @@ class RoleController extends Controller
                 'edit_exchange_rates',
                 'delete_exchange_rates',
                 'import_exchange_rates',
-                'export_exchange_rates'
+                'export_exchange_rates',
             ],
             'Reports & Analytics' => [
                 'akses_reports',
                 'akses_report_rab',
                 'akses_loan_report',
                 'akses_sum_expense_by_equipment',
-                'see_activities_chart'
+                'see_activities_chart',
             ],
             'Document Management' => [
                 'akses_dokumen_upload',
                 'akses_delivery',
                 'upload_dokumen',
                 'request_faktur',
-                'update_faktur'
+                'update_faktur',
             ],
             'Data Upload & Import' => [
                 'upload_koran',
                 'upload_pcbc',
                 'akses_koran',
                 'akses_pcbc',
-                'akses_migrasi'
+                'akses_migrasi',
+                'see_pcbc_warning',
             ],
             'SAP Integration' => [
                 'akses_sap_sync',
                 'akses_sync_buc',
-                'akses_sync_equipments'
+                'akses_sync_equipments',
             ],
             'Advance Reports' => [
                 'see_rekap_advance_017',
@@ -146,26 +147,26 @@ class RoleController extends Controller
                 'see_rekap_advance_bo',
                 'see_rekap_advance_ho',
                 'rekap_dokumen_creation_bo',
-                'rekap_dokumen_creation_ho'
+                'rekap_dokumen_creation_ho',
             ],
             'Document Reports' => [
                 'report_dokumen_koran',
-                'report_dokumen_pcbc'
+                'report_dokumen_pcbc',
             ],
             'Giro Management' => [
                 'akses_giro',
-                'create_outgoing'
+                'create_outgoing',
             ],
             'Tax Management' => [
-                'akses_wtax23'
+                'akses_wtax23',
             ],
             'Search & Navigation' => [
                 'akses_search',
-                'can_search'
+                'can_search',
             ],
             'Team Management' => [
-                'see_team'
-            ]
+                'see_team',
+            ],
         ];
 
         // Filter permissions by groups
@@ -183,7 +184,7 @@ class RoleController extends Controller
         // Add any remaining permissions not in groups to "Other"
         $groupedPermissionNames = collect($permissionGroups)->flatten()->toArray();
         $remainingPermissions = $permissions->filter(function ($permission) use ($groupedPermissionNames) {
-            return !in_array($permission->name, $groupedPermissionNames);
+            return ! in_array($permission->name, $groupedPermissionNames);
         });
 
         if ($remainingPermissions->count() > 0) {
@@ -193,13 +194,12 @@ class RoleController extends Controller
         return view('roles.edit', compact('role', 'permissions', 'rolePermissions', 'groupedPermissions'));
     }
 
-
     public function update(Request $request, $id)
     {
         $role = Role::find($id);
 
         $this->validate($request, [
-            'name' => ['required', 'string', 'max:255', 'unique:roles,name,' . $id],
+            'name' => ['required', 'string', 'max:255', 'unique:roles,name,'.$id],
         ]);
 
         $role->update(['name' => $request->name]);
@@ -208,7 +208,6 @@ class RoleController extends Controller
 
         return redirect()->route('roles.index')->with('success', 'Role successfully updated!');
     }
-
 
     public function destroy($id)
     {
@@ -227,8 +226,9 @@ class RoleController extends Controller
                 $permissions = $role->permissions->take(3)->pluck('name')->toArray();
                 $preview = implode(', ', $permissions);
                 if ($role->permissions->count() > 3) {
-                    $preview .= '... (+' . ($role->permissions->count() - 3) . ' more)';
+                    $preview .= '... (+'.($role->permissions->count() - 3).' more)';
                 }
+
                 return $preview ?: 'No permissions';
             })
             ->addColumn('permissions_badges', function ($role) {
@@ -244,20 +244,20 @@ class RoleController extends Controller
                     'Exchange' => ['akses_exchange_rates', 'create_exchange_rates', 'edit_exchange_rates', 'delete_exchange_rates', 'import_exchange_rates', 'export_exchange_rates'],
                     'Reports' => ['akses_reports', 'akses_report_rab', 'akses_loan_report', 'akses_sum_expense_by_equipment', 'see_activities_chart'],
                     'Documents' => ['akses_dokumen_upload', 'akses_delivery', 'upload_dokumen', 'request_faktur', 'update_faktur'],
-                    'Upload' => ['upload_koran', 'upload_pcbc', 'akses_koran', 'akses_pcbc', 'akses_migrasi'],
+                    'Upload' => ['upload_koran', 'upload_pcbc', 'akses_koran', 'akses_pcbc', 'akses_migrasi', 'see_pcbc_warning'],
                     'SAP' => ['akses_sap_sync', 'akses_sync_buc', 'akses_sync_equipments'],
                     'Advance' => ['see_rekap_advance_017', 'see_rekap_advance_021', 'see_rekap_advance_022', 'see_rekap_advance_023', 'see_rekap_advance_025', 'see_rekap_advance_bo', 'see_rekap_advance_ho', 'rekap_dokumen_creation_bo', 'rekap_dokumen_creation_ho'],
                     'Giro' => ['akses_giro', 'create_outgoing'],
                     'Tax' => ['akses_wtax23'],
                     'Search' => ['akses_search', 'can_search'],
-                    'Team' => ['see_team']
+                    'Team' => ['see_team'],
                 ];
 
                 $badges = [];
                 foreach ($permissionGroups as $groupName => $groupPermissions) {
                     $hasPermission = $role->permissions->whereIn('name', $groupPermissions)->count() > 0;
                     if ($hasPermission) {
-                        $badges[] = '<span class="badge badge-info">' . $groupName . '</span>';
+                        $badges[] = '<span class="badge badge-info">'.$groupName.'</span>';
                     }
                 }
 
@@ -267,5 +267,13 @@ class RoleController extends Controller
             ->addIndexColumn()
             ->rawColumns(['permissions_badges', 'action'])
             ->toJson();
+    }
+
+    private function ensurePcbcWarningPermissionExists(): void
+    {
+        Permission::firstOrCreate(
+            ['name' => 'see_pcbc_warning'],
+            ['guard_name' => 'web'],
+        );
     }
 }

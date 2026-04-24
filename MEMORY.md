@@ -1,3 +1,15 @@
+### [033] PCBC Weekly Upload Compliance, Sanctions & Documentation (2026-04-24) ✅ COMPLETE
+
+**Challenge**: Cashiers need to upload at least one PCBC PDF per site per week (with exceptions for APS, 026C, 023C). After two consecutive full weeks (Mon–Sun, Asia/Makassar) with no qualifying `Dokumen` (`type=pcbc`, `dokumen_date` in-week), “Ready to Pay” and “Incoming List” should be blocked. Warnings had to be visible to approvers and others via a dedicated permission, without breaking sanction logic. The upload DataTable and Blade layout had bugs (word merge on “rules/At/Each”, floating `card-title`, sort not by date, missing `$pcbcCompliance` in child views).
+
+**Solution**: Added `config/pcbc_compliance.php` and `PcbcComplianceService`. Middleware `pcbc.weekly_compliance` on `cashier.approveds` and `cashier.incomings`; `SharePcbcComplianceForViews` uses `view()->share()` in the `web` group for `pcbcCompliance` and `pcbcViolationSanctioned` so child Blade views get data. Spatie permission `see_pcbc_warning` (seeder + `RoleController` ensure on role screens). Bilingual `x-pcbc-compliance-banner`; upload page heading without AdminLTE `card-title` float; Yajra `DataTables::of($query)` with `orderColumn` for `dokumen_date`. Docs under `docs/` and this entry per `.cursorrules`.
+
+**Key Learning**: `View::composer('templates.main')` does not populate variables for `@section('content')` in extending views; use `view()->share` in middleware or composers registered for the child view names. AdminLTE’s global `.card-title { float: left }` can join headings and lists; avoid that class for standalone `h5` in `card-body`. Yajra server-side mode requires an Eloquent query, not a preloaded collection, for correct SQL `ORDER BY`. Document dates must use `getRawOriginal('dokumen_date')` when the model has accessors, for both ordering and display consistency.
+
+**Implementation / file map**: `app/Services/PcbcComplianceService.php`, `app/Http/Middleware/{SharePcbcComplianceForViews,EnsurePcbcWeeklyCompliance}.php`, `app/Providers/AppServiceProvider.php` (removed layout-only composer for PCBC), `app/Http/Kernel.php`, `routes/cashier.php`, `config/pcbc_compliance.php`, `resources/views/components/pcbc-compliance-banner.blade.php`, `resources/views/cashier/pcbc/upload.blade.php`, `database/seeders/SeePcbcWarningPermissionSeeder.php`, `app/Http/Controllers/RoleController.php` + `app/Http/Controllers/Cashier/PcbcController.php` (`data` method), menu/sidebar partials, `tests/Unit/PcbcComplianceServiceTest.php`. Project docs: `docs/architecture.md`, `docs/decisions.md`, `docs/todo.md`, `docs/backlog.md`.
+
+---
+
 ### [032] Summary Unit Expense Report - Monthly View & MySQL `dec` Fix (2026-03-06) ✅ COMPLETE
 
 **Challenge**: Users needed monthly drill-down and a Monthly Breakdown view (Jan–Dec columns) for the Summary Unit Expense Report. Initial implementation caused 500 error on Monthly Breakdown tab.

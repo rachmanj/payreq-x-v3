@@ -75,6 +75,7 @@
                 <!-- Main content -->
                 <div class="content">
                     <div class="container-fluid">
+                        <x-pcbc-compliance-banner :compliance="$pcbcCompliance ?? null" />
 
                         @yield('content')
 

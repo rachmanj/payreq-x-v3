@@ -129,20 +129,37 @@
                         </a>
                         <ul class="nav nav-treeview">
                             @can('akses_transaksi_cashier')
-                                <li class="nav-item">
-                                    <a href="{{ route('cashier.approveds.index') }}"
-                                        class="nav-link {{ request()->routeIs('cashier.approveds.*') ? 'active' : '' }}">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>Ready to Pay</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('cashier.incomings.index') }}"
-                                        class="nav-link {{ request()->routeIs('cashier.incomings.*') ? 'active' : '' }}">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>Incoming List</p>
-                                    </a>
-                                </li>
+                                @if (!($pcbcViolationSanctioned ?? false))
+                                    <li class="nav-item">
+                                        <a href="{{ route('cashier.approveds.index') }}"
+                                            class="nav-link {{ request()->routeIs('cashier.approveds.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Ready to Pay</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('cashier.incomings.index') }}"
+                                            class="nav-link {{ request()->routeIs('cashier.incomings.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Incoming List</p>
+                                        </a>
+                                    </li>
+                                @else
+                                    <li class="nav-item">
+                                        <span class="nav-link text-muted" style="cursor: not-allowed;"
+                                            title="Upload PCBC to restore access">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Ready to Pay (locked)</p>
+                                        </span>
+                                    </li>
+                                    <li class="nav-item">
+                                        <span class="nav-link text-muted" style="cursor: not-allowed;"
+                                            title="Upload PCBC to restore access">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Incoming List (locked)</p>
+                                        </span>
+                                    </li>
+                                @endif
                                 <li class="nav-item">
                                     <a href="{{ route('verifications.index') }}"
                                         class="nav-link {{ request()->routeIs('verifications.index') ? 'active' : '' }}">

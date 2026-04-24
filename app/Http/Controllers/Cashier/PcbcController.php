@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Cashier;
 
 use App\Exports\PcbcExport;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\ToolController;
 use App\Http\Controllers\UserController;
 use App\Http\Requests\StorePcbcRequest;
@@ -19,13 +18,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use Yajra\DataTables\Facades\DataTables;
 
 class PcbcController extends Controller
 {
     protected $allowedRoles = ['admin', 'superadmin', 'cashier'];
+
     protected $projects;
+
     protected $years;
+
     protected $months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+
     protected $pcbcService;
 
     public function __construct(PcbcService $pcbcService)
@@ -38,6 +42,7 @@ class PcbcController extends Controller
     protected function getAvailableYears(): array
     {
         $currentYear = (int) date('Y');
+
         return array_map('strval', range($currentYear - 2, $currentYear + 1));
     }
 
@@ -71,7 +76,6 @@ class PcbcController extends Controller
 
         return view($views[$page]);
     }
-
 
     public function check_pcbc_files(string $year): array
     {
@@ -162,7 +166,7 @@ class PcbcController extends Controller
         $isAuthorized = array_intersect($this->allowedRoles, $userRoles)
             || $dokumen->created_by === auth()->id();
 
-        if (!$isAuthorized) {
+        if (! $isAuthorized) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -212,15 +216,14 @@ class PcbcController extends Controller
     {
         try {
             $userRoles = app(UserController::class)->getUserRoles();
-            $query = Dokumen::where('type', 'pcbc')
-                ->with('createdBy')
-                ->orderBy('dokumen_date', 'desc');
+            $query = Dokumen::query()
+                ->where('type', 'pcbc')
+                ->with('createdBy');
 
-            if (!array_intersect($userRoles, ['superadmin', 'admin', 'cashier'])) {
+            if (! array_intersect($userRoles, ['superadmin', 'admin', 'cashier'])) {
                 $query->where('project', auth()->user()->project);
             }
 
-            // Advanced filtering
             if ($request->has('project') && $request->project) {
                 $query->where('project', $request->project);
             }
@@ -233,27 +236,35 @@ class PcbcController extends Controller
                 $query->whereDate('dokumen_date', '<=', $request->date_to);
             }
 
-            $dokumens = $query->get();
+            return DataTables::of($query)
+                ->addIndexColumn()
+                ->orderColumn('dokumen_date', 'dokumen_date $1')
+                ->orderColumn('project', 'project $1')
+                ->orderColumn('created_by', 'created_by $1')
+                ->editColumn('dokumen_date', function (Dokumen $dokumen) {
+                    $date = $dokumen->getRawOriginal('dokumen_date');
 
-            return datatables()->of($dokumens)
-                ->editColumn('dokumen_date', function ($dokumen) {
-                    return $dokumen->dokumen_date ? Carbon::parse($dokumen->dokumen_date)->format('d M Y') : '-';
+                    return $date ? Carbon::parse($date)->format('d M Y') : '-';
                 })
-                ->editColumn('created_by', function ($dokumen) {
+                ->editColumn('project', function (Dokumen $dokumen) {
+                    $p = $dokumen->getRawOriginal('project');
+
+                    return $p !== null && $p !== '' ? (string) $p : '-';
+                })
+                ->editColumn('created_by', function (Dokumen $dokumen) {
                     return $dokumen->created_by_name ?? '-';
                 })
-                ->addIndexColumn()
                 ->addColumn('action', 'cashier.pcbc.action')
                 ->rawColumns(['action'])
-                ->toJson();
+                ->make(true);
         } catch (\Exception $e) {
-            Log::error('PCBC DataTable Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            Log::error('PCBC DataTable Error: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'error' => 'An error occurred while loading data.',
-                'message' => config('app.debug') ? $e->getMessage() : 'Please contact administrator.'
+                'message' => config('app.debug') ? $e->getMessage() : 'Please contact administrator.',
             ], 500);
         }
     }
@@ -313,7 +324,7 @@ class PcbcController extends Controller
             $nomor = $this->pcbcService->generateDocumentNumber($request->project);
             $fisik_amount = $this->pcbcService->calculateFisikAmount($request);
 
-            $pcbc = new Pcbc();
+            $pcbc = new Pcbc;
             $this->fillBasicInfo($pcbc, $request, $nomor);
             $this->fillDenominations($pcbc, $request);
             $this->fillAmounts($pcbc, $request, $fisik_amount);
@@ -325,18 +336,17 @@ class PcbcController extends Controller
 
             return redirect()
                 ->route('cashier.pcbc.index', ['page' => 'list'])
-                ->with('success', 'PCBC created successfully with number: ' . $nomor);
+                ->with('success', 'PCBC created successfully with number: '.$nomor);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('PCBC Creation Error: ' . $e->getMessage());
+            Log::error('PCBC Creation Error: '.$e->getMessage());
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Error creating PCBC: ' . $e->getMessage());
+                ->with('error', 'Error creating PCBC: '.$e->getMessage());
         }
     }
-
 
     private function fillBasicInfo(Pcbc $pcbc, Request $request, string $nomor): void
     {
@@ -402,7 +412,7 @@ class PcbcController extends Controller
             $isAuthorized = array_intersect($this->allowedRoles, $userRoles)
                 || $pcbc->created_by === auth()->id();
 
-            if (!$isAuthorized) {
+            if (! $isAuthorized) {
                 abort(403, 'Unauthorized action.');
             }
 
@@ -435,15 +445,14 @@ class PcbcController extends Controller
                 ->with('success', 'PCBC updated successfully');
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('PCBC Update Error: ' . $e->getMessage());
+            Log::error('PCBC Update Error: '.$e->getMessage());
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Error updating PCBC: ' . $e->getMessage());
+                ->with('error', 'Error updating PCBC: '.$e->getMessage());
         }
     }
-
 
     public function print($id)
     {
@@ -484,7 +493,7 @@ class PcbcController extends Controller
         $isAuthorized = array_intersect($this->allowedRoles, $userRoles)
             || $pcbc->created_by === auth()->id();
 
-        if (!$isAuthorized) {
+        if (! $isAuthorized) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -521,9 +530,10 @@ class PcbcController extends Controller
 
             return Excel::download(new PcbcExport($query), $filename);
         } catch (\Exception $e) {
-            Log::error('PCBC Export Error: ' . $e->getMessage());
+            Log::error('PCBC Export Error: '.$e->getMessage());
+
             return redirect()->back()
-                ->with('error', 'Failed to export Excel file: ' . $e->getMessage());
+                ->with('error', 'Failed to export Excel file: '.$e->getMessage());
         }
     }
 }

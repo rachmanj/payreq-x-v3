@@ -3,8 +3,17 @@
         class="nav-link dropdown-toggle">Cashier</a>
     <ul aria-labelledby="dropdownApprovals" class="dropdown-menu border-0 shadow">
         @can('akses_transaksi_cashier')
-            <li><a href="{{ route('cashier.approveds.index') }}" class="dropdown-item">Ready to Pay</a></li>
-            <li><a href="{{ route('cashier.incomings.index') }}" class="dropdown-item">Incoming List</a></li>
+            @if (!($pcbcViolationSanctioned ?? false))
+                <li><a href="{{ route('cashier.approveds.index') }}" class="dropdown-item">Ready to Pay</a></li>
+                <li><a href="{{ route('cashier.incomings.index') }}" class="dropdown-item">Incoming List</a></li>
+            @else
+                <li>
+                    <span class="dropdown-item text-muted" style="cursor: not-allowed;" title="Upload PCBC to restore access">Ready to Pay (locked)</span>
+                </li>
+                <li>
+                    <span class="dropdown-item text-muted" style="cursor: not-allowed;" title="Upload PCBC to restore access">Incoming List (locked)</span>
+                </li>
+            @endif
             <li><a href="{{ route('verifications.index') }}" class="dropdown-item">Verifications</a></li>
             <li><a href="{{ route('cashier.sap-transactions.index') }}" class="dropdown-item">SAP Transactions </a></li>
             <li><a href="{{ route('cashier.cashonhand-transactions.index') }}" class="dropdown-item">Cash On-Hand
