@@ -1,26 +1,26 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\TestController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\LoginController;
-use App\Http\Controllers\SearchController;
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\BucSyncController;
-use App\Http\Controllers\JournalController;
-use App\Http\Controllers\CurrencyController;
-use App\Http\Controllers\OutgoingController;
-use App\Http\Controllers\RegisterController;
-use App\Http\Controllers\ParameterController;
-use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\BucSyncController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\DashboardUserController;
+use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\EquipmentSyncController;
 use App\Http\Controllers\GeneralLedgerController;
+use App\Http\Controllers\JournalController;
+use App\Http\Controllers\LoginController;
+use App\Http\Controllers\OutgoingController;
+use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqOverdueController;
-use App\Http\Controllers\DocumentNumberController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RealizationOverdueController;
+use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TestController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'index'])->name('login');
@@ -29,7 +29,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'index'])->name('register');
     Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 });
-
 
 Route::middleware('auth')->group(function () {
     // Route::get('/', function () {
@@ -123,7 +122,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::resource('parameters', ParameterController::class);
 
-    //OUTGOINGS
+    // OUTGOINGS
     Route::prefix('outgoings')->name('outgoing.')->group(function () {
         Route::get('/data', [OutgoingController::class, 'data'])->name('data');
     });
@@ -134,6 +133,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/data', [AccountController::class, 'data'])->name('data');
         Route::post('/upload', [AccountController::class, 'upload'])->name('upload');
         Route::get('/list', [AccountController::class, 'getList'])->name('list');
+        Route::get('/autocomplete', [AccountController::class, 'autocomplete'])->name('autocomplete');
         Route::get('/bank-list', [AccountController::class, 'getBankAccounts'])->name('bank_list');
     });
     Route::resource('accounts', AccountController::class);
@@ -176,14 +176,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/test', [TestController::class, 'index']);
 
-    require __DIR__ . '/user_payreqs.php';
-    require __DIR__ . '/cashier.php';
-    require __DIR__ . '/approvals.php';
-    require __DIR__ . '/verification.php';
-    require __DIR__ . '/cash_journals.php';
-    require __DIR__ . '/accounting.php';
-    require __DIR__ . '/reports.php';
-    require __DIR__ . '/admin.php';
+    require __DIR__.'/user_payreqs.php';
+    require __DIR__.'/cashier.php';
+    require __DIR__.'/approvals.php';
+    require __DIR__.'/verification.php';
+    require __DIR__.'/cash_journals.php';
+    require __DIR__.'/accounting.php';
+    require __DIR__.'/reports.php';
+    require __DIR__.'/admin.php';
 });
 
 Route::post('/get_account_name', [AccountController::class, 'get_account_name'])->name('get_account_name');

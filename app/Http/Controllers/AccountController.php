@@ -39,7 +39,7 @@ class AccountController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'account_number' => 'required|unique:accounts,account_number,' . $id,
+            'account_number' => 'required|unique:accounts,account_number,'.$id,
             'account_name' => 'required',
             'project' => 'required',
         ]);
@@ -72,7 +72,7 @@ class AccountController extends Controller
         $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
 
         // if account is not found
-        if (!$account_cash || !$account_advance) {
+        if (! $account_cash || ! $account_advance) {
             return false;
         }
 
@@ -106,7 +106,7 @@ class AccountController extends Controller
         $account_advance = Account::where('type', 'advance')->where('project', $cashier_project)->first();
 
         // if account is not found
-        if (!$account_cash || !$account_advance) {
+        if (! $account_cash || ! $account_advance) {
             return false;
         }
 
@@ -123,20 +123,20 @@ class AccountController extends Controller
     {
         // VALIDATE
         $this->validate($request, [
-            'file_upload' => 'required|mimes:xls,xlsx'
+            'file_upload' => 'required|mimes:xls,xlsx',
         ]);
 
         // GET FILE
         $file = $request->file('file_upload');
 
         // GET a UNIQUE FILE NAME
-        $nama_file = rand() . $file->getClientOriginalName();
+        $nama_file = rand().$file->getClientOriginalName();
 
         // UPLOAD FILE TO FOLDER FILE_IMPORT
         $file->move('file_upload', $nama_file);
 
         // IMPORT DATA
-        Excel::import(new AccountImport, public_path('/file_upload/' . $nama_file));
+        Excel::import(new AccountImport, public_path('/file_upload/'.$nama_file));
 
         // REDIRECT
         return redirect()->route('accounts.index')->with('success', 'Account imported successfully!');
@@ -190,7 +190,7 @@ class AccountController extends Controller
                 ->first();
         }
 
-        if (!$account) {
+        if (! $account) {
             $account_name = 'Account not found!';
         } else {
             $account_name = $account->account_name;
@@ -218,25 +218,58 @@ class AccountController extends Controller
             }
 
             // Convert to array to ensure consistent format
-            $accounts = $accounts->map(function($account) {
+            $accounts = $accounts->map(function ($account) {
                 return [
                     'account_number' => $account->account_number,
-                    'account_name' => $account->account_name
+                    'account_name' => $account->account_name,
                 ];
             })->unique('account_number')->values();
 
             // Debug the final count
             \Log::info('Accounts fetched:', [
                 'count' => $accounts->count(),
-                'first_few' => $accounts->take(3)
+                'first_few' => $accounts->take(3),
             ]);
 
             return response()->json($accounts);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to fetch accounts: ' . $e->getMessage()
+                'message' => 'Failed to fetch accounts: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    public function autocomplete(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $builder = Account::query()
+            ->select('account_number', 'account_name')
+            ->where(function ($query) use ($q) {
+                $query->where('account_number', 'like', '%'.$q.'%')
+                    ->orWhere('account_name', 'like', '%'.$q.'%');
+            });
+
+        if (auth()->user()->project !== '000H') {
+            $builder->whereIn('project', ['all-site', auth()->user()->project])
+                ->where('is_hidden', 0);
+        }
+
+        $accounts = $builder
+            ->orderBy('account_number')
+            ->limit(20)
+            ->get()
+            ->map(fn ($account) => [
+                'account_number' => $account->account_number,
+                'account_name' => $account->account_name,
+            ])
+            ->unique('account_number')
+            ->values();
+
+        return response()->json($accounts);
     }
 
     public function getBankAccounts()
@@ -258,24 +291,24 @@ class AccountController extends Controller
             }
 
             // Convert to array to ensure consistent format
-            $accounts = $accounts->map(function($account) {
+            $accounts = $accounts->map(function ($account) {
                 return [
                     'account_number' => $account->account_number,
                     'account_name' => $account->account_name,
-                    'type' => $account->type
+                    'type' => $account->type,
                 ];
             })->unique('account_number')->values();
 
             // Debug the final count
             \Log::info('Bank accounts fetched:', [
                 'count' => $accounts->count(),
-                'first_few' => $accounts->take(3)
+                'first_few' => $accounts->take(3),
             ]);
 
             return response()->json($accounts);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to fetch bank accounts: ' . $e->getMessage()
+                'message' => 'Failed to fetch bank accounts: '.$e->getMessage(),
             ], 500);
         }
     }

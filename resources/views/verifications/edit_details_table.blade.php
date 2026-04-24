@@ -55,10 +55,16 @@
                                                 <div class="d-flex mb-2">
                                                     <input type="hidden" value="{{ $item->id }}"
                                                         name="realization_details[{{ $key }}][id]">
-                                                    <input type="text" id="account_number_{{ $item->id }}"
-                                                        name="realization_details[{{ $key }}][account_number]"
-                                                        class="form-control" style="width: 200px;"
-                                                        placeholder="Account Number">
+                                                    <div class="position-relative flex-shrink-0"
+                                                        style="width: 200px;">
+                                                        <input type="text" id="account_number_{{ $item->id }}"
+                                                            name="realization_details[{{ $key }}][account_number]"
+                                                            class="form-control" style="width: 200px;"
+                                                            placeholder="Account Number" autocomplete="off">
+                                                        <div id="account_suggestions_{{ $item->id }}"
+                                                            class="account-suggestions-dropdown list-group shadow-sm border bg-white">
+                                                        </div>
+                                                    </div>
                                                     <button type="button" class="btn btn-sm btn-primary ml-2"
                                                         onclick="openAccountModal({{ $item->id }})">
                                                         <i class="fas fa-search"></i>
@@ -184,6 +190,34 @@
             background-color: #fff;
             border: 1px solid #ced4da;
             border-radius: 0.25rem;
+        }
+
+        .account-suggestions-dropdown {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            z-index: 1050;
+            max-height: 220px;
+            overflow-y: auto;
+            margin-top: 2px;
+            border-radius: 0.25rem;
+        }
+
+        .account-suggestions-dropdown .list-group-item {
+            font-size: 0.875rem;
+            cursor: pointer;
+            border-left: none;
+            border-right: none;
+        }
+
+        .account-suggestions-dropdown .list-group-item:first-child {
+            border-top: none;
+        }
+
+        .account-suggestions-dropdown .list-group-item:last-child {
+            border-bottom: none;
         }
     </style>
 @endpush
@@ -331,11 +365,71 @@
             });
         }
 
-        function selectAccount(accountNumber, accountName) {
-            $(`#account_number_${window.currentDetailId}`).val(accountNumber);
-            $(`#account_name_${window.currentDetailId}`).val(accountName);
-            $('#accountModal').modal('hide');
+        function setAccountFields(detailId, accountNumber, accountName) {
+            $(`#account_number_${detailId}`).val(accountNumber);
+            $(`#account_name_${detailId}`).val(accountName);
+            $(`#account_suggestions_${detailId}`).hide().empty();
         }
+
+        function selectAccount(accountNumber, accountName) {
+            setAccountFields(window.currentDetailId, accountNumber, accountName);
+            $('#accountModal').modal('hide');
+            $(`#account_number_${window.currentDetailId}`).trigger('change');
+        }
+
+        let accountAutocompleteTimer = null;
+
+        $(document).on('input', 'input[id^="account_number_"]', function() {
+            const $input = $(this);
+            const detailId = $input.attr('id').replace('account_number_', '');
+            const $dropdown = $(`#account_suggestions_${detailId}`);
+            const q = $input.val().trim();
+            clearTimeout(accountAutocompleteTimer);
+            if (q.length < 1) {
+                $dropdown.hide().empty();
+                return;
+            }
+            accountAutocompleteTimer = setTimeout(function() {
+                $.ajax({
+                    url: '{{ route('accounts.autocomplete') }}',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {
+                        q: q
+                    },
+                    success: function(rows) {
+                        $dropdown.empty();
+                        if (!Array.isArray(rows) || rows.length === 0) {
+                            $dropdown.hide();
+                            return;
+                        }
+                        rows.forEach(function(row) {
+                            const label = row.account_number + ' — ' + row.account_name;
+                            const $btn = $('<button type="button" class="list-group-item list-group-item-action">')
+                                .text(label)
+                                .on('mousedown', function(e) {
+                                    e.preventDefault();
+                                    setAccountFields(detailId, row.account_number, row
+                                        .account_name);
+                                    $input.trigger('change');
+                                });
+                            $dropdown.append($btn);
+                        });
+                        $dropdown.show();
+                    },
+                    error: function() {
+                        $dropdown.hide().empty();
+                    }
+                });
+            }, 250);
+        });
+
+        $(document).on('blur', 'input[id^="account_number_"]', function() {
+            const detailId = $(this).attr('id').replace('account_number_', '');
+            setTimeout(function() {
+                $(`#account_suggestions_${detailId}`).hide().empty();
+            }, 200);
+        });
 
         // Document ready function
         $(document).ready(function() {
