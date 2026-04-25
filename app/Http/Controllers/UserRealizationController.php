@@ -128,7 +128,7 @@ class UserRealizationController extends Controller
 
             $realization->update([
                 'status' => 'submitted',
-                'printable' => 1, // saat create realization, sudah bisa langsung printable
+                // 'printable' => 1, // saat create realization, sudah bisa langsung printable
                 'draft_no' => $realization->nomor, // Simpan draft number
                 'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
             ]);

@@ -125,7 +125,7 @@ class PayreqReimburseController extends Controller
 
         $payreq->update([
             'status' => 'submitted',
-            'printable' => 1,
+            // 'printable' => 1, // saat submit payreq, sudah bisa langsung printable
             'draft_no' => $payreq->nomor, // Simpan draft number
             'nomor' => app(DocumentNumberController::class)->generate_document_number('payreq', auth()->user()->project),
         ]);
