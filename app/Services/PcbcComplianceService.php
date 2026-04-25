@@ -74,8 +74,8 @@ class PcbcComplianceService
                 'variant' => 'danger',
                 'title' => 'PCBC compliance required',
                 'title_id' => 'Kepatuhan PCBC diperlukan',
-                'message' => 'No PCBC report was filed for the last two full weeks (Mon–Sun, '.$tz.'). "Ready to Pay" and "Incoming List" are disabled until there is a qualifying upload. Use a document date in the week you are reporting.',
-                'message_id' => 'Tidak ada laporan PCBC untuk dua minggu penuh terakhir (Sen–Min, '.$tz.'). Menu "Ready to Pay" dan "Incoming List" dinonaktifkan hingga ada unggahan yang memenuhi syarat. Gunakan tanggal dokumen pada minggu yang dilaporkan.',
+                'message' => 'No validated PCBC report was on file for the last two full weeks (Mon–Sun, '.$tz.'). "Ready to Pay" and "Incoming List" are disabled until there is a qualifying upload. Use a document date in the week you are reporting.',
+                'message_id' => 'Tidak ada laporan PCBC tervalidasi untuk dua minggu penuh terakhir (Sen–Min, '.$tz.'). Menu "Ready to Pay" dan "Incoming List" dinonaktifkan hingga ada unggahan yang memenuhi syarat. Gunakan tanggal dokumen pada minggu yang dilaporkan.',
                 'show_banner' => true,
                 'current_week_label' => $w0Start->translatedFormat('d M Y').' – '.$w0End->translatedFormat('d M Y'),
                 'weeks' => $weeks,
@@ -89,8 +89,8 @@ class PcbcComplianceService
                 'variant' => 'warning',
                 'title' => 'You missed last week\'s PCBC',
                 'title_id' => 'Anda melewatkan PCBC minggu lalu',
-                'message' => 'Upload a PCBC PDF with document date in last week’s range, or the next full miss will block cashier actions.',
-                'message_id' => 'Unggah PDF PCBC dengan tanggal dokumen di rentang minggu lalu, atau lewatnya minggu penuh berikutnya akan memblokir aksi kasir.',
+                'message' => 'Have a PCBC PDF validated with document date in last week’s range, or the next full miss will block cashier actions.',
+                'message_id' => 'Pastikan PDF PCBC divalidasi dengan tanggal dokumen di rentang minggu lalu, atau lewatnya minggu penuh berikutnya akan memblokir aksi kasir.',
                 'show_banner' => true,
                 'current_week_label' => $w0Start->translatedFormat('d M Y').' – '.$w0End->translatedFormat('d M Y'),
                 'weeks' => $weeks,
@@ -104,8 +104,8 @@ class PcbcComplianceService
                 'variant' => 'warning',
                 'title' => 'PCBC for this week',
                 'title_id' => 'PCBC untuk minggu ini',
-                'message' => 'At least one PCBC PDF per week is required. Upload a report and set the document date within this week.',
-                'message_id' => 'Wajib mengunggah minimal satu file PDF PCBC per minggu. Unggah laporan dan atur tanggal dokumen di dalam minggu berjalan ini.',
+                'message' => 'At least one validated PCBC PDF per week is required. Upload a report, set the document date within this week, and have it validated.',
+                'message_id' => 'Wajib minimal satu file PDF PCBC tervalidasi per minggu. Unggah laporan, atur tanggal dokumen di minggu ini, dan selesaikan validasi.',
                 'show_banner' => true,
                 'current_week_label' => $w0Start->translatedFormat('d M Y').' – '.$w0End->translatedFormat('d M Y'),
                 'weeks' => $weeks,
@@ -118,8 +118,8 @@ class PcbcComplianceService
             'variant' => 'success',
             'title' => 'PCBC on track',
             'title_id' => 'PCBC sesuai jadwal',
-            'message' => 'This week’s PCBC requirement is met (at least one upload with a document date in the current week).',
-            'message_id' => 'Kewajiban PCBC minggu ini terpenuhi (minimal satu unggahan dengan tanggal dokumen di minggu berjalan).',
+            'message' => 'This week’s PCBC requirement is met (at least one validated upload with a document date in the current week).',
+            'message_id' => 'Kewajiban PCBC minggu ini terpenuhi (minimal satu unggahan tervalidasi dengan tanggal dokumen di minggu berjalan).',
             'show_banner' => false,
             'current_week_label' => $w0Start->translatedFormat('d M Y').' – '.$w0End->translatedFormat('d M Y'),
             'weeks' => $weeks,
@@ -155,6 +155,7 @@ class PcbcComplianceService
     {
         return Dokumen::query()
             ->where('type', 'pcbc')
+            ->where('validation_status', Dokumen::VALIDATION_VALIDATED)
             ->where('project', $project)
             ->whereDate('dokumen_date', '>=', $from->toDateString())
             ->whereDate('dokumen_date', '<=', $to->toDateString())

@@ -1,3 +1,15 @@
+### [034] PCBC PDF validation (official “validated” gate) and rejection visibility (2026-04-25) ✅ COMPLETE
+
+**Challenge:** Weekly compliance and the PCBC dashboard had to count only **official** site PCBC PDFs, not every upload. Stakeholders required an explicit **validate / reject** step, grandfathering of existing rows, a dedicated Spatie permission, confirmations before actions, and a way for **uploaders to read rejection reasons** without using the DB.
+
+**Solution:** `dokumens` gained `validation_status` (default `validated` for migration grandfathering), `validated_at`, `validated_by` (users FK), `rejection_reason`. New PCBC uploads start **pending**; `PcbcComplianceService::hasQualifyingUpload` and `PcbcController::check_pcbc_files` filter **`validated` only**. `POST cashier/pcbc/dokumen/{dokumen}/validate|reject` (permission `validate_pcbc_report`); `RoleController` + `ValidatePcbcReportPermissionSeeder`. Uploaders see rejection text via the **Status** column (**View reason** modal: reason, rejector, time) and in the **Edit** modal alert when status is **rejected**. Validate/reject use `window.confirm` / required reason in modal per UX request.
+
+**Key learning:** Compliance queries must stay aligned with a single “official” state (`validation_status`); keep upload list UX the source of truth for uploader feedback (modal + inline alert), not only server logs.
+
+**Implementation / file map:** Migration `2026_04_25_030141_add_pcbc_validation_to_dokumens_table.php`, `app/Models/Dokumen.php` (constants, `validatedBy()`), `PcbcController` (upload, update, `data`, `validateDokumen`, `rejectDokumen`, `check_pcbc_files`), `PcbcComplianceService`, `resources/views/cashier/pcbc/{upload,action}.blade.php`, `resources/views/cashier/pcbc/_validation_status_column.blade.php`, `routes/cashier.php`, `ValidatePcbcReportPermissionSeeder`, `RoleController`. Docs: `docs/architecture.md`, `docs/decisions.md` (ADR-PCBC-04/05), `docs/todo.md`.
+
+---
+
 ### [033] PCBC Weekly Upload Compliance, Sanctions & Documentation (2026-04-24) ✅ COMPLETE
 
 **Challenge**: Cashiers need to upload at least one PCBC PDF per site per week (with exceptions for APS, 026C, 023C). After two consecutive full weeks (Mon–Sun, Asia/Makassar) with no qualifying `Dokumen` (`type=pcbc`, `dokumen_date` in-week), “Ready to Pay” and “Incoming List” should be blocked. Warnings had to be visible to approvers and others via a dedicated permission, without breaking sanction logic. The upload DataTable and Blade layout had bugs (word merge on “rules/At/Each”, floating `card-title`, sort not by date, missing `$pcbcCompliance` in child views).
@@ -863,7 +875,7 @@
 -   **Refresh Interval**: Maintained 5-minute update cycle for real-time data
 
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2026-01-XX
+**Last Updated**: 2026-04-25
 
 ## Memory Maintenance Guidelines
 

@@ -85,6 +85,7 @@ class PcbcController extends Controller
 
         foreach ($projects as $project) {
             $pcbcs = Dokumen::where('type', 'pcbc')
+                ->where('validation_status', Dokumen::VALIDATION_VALIDATED)
                 ->where('project', $project)
                 ->whereYear('dokumen_date', $year)
                 ->whereIn(DB::raw('LPAD(MONTH(dokumen_date), 2, "0")'), $months)
@@ -137,6 +138,7 @@ class PcbcController extends Controller
             'dokumen_date' => $request->dokumen_date,
             'remarks' => $request->remarks,
             'created_by' => auth()->user()->id,
+            'validation_status' => Dokumen::VALIDATION_PENDING,
         ]);
 
         return redirect()->back()->with('success', 'File uploaded successfully.');
@@ -170,7 +172,8 @@ class PcbcController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        if ($request->hasFile('attachment')) {
+        $fileChanged = $request->hasFile('attachment');
+        if ($fileChanged) {
             // Delete the old file - use getOriginal to get raw filename
             $oldFilename = $dokumen->getOriginal('filename1');
             if ($oldFilename) {
@@ -182,12 +185,36 @@ class PcbcController extends Controller
             $dokumen->filename1 = $filename;
         }
 
-        $dokumen->update([
+        $rawDokumenDate = $dokumen->getRawOriginal('dokumen_date');
+        $resolvedDate = $request->dokumen_date
+            ? $request->dokumen_date
+            : ($rawDokumenDate ? Carbon::parse($rawDokumenDate)->format('Y-m-d') : null);
+
+        $dateChanged = $request->dokumen_date
+            && $rawDokumenDate
+            && $request->dokumen_date !== Carbon::parse($rawDokumenDate)->format('Y-m-d');
+
+        $rawProject = $dokumen->getRawOriginal('project');
+        $newProject = $request->has('project') ? $request->project : $rawProject;
+        $projectChanged = (string) $rawProject !== (string) $newProject;
+
+        $payload = [
             'giro_id' => $request->giro_id,
-            'project' => $request->project,
-            'dokumen_date' => $request->dokumen_date ? $request->dokumen_date : Carbon::parse($dokumen->dokumen_date)->format('Y-m-d'),
+            'project' => $newProject,
+            'dokumen_date' => $resolvedDate,
             'remarks' => $request->remarks,
-        ]);
+        ];
+
+        if ($dokumen->type === 'pcbc' && ($fileChanged || $dateChanged || $projectChanged)) {
+            $payload = array_merge($payload, [
+                'validation_status' => Dokumen::VALIDATION_PENDING,
+                'validated_at' => null,
+                'validated_by' => null,
+                'rejection_reason' => null,
+            ]);
+        }
+
+        $dokumen->update($payload);
 
         return redirect()->back()->with('success', 'Record updated successfully.');
     }
@@ -212,13 +239,57 @@ class PcbcController extends Controller
         return redirect()->back()->with('success', 'File deleted successfully.');
     }
 
+    public function validateDokumen(Request $request, Dokumen $dokumen)
+    {
+        if (! $request->user()->can('validate_pcbc_report')) {
+            abort(403);
+        }
+
+        if ($dokumen->type !== 'pcbc' || $dokumen->validation_status !== Dokumen::VALIDATION_PENDING) {
+            return redirect()->back()->with('error', 'This document cannot be validated.');
+        }
+
+        $dokumen->update([
+            'validation_status' => Dokumen::VALIDATION_VALIDATED,
+            'validated_at' => now(),
+            'validated_by' => $request->user()->id,
+            'rejection_reason' => null,
+        ]);
+
+        return redirect()->back()->with('success', 'PCBC document marked as validated.');
+    }
+
+    public function rejectDokumen(Request $request, Dokumen $dokumen)
+    {
+        if (! $request->user()->can('validate_pcbc_report')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'rejection_reason' => 'required|string|min:1|max:2000',
+        ]);
+
+        if ($dokumen->type !== 'pcbc' || $dokumen->validation_status !== Dokumen::VALIDATION_PENDING) {
+            return redirect()->back()->with('error', 'This document cannot be rejected.');
+        }
+
+        $dokumen->update([
+            'validation_status' => Dokumen::VALIDATION_REJECTED,
+            'validated_at' => now(),
+            'validated_by' => $request->user()->id,
+            'rejection_reason' => $request->rejection_reason,
+        ]);
+
+        return redirect()->back()->with('success', 'PCBC document rejected.');
+    }
+
     public function data(Request $request)
     {
         try {
             $userRoles = app(UserController::class)->getUserRoles();
             $query = Dokumen::query()
                 ->where('type', 'pcbc')
-                ->with('createdBy');
+                ->with(['createdBy', 'validatedBy']);
 
             if (! array_intersect($userRoles, ['superadmin', 'admin', 'cashier'])) {
                 $query->where('project', auth()->user()->project);
@@ -240,6 +311,7 @@ class PcbcController extends Controller
                 ->addIndexColumn()
                 ->orderColumn('dokumen_date', 'dokumen_date $1')
                 ->orderColumn('project', 'project $1')
+                ->orderColumn('validation_status', 'validation_status $1')
                 ->orderColumn('created_by', 'created_by $1')
                 ->editColumn('dokumen_date', function (Dokumen $dokumen) {
                     $date = $dokumen->getRawOriginal('dokumen_date');
@@ -251,11 +323,14 @@ class PcbcController extends Controller
 
                     return $p !== null && $p !== '' ? (string) $p : '-';
                 })
+                ->editColumn('validation_status', function (Dokumen $dokumen) {
+                    return view('cashier.pcbc._validation_status_column', ['dokumen' => $dokumen])->render();
+                })
                 ->editColumn('created_by', function (Dokumen $dokumen) {
                     return $dokumen->created_by_name ?? '-';
                 })
                 ->addColumn('action', 'cashier.pcbc.action')
-                ->rawColumns(['action'])
+                ->rawColumns(['validation_status', 'action'])
                 ->make(true);
         } catch (\Exception $e) {
             Log::error('PCBC DataTable Error: '.$e->getMessage(), [

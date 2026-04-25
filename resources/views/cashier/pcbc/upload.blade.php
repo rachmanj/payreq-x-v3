@@ -63,6 +63,8 @@
                             23:59, <strong>{{ config('pcbc_compliance.timezone') }}</strong>).</li>
                         <li>The <strong>document date</strong> (not upload time) must fall in the week you are
                             reporting.</li>
+                        <li>Only uploads marked <strong>Validated</strong> count for compliance; pending or rejected
+                            uploads do not.</li>
                         <li>Missing <strong>two consecutive</strong> full weeks locks <strong>Ready to Pay</strong> and
                             <strong>Incoming List</strong> until compliance is met.</li>
                         <li>Exception projects: {{ implode(', ', config('pcbc_compliance.exception_project_codes', [])) }} — upload not
@@ -102,8 +104,9 @@
                                     <th style="width:3rem">#</th>
                                     <th>Project</th>
                                     <th>PCBC date (document)</th>
+                                    <th>Status</th>
                                     <th>Uploaded by</th>
-                                    <th style="width:8rem" class="text-right">Actions</th>
+                                    <th style="width:10rem" class="text-right">Actions</th>
                                 </tr>
                             </thead>
                         </table>
@@ -233,6 +236,10 @@
                     {
                         data: 'dokumen_date',
                         name: 'dokumen_date',
+                    },
+                    {
+                        data: 'validation_status',
+                        name: 'validation_status',
                     },
                     {
                         data: 'created_by',

@@ -40,3 +40,32 @@ Short records of **why** something was implemented a certain way. Revisit when r
 **Consequences:** Correct default sort (newest PCBC document date first) and user-controlled column sort.
 
 **Status:** Accepted (2026-04-24)
+
+---
+
+## ADR-PCBC-04 — Official PCBC = `validation_status` **validated** (not “uploaded”)
+
+**Context:** A PDF can be uploaded with the correct `dokumen_date` but should not count for sanctions or the monthly **dashboard** until a reviewer marks it **validated**. The business also needed **reject** with a reason and a path for uploaders to read that reason in the app.
+
+**Decision:**
+
+- Store lifecycle on `dokumens`: `validation_status` ∈ {`pending`, `validated`, `rejected`} plus `validated_at`, `validated_by`, `rejection_reason`.
+- **Qualifying** upload for `PcbcComplianceService` and `PcbcController::check_pcbc_files` = `type=pcbc` **and** `validation_status=validated` **and** `dokumen_date` in range.
+- New PCBC rows from the upload form start **pending**; the migration default **`validated`** grandfathers existing rows.
+- Rejection stores **reason**; **validators** are users with Spatie permission **`validate_pcbc_report`**.
+
+**Consequences:** Compliance logic and list/dashboard counts must always filter on `validation_status` where “official” matters. Uploader feedback is done in-UI (status column + edit modal), not by e-mail in this version.
+
+**Status:** Accepted (2026-04-25)
+
+---
+
+## ADR-PCBC-05 — Uploader visibility of `rejection_reason` (list + edit)
+
+**Context:** Rejecting without surfacing the reason in the UI would block uploaders from correcting submissions.
+
+**Decision:** In the DataTable, **rejected** rows show **View reason** (modal: full text, rejector, timestamp from `validated_by` / `validated_at`). The **Edit** modal for a rejected row includes the same text at the top so the uploader always sees the reason in context when re-uploading or changing the date.
+
+**Consequences:** Rejection modals and alerts must stay **escaped** (`e` + `nl2br` where needed) to avoid XSS from stored free text.
+
+**Status:** Accepted (2026-04-25)

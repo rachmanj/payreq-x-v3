@@ -9,7 +9,17 @@ class Dokumen extends Model
 {
     use HasFactory;
 
+    public const VALIDATION_PENDING = 'pending';
+
+    public const VALIDATION_VALIDATED = 'validated';
+
+    public const VALIDATION_REJECTED = 'rejected';
+
     protected $guarded = [];
+
+    protected $casts = [
+        'validated_at' => 'datetime',
+    ];
 
     public function getPeriodeAttribute($value)
     {
@@ -23,12 +33,12 @@ class Dokumen extends Model
 
     public function getFilename1Attribute($value)
     {
-        return asset('dokumens/' . $value);
+        return asset('dokumens/'.$value);
     }
 
     public function getFilename2Attribute($value)
     {
-        return asset('file_upload/' . $value);
+        return asset('file_upload/'.$value);
     }
 
     public function createdBy()
@@ -41,13 +51,19 @@ class Dokumen extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    public function validatedBy()
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
+
     public function getCreatedByNameAttribute()
     {
         if ($this->relationLoaded('createdBy') && $this->createdBy) {
             return $this->createdBy->name;
         }
-        
+
         $user = $this->createdBy;
+
         return $user ? $user->name : '-';
     }
 
@@ -56,8 +72,9 @@ class Dokumen extends Model
         if ($this->relationLoaded('updatedBy') && $this->updatedBy) {
             return $this->updatedBy->name;
         }
-        
+
         $user = $this->updatedBy;
+
         return $user ? $user->name : '-';
     }
 

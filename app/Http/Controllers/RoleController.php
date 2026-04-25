@@ -18,6 +18,7 @@ class RoleController extends Controller
     public function create()
     {
         $this->ensurePcbcWarningPermissionExists();
+        $this->ensureValidatePcbcReportPermissionExists();
         $permissions = Permission::orderBy('name', 'asc')->get();
 
         return view('roles.create', compact('permissions'));
@@ -44,6 +45,7 @@ class RoleController extends Controller
     public function edit($id)
     {
         $this->ensurePcbcWarningPermissionExists();
+        $this->ensureValidatePcbcReportPermissionExists();
         $role = Role::find($id);
         $permissions = Permission::orderBy('name', 'asc')->get();
         $rolePermissions = $role->permissions()->get()->pluck('id')->toArray();
@@ -132,6 +134,7 @@ class RoleController extends Controller
                 'akses_pcbc',
                 'akses_migrasi',
                 'see_pcbc_warning',
+                'validate_pcbc_report',
             ],
             'SAP Integration' => [
                 'akses_sap_sync',
@@ -244,7 +247,7 @@ class RoleController extends Controller
                     'Exchange' => ['akses_exchange_rates', 'create_exchange_rates', 'edit_exchange_rates', 'delete_exchange_rates', 'import_exchange_rates', 'export_exchange_rates'],
                     'Reports' => ['akses_reports', 'akses_report_rab', 'akses_loan_report', 'akses_sum_expense_by_equipment', 'see_activities_chart'],
                     'Documents' => ['akses_dokumen_upload', 'akses_delivery', 'upload_dokumen', 'request_faktur', 'update_faktur'],
-                    'Upload' => ['upload_koran', 'upload_pcbc', 'akses_koran', 'akses_pcbc', 'akses_migrasi', 'see_pcbc_warning'],
+                    'Upload' => ['upload_koran', 'upload_pcbc', 'akses_koran', 'akses_pcbc', 'akses_migrasi', 'see_pcbc_warning', 'validate_pcbc_report'],
                     'SAP' => ['akses_sap_sync', 'akses_sync_buc', 'akses_sync_equipments'],
                     'Advance' => ['see_rekap_advance_017', 'see_rekap_advance_021', 'see_rekap_advance_022', 'see_rekap_advance_023', 'see_rekap_advance_025', 'see_rekap_advance_bo', 'see_rekap_advance_ho', 'rekap_dokumen_creation_bo', 'rekap_dokumen_creation_ho'],
                     'Giro' => ['akses_giro', 'create_outgoing'],
@@ -273,6 +276,14 @@ class RoleController extends Controller
     {
         Permission::firstOrCreate(
             ['name' => 'see_pcbc_warning'],
+            ['guard_name' => 'web'],
+        );
+    }
+
+    private function ensureValidatePcbcReportPermissionExists(): void
+    {
+        Permission::firstOrCreate(
+            ['name' => 'validate_pcbc_report'],
             ['guard_name' => 'web'],
         );
     }

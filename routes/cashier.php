@@ -79,6 +79,8 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
     // PCBC
     Route::prefix('pcbc')->name('pcbc.')->group(function () {
+        Route::post('/dokumen/{dokumen}/validate', [PcbcController::class, 'validateDokumen'])->name('dokumen.validate');
+        Route::post('/dokumen/{dokumen}/reject', [PcbcController::class, 'rejectDokumen'])->name('dokumen.reject');
         Route::get('/data', [PcbcController::class, 'data'])->name('data');
         Route::get('/your-data', [PcbcController::class, 'your_data'])->name('your_data');
         Route::get('/export', [PcbcController::class, 'export'])->name('export');
