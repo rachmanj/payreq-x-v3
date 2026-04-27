@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Models\ApprovalPlan;
+use App\Models\Dokumen;
 use App\Models\Outgoing;
 use App\Models\Payreq;
 use Carbon\Carbon;
@@ -25,6 +26,14 @@ class DashboardUserController extends Controller
         $chart_activites = app(SapSyncController::class)->chart_vj_postby();
         $your_team = app(TeamController::class)->members_data();
 
+        $pcbc_pending_validation_count = 0;
+        if (auth()->user()->can('validate_pcbc_report')) {
+            $pcbc_pending_validation_count = Dokumen::query()
+                ->where('type', 'pcbc')
+                ->where('validation_status', Dokumen::VALIDATION_PENDING)
+                ->count();
+        }
+
         return view('dashboard.index', compact([
             'wait_approve',
             'user_ongoing_payreqs',
@@ -34,6 +43,7 @@ class DashboardUserController extends Controller
             'vj_not_posted',
             'chart_activites',
             'your_team',
+            'pcbc_pending_validation_count',
         ]));
     }
 
@@ -77,6 +87,7 @@ class DashboardUserController extends Controller
                 if ($payreq->realization && $payreq->realization->realizationDetails) {
                     return $payreq->realization->realizationDetails->sum('amount');
                 }
+
                 return 0;
             });
 

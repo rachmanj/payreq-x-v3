@@ -35,6 +35,30 @@
     </div>
 @endcan
 
+@can('validate_pcbc_report')
+    <div class="col-lg-4 col-md-6 col-12">
+        <div
+            class="modern-stat-card {{ $pcbc_pending_validation_count > 0 ? 'stat-warning' : 'stat-success' }}">
+            <div class="stat-icon">
+                <i class="fas fa-file-signature"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ $pcbc_pending_validation_count }}</div>
+                <div class="stat-label">PCBC pending validation</div>
+                <div class="stat-info">
+                    <i
+                        class="fas {{ $pcbc_pending_validation_count > 0 ? 'fa-exclamation-circle' : 'fa-check-circle' }}"></i>
+                    {{ $pcbc_pending_validation_count > 0 ? 'Awaiting review on PCBC upload' : 'No uploads waiting for validation' }}
+                </div>
+            </div>
+            <a href="{{ route('cashier.pcbc.index', ['page' => 'upload']) }}" class="stat-action"
+                title="Open PCBC upload list">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+@endcan
+
 <style>
     .modern-stat-card {
         background: #fff;
@@ -75,6 +99,10 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 
+    .stat-warning::before {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
     .stat-icon {
         width: 70px;
         height: 70px;
@@ -96,6 +124,10 @@
 
     .stat-primary .stat-icon {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-warning .stat-icon {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     }
 
     .stat-icon i {
@@ -123,6 +155,10 @@
 
     .stat-primary .stat-value {
         color: #667eea;
+    }
+
+    .stat-warning .stat-value {
+        color: #d97706;
     }
 
     .stat-label {
@@ -161,5 +197,13 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: #fff;
         transform: scale(1.1);
+    }
+
+    .stat-warning .stat-action:hover {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .stat-success .stat-action:hover {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
     }
 </style>
