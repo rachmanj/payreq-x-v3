@@ -1,3 +1,17 @@
+### [038] Anggaran (RAB) module — release parity, auth, reporting dashboard, POST recalc (2026-04-29) ✅ COMPLETE
+
+**Challenge:** User-payreq RAB screens and reporting RAB grids could disagree on utilization because stored **`balance`/`persen`**, cached **`release_to_date`** reads, and **`old_rab_id`** migration paths were implemented separately. **`GET`** Recalc was unsafe; bulk activate/inactivate shared **`recalculate_release`** with unrelated duties; listing bulk actions only affected the current DataTables page without UX honesty; scheduled jobs that flushed every per-row cache key could run far too long.
+
+**Solution:** Introduced **`AnggaranReleaseService`** (shared totals, **`progressSummary`**, **`syncStoredTotals`**, chunk **`syncAllApprovedStoredTotals`**, cache helpers). **`AnggaranPolicy`** gates **`view`** / **`editThroughPayreq`** on User-payreq flows. **`ProcessAnggaranRequest`** validates create/update + authorization on edits. Reports **`AnggaranController`** intersects bulk IDs with **`authorizedBulkIds`** matching listing filters; **`show`** uses live **`progressSummary`**; **`POST`** **`reports/anggaran/recalculate`** behind **`recalculate_release`**; migration **`anggaran_bulk_activate_deactivate`** + **`RoleController`** groups; **`GET`** **`reports/anggaran/inactive`** redirects to **`index?status=inactive`**. Dashboard **`reports/anggaran/dashboard`**. Hourly **`php artisan anggaran:sync-release-totals`** calls **`flushListingCaches`** after sync (manual Recalc still **`flushAllReportingCaches`**). User-payreq index notes 300-row scope; create/edit use stable **`button_type`** hidden field; uploads use **`Str::uuid`** filenames under **`public/file_upload`**.
+
+**Key learning:** Operational cache flushing must match frequency—avoid **`flushAllReportingCaches`** inside hourly automation when it loops all model IDs; reserve heavy invalidation for explicit admin actions.
+
+**Implementation / file map:** `app/Services/AnggaranReleaseService.php`, `app/Policies/AnggaranPolicy.php`, `app/Providers/AuthServiceProvider.php`, `app/Http/Requests/UserPayreq/ProcessAnggaranRequest.php`, `app/Http/Controllers/UserPayreq/UserAnggaranController.php`, `app/Http/Controllers/Reports/AnggaranController.php`, `routes/reports.php`, `app/Console/Commands/AnggaranSyncReleaseTotalsCommand.php`, `app/Console/Kernel.php`, `database/migrations/2026_04_29_120000_add_anggaran_bulk_activate_deactivate_permission.php`, `resources/views/reports/anggaran/{index,inactive,dashboard}.blade.php`, `resources/views/user-payreqs/anggarans/{create,edit,show,index}.blade.php`, `app/Http/Controllers/Reports/ReportIndexController.php`, `tests/Feature/AnggaranReportsTest.php`.
+
+**Docs:** `docs/architecture.md`, `docs/decisions.md` (ADR-ANGGRAN-01).
+
+---
+
 ### [037] Cashier Realization Attachments — scoped lists, BO attachment-only, sidebar nav (2026-04-29) ✅ COMPLETE
 
 **Challenge:** Cashiers needed a dedicated place to attach evidence files per realization (not mixed into Verifications accounting flow). Permission-scoped visibility had to match HO vs branch-office (**BO**) vs single-project rules; **`realization_attachments_scope_bo`** needed both geographic exclusion (**000H**, **APS**) and **non-empty attachment lists** so BO users do not see zero-file noise. New menu items must appear in **`sidebar.blade.php`** because **`templates/main`** does not include **`navbar.blade.php`** (where **`menu/cashier.blade.php`** was wired), so links added only to the unused partial were invisible.

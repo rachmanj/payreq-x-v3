@@ -20,6 +20,9 @@
       </div>  <!-- /.card-header -->
      
       <div class="card-body">
+        <p class="text-muted small mb-2">
+            Up to 300 rows are loaded per role rules; progress uses stored balance fields refreshed by scheduled sync and accounting tools.
+        </p>
         <table id="anggarans" class="table table-bordered table-striped">
           <thead>
           <tr>

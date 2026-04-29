@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 
-
 class ReportIndexController extends Controller
 {
     public function index()
@@ -156,6 +155,11 @@ class ReportIndexController extends Controller
                         'name' => 'Periode RAB',
                         'url' => route('reports.periode-anggaran.index'),
                         'protector' => 'akses_periode_anggaran',
+                    ],
+                    [
+                        'name' => 'RAB Dashboard',
+                        'url' => route('reports.anggaran.dashboard'),
+                        'protector' => 'akses_report_rab',
                     ],
                     [
                         'name' => 'RAB List',

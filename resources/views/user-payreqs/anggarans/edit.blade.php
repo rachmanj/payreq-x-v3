@@ -20,6 +20,7 @@
             
                 <form action="{{ route('user-payreqs.anggarans.proses') }}" method="POST" enctype="multipart/form-data" id="form_anggaran">
                 @csrf
+                <input type="hidden" name="button_type" id="button_type_field" value="">
 
                     <div class="row">
                         <div class="col-4">
@@ -33,7 +34,7 @@
                         <div class="col-4">
                             <div class="form-group">
                                 <label for="date">Date</label>
-                                <input type="date" name="date" id="date" class="form-control @error('date') is-invalid @enderror" value={{ $anggaran->date }}>
+                                <input type="date" name="date" id="date" class="form-control @error('date') is-invalid @enderror" value="{{ $anggaran->date }}">
                                 @error('date')
                                 <div class="invalid-feedback">
                                 {{ $message }}
@@ -199,16 +200,12 @@
         });
     });
 
-    // btn-save as draft
-    $('#btn-draft').click(function() {
-        // add attribute name="draft" to form
-        $('form').append('<input type="hidden" name="button_type" value="edit">');
+    $('#btn-draft').on('click', function() {
+        $('#button_type_field').val('edit');
     });
 
-    // btn-save and submit
-    $('#btn-submit').click(function() {
-        // add attribute name="draft" to form
-        $('form').append('<input type="hidden" name="button_type" value="edit_submit">');
+    $('#btn-submit').on('click', function() {
+        $('#button_type_field').val('edit_submit');
     });
 </script>
 @endsection

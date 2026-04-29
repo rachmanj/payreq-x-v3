@@ -6,14 +6,19 @@ use App\Http\Controllers\ApprovalPlanController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\UserController;
+use App\Http\Requests\UserPayreq\ProcessAnggaranRequest;
 use App\Models\Anggaran;
-use App\Models\Payreq;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
-use Illuminate\Http\Request;
+use App\Services\AnggaranReleaseService;
+use Illuminate\Support\Str;
 
 class UserAnggaranController extends Controller
 {
+    public function __construct(
+        protected AnggaranReleaseService $releaseService
+    ) {}
+
     public function index()
     {
         return view('user-payreqs.anggarans.index');
@@ -32,51 +37,51 @@ class UserAnggaranController extends Controller
         return view('user-payreqs.anggarans.create', compact('projects', 'periode_anggarans', 'nomor'));
     }
 
-    public function proses(Request $request)
+    public function proses(ProcessAnggaranRequest $request)
     {
         $response = null;
-        if (in_array($request->button_type, ['create', 'create_submit'])) {
+        if (in_array($request->button_type, ['create', 'create_submit'], true)) {
             $response = $this->store($request);
-        } elseif (in_array($request->button_type, ['edit', 'edit_submit'])) {
+        } elseif (in_array($request->button_type, ['edit', 'edit_submit'], true)) {
             $response = $this->update($request);
         }
 
         if ($response) {
-            if (in_array($request->button_type, ['create_submit', 'edit_submit'])) {
-                $this->submit($response->id);
-                return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diajukan');
+            if (in_array($request->button_type, ['create_submit', 'edit_submit'], true)) {
+                if ($this->performApprovalSubmit($response->id)) {
+                    return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diajukan');
+                }
+
+                return redirect()->route('user-payreqs.anggarans.index')->with('error', 'Anggaran gagal disubmit. Hubungi Administrator');
             }
+
             return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil disimpan sebagai draft');
-        } else {
-            return redirect()->back()->with('error', 'There is an error in the form');
         }
+
+        return redirect()->back()->with('error', 'There is an error in the form');
     }
 
-    public function submit($id)
+    protected function performApprovalSubmit(int $id): bool
     {
         $response = app(ApprovalPlanController::class)->create_approval_plan('rab', $id);
 
-        if ($response) {
-            $anggaran = Anggaran::find($id);
-            $anggaran->update([
-                'status' => 'submitted',
-            ]);
-            return redirect()->route('user-payreqs.anggarans.index')->with('success', 'Anggaran berhasil diajukan');
-        } else {
-            return redirect()->route('user-payreqs.anggarans.index')->with('error', 'Anggaran gagal disubmit. Hubungi Administrator');
+        if (! $response) {
+            return false;
         }
-    }
 
-    public function store($data)
-    {
-        $data->validate([
-            'description' => 'required',
-            'amount' => 'required',
+        $anggaran = Anggaran::find($id);
+        $anggaran->update([
+            'status' => 'submitted',
         ]);
 
+        return true;
+    }
+
+    public function store(ProcessAnggaranRequest $data): Anggaran
+    {
         $filename = $this->handleFileUpload($data);
 
-        $anggaran = Anggaran::create([
+        return Anggaran::create([
             'nomor' => $data->nomor,
             'rab_no' => $data->rab_no,
             'date' => $data->date ?: date('Y-m-d'),
@@ -92,24 +97,23 @@ class UserAnggaranController extends Controller
             'end_date' => $data->end_date,
             'created_by' => auth()->user()->id,
         ]);
-
-        return $anggaran;
     }
 
     public function edit($id)
     {
-        $anggaran = Anggaran::find($id);
+        $anggaran = Anggaran::findOrFail($id);
+        $this->authorize('editThroughPayreq', $anggaran);
+
         $projects = Project::orderBy('code', 'asc')->get();
 
         $periode_anggarans = PeriodeAnggaran::orderBy('periode', 'asc')
             ->where('periode_type', 'anggaran')
             ->where('project', auth()->user()->project)
-            // ->where('is_active', 1)
+            ->where('is_active', 1)
             ->get();
 
-        // rab_45654654654_filename.pdf convert this to filename.pdf
         if ($anggaran->filename) {
-            $origin_filename = preg_replace('/^rab_\d+_/', '', $anggaran->filename); // this to convert to original filename
+            $origin_filename = preg_replace('/^rab_\d+_/', '', $anggaran->filename);
         } else {
             $origin_filename = null;
         }
@@ -117,9 +121,10 @@ class UserAnggaranController extends Controller
         return view('user-payreqs.anggarans.edit', compact('anggaran', 'projects', 'periode_anggarans', 'origin_filename'));
     }
 
-    public function update($data)
+    public function update(ProcessAnggaranRequest $data): Anggaran
     {
-        $anggaran = Anggaran::find($data->anggaran_id);
+        $anggaran = Anggaran::findOrFail($data->anggaran_id);
+        $this->authorize('editThroughPayreq', $anggaran);
 
         $anggaran->update([
             'rab_no' => $data->rab_no,
@@ -133,7 +138,7 @@ class UserAnggaranController extends Controller
             'end_date' => $data->end_date,
         ]);
 
-        if ($data->file_upload) {
+        if ($data->file('file_upload')) {
             $filename = $this->handleFileUpload($data);
             $anggaran->update(['filename' => $filename]);
         }
@@ -141,23 +146,28 @@ class UserAnggaranController extends Controller
         return $anggaran;
     }
 
-    private function handleFileUpload($data)
+    private function handleFileUpload(ProcessAnggaranRequest $data): ?string
     {
-        if ($data->file_upload) {
-            $file = $data->file('file_upload');
-            $filename = 'rab_' . rand() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('file_upload'), $filename);
-            return $filename;
+        if (! $data->file('file_upload')) {
+            return null;
         }
-        return null;
+
+        $file = $data->file('file_upload');
+        $filename = 'rab_'.Str::uuid()->toString().'_'.$file->getClientOriginalName();
+        $file->move(public_path('file_upload'), $filename);
+
+        return $filename;
     }
 
     public function show($id)
     {
-        $anggaran = Anggaran::find($id);
-        $progres_persen = $anggaran->persen;
-        $total_release = $anggaran->balance;
-        $statusColor = $this->statusColor($progres_persen);
+        $anggaran = Anggaran::findOrFail($id);
+        $this->authorize('view', $anggaran);
+
+        $summary = $this->releaseService->progressSummary($anggaran);
+        $progres_persen = $summary['persen'];
+        $total_release = $summary['amount'];
+        $statusColor = $this->statusColor((float) $progres_persen);
 
         return view('user-payreqs.anggarans.show', compact('anggaran', 'progres_persen', 'statusColor', 'total_release'));
     }
@@ -170,7 +180,7 @@ class UserAnggaranController extends Controller
             $anggarans = Anggaran::orderBy('date', 'desc')
                 ->limit(300)
                 ->get();
-        } elseif (in_array('cashier', $userRoles)) {
+        } elseif (in_array('cashier', $userRoles, true)) {
             $anggarans = Anggaran::where('project', auth()->user()->project)
                 ->orderBy('date', 'desc')
                 ->limit(300)
@@ -181,31 +191,32 @@ class UserAnggaranController extends Controller
 
         return datatables()->of($anggarans)
             ->editColumn('nomor', function ($anggaran) {
-                $nomor = '<a href="' . route('user-payreqs.anggarans.show', $anggaran->id) . '"><small>' . $anggaran->nomor . '</small></a>';
-                $rab_no = $anggaran->rab_no ? '<a href="' . route('user-payreqs.anggarans.show', $anggaran->id) . '"><small>' . $anggaran->rab_no . ' <br> ' . date('d-M-Y', strtotime($anggaran->date)) . '</small></a>' : '-';
-                return $anggaran->rab_no ? $nomor . '<br>' . $rab_no : $nomor . '<br><small>' . date('d-M-Y', strtotime($anggaran->date)) . '</small>';
+                $nomor = '<a href="'.route('user-payreqs.anggarans.show', $anggaran->id).'"><small>'.$anggaran->nomor.'</small></a>';
+                $rab_no = $anggaran->rab_no ? '<a href="'.route('user-payreqs.anggarans.show', $anggaran->id).'"><small>'.$anggaran->rab_no.' <br> '.date('d-M-Y', strtotime((string) $anggaran->date)).'</small></a>' : '-';
+
+                return $anggaran->rab_no ? $nomor.'<br>'.$rab_no : $nomor.'<br><small>'.date('d-M-Y', strtotime((string) $anggaran->date)).'</small>';
             })
             ->editColumn('description', function ($anggaran) {
-                return '<small>' . $anggaran->description . '</small>';
+                return '<small>'.$anggaran->description.'</small>';
             })
             ->editColumn('budget', function ($anggaran) {
-                return number_format($anggaran->amount, 2);
+                return number_format((float) $anggaran->amount, 2);
             })
             ->editColumn('realisasi', function ($anggaran) {
-                return number_format($anggaran->balance, 2);
+                return number_format((float) $anggaran->balance, 2);
             })
             ->addColumn('progres', function ($anggaran) {
                 $progres = $anggaran->persen ? $anggaran->persen : 0;
-                $statusColor = $this->statusColor($progres);
-                return '<div class="text-center"><small>' . $progres . '%</small>
+                $statusColor = $this->statusColor((float) $progres);
+
+                return '<div class="text-center"><small>'.$progres.'%</small>
                                     <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar progress-bar-striped ' . $statusColor . '" role="progressbar" style="width: ' . $progres . '%" aria-valuenow="' . $progres . '" aria-valuemin="0" aria-valuemax="100"></div>
+                                        <div class="progress-bar progress-bar-striped '.$statusColor.'" role="progressbar" style="width: '.$progres.'%" aria-valuenow="'.$progres.'" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
                                 </div>';
             })
             ->editColumn('rab_project', function ($anggaran) {
-                $content = $anggaran->rab_project . '<br><small>' . ucfirst($anggaran->usage) . '</small>';
-                return $content;
+                return $anggaran->rab_project.'<br><small>'.ucfirst((string) $anggaran->usage).'</small>';
             })
             ->addIndexColumn()
             ->addColumn('action', 'user-payreqs.anggarans.action')
@@ -215,91 +226,43 @@ class UserAnggaranController extends Controller
 
     public function payreqs_data($anggaran_id)
     {
+        $anggaran = Anggaran::findOrFail($anggaran_id);
+        $this->authorize('view', $anggaran);
+
         $payreqs = $this->progress($anggaran_id)['payreqs'];
 
         return datatables()->of($payreqs)
             ->editColumn('approved_at', function ($payreq) {
-                return $payreq->approved_at ? date('d-M-Y', strtotime($payreq->approved_at)) : '-';
+                return $payreq->approved_at ? date('d-M-Y', strtotime((string) $payreq->approved_at)) : '-';
             })
             ->addColumn('employee', function ($payreq) {
                 return $payreq->requestor->name;
             })
             ->editColumn('amount', function ($payreq) {
-                return number_format($payreq->amount, 2);
+                return number_format((float) $payreq->amount, 2);
             })
             ->addIndexColumn()
             ->rawColumns(['nomor'])
             ->toJson();
     }
 
-    public function progress($id)
+    public function progress(int|string $id): array
     {
-        $anggaran = Anggaran::find($id);
+        $anggaran = Anggaran::findOrFail($id);
 
-        // cek payreqs dgn status paid
-        if ($anggaran->old_rab_id !== null) {
-            $payreqs = Payreq::where('rab_id', $anggaran->old_rab_id)
-                ->whereHas('outgoings')
-                ->orderBy('created_at', 'desc')
-                ->get();
-        } else {
-            $payreqs = Payreq::where('rab_id', $anggaran->id)
-                ->whereHas('outgoings')
-                ->orderBy('created_at', 'desc')
-                ->get();
-        }
-
-        $payreq_list = [];
-        // if payreq has realization then payreq->nomor = realization->nomor
-        foreach ($payreqs as $payreq) {
-            if ($payreq->type === 'advance') {
-                if ($payreq->realization && $payreq->realization->realizationDetails->count() > 0) {
-                    $payreq->nomor = $payreq->realization->nomor;
-                    $payreq->amount = $payreq->realization->realizationDetails->sum('amount');
-                    $payreq_list[] = $payreq;
-                } else {
-                    $payreq->amount = $payreq->outgoings->sum('amount');
-                    $payreq_list[] = $payreq;
-                }
-            } else {
-                $payreq->amount = $payreq->outgoings->sum('amount');
-                $payreq_list[] = $payreq;
-            }
-        }
-
-        // cek payreq yg status paid dan sum the amount, jika payreq status realisasi maka hitung realization_detail amount nya
-        $total_release = 0;
-        foreach ($payreqs as $payreq) {
-            // if payreq has realization then sum the realization_detail amount
-            if ($payreq->realization && $payreq->realization->realizationDetails->count() > 0) {
-                $total_release += $payreq->realization->realizationDetails->sum('amount');
-                $payreq->cek = 'ada realisasi';
-            } else {
-                $total_release += $payreq->outgoings->sum('amount');
-                $payreq->cek = 'tidak ada realisasi';
-            }
-        }
-
-        $progress = [
-            'amount' => $total_release,
-            'persen' => $total_release > 0 ? number_format((($total_release / $anggaran->amount) * 100), 2) : 0,
-            'payreqs' => $payreq_list,
-            'payreq_count' => $payreqs->count(),
-        ];
-
-        return $progress;
+        return $this->releaseService->progressSummary($anggaran);
     }
 
-    public function statusColor($progress)
+    public function statusColor(float $progress): string
     {
-        // if progress > 100 then red, if progress > 90 then yellow, else green
         if ($progress > 100) {
             return 'bg-danger';
-        } elseif ($progress > 90) {
-            return 'bg-warning';
-        } else {
-            return 'bg-success';
         }
+        if ($progress > 90) {
+            return 'bg-warning';
+        }
+
+        return 'bg-success';
     }
 
     public function getAvailableRabs()
@@ -322,9 +285,7 @@ class UserAnggaranController extends Controller
             ->where('is_active', 1)
             ->get();
 
-        $rabs = $project_rabs->merge($department_rabs)->merge($user_rabs);
-
-        return $rabs;
+        return $project_rabs->merge($department_rabs)->merge($user_rabs);
     }
 
     public function getRabsData()

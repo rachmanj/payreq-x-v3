@@ -18,14 +18,25 @@
                     <a href="{{ route('reports.index') }}" class="btn btn-xs btn-primary float-right"><i
                             class="fas fa-arrow-left"></i> Back to Index</a>
                     @can('recalculate_release')
-                        <a href="{{ route('reports.anggaran.recalculate') }}" class="btn btn-xs btn-warning float-right mx-2"
-                            onclick="return confirm('Are you sure you want to recalculate anggaran release?')">Recalc
-                            Release</a>
+                        <form action="{{ route('reports.anggaran.recalculate') }}" method="POST"
+                            class="d-inline float-right mx-2"
+                            onsubmit="return confirm('Are you sure you want to recalculate anggaran release?')">
+                            @csrf
+                            <button type="submit" class="btn btn-xs btn-warning">Recalc Release</button>
+                        </form>
                     @endcan
-                    <button id="activate-many" class="btn btn-success btn-xs float-right">Activate Many</button>
+                    @can('anggaran_bulk_activate_deactivate')
+                        <button id="activate-many" class="btn btn-success btn-xs float-right">Activate Many</button>
+                    @endcan
                 </div>
 
                 <div class="card-body">
+                    <div class="alert alert-info small mb-3">
+                        Activate Many applies only to checkboxes on the <strong>current DataTables page</strong>.
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
                     <!-- Custom Search Form -->
                     <div class="row mb-3">
                         <div class="col-md-12">

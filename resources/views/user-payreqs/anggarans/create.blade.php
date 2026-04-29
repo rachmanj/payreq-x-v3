@@ -20,6 +20,7 @@
             
                 <form action="{{ route('user-payreqs.anggarans.proses') }}" method="POST" enctype="multipart/form-data" id="form_anggaran">
                 @csrf
+                <input type="hidden" name="button_type" id="button_type_field" value="">
 
                     <div class="row">
                         <div class="col-4">
@@ -45,7 +46,7 @@
                                 <label for="project">For Project</label>
                                 <select name="project" id="project" class="form-control @error('project') is-invalid @enderror">
                                 @foreach ($projects as $project)
-                                    <option value="{{ $project->code }}" {{ $project->code == Auth()->user()->project ? 'selected' : '' }}>{{ $project->code }}</option>
+                                    <option value="{{ $project->code }}" {{ $project->code == auth()->user()->project ? 'selected' : '' }}>{{ $project->code }}</option>
                                 @endforeach
                                 </select>
                             </div>
@@ -178,16 +179,12 @@
         });
     });
 
-    // btn-save as draft
-    $('#btn-draft').click(function() {
-        // add attribute name="draft" to form
-        $('form').append('<input type="hidden" name="button_type" value="create">');
+    $('#btn-draft').on('click', function() {
+        $('#button_type_field').val('create');
     });
 
-    // btn-save and submit
-    $('#btn-submit').click(function() {
-        // add attribute name="draft" to form
-        $('form').append('<input type="hidden" name="button_type" value="create_submit">');
+    $('#btn-submit').on('click', function() {
+        $('#button_type_field').val('create_submit');
     });
 </script>
 @endsection

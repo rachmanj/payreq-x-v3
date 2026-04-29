@@ -92,6 +92,7 @@ class RoleController extends Controller
                 'akses_project_payreqs',
                 'akses_payreq_aging',
                 'recalculate_release',
+                'anggaran_bulk_activate_deactivate',
                 'rab_select',
             ],
             'Approval System' => [
@@ -247,7 +248,7 @@ class RoleController extends Controller
                     'Dashboard' => ['akses_dashboard_000H', 'akses_dashboard_001H', 'akses_dashboard_017C', 'akses_dashboard_021C', 'akses_dashboard_022C', 'akses_dashboard_023C', 'akses_dashboard_025C', 'cashier_dashboard'],
                     'Accounting' => ['akses_accounting_menu', 'akses_coa', 'akses_eom', 'akses_verification_journal', 'akses_anggarans', 'akses_periode_anggaran', 'edit_verification_project', 'see_vj_not_posted'],
                     'Cashier' => ['akses_cashier_menu', 'akses_cashier_giro', 'akses_cashier_modal', 'akses_transaksi_cashier', 'akses_today_transaction', 'akses_cash_journal'],
-                    'Payreq' => ['akses_my_payreqs', 'akses_project_payreqs', 'akses_payreq_aging', 'recalculate_release', 'rab_select'],
+                    'Payreq' => ['akses_my_payreqs', 'akses_project_payreqs', 'akses_payreq_aging', 'recalculate_release', 'anggaran_bulk_activate_deactivate', 'rab_select'],
                     'Approval' => ['akses_approvals', 'akses_approval_request', 'akses_approval_stage'],
                     'Bilyet' => ['akses_bilyet', 'add_bilyet', 'delete_bilyet', 'see_bilyet_dashboard'],
                     'Exchange' => ['akses_exchange_rates', 'create_exchange_rates', 'edit_exchange_rates', 'delete_exchange_rates', 'import_exchange_rates', 'export_exchange_rates'],

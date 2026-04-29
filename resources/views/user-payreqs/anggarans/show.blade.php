@@ -19,7 +19,7 @@
         <div class="card-body">
           <dl class="row">
             <dt class="col-sm-4">RAB No</dt>
-            <dd class="col-sm-8">: {{ $anggaran->nomor }} {{ $anggaran->rab_no != null ? '| ' . $anggaran->rab_no : '' }}</b> @if ($anggaran->filename) <a href="{{ asset('file_upload/') . '/'. $anggaran->filename }}" class='btn btn-xs btn-success' target=_blank>Show RAB</a> @endif</dd>
+            <dd class="col-sm-8">: {{ $anggaran->nomor }} {{ $anggaran->rab_no != null ? '| ' . $anggaran->rab_no : '' }} @if ($anggaran->filename) <a href="{{ asset('file_upload/') . '/'. $anggaran->filename }}" class='btn btn-xs btn-success' target=_blank>Show RAB</a> @endif</dd>
             <dt class="col-sm-4">Date | Periode</dt>
             <dd class="col-sm-8">: {{ date('d-M-Y', strtotime($anggaran->date)) }} | {{ $anggaran->periode_anggaran !== null ? date('d-M-Y', strtotime($anggaran->periode_anggaran)) : '-' }}</dd>
             <dt class="col-sm-4">Description</dt>
@@ -31,13 +31,13 @@
             <dt class="col-sm-4">Budget</dt>
             <dd class="col-sm-8">: Rp.{{ number_format($anggaran->amount, 2) }}</dd>
             <dt class="col-sm-4">Release to Date</dt>
-            <dd class="col-sm-8">: Rp. {{ number_format($total_release, 2) }}
+            <dd class="col-sm-8">: Rp. {{ number_format($total_release, 2) }}</dd>
             <dt class="col-sm-4">Status</dt>
             <dd class="col-sm-8">: {{ ucfirst($anggaran->status) }}</dd>
             <dt class="col-sm-4">Created by | Usage</dt>
             <dd class="col-sm-8">: {{ $anggaran->createdBy->name }} | {{ ucfirst($anggaran->usage) }}</dd>
             <dt class="col-sm-4">Progress</dt>
-            <dd class="col-sm-4">
+            <dd class="col-sm-8">
               <div class="text-center"><small>{{ $progres_persen }}%</small>
                 <div class="progress">
                   <div class="progress-bar progress-bar-striped {{ $statusColor }} text-center" role="progressbar" style="width: {{ $progres_persen }}%" aria-valuenow="{{ $progres_persen }}" aria-valuemin="0" aria-valuemax="100">

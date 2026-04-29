@@ -5,10 +5,10 @@ use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\CashierRekapAdvanceController;
 use App\Http\Controllers\Reports\DocumentCreationController;
 use App\Http\Controllers\Reports\EomController;
-use App\Http\Controllers\Reports\LoanController;
-use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\EquipmentController;
+use App\Http\Controllers\Reports\LoanController;
 use App\Http\Controllers\Reports\OngoingController;
+use App\Http\Controllers\Reports\OngoingDashboardController;
 use App\Http\Controllers\Reports\PayreqAgingController;
 use App\Http\Controllers\Reports\PeriodeAnggaranController;
 use App\Http\Controllers\Reports\ReportCashierController;
@@ -78,15 +78,16 @@ Route::prefix('reports')->name('reports.')->group(function () {
     });
 
     Route::prefix('anggaran')->name('anggaran.')->group(function () {
+        Route::get('/dashboard', [AnggaranController::class, 'dashboard'])->name('dashboard');
         Route::get('/', [AnggaranController::class, 'index'])->name('index');
         Route::get('/inactive', [AnggaranController::class, 'inactive'])->name('inactive');
         Route::get('/data', [AnggaranController::class, 'data'])->name('data');
+        Route::post('/recalculate', [AnggaranController::class, 'recalculate'])->name('recalculate');
         Route::get('/{id}/show', [AnggaranController::class, 'show'])->name('show');
         Route::get('/{id}/edit', [AnggaranController::class, 'edit'])->name('edit');
         Route::post('/update', [AnggaranController::class, 'update'])->name('update');
         Route::post('/update_many', [AnggaranController::class, 'update_many'])->name('update_many');
-        Route::post('/activate_many', [AnggaranController::class, 'activate_many'])->name('activate_many'); // Tambahkan route ini
-        Route::get('/recalculate', [AnggaranController::class, 'recalculate'])->name('recalculate');
+        Route::post('/activate_many', [AnggaranController::class, 'activate_many'])->name('activate_many');
     });
 
     Route::prefix('bilyet')->name('bilyet.')->group(function () {
