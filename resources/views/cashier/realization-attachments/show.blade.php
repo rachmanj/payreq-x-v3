@@ -34,6 +34,8 @@
                         <dd class="col-sm-7">{{ $realization->payreq->requestor->name ?? '' }}</dd>
                         <dt class="col-sm-5">Realization creator</dt>
                         <dd class="col-sm-7">{{ $realization->requestor->name ?? '' }}</dd>
+                        <dt class="col-sm-5">Remarks</dt>
+                        <dd class="col-sm-7 text-break">{!! $realization->remarks ? nl2br(e($realization->remarks)) : '—' !!}</dd>
                     </dl>
                 </div>
             </div>

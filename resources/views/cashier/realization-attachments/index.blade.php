@@ -57,10 +57,8 @@
                                 <th>Realization No</th>
                                 <th>Date</th>
                                 <th>Payreq No</th>
-                                <th>Payreq requestor</th>
-                                <th>Realization creator</th>
+                                <th>Employee Name</th>
                                 <th>Project</th>
-                                <th>Attachments</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -120,16 +118,10 @@
                         data: 'payreq_no'
                     },
                     {
-                        data: 'payreq_requestor'
-                    },
-                    {
-                        data: 'realization_creator'
+                        data: 'employee_name'
                     },
                     {
                         data: 'project'
-                    },
-                    {
-                        data: 'attachments_count'
                     },
                     {
                         data: 'action',

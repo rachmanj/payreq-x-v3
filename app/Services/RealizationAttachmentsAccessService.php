@@ -18,6 +18,7 @@ class RealizationAttachmentsAccessService
 
         if ($user->can('realization_attachments_scope_bo')) {
             $query->whereNotIn('realizations.project', ['000H', 'APS']);
+            $query->whereHas('attachments');
 
             return;
         }

@@ -195,6 +195,15 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('akses_realization_attachments')
+                                <li class="nav-item">
+                                    <a href="{{ route('cashier.realization-attachments.index') }}"
+                                        class="nav-link {{ request()->routeIs('cashier.realization-attachments.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Realization Attachments</p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('akses_verification_journal')
                                 <li class="nav-item">
                                     <a href="{{ route('verifications.journal.index') }}"

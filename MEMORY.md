@@ -1,3 +1,15 @@
+### [037] Cashier Realization Attachments — scoped lists, BO attachment-only, sidebar nav (2026-04-29) ✅ COMPLETE
+
+**Challenge:** Cashiers needed a dedicated place to attach evidence files per realization (not mixed into Verifications accounting flow). Permission-scoped visibility had to match HO vs branch-office (**BO**) vs single-project rules; **`realization_attachments_scope_bo`** needed both geographic exclusion (**000H**, **APS**) and **non-empty attachment lists** so BO users do not see zero-file noise. New menu items must appear in **`sidebar.blade.php`** because **`templates/main`** does not include **`navbar.blade.php`** (where **`menu/cashier.blade.php`** was wired), so links added only to the unused partial were invisible.
+
+**Solution:** Migration **`realization_attachments`** + disk **`realization_attachments`**; **`Cashier\RealizationAttachmentController`** + **`RealizationAttachmentsAccessService`** centralizes **`applyScopeToRealizationsQuery()`** / **`userCanViewRealization()`** for DataTable, show, upload, download, delete (delete/uploader-only). Permissions seeded + migration **`insert_realization_attachment_permissions`** + **`DatabaseSeeder`** call; **`RoleController`** group **Realization Attachments**. Sidebar Cashier tree entry **`@can('akses_realization_attachments')`**. UI: filters (project, doc no search, creator), Employee Name column, remarks on detail, badge count on **open** when attachments exist.
+
+**Key learning:** Always mirror new Cashier entries in **`sidebar.blade.php`** for this app shell. BO widening permission combines **`whereNotIn(project)`** with **`whereHas('attachments')`** — document as **ADR-REALIZATION-ATTACH-01**.
+
+**Implementation / file map:** `app/Services/RealizationAttachmentsAccessService.php`, `app/Http/Controllers/Cashier/RealizationAttachmentController.php`, `routes/cashier.php`, `config/filesystems.php`, `database/migrations/*realization_attachments*`, `database/seeders/RealizationAttachmentPermissionsSeeder.php`, `resources/views/templates/partials/sidebar.blade.php`, `resources/views/cashier/realization-attachments/{index,show}.blade.php`, `tests/Feature/RealizationAttachmentsTest.php`. Docs: `docs/architecture.md`, `docs/decisions.md`, `docs/todo.md`.
+
+---
+
 ### [036] Automated Kemenkeu exchange rates + PHPUnit DB isolation (2026-04-29) ✅ COMPLETE
 
 **Challenge:** `php artisan exchange-rates:update` failed parsing the live Kemenkeu “Kurs Pajak” page (label case, mixed English/Indonesian month names, 1–2 digit days). After fixing parsing, FK errors appeared: missing `currencies` rows and `created_by` referencing non-existent `users.id` (assuming user `1`). Separately, running **PHPUnit** with `RefreshDatabase` while `phpunit.xml` did **not** override `DB_*` pointed at the developer’s **MySQL** `.env` database and **wiped/refreshed live dev data** (e.g. users).

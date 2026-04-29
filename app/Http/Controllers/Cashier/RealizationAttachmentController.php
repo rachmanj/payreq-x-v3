@@ -73,7 +73,7 @@ class RealizationAttachmentController extends Controller
             ->select('realizations.*')
             ->join('payreqs', 'payreqs.id', '=', 'realizations.payreq_id')
             ->withCount('attachments')
-            ->with(['requestor', 'payreq.requestor']);
+            ->with(['requestor', 'payreq']);
 
         $accessService->applyScopeToRealizationsQuery($query, $user);
 
@@ -104,14 +104,16 @@ class RealizationAttachmentController extends Controller
             ->addColumn('realization_no', fn (Realization $r) => e($r->nomor))
             ->addColumn('realization_date', fn (Realization $r) => $r->created_at ? $r->created_at->format('d-M-Y') : '')
             ->addColumn('payreq_no', fn (Realization $r) => e($r->payreq->nomor ?? ''))
-            ->addColumn('payreq_requestor', fn (Realization $r) => e(optional($r->payreq->requestor)->name ?? ''))
-            ->addColumn('realization_creator', fn (Realization $r) => e(optional($r->requestor)->name ?? ''))
+            ->addColumn('employee_name', fn (Realization $r) => e(optional($r->requestor)->name ?? ''))
             ->addColumn('project', fn (Realization $r) => e((string) ($r->project ?? '')))
-            ->addColumn('attachments_count', fn (Realization $r) => (string) ($r->attachments_count ?? 0))
             ->addColumn('action', function (Realization $r) {
                 $url = route('cashier.realization-attachments.show', $r);
+                $count = (int) ($r->attachments_count ?? 0);
+                $badge = $count > 0
+                    ? '<span class="badge badge-secondary mr-1 align-middle" title="Attachments">'.$count.'</span>'
+                    : '';
 
-                return '<a href="'.$url.'" class="btn btn-warning btn-xs">open</a>';
+                return $badge.'<a href="'.$url.'" class="btn btn-warning btn-xs">open</a>';
             })
             ->rawColumns(['action'])
             ->make(true);

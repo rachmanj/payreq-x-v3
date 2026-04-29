@@ -99,9 +99,56 @@ Both **realization** (`UserRealizationController`) and **reimbursement** (`Payre
 
 **Print:** `resources/views/user-payreqs/reimburse/print_pdf.blade.php` includes an **Expense date** column per detail row.
 
-**Print:** `resources/views/user-payreqs/reimburse/print_pdf.blade.php` includes an **Expense date** column per detail row.
-
 See **ADR-PAYREQ-01** in `docs/decisions.md`.
+
+## Cashier: Realization Attachments
+
+Cashier users manage **files per realization** (images and PDFs) from **Cashier → Realization Attachments** (sidebar). This is separate from **Verifications** (account mapping); uploads are stored per realization for operational evidence.
+
+### Data
+
+| Piece | Role |
+|--------|------|
+| Table `realization_attachments` | `realization_id`, `original_name`, `stored_path`, `mime`, `size`, `created_by`; cascade delete when realization removed |
+| Disk `realization_attachments` (`config/filesystems.php`) | Local root `storage/app/realization_attachments` — served via controller download, not public URL |
+| `App\Models\RealizationAttachment` | `belongsTo` realization + uploader (`created_by`) |
+
+### Authorization (`App\Services\RealizationAttachmentsAccessService`)
+
+All list/show/upload/download/delete paths go through **`applyScopeToRealizationsQuery()`** or **`userCanViewRealization()`** so scope is consistent.
+
+| User context | Which realizations appear |
+|----------------|---------------------------|
+| **`users.project === '000H'`** (HO) | **All projects** — no attachment-only filter |
+| **`realization_attachments_scope_bo`** | **`realizations.project` NOT IN (`000H`, `APS`)** **and** **`whereHas('attachments')`** — geographic BO scope **plus** at least one attachment row |
+| Everyone else | **`realizations.project = auth()->user()->project`** |
+
+**Attachment CUD:** Users may **create/delete** only rows they uploaded (`created_by`). **Download** is allowed for anyone who can **view** that realization under the rules above.
+
+Spatie permissions: **`akses_realization_attachments`** (module), **`create_realization_attachments`**, **`delete_realization_attachments`**, **`realization_attachments_scope_bo`** (BO geographic + attachment-only list). Seeded via **`RealizationAttachmentPermissionsSeeder`** and migration **`2026_04_29_040120_insert_realization_attachment_permissions_into_permissions_table`**; **`RoleController`** groups them under **Realization Attachments**.
+
+### UI / routing
+
+| Piece | Role |
+|--------|------|
+| Routes | `routes/cashier.php` — `cashier.realization-attachments.*` (`index`, `data`, `show`, `attachments.store`, `attachments.download`, `attachments.destroy`) |
+| Controller | `App\Http\Controllers\Cashier\RealizationAttachmentController` — Yajra server-side DataTable; filters: project, realization/payreq number search, creator (payreq `user_id` OR realization `user_id`) |
+| List table | **Employee Name** column = realization **requestor**; **open** action shows optional **badge** with attachment count when count &gt; 0 |
+| Detail card | Realization summary includes **Remarks** (`realizations.remarks`) |
+
+**Navigation:** The live layout (`templates/main.blade.php`) uses **`templates/partials/sidebar.blade.php`** for Cashier items. The partial **`templates/partials/menu/cashier.blade.php`** is only included from **`navbar.blade.php`**, which the main layout does **not** use — add new Cashier links to **sidebar**, not only `menu/cashier.blade.php`.
+
+```mermaid
+flowchart TD
+  subgraph scope [Realization list scope]
+    HO[HO 000H user] --> ALL[All projects]
+    BO[realization_attachments_scope_bo] --> GEO[Exclude projects 000H + APS]
+    GEO --> ATT[WhereHas attachments]
+    DEF[Other users] --> OWN[Own project only]
+  end
+```
+
+See **ADR-REALIZATION-ATTACH-01** in `docs/decisions.md`.
 
 ## Accounting: automated exchange rates (Kemenkeu Kurs Pajak)
 

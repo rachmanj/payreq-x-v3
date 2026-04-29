@@ -90,6 +90,22 @@ Short records of **why** something was implemented a certain way. Revisit when r
 
 ---
 
+## ADR-REALIZATION-ATTACH-01 — BO realization-attachments scope requires at least one attachment
+
+**Context:** Users with **`realization_attachments_scope_bo`** can list realizations across branch projects (excluding HO **000H** and **APS**). Without an extra rule, the index would include realizations that still have **no** uploaded files, which adds noise to an attachment-focused workflow.
+
+**Decision:** When **`applyScopeToRealizationsQuery()`** applies the BO branch (`$user->can('realization_attachments_scope_bo')` and user is not HO), add **`whereHas('attachments')`** in addition to **`whereNotIn('realizations.project', ['000H','APS'])`**.
+
+**Consequences:**
+
+- HO users (**`project === '000H'`**) still bypass BO logic entirely (early return) — they may see realizations **with or without** attachments.
+- Single-project users **without** BO permission are unchanged — they see their project’s realizations regardless of attachment count.
+- BO-scoped users **never** see zero-attachment rows; opening a detail URL for such a realization fails authorization until files exist.
+
+**Status:** Accepted (2026-04-29)
+
+---
+
 ## ADR-PAYREQ-01 — Shared realization-detail Form Requests for realization **and** reimburse
 
 **Context:** Reimbursement detail endpoints historically duplicated only minimal rules (`description`, `amount`) while realization flows used richer fleet, `expense_date`, and HM monotonicity checks. Both write to `realization_details` for the same business entity type.
