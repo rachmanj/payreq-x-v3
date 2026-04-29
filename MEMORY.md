@@ -1,3 +1,27 @@
+### [036] Automated Kemenkeu exchange rates + PHPUnit DB isolation (2026-04-29) ✅ COMPLETE
+
+**Challenge:** `php artisan exchange-rates:update` failed parsing the live Kemenkeu “Kurs Pajak” page (label case, mixed English/Indonesian month names, 1–2 digit days). After fixing parsing, FK errors appeared: missing `currencies` rows and `created_by` referencing non-existent `users.id` (assuming user `1`). Separately, running **PHPUnit** with `RefreshDatabase` while `phpunit.xml` did **not** override `DB_*` pointed at the developer’s **MySQL** `.env` database and **wiped/refreshed live dev data** (e.g. users).
+
+**Solution:** `App\Services\ExchangeRateScraperService` — case-insensitive regex for `Tanggal berlaku:`, `\d{1,2}` dates, `resolveKmkMonthNumber()` with Indonesian + English month names. `App\Console\Commands\UpdateExchangeRates` — `Currency::firstOrCreate` for scraped codes + `IDR` before inserts; `resolveActorUserId()` uses `Auth::id()` or **`User::query()->orderBy('id')->value('id')`** (no hardcoded `1`); exits with message if no users. **`phpunit.xml`** — `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:` so tests never touch MySQL; **`doctrine/dbal`** in **`require-dev`** for SQLite + migrations that alter columns. Feature test `tests/Feature/ExchangeRatesUpdateCommandTest.php` mocks `ExchangeRateScraperService` (no outbound HTTP).
+
+**Key learning:** Always confirm **`php artisan test`** uses an isolated DB (`phpunit.xml` `<env>` overrides). `RefreshDatabase` on the default connection can destroy a shared dev schema. Kemenkeu public copy can mix **April** and **Mei** in one line—parsers must accept both naming schemes.
+
+**Implementation / file map:** `ExchangeRateScraperService.php`, `UpdateExchangeRates.php`, `phpunit.xml`, `composer.json` (`doctrine/dbal` ^3.10 dev), `tests/Feature/ExchangeRatesUpdateCommandTest.php`. Docs: `docs/architecture.md`, `docs/decisions.md` (ADR-TEST-01).
+
+---
+
+### [035] Reimbursement realization details — parity with realization validation & UX (2026-04-28) ✅ COMPLETE
+
+**Challenge:** User-payreq reimbursement detail flows (`PayreqReimburseController`, `user-payreqs/reimburse/add_details`) used ad-hoc validation (description/amount only) and did not enforce fleet/expense-date/HM rules, `expense_date`, or HM monotonicity consistent with realization improvements.
+
+**Solution:** Reused `StoreRealizationDetailRequest` and `UpdateRealizationDetailRequest` for reimburse store/update detail endpoints; merged `rab_id` from payreq like `UserRealizationController`; extended `UpdateRealizationDetailRequest::resolveDetail()` to accept `realization_detail_id` from POST when no `{detail}` route parameter; adjusted authorize so unresolved detail IDs defer to validation (422) instead of hard 404 where appropriate; passed `lotc_detail` via `lotClaimForPayreq()`. Updated `add_details.blade.php` with realization-aligned modals (fleet row, expense date, LOT blocks), expense-date table column, hidden `data-expense-date`, AJAX handlers; `print_pdf.blade.php` shows expense date.
+
+**Key learning:** Two HTTP shapes for the same domain rules (route `{detail}` binding vs POST-only `realization_detail_id`) can share one Form Request by resolving `RealizationDetail` from route **or** body and requiring `realization_detail_id` in rules only when the route has no `detail` parameter.
+
+**Implementation / file map:** `PayreqReimburseController.php`, `UpdateRealizationDetailRequest.php`, `StoreRealizationDetailRequest.php` (reuse), `ValidatesRealizationDetailFleet`, `RealizationDetailOdometerMonotonicityValidator`, `resources/views/user-payreqs/reimburse/add_details.blade.php`, `resources/views/user-payreqs/reimburse/print_pdf.blade.php`, routes `routes/user_payreqs.php` reimburse group.
+
+---
+
 ### [034] PCBC PDF validation (official “validated” gate) and rejection visibility (2026-04-25) ✅ COMPLETE
 
 **Challenge:** Weekly compliance and the PCBC dashboard had to count only **official** site PCBC PDFs, not every upload. Stakeholders required an explicit **validate / reject** step, grandfathering of existing rows, a dedicated Spatie permission, confirmations before actions, and a way for **uploaders to read rejection reasons** without using the DB.
@@ -875,7 +899,7 @@
 -   **Refresh Interval**: Maintained 5-minute update cycle for real-time data
 
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2026-04-25
+**Last Updated**: 2026-04-28
 
 ## Memory Maintenance Guidelines
 

@@ -81,3 +81,46 @@ flowchart LR
 - Seeder: `database/seeders/ValidatePcbcReportPermissionSeeder.php` — creates `validate_pcbc_report` and assigns to superadmin/admin by default
 - `RoleController` — includes `see_pcbc_warning` and `validate_pcbc_report` in “Data Upload & Import”; `ensurePcbcWarningPermissionExists()` and `ensureValidatePcbcReportPermissionExists()` on role create/edit
 - `database/migrations/2026_04_25_030141_add_pcbc_validation_to_dokumens_table.php` — `validation_status`, `validated_at`, `validated_by`, `rejection_reason`
+
+## Payreq: realization details vs reimbursement details (shared validation)
+
+Both **realization** (`UserRealizationController`) and **reimbursement** (`PayreqReimburseController`) persist lines on **`realization_details`** linked to a **`Realizations`** row. Starting 2026-04, **store/update detail** validation is aligned:
+
+| Concern | Implementation |
+|--------|----------------|
+| Fleet / fuel-service rules, LOT handling | Trait `App\Http\Requests\Concerns\ValidatesRealizationDetailFleet` via `StoreRealizationDetailRequest` / `UpdateRealizationDetailRequest` |
+| `expense_date` vs today & payreq approval window | Same requests (`applyExpenseDateBusinessRules`) |
+| HM (`km_position`) cross-day monotonicity per `unit_no` | `App\Support\RealizationDetailOdometerMonotonicityValidator` |
+| Payload persistence (`expense_date`, HM, fleet fields, `rab_id`) | `realizationDetailPayload()` + create merge (`project`, `department_id`, `rab_id` from payreq where applicable) |
+
+**Routing difference:** Realizations often update a detail via **`POST …/update_detail/{detail}`** (implicit route binding). Reimburse uses **`POST …/update_detail`** with **`realization_detail_id`** in the body only. `UpdateRealizationDetailRequest::resolveDetail()` loads by route `{detail}` **or** `realization_detail_id`; **`authorize()`** allows authenticated users through when no detail is resolved yet so missing IDs fail validation with **422**. **`prepareForValidation()`** merges `realization_detail_id` from a bound `RealizationDetail` route parameter when present.
+
+**UI:** `resources/views/user-payreqs/reimburse/add_details.blade.php` mirrors realization patterns (expense date column, fleet row, LOTC checkbox when `lotc_detail` exists). **`PayreqReimburseController`** passes **`lotc_detail`** from `LotClaim::where('lot_no', $payreq->lot_no)` when `payreq->lot_no` is set.
+
+**Print:** `resources/views/user-payreqs/reimburse/print_pdf.blade.php` includes an **Expense date** column per detail row.
+
+**Print:** `resources/views/user-payreqs/reimburse/print_pdf.blade.php` includes an **Expense date** column per detail row.
+
+See **ADR-PAYREQ-01** in `docs/decisions.md`.
+
+## Accounting: automated exchange rates (Kemenkeu Kurs Pajak)
+
+The console command **`exchange-rates:update`** (see `app/Console/Kernel.php` schedule) pulls **Kurs Pajak** from **Kemenkeu** (`fiskal.kemenkeu.go.id/informasi-publik/kurs-pajak`), parses the current KMK effective range and table rates, and **`updateOrCreate`s** `exchange_rates` rows (optional daily expansion over the KMK period; `--no-expand` for a single row per currency per period).
+
+| Piece | Role |
+|--------|------|
+| `App\Services\ExchangeRateScraperService` | HTTP fetch + HTML parse: KMK number, **Tanggal berlaku** range (supports Indonesian and English month names mixed on the public page), rates from the main table (`config/exchange_rates.php` → `target_currencies`; optional `--currencies=` on the command). |
+| `App\Console\Commands\UpdateExchangeRates` | Ensures **`currencies`** rows exist (`firstOrCreate`) for each scraped code and **IDR** before writing rates; **`created_by`** uses `Auth::id()` when available, otherwise the **smallest existing** `users.id` — **not** a hardcoded user id. Aborts with a clear message if **no users** exist. |
+| `config/exchange_rates.php` | Target currency list from `EXCHANGE_RATES_TARGET` env (default `USD,AUD,SGD`). |
+
+**Tests:** `tests/Feature/ExchangeRatesUpdateCommandTest.php` mocks `ExchangeRateScraperService` (no real HTTP). Do not run feature tests that use `RefreshDatabase` against a shared MySQL dev database.
+
+## Development: PHPUnit and database isolation
+
+**PHPUnit** is configured in **`phpunit.xml`** to use **SQLite in-memory** (`DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`) for automated tests. This prevents `RefreshDatabase` (and similar traits) from migrating or wiping the **development or production MySQL** database configured in `.env`.
+
+The **`doctrine/dbal`** package is listed under **`require-dev`** so SQLite can run the same migrations that use column **change** operations (Laravel delegates some of those to Doctrine when the platform requires it).
+
+Developers should run **`composer install`** (including dev dependencies) before **`php artisan test`**. Production deploys that use `composer install --no-dev` do not require `doctrine/dbal` on the server unless you run tests there.
+
+See **ADR-TEST-01** in `docs/decisions.md`.

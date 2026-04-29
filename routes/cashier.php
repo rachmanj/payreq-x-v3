@@ -10,6 +10,7 @@ use App\Http\Controllers\Cashier\CashierModalController;
 use App\Http\Controllers\Cashier\CashOnHandTransactionController;
 use App\Http\Controllers\Cashier\KoranController;
 use App\Http\Controllers\Cashier\PcbcController;
+use App\Http\Controllers\Cashier\RealizationAttachmentController;
 use App\Http\Controllers\Cashier\SapTransactionController;
 use App\Http\Controllers\Cashier\TransaksiController;
 use App\Http\Controllers\CashierApprovedController;
@@ -68,6 +69,15 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
         Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('realization-attachments')->name('realization-attachments.')->group(function () {
+        Route::get('/data', [RealizationAttachmentController::class, 'data'])->name('data');
+        Route::get('/attachments/{attachment}/download', [RealizationAttachmentController::class, 'download'])->name('attachments.download');
+        Route::delete('/attachments/{attachment}', [RealizationAttachmentController::class, 'destroy'])->name('attachments.destroy');
+        Route::get('/', [RealizationAttachmentController::class, 'index'])->name('index');
+        Route::post('/{realization}/attachments', [RealizationAttachmentController::class, 'store'])->name('attachments.store');
+        Route::get('/{realization}', [RealizationAttachmentController::class, 'show'])->name('show');
     });
 
     Route::prefix('modal')->name('modal.')->group(function () {

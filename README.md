@@ -11,8 +11,8 @@
 
 This repository’s **internal** technical notes, architecture, and task history live in:
 
-- [docs/architecture.md](docs/architecture.md) — current module structure and flows
-- [docs/decisions.md](docs/decisions.md) — design decisions (ADRs)
+- [docs/architecture.md](docs/architecture.md) — current module structure and flows (includes Payreq realization vs reimbursement shared detail validation, **automated exchange rates**, and **PHPUnit / SQLite isolation**)
+- [docs/decisions.md](docs/decisions.md) — design decisions (ADRs), including ADR-PAYREQ-01 for shared realization-detail validation and **ADR-TEST-01** (test database isolation)
 - [docs/todo.md](docs/todo.md) / [docs/backlog.md](docs/backlog.md) — task tracking
 - [MEMORY.md](MEMORY.md) — significant fixes and learnings (numbered log)
 

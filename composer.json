@@ -16,6 +16,7 @@
         "yajra/laravel-datatables": "9.0"
     },
     "require-dev": {
+        "doctrine/dbal": "^3.10",
         "fakerphp/faker": "^1.9.1",
         "laravel/boost": "^1.8",
         "laravel/pint": "^1.0",

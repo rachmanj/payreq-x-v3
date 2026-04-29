@@ -7,7 +7,6 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -16,6 +15,7 @@ class UserController extends Controller
     {
         $projects = Project::orderBy('code', 'asc')->get();
         $departments = Department::orderBy('department_name', 'asc')->get();
+
         return view('users.index', compact(['projects', 'departments']));
     }
 
@@ -28,7 +28,7 @@ class UserController extends Controller
     {
         $this->validateUserCreation($request);
 
-        $user = new User();
+        $user = new User;
         $this->updateUserBasicInfo($user, $request);
         $user->password = Hash::make($request->password);
         $user->save();
@@ -97,6 +97,7 @@ class UserController extends Controller
     public function change_password($id)
     {
         $user = User::findOrFail($id);
+
         return view('users.change-password', compact(['user']));
     }
 
@@ -121,15 +122,24 @@ class UserController extends Controller
     public function getUserRoles()
     {
         $roles = User::find(auth()->user()->id)->getRoleNames()->toArray();
+
         return $roles;
     }
 
     public function data()
     {
-        $users = User::orderBy('created_at', 'desc')->get();
+        $users = User::query()
+            ->with('roles')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return datatables()->of($users)
             ->addIndexColumn()
+            ->addColumn('roles', function ($user) {
+                $names = $user->getRoleNames()->sort()->values();
+
+                return $names->isEmpty() ? '—' : $names->implode(', ');
+            })
             ->editColumn('is_active', function ($user) {
                 if ($user->is_active == 1) {
                     return '<span class="badge badge-success">Active</span>';
@@ -148,20 +158,20 @@ class UserController extends Controller
     private function validateUserCreation(Request $request)
     {
         $this->validate($request, [
-            'name'          => 'required|min:3|max:255',
-            'username'      => 'required|min:3|max:20|unique:users',
-            'password'      => 'min:6',
+            'name' => 'required|min:3|max:255',
+            'username' => 'required|min:3|max:20|unique:users',
+            'password' => 'min:6',
             'password_confirmation' => 'required_with:password|same:password|min:6',
-            'dds_department_code' => 'nullable|string|max:20'
+            'dds_department_code' => 'nullable|string|max:20',
         ]);
     }
 
     private function validateUserUpdate(Request $request, User $user)
     {
         $this->validate($request, [
-            'name'          => 'required|min:3|max:255',
-            'username'      => 'required|min:3|max:50|unique:users,username,' . $user->id . ',id',
-            'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
+            'name' => 'required|min:3|max:255',
+            'username' => 'required|min:3|max:50|unique:users,username,'.$user->id.',id',
+            'email' => 'required|email|unique:users,email,'.$user->id.',id',
             'dds_department_code' => 'nullable|string|max:20',
         ]);
     }
@@ -169,20 +179,20 @@ class UserController extends Controller
     private function validateUserUpdateWithPassword(Request $request, User $user)
     {
         $this->validate($request, [
-            'name'          => 'required|min:3|max:255',
-            'username'      => 'required|min:3|max:50|unique:users,username,' . $user->id . ',id',
-            'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
-            'password'      => 'min:6',
+            'name' => 'required|min:3|max:255',
+            'username' => 'required|min:3|max:50|unique:users,username,'.$user->id.',id',
+            'email' => 'required|email|unique:users,email,'.$user->id.',id',
+            'password' => 'min:6',
             'password_confirmation' => 'required_with:password|same:password|min:6',
-            'dds_department_code' => 'nullable|string|max:20'
+            'dds_department_code' => 'nullable|string|max:20',
         ]);
     }
 
     private function validatePasswordUpdate(Request $request)
     {
         $this->validate($request, [
-            'password'      => 'required|min:5',
-            'password_confirmation' => 'required_with:password|same:password|min:5'
+            'password' => 'required|min:5',
+            'password_confirmation' => 'required_with:password|same:password|min:5',
         ]);
     }
 

@@ -113,6 +113,12 @@ class RoleController extends Controller
                 'import_exchange_rates',
                 'export_exchange_rates',
             ],
+            'Realization Attachments' => [
+                'akses_realization_attachments',
+                'create_realization_attachments',
+                'delete_realization_attachments',
+                'realization_attachments_scope_bo',
+            ],
             'Reports & Analytics' => [
                 'akses_reports',
                 'akses_report_rab',
@@ -245,6 +251,7 @@ class RoleController extends Controller
                     'Approval' => ['akses_approvals', 'akses_approval_request', 'akses_approval_stage'],
                     'Bilyet' => ['akses_bilyet', 'add_bilyet', 'delete_bilyet', 'see_bilyet_dashboard'],
                     'Exchange' => ['akses_exchange_rates', 'create_exchange_rates', 'edit_exchange_rates', 'delete_exchange_rates', 'import_exchange_rates', 'export_exchange_rates'],
+                    'RealizationAttachments' => ['akses_realization_attachments', 'create_realization_attachments', 'delete_realization_attachments', 'realization_attachments_scope_bo'],
                     'Reports' => ['akses_reports', 'akses_report_rab', 'akses_loan_report', 'akses_sum_expense_by_equipment', 'see_activities_chart'],
                     'Documents' => ['akses_dokumen_upload', 'akses_delivery', 'upload_dokumen', 'request_faktur', 'update_faktur'],
                     'Upload' => ['upload_koran', 'upload_pcbc', 'akses_koran', 'akses_pcbc', 'akses_migrasi', 'see_pcbc_warning', 'validate_pcbc_report'],

@@ -22,6 +22,9 @@
             {{-- <li><a href="{{ route('cashier.outgoings.index') }}" class="dropdown-item">Outgoing List</a></li> --}}
             <li><a href="{{ route('cashier.bank-transactions.index') }}" class="dropdown-item">Bank Transaction</a></li>
         @endcan
+        @can('akses_realization_attachments')
+            <li><a href="{{ route('cashier.realization-attachments.index') }}" class="dropdown-item">Realization Attachments</a></li>
+        @endcan
         @can('akses_verification_journal')
             <li><a href="{{ route('verifications.journal.index') }}" class="dropdown-item">Verification Journal</a></li>
         @endcan

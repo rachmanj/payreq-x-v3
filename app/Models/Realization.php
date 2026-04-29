@@ -61,4 +61,9 @@ class Realization extends Model
             'udpated_at' => 'n/a',
         ]);
     }
+
+    public function attachments()
+    {
+        return $this->hasMany(RealizationAttachment::class)->orderByDesc('created_at');
+    }
 }

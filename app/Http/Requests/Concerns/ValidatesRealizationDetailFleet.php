@@ -10,7 +10,10 @@ use Illuminate\Validation\Validator;
 
 trait ValidatesRealizationDetailFleet
 {
-    protected const FLEET_FIELDS = ['unit_no', 'nopol', 'qty', 'uom', 'km_position'];
+    protected function fleetInputFieldNames(): array
+    {
+        return ['unit_no', 'nopol', 'qty', 'uom', 'km_position'];
+    }
 
     protected function normalizeType(?string $type): ?string
     {
@@ -49,7 +52,7 @@ trait ValidatesRealizationDetailFleet
             }
 
             $type = $this->normalizeType($this->input('type'));
-            $hasFleetInput = collect(self::FLEET_FIELDS)->contains(fn ($f) => $this->filled($f));
+            $hasFleetInput = collect($this->fleetInputFieldNames())->contains(fn ($f) => $this->filled($f));
 
             if ($type === null && $hasFleetInput) {
                 $validator->errors()->add('type', 'Select expense type before entering fleet/equipment fields.');

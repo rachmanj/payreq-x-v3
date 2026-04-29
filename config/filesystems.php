@@ -56,6 +56,12 @@ return [
             'throw' => false,
         ],
 
+        'realization_attachments' => [
+            'driver' => 'local',
+            'root' => storage_path('app/realization_attachments'),
+            'throw' => false,
+        ],
+
     ],
 
     /*
