@@ -42,7 +42,7 @@
       <div class="col-sm-4 invoice-col">
         Document No: <b>{{ $payreq->nomor }}</b><br>
         @if ($payreq->approved_at !== null)
-        Approved at: <b>{{ \Carbon\Carbon::parse($payreq->approved_at)->addHours(8)->format('d M Y H:i') }} wita</b><br>
+        Approved at: <b>{{ \Carbon\Carbon::parse($payreq->approved_at)->format('d M Y H:i') }} wita</b><br>
         @endif
         Type : <b>Reimburse</b><br>
       </div>

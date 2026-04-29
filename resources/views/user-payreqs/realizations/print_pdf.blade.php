@@ -49,7 +49,7 @@
                         Document No : <b>{{ $realization->nomor }}</b><br>
                         Submit Date : <b>{{ $realization->created_at->format('d M Y') }}</b><br>
                         Payreq No : <b>{{ $realization->payreq->nomor }} |
-                            {{ \Carbon\Carbon::parse($realization->payreq->approved_at)->addHours(8)->format('d M Y') }}</b><br>
+                            {{ \Carbon\Carbon::parse($realization->payreq->approved_at)->format('d M Y') }}</b><br>
                     </div>
                 </div>
 

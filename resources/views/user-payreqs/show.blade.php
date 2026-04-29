@@ -48,7 +48,7 @@
                             {{ $payreq->rab_id ? 'No. ' . $payreq->anggaran->nomor . ' | ' . $payreq->anggaran->rab_project . ' | ' . $payreq->anggaran->description : '' }}
                         </dd>
                         <dt class="col-sm-4">Created at</dt>
-                        <dd class="col-sm-8">: {{ $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}</dd>
+                        <dd class="col-sm-8">: {{ $payreq->created_at->format('d-M-Y H:i:s') . ' wita' }}</dd>
                     </div>
                 </div>
 
@@ -86,7 +86,7 @@
                                             @endif
                                         @endforeach
                                         <td>{{ $item->remarks }}</td>
-                                        <td>{{ $item->status === 0 ? ' - ' : $item->updated_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}
+                                        <td>{{ $item->status === 0 ? ' - ' : $item->updated_at->format('d-M-Y H:i:s') . ' wita' }}
                                         </td>
                                     </tr>
                                 @endforeach

@@ -48,7 +48,7 @@
                     Document No: <b>{{ $payreq->nomor }}</b><br>
                     @if ($payreq->approved_at !== null)
                         Approved at:
-                        <b>{{ \Carbon\Carbon::parse($payreq->approved_at)->addHours(8)->format('d M Y H:i') }}
+                        <b>{{ \Carbon\Carbon::parse($payreq->approved_at)->format('d M Y H:i') }}
                             wita</b><br>
                     @endif
                     {{-- Date : <b>{{ $payreq->created_at->format('d-M-Y') }}</b><br> --}}
