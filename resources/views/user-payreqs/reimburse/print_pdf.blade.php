@@ -63,6 +63,7 @@
                                 <tr>
                                     <th style="border: 1px solid black;" class="text-right">No</th>
                                     <th style="border: 1px solid black;">Description</th>
+                                    <th style="border: 1px solid black;">Expense date</th>
                                     <th style="border: 1px solid black;" class="text-right">Amount (IDR)</th>
                                 </tr>
                             </thead>
@@ -83,6 +84,9 @@
                                                 @endif
                                             @endif
                                         </td>
+                                        <td style="border: 1px solid black;">
+                                            {{ $item->expense_date ? $item->expense_date->format('d-M-Y') : '—' }}
+                                        </td>
                                         <td style="border: 1px solid black;" class="text-right">
                                             {{ number_format($item->amount, 2) }}</td>
                                     </tr>
@@ -92,22 +96,22 @@
 
                             <tfoot>
                                 <tr>
-                                    <th style="border: 1px solid black;" colspan="2" class="text-right">TOTAL</th>
+                                    <th style="border: 1px solid black;" colspan="3" class="text-right">TOTAL</th>
                                     <th style="border: 1px solid black;" class="text-right">
                                         {{ number_format($payreq->amount, 2) }}</th>
                                 </tr>
                                 <tr>
                                     <th style="border: 1px solid black;" class="text-right">Say</th>
-                                    <th style="border: 1px solid black;" colspan="2">{{ ucfirst($terbilang) }}</th>
+                                    <th style="border: 1px solid black;" colspan="3">{{ ucfirst($terbilang) }}</th>
                                 </tr>
                                 <tr>
-                                    <td style="border: 1px solid black;" colspan="3"><b>Remarks:</b>
+                                    <td style="border: 1px solid black;" colspan="4"><b>Remarks:</b>
                                         {{ $payreq->remarks }} <br>
                                         {{ $payreq->rab_id ? 'RAB No. ' . $payreq->anggaran->nomor . ' | ' . $payreq->anggaran->rab_project . ' | ' . substr($payreq->anggaran->description, 0, 100) : '' }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="border: 1px solid black;" colspan="3">Transfer Info (Bank / Acc No /
+                                    <td style="border: 1px solid black;" colspan="4">Transfer Info (Bank / Acc No /
                                         Acc Name) :</td>
                                 </tr>
                             </tfoot>

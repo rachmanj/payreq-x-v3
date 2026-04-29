@@ -11,6 +11,10 @@ class RealizationDetail extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'expense_date' => 'date',
+    ];
+
     public function realization()
     {
         return $this->belongsTo(Realization::class);

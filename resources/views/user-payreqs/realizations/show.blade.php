@@ -104,8 +104,9 @@
                     <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
-                                <th>#</td>
-                                <th>Desc</td>
+                                <th>#</th>
+                                <th>Desc</th>
+                                <th>Expense date</th>
                                 <th class="text-right">Amount (IDR)</th>
                             </tr>
                         </thead>
@@ -126,13 +127,14 @@
                                                 @endif
                                             @endif
                                         </td>
+                                        <td>{{ $item->expense_date ? $item->expense_date->format('d-M-Y') : '—' }}</td>
                                         <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="2" class="text-right">Total</td>
+                                    <td colspan="3" class="text-right">Total</td>
                                     <td class="text-right">
                                         <b>{{ number_format($realization_details->sum('amount'), 2) }}</b>
                                     </td>

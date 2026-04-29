@@ -155,7 +155,8 @@
                             <tr>
                                 <th width="5%">#</th>
                                 <th>Description</th>
-                                <th class="text-right" width="20%">Amount (IDR)</th>
+                                <th width="12%">Expense date</th>
+                                <th class="text-right" width="18%">Amount (IDR)</th>
                                 <th width="15%">Actions</th>
                             </tr>
                         </thead>
@@ -176,6 +177,7 @@
                                                 @endif
                                             @endif
                                         </td>
+                                        <td>{{ $item->expense_date ? $item->expense_date->format('d-M-Y') : '—' }}</td>
                                         <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                         <td>
                                             <button type="button" class="btn btn-xs btn-info btn-edit"
@@ -191,13 +193,13 @@
                                 @endforeach
                             @else
                                 <tr id="no-data-row">
-                                    <td colspan="4" class="text-center">No Data Found</td>
+                                    <td colspan="5" class="text-center">No Data Found</td>
                                 </tr>
                             @endif
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="2" class="text-right">Total:</th>
+                                <th colspan="3" class="text-right">Total:</th>
                                 <th class="text-right" id="total-amount">
                                     {{ number_format($realization->realizationDetails->sum('amount'), 2) }}</th>
                                 <th></th>
@@ -220,7 +222,7 @@
     <!-- Add Detail Modal -->
     <div class="modal fade" id="add-detail-modal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" style="max-width: 920px;">
             <div class="modal-content">
                 <div class="modal-header bg-info">
                     <h5 class="modal-title" id="addModalLabel">Add Reimbursement Detail</h5>
@@ -233,9 +235,32 @@
                         action="{{ route('user-payreqs.reimburse.store_detail') }}">
                         @csrf
                         <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+
+                        @if (isset($lotc_detail) && $lotc_detail)
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="is_lotc" name="is_lotc">
+                                    <label class="custom-control-label" for="is_lotc">
+                                        LOT Claim Realization ({{ $lotc_detail->lot_no }})
+                                    </label>
+                                </div>
+                            </div>
+                        @elseif($payreq->lot_no)
+                            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
+                                    {{ $payreq->lot_no }}.
+                                </div>
+                                <a href="{{ route('user-payreqs.lotclaims.create') }}" class="btn btn-primary btn-sm"
+                                    style="text-decoration: none;" target="_blank">
+                                    <i class="fas fa-plus"></i> New LOTC
+                                </a>
+                            </div>
+                        @endif
+
                         <div class="row">
-                            <div class="col-8">
-                                <div class="form-group">
+                            <div class="col-md-8">
+                                <div class="form-group mb-md-0">
                                     <label for="description">Description</label>
                                     <input type="text" name="description" value="{{ old('description') }}"
                                         id="description" class="form-control @error('description') is-invalid @enderror">
@@ -246,8 +271,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="form-group">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
                                     <label for="amount">Amount</label>
                                     <input type="text" name="amount" id="amount" class="form-control"
                                         value="{{ old('amount') }}" onkeyup="formatNumber(this)">
@@ -259,10 +284,17 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="unit_no">Unit No</label>
+
+                        <hr class="my-3">
+                        <h6 class="text-secondary font-weight-bold mb-1">Fleet &amp; equipment</h6>
+                        <p class="text-muted small mb-3">Wajib diisi jika merupakan biaya terkait Unit</p>
+
+                        <div class="row align-items-start">
+                            <div class="col-lg-5 col-md-12">
+                                <div class="form-group mb-2 mb-lg-0">
+                                    <label for="unit_no">Unit No <small
+                                            class="text-muted font-weight-normal d-block">(jika nomor unit tidak ada,
+                                            informasikan ke IT)</small></label>
                                     <select id="unit_no" name="unit_no" class="form-control select2bs4">
                                         <option value="">-- select unit no --</option>
                                         @foreach ($equipments as $item)
@@ -274,7 +306,30 @@
                                     <div class="text-danger" id="unit_no-error"></div>
                                 </div>
                             </div>
-                            <div class="col-2">
+                            <div class="col-lg-4 col-md-6">
+                                <div class="form-group mb-2 mb-lg-0">
+                                    <label for="expense_date">Expense date <small
+                                            class="text-muted font-weight-normal d-block">(tanggal bon/nota/kwitansi/invoice)</small></label>
+                                    <input type="date" name="expense_date" id="expense_date" class="form-control"
+                                        value="{{ old('expense_date', date('Y-m-d')) }}" max="{{ date('Y-m-d') }}">
+                                    <small class="form-text text-muted">Not after today; not before payreq
+                                        approval.</small>
+                                    <div class="text-danger" id="expense_date-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="km_position">HM <small
+                                            class="text-muted font-weight-normal d-block">(Posisi KM)</small></label>
+                                    <input id="km_position" name="km_position" class="form-control"
+                                        inputmode="numeric" autocomplete="off">
+                                    <div class="text-danger" id="km_position-error"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="nopol">No Polisi <small>(optional)</small></label>
                                     <input type="text" name="nopol" value="{{ old('nopol') }}" id="nopol"
@@ -282,21 +337,7 @@
                                     <div class="text-danger" id="nopol-error"></div>
                                 </div>
                             </div>
-                            <div class="col-1">
-                                <div class="form-group">
-                                    <label for="qty">Qty</label>
-                                    <input id="qty" name="qty" class="form-control">
-                                    <div class="text-danger" id="qty-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-1">
-                                <div class="form-group">
-                                    <label for="km_position">HM</label>
-                                    <input id="km_position" name="km_position" class="form-control">
-                                    <div class="text-danger" id="km_position-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-2">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="type">Type</label>
                                     <select id="type" name="type" class="form-control select2bs4">
@@ -309,7 +350,7 @@
                                     <div class="text-danger" id="type-error"></div>
                                 </div>
                             </div>
-                            <div class="col-2">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="uom">UOM</label>
                                     <select id="uom" name="uom" class="form-control select2bs4">
@@ -321,11 +362,21 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button type="button" class="btn btn-success" id="btn-submit-detail">Add Detail</button>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label for="qty">Qty</label>
+                                    <input id="qty" name="qty" class="form-control">
+                                    <div class="text-danger" id="qty-error"></div>
+                                </div>
+                            </div>
                         </div>
                     </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" id="btn-submit-detail" class="btn btn-success">Add Detail</button>
                 </div>
             </div>
         </div>
@@ -335,7 +386,7 @@
     <!-- Edit Modal -->
     <div class="modal fade" id="edit-detail-modal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" style="max-width: 920px;">
             <div class="modal-content">
                 <div class="modal-header bg-info">
                     <h5 class="modal-title" id="editModalLabel">Edit Reimbursement Detail</h5>
@@ -344,21 +395,42 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="edit-detail-form" method="POST"
-                        action="{{ route('user-payreqs.reimburse.update_detail') }}">
+                    <form id="edit-detail-form">
                         @csrf
                         <input type="hidden" id="edit-id" name="realization_detail_id">
                         <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+
+                        @if (isset($lotc_detail) && $lotc_detail)
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="edit-is_lotc"
+                                        name="is_lotc">
+                                    <label class="custom-control-label" for="edit-is_lotc">
+                                        LOT Claim Realization ({{ $lotc_detail->lot_no }})
+                                    </label>
+                                </div>
+                            </div>
+                        @elseif($payreq->lot_no)
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
+                                {{ $payreq->lot_no }}, please create new.
+                                <a href="{{ route('user-payreqs.lotclaims.create') }}?lot_no={{ $payreq->lot_no }}"
+                                    class="btn btn-warning btn-sm ml-2">
+                                    <i class="fas fa-plus"></i> Create LOTC
+                                </a>
+                            </div>
+                        @endif
+
                         <div class="row">
-                            <div class="col-8">
-                                <div class="form-group">
+                            <div class="col-md-8">
+                                <div class="form-group mb-md-0">
                                     <label for="edit-description">Description</label>
                                     <input type="text" name="description" id="edit-description" class="form-control">
                                     <div class="invalid-feedback" id="edit-description-error"></div>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="form-group">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
                                     <label for="edit-amount">Amount</label>
                                     <input type="text" name="amount" id="edit-amount" class="form-control"
                                         onkeyup="formatNumber(this)">
@@ -366,10 +438,17 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="edit-unit_no">Unit No</label>
+
+                        <hr class="my-3">
+                        <h6 class="text-secondary font-weight-bold mb-1">Fleet &amp; equipment</h6>
+                        <p class="text-muted small mb-3">Wajib diisi jika merupakan biaya terkait Unit</p>
+
+                        <div class="row align-items-start">
+                            <div class="col-lg-5 col-md-12">
+                                <div class="form-group mb-2 mb-lg-0">
+                                    <label for="edit-unit_no">Unit No <small
+                                            class="text-muted font-weight-normal d-block">(jika nomor unit tidak ada,
+                                            informasikan ke IT)</small></label>
                                     <select id="edit-unit_no" name="unit_no" class="form-control select2bs4">
                                         <option value="">-- select unit no --</option>
                                         @foreach ($equipments as $item)
@@ -381,28 +460,37 @@
                                     <div class="text-danger" id="edit-unit_no-error"></div>
                                 </div>
                             </div>
-                            <div class="col-2">
+                            <div class="col-lg-4 col-md-6">
+                                <div class="form-group mb-2 mb-lg-0">
+                                    <label for="edit-expense_date">Expense date <small
+                                            class="text-muted font-weight-normal d-block">(tanggal bon/nota/kwitansi/invoice)</small></label>
+                                    <input type="date" name="expense_date" id="edit-expense_date" class="form-control"
+                                        max="{{ date('Y-m-d') }}">
+                                    <small class="form-text text-muted">Not after today; not before payreq
+                                        approval.</small>
+                                    <div class="text-danger" id="edit-expense_date-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="edit-km_position">HM <small
+                                            class="text-muted font-weight-normal d-block">(Posisi KM)</small></label>
+                                    <input id="edit-km_position" name="km_position" class="form-control"
+                                        inputmode="numeric" autocomplete="off">
+                                    <div class="text-danger" id="edit-km_position-error"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit-nopol">No Polisi</label>
                                     <input type="text" name="nopol" id="edit-nopol" class="form-control">
                                     <div class="text-danger" id="edit-nopol-error"></div>
                                 </div>
                             </div>
-                            <div class="col-1">
-                                <div class="form-group">
-                                    <label for="edit-qty">Qty</label>
-                                    <input id="edit-qty" name="qty" class="form-control">
-                                    <div class="text-danger" id="edit-qty-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-1">
-                                <div class="form-group">
-                                    <label for="edit-km_position">HM</label>
-                                    <input id="edit-km_position" name="km_position" class="form-control">
-                                    <div class="text-danger" id="edit-km_position-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-2">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit-type">Type</label>
                                     <select id="edit-type" name="type" class="form-control select2bs4">
@@ -415,7 +503,7 @@
                                     <div class="text-danger" id="edit-type-error"></div>
                                 </div>
                             </div>
-                            <div class="col-2">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit-uom">UOM</label>
                                     <select id="edit-uom" name="uom" class="form-control select2bs4">
@@ -427,11 +515,21 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button type="submit" id="btn-update-detail" class="btn btn-primary">Update</button>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label for="edit-qty">Qty</label>
+                                    <input id="edit-qty" name="qty" class="form-control">
+                                    <div class="text-danger" id="edit-qty-error"></div>
+                                </div>
+                            </div>
                         </div>
                     </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" id="btn-update-detail" class="btn btn-primary">Update</button>
                 </div>
             </div>
         </div>
@@ -446,7 +544,8 @@
                     data-amount="{{ $detail->amount }}" data-unit-no="{{ $detail->unit_no }}"
                     data-nopol="{{ $detail->nopol }}" data-qty="{{ $detail->qty }}"
                     data-km-position="{{ $detail->km_position }}" data-type="{{ $detail->type }}"
-                    data-uom="{{ $detail->uom }}">
+                    data-uom="{{ $detail->uom }}"
+                    data-expense-date="{{ $detail->expense_date ? $detail->expense_date->format('Y-m-d') : '' }}">
                 </div>
             @endforeach
         @endif
@@ -525,7 +624,7 @@
                             // Check if there are any rows left
                             if ($('#details-table tbody tr').length === 0) {
                                 $('#details-table tbody').append(
-                                    '<tr id="no-data-row"><td colspan="4" class="text-center">No Data Found</td></tr>'
+                                    '<tr id="no-data-row"><td colspan="5" class="text-center">No Data Found</td></tr>'
                                 );
                             }
 
@@ -556,6 +655,21 @@
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(number);
+        }
+
+        function formatExpenseDateDisplay(raw) {
+            if (!raw) {
+                return '—';
+            }
+            const ymd = String(raw).substring(0, 10);
+            const p = ymd.split('-');
+            if (p.length !== 3) {
+                return '—';
+            }
+            const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+                'Nov', 'Dec'
+            ];
+            return `${p[2].padStart(2, '0')}-${mo[parseInt(p[1], 10) - 1]}-${p[0]}`;
         }
 
         // Function to display notifications
@@ -601,6 +715,8 @@
 
         // Function to add a new row to the table
         function addDetailRow(detail, index) {
+            const expenseYmd = detail.expense_date ? String(detail.expense_date).substring(0, 10) : '';
+
             let newRow = `
                 <tr id="detail-row-${detail.id}">
                     <td>${index}</td>
@@ -613,6 +729,7 @@
                             ''
                         }
                     </td>
+                    <td>${formatExpenseDateDisplay(detail.expense_date)}</td>
                     <td class="text-right">${numberFormat(detail.amount)}</td>
                     <td>
                         <button type="button" class="btn btn-xs btn-info btn-edit" data-id="${detail.id}">
@@ -625,28 +742,27 @@
                 </tr>
             `;
 
-            // Remove the "No Data Found" row if it exists
             $('#no-data-row').remove();
 
-            // Add the new row to the table
             $('#details-table tbody').append(newRow);
 
-            // Add the detail data to the hidden data div
             $('#realization-details-data').append(`
                 <div data-id="${detail.id}" data-description="${detail.description}"
                     data-amount="${detail.amount}" data-unit-no="${detail.unit_no || ''}"
                     data-nopol="${detail.nopol || ''}" data-qty="${detail.qty || ''}"
                     data-km-position="${detail.km_position || ''}" data-type="${detail.type || ''}"
-                    data-uom="${detail.uom || ''}">
+                    data-uom="${detail.uom || ''}"
+                    data-expense-date="${expenseYmd}">
                 </div>
             `);
 
-            // Reattach event handlers
             attachEventHandlers();
         }
 
         // Function to update a row in the table
         function updateDetailRow(detail) {
+            const expenseYmd = detail.expense_date ? String(detail.expense_date).substring(0, 10) : '';
+
             let rowHtml = `
                 <td>${$('#detail-row-' + detail.id).index() + 1}</td>
                 <td>${detail.description}
@@ -658,6 +774,7 @@
                         ''
                     }
                 </td>
+                <td>${formatExpenseDateDisplay(detail.expense_date)}</td>
                 <td class="text-right">${numberFormat(detail.amount)}</td>
                 <td>
                     <button type="button" class="btn btn-xs btn-info btn-edit" data-id="${detail.id}">
@@ -669,10 +786,8 @@
                 </td>
             `;
 
-            // Update the row
             $('#detail-row-' + detail.id).html(rowHtml);
 
-            // Update the hidden data div
             $(`#realization-details-data div[data-id="${detail.id}"]`).attr({
                 'data-description': detail.description,
                 'data-amount': detail.amount,
@@ -681,10 +796,10 @@
                 'data-qty': detail.qty || '',
                 'data-km-position': detail.km_position || '',
                 'data-type': detail.type || '',
-                'data-uom': detail.uom || ''
+                'data-uom': detail.uom || '',
+                'data-expense-date': expenseYmd,
             });
 
-            // Reattach event handlers
             attachEventHandlers();
         }
 
@@ -708,7 +823,6 @@
                 $('#edit-description').val(detailData.attr('data-description'));
                 $('#edit-amount').val(numberFormat(detailData.attr('data-amount')));
 
-                // Set select values and trigger change for Select2
                 $('#edit-unit_no').val(detailData.attr('data-unit-no')).trigger('change');
                 $('#edit-nopol').val(detailData.attr('data-nopol'));
                 $('#edit-qty').val(detailData.attr('data-qty'));
@@ -716,7 +830,20 @@
                 $('#edit-type').val(detailData.attr('data-type')).trigger('change');
                 $('#edit-uom').val(detailData.attr('data-uom')).trigger('change');
 
-                // Show the modal
+                const expAttr = detailData.attr('data-expense-date');
+                $('#edit-expense_date').val(expAttr ? String(expAttr).substring(0, 10) : '');
+
+                @if (isset($lotc_detail) && $lotc_detail)
+                    if ((detailData.attr('data-description') || '').includes(
+                            'LOT Claim - {{ $lotc_detail->lot_no }}')) {
+                        $('#edit-is_lotc').prop('checked', true);
+                        $('#edit-description, #edit-amount').prop('readonly', true);
+                    } else {
+                        $('#edit-is_lotc').prop('checked', false);
+                        $('#edit-description, #edit-amount').prop('readonly', false);
+                    }
+                @endif
+
                 $('#edit-detail-modal').modal('show');
             });
 
@@ -898,19 +1025,16 @@
             $('#add-detail-form').on('submit', function(e) {
                 e.preventDefault(); // Prevent normal form submission
 
-                // Clear previous error messages
                 $('.invalid-feedback, .text-danger').empty();
+                $('#add-detail-modal .is-invalid').removeClass('is-invalid');
 
-                // Get the data
                 let formData = $(this).serialize();
 
-                // Get the amount value and clean it
                 let amountInput = $('#amount');
                 let amount = amountInput.val();
                 let cleanAmount = amount.replace(/,/g, '');
 
-                // Update the form data with the cleaned amount
-                formData += '&amount=' + cleanAmount;
+                formData += '&amount=' + encodeURIComponent(cleanAmount);
 
                 $.ajax({
                     url: $(this).attr('action'),
@@ -935,6 +1059,7 @@
 
                             // Reset the form
                             $('#add-detail-form')[0].reset();
+                            $('#expense_date').val(new Date().toISOString().slice(0, 10));
                             $('#unit_no, #type, #uom').val('').trigger('change');
 
                             // Close the modal
@@ -975,6 +1100,7 @@
                             const errors = xhr.responseJSON.errors;
                             $.each(errors, function(key, value) {
                                 $('#' + key + '-error').text(value[0]).show();
+                                $('#' + key).addClass('is-invalid');
                             });
                             showAlert('Please correct the errors in the form', 'error');
                         } else {
@@ -991,14 +1117,12 @@
                 });
             });
 
-            // Form submission handling for edit-detail-form
-            $('#edit-detail-form').on('submit', function(e) {
-                e.preventDefault(); // Prevent normal form submission
+            $('#btn-update-detail').off('click').on('click', function(e) {
+                e.preventDefault();
 
-                // Clear previous error messages
                 $('.invalid-feedback, .text-danger').empty();
+                $('#edit-detail-modal .is-invalid').removeClass('is-invalid');
 
-                // Validate required fields
                 let description = $('#edit-description').val();
                 let amount = $('#edit-amount').val();
 
@@ -1012,21 +1136,15 @@
                     return false;
                 }
 
-                // Get the data
-                let formData = $(this).serialize();
-
-                // Get the amount value and clean it
                 let cleanAmount = amount.replace(/,/g, '');
-
-                // Update the form data with the cleaned amount
-                formData += '&amount=' + cleanAmount;
+                let formData = $('#edit-detail-form').serialize();
+                formData = formData.replace(/(^|&)amount=[^&]*/, '$1amount=' + encodeURIComponent(cleanAmount));
 
                 $.ajax({
-                    url: $(this).attr('action'),
+                    url: '{{ route('user-payreqs.reimburse.update_detail') }}',
                     type: 'POST',
                     data: formData,
                     beforeSend: function() {
-                        // Show loading overlay
                         $('#edit-detail-modal .modal-content').addClass('overlay');
                         $('#edit-detail-modal .modal-content').append(
                             '<div class="overlay-content"><i class="fas fa-spinner fa-spin"></i> Updating...</div>'
@@ -1035,26 +1153,23 @@
                     },
                     success: function(response) {
                         if (response.status === 'success') {
-                            // Update the row in the table
                             updateDetailRow(response.detail);
 
-                            // Update the total amount
                             $('#total-amount').text(numberFormat(response.total));
 
-                            // Close the modal
                             $('#edit-detail-modal').modal('hide');
 
-                            // Show success message
                             showAlert('Detail updated successfully', 'success');
                         } else {
                             showAlert('Error updating detail', 'error');
                         }
                     },
                     error: function(xhr) {
-                        if (xhr.status === 422) { // Validation error
+                        if (xhr.status === 422) {
                             const errors = xhr.responseJSON.errors;
                             $.each(errors, function(key, value) {
                                 $('#edit-' + key + '-error').text(value[0]).show();
+                                $('#edit-' + key).addClass('is-invalid');
                             });
                             showAlert('Please correct the errors in the form', 'error');
                         } else {
@@ -1063,13 +1178,44 @@
                         }
                     },
                     complete: function() {
-                        // Remove loading overlay
                         $('#edit-detail-modal .modal-content').removeClass('overlay');
                         $('.overlay-content').remove();
                         $('#btn-update-detail').prop('disabled', false);
                     }
                 });
             });
+
+            @if (isset($lotc_detail) && $lotc_detail)
+                $('#is_lotc').change(function() {
+                    if ($(this).is(':checked')) {
+                        $('#description').val('LOT Claim - {{ $lotc_detail->lot_no }}');
+                        const totalClaim = {{ $lotc_detail->total_claim }};
+                        const formattedAmount = totalClaim.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        $('#amount').val(formattedAmount);
+                        $('#description, #amount').prop('readonly', true);
+                    } else {
+                        $('#description, #amount').val('').prop('readonly', false);
+                    }
+                });
+
+                $('#edit-is_lotc').change(function() {
+                    if ($(this).is(':checked')) {
+                        $('#edit-description').val('LOT Claim - {{ $lotc_detail->lot_no }}');
+                        const totalClaim = {{ $lotc_detail->total_claim }};
+                        const formattedAmount = totalClaim.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        $('#edit-amount').val(formattedAmount);
+                        $('#edit-description, #edit-amount').prop('readonly', true);
+                    } else {
+                        $('#edit-description, #edit-amount').val('').prop('readonly', false);
+                    }
+                });
+            @endif
 
             // Handle Add Detail button click
             $('#btn-submit-detail').click(function() {

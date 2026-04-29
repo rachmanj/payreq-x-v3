@@ -82,7 +82,8 @@
                             <tr>
                                 <th width="5%">No</th>
                                 <th>Description</th>
-                                <th class="text-right" width="20%">Amount</th>
+                                <th width="12%">Expense date</th>
+                                <th class="text-right" width="16%">Amount</th>
                                 <th width="15%">Actions</th>
                             </tr>
                         </thead>
@@ -106,6 +107,7 @@
                                                 @endif
                                             @endif
                                         </td>
+                                        <td>{{ $detail->expense_date ? $detail->expense_date->format('d-M-Y') : '—' }}</td>
                                         <td class="text-right">{{ number_format($detail->amount, 2) }}</td>
                                         <td>
                                             <button type="button" class="btn btn-xs btn-info btn-edit"
@@ -121,25 +123,25 @@
                                 @endforeach
                             @else
                                 <tr id="no-data-row">
-                                    <td colspan="4" class="text-center">No Data Found</td>
+                                    <td colspan="5" class="text-center">No Data Found</td>
                                 </tr>
                             @endif
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="2" class="text-right">Total:</th>
+                                <th colspan="3" class="text-right">Total:</th>
                                 <th class="text-right" id="total-amount">
                                     {{ number_format($realization_details->sum('amount'), 2) }}</th>
                                 <th></th>
                             </tr>
                             <tr>
-                                <th colspan="2" class="text-right">Payreq Amount:</th>
+                                <th colspan="3" class="text-right">Payreq Amount:</th>
                                 <th class="text-right" id="payreq-amount">
                                     {{ number_format($realization->payreq->amount, 2) }}</th>
                                 <th></th>
                             </tr>
                             <tr>
-                                <th colspan="2" class="text-right">Variance:</th>
+                                <th colspan="3" class="text-right">Variance:</th>
                                 <th class="text-right" id="variance-amount">
                                     {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}
                                 </th>
@@ -162,7 +164,7 @@
     <!-- Add Detail Modal -->
     <div class="modal fade" id="add-detail-modal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" style="max-width: 920px;">
             <div class="modal-content">
                 <div class="modal-header bg-info">
                     <h5 class="modal-title" id="addModalLabel">Add Realization Detail</h5>
@@ -199,16 +201,16 @@
                         @endif
 
                         <div class="row">
-                            <div class="col-8">
-                                <div class="form-group">
+                            <div class="col-md-8">
+                                <div class="form-group mb-md-0">
                                     <label for="description">Description</label>
                                     <input type="text" name="description" value="{{ old('description') }}"
                                         id="description" class="form-control @error('description') is-invalid @enderror">
                                     <div class="invalid-feedback" id="description-error"></div>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="form-group">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
                                     <label for="amount">Amount</label>
                                     <input type="text" name="amount" id="amount" class="form-control"
                                         value="{{ old('amount') }}" onkeyup="formatNumber(this)">
@@ -216,10 +218,17 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="unit_no">Unit No</label>
+
+                        <hr class="my-3">
+                        <h6 class="text-secondary font-weight-bold mb-1">Fleet &amp; equipment</h6>
+                        <p class="text-muted small mb-3">Wajib diisi jika merupakan biaya terkait Unit</p>
+
+                        <div class="row align-items-start">
+                            <div class="col-lg-5 col-md-12">
+                                <div class="form-group mb-2 mb-lg-0">
+                                    <label for="unit_no">Unit No <small
+                                            class="text-muted font-weight-normal d-block">(jika nomor unit tidak ada,
+                                            informasikan ke IT)</small></label>
                                     <select id="unit_no" name="unit_no" class="form-control select2bs4">
                                         <option value="">-- select unit no --</option>
                                         @foreach ($equipments as $item)
@@ -231,8 +240,30 @@
                                     <div class="text-danger" id="unit_no-error"></div>
                                 </div>
                             </div>
+                            <div class="col-lg-4 col-md-6">
+                                <div class="form-group mb-2 mb-lg-0">
+                                    <label for="expense_date">Expense date <small
+                                            class="text-muted font-weight-normal d-block">(tanggal bon/nota/kwitansi/invoice)</small></label>
+                                    <input type="date" name="expense_date" id="expense_date" class="form-control"
+                                        value="{{ old('expense_date', date('Y-m-d')) }}" max="{{ date('Y-m-d') }}">
+                                    <small class="form-text text-muted">Not after today; not before payreq
+                                        approval.</small>
+                                    <div class="text-danger" id="expense_date-error"></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="km_position">HM <small
+                                            class="text-muted font-weight-normal d-block">(Posisi KM)</small></label>
+                                    <input id="km_position" name="km_position" class="form-control"
+                                        inputmode="numeric" autocomplete="off">
+                                    <div class="text-danger" id="km_position-error"></div>
+                                </div>
+                            </div>
+                        </div>
 
-                            <div class="col-2">
+                        <div class="row">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="nopol">No Polisi <small>(optional)</small></label>
                                     <input type="text" name="nopol" value="{{ old('nopol') }}" id="nopol"
@@ -240,23 +271,7 @@
                                     <div class="text-danger" id="nopol-error"></div>
                                 </div>
                             </div>
-
-                            <div class="col-1">
-                                <div class="form-group">
-                                    <label for="qty">Qty</label>
-                                    <input id="qty" name="qty" class="form-control">
-                                    <div class="text-danger" id="qty-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-1">
-                                <div class="form-group">
-                                    <label for="km_position">HM</label>
-                                    <input id="km_position" name="km_position" class="form-control">
-                                    <div class="text-danger" id="km_position-error"></div>
-                                </div>
-                            </div>
-
-                            <div class="col-2">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="type">Type</label>
                                     <select id="type" name="type" class="form-control select2bs4">
@@ -269,8 +284,7 @@
                                     <div class="text-danger" id="type-error"></div>
                                 </div>
                             </div>
-
-                            <div class="col-2">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="uom">UOM</label>
                                     <select id="uom" name="uom" class="form-control select2bs4">
@@ -279,6 +293,16 @@
                                         <option value="each">Each</option>
                                     </select>
                                     <div class="text-danger" id="uom-error"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label for="qty">Qty</label>
+                                    <input id="qty" name="qty" class="form-control">
+                                    <div class="text-danger" id="qty-error"></div>
                                 </div>
                             </div>
                         </div>
@@ -296,7 +320,7 @@
     <!-- Edit Modal -->
     <div class="modal fade" id="edit-detail-modal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" style="max-width: 920px;">
             <div class="modal-content">
                 <div class="modal-header bg-info">
                     <h5 class="modal-title" id="editModalLabel">Edit Realization Detail</h5>
@@ -330,24 +354,31 @@
                         @endif
 
                         <div class="row">
-                            <div class="col-8">
-                                <div class="form-group">
+                            <div class="col-md-8">
+                                <div class="form-group mb-md-0">
                                     <label for="edit-description">Description</label>
                                     <input type="text" name="description" id="edit-description" class="form-control">
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="form-group">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
                                     <label for="edit-amount">Amount</label>
                                     <input type="text" name="amount" id="edit-amount" class="form-control"
                                         onkeyup="formatNumber(this)">
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="edit-unit_no">Unit No</label>
+
+                        <hr class="my-3">
+                        <h6 class="text-secondary font-weight-bold mb-1">Fleet &amp; equipment</h6>
+                        <p class="text-muted small mb-3">Wajib diisi jika merupakan biaya terkait Unit</p>
+
+                        <div class="row align-items-start">
+                            <div class="col-lg-5 col-md-12">
+                                <div class="form-group mb-2 mb-lg-0">
+                                    <label for="edit-unit_no">Unit No <small
+                                            class="text-muted font-weight-normal d-block">(jika nomor unit tidak ada,
+                                            informasikan ke IT)</small></label>
                                     <select id="edit-unit_no" name="unit_no" class="form-control select2bs4">
                                         <option value="">-- select unit no --</option>
                                         @foreach ($equipments as $item)
@@ -358,25 +389,34 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-2">
+                            <div class="col-lg-4 col-md-6">
+                                <div class="form-group mb-2 mb-lg-0">
+                                    <label for="edit-expense_date">Expense date <small
+                                            class="text-muted font-weight-normal d-block">(tanggal bon/nota/kwitansi/invoice)</small></label>
+                                    <input type="date" name="expense_date" id="edit-expense_date" class="form-control"
+                                        max="{{ date('Y-m-d') }}">
+                                    <small class="form-text text-muted">Not after today; not before payreq
+                                        approval.</small>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="edit-km_position">HM <small
+                                            class="text-muted font-weight-normal d-block">(Posisi KM)</small></label>
+                                    <input id="edit-km_position" name="km_position" class="form-control"
+                                        inputmode="numeric" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit-nopol">No Polisi</label>
                                     <input type="text" name="nopol" id="edit-nopol" class="form-control">
                                 </div>
                             </div>
-                            <div class="col-1">
-                                <div class="form-group">
-                                    <label for="edit-qty">Qty</label>
-                                    <input id="edit-qty" name="qty" class="form-control">
-                                </div>
-                            </div>
-                            <div class="col-1">
-                                <div class="form-group">
-                                    <label for="edit-km_position">HM</label>
-                                    <input id="edit-km_position" name="km_position" class="form-control">
-                                </div>
-                            </div>
-                            <div class="col-2">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit-type">Type</label>
                                     <select id="edit-type" name="type" class="form-control select2bs4">
@@ -388,7 +428,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-2">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit-uom">UOM</label>
                                     <select id="edit-uom" name="uom" class="form-control select2bs4">
@@ -396,6 +436,15 @@
                                         <option value="liter">liter</option>
                                         <option value="each">Each</option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label for="edit-qty">Qty</label>
+                                    <input id="edit-qty" name="qty" class="form-control">
                                 </div>
                             </div>
                         </div>
@@ -516,6 +565,21 @@
                 }).format(number);
             }
 
+            function formatExpenseDateDisplay(raw) {
+                if (!raw) {
+                    return '—';
+                }
+                const ymd = String(raw).substring(0, 10);
+                const p = ymd.split('-');
+                if (p.length !== 3) {
+                    return '—';
+                }
+                const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+                    'Nov', 'Dec'
+                ];
+                return `${p[2].padStart(2, '0')}-${mo[parseInt(p[1], 10) - 1]}-${p[0]}`;
+            }
+
             // Function to refresh the details table
             function refreshDetailsTable() {
                 console.log("Refreshing details table...");
@@ -556,6 +620,7 @@
                                     <tr id="detail-row-${item.id}">
                                         <td>${index + 1}</td>
                                         <td>${item.description} ${additionalInfo}</td>
+                                        <td>${formatExpenseDateDisplay(item.expense_date)}</td>
                                         <td class="text-right">${numberFormat(item.amount)}</td>
                                         <td>
                                             <button type="button" class="btn btn-xs btn-info btn-edit" data-id="${item.id}">
@@ -577,7 +642,7 @@
                             // No data
                             $('#details-table tbody').html(`
                                 <tr id="no-data-row">
-                                    <td colspan="4" class="text-center">No Data Found</td>
+                                    <td colspan="5" class="text-center">No Data Found</td>
                                 </tr>
                             `);
                             console.log("No details found");
@@ -631,6 +696,12 @@
                                 maximumFractionDigits: 2
                             });
                             $('#edit-amount').val(formattedAmount);
+
+                            if (response.expense_date) {
+                                $('#edit-expense_date').val(String(response.expense_date).substring(0, 10));
+                            } else {
+                                $('#edit-expense_date').val('');
+                            }
 
                             // Check if description contains LOT Claim
                             @if (isset($lotc_detail) && $lotc_detail)
@@ -814,6 +885,7 @@
 
                         // Reset form
                         $('#add-detail-form')[0].reset();
+                        $('#expense_date').val(new Date().toISOString().slice(0, 10));
                         $('.select2bs4').val('').trigger('change');
 
                         // Enable submit button if we have details
@@ -893,6 +965,7 @@
                     "_token": "{{ csrf_token() }}",
                     "description": $('#edit-description').val(),
                     "amount": $('#edit-amount').val().replace(/,/g, ''),
+                    "expense_date": $('#edit-expense_date').val(),
                     "unit_no": $('#edit-unit_no').val(),
                     "nopol": $('#edit-nopol').val(),
                     "qty": $('#edit-qty').val(),

@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
-use App\Http\Controllers\DocumentNumberController;
+use App\Http\Requests\StoreRealizationDetailRequest;
+use App\Http\Requests\UpdateRealizationDetailRequest;
 use App\Models\ApprovalPlan;
 use App\Models\Equipment;
 use App\Models\Incoming;
@@ -11,10 +12,10 @@ use App\Models\LotClaim;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
+use App\Services\LotService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Services\LotService;
 
 class UserRealizationController extends Controller
 {
@@ -32,7 +33,6 @@ class UserRealizationController extends Controller
             })
             ->distinct()
             ->get();
-
 
         $user_payreqs = $user_payreqs_no_realization->merge($payreq_with_realization_rejected);
 
@@ -67,14 +67,14 @@ class UserRealizationController extends Controller
             'approved_at',
             'approval_plans',
             'submit_at',
-            'approval_plan_status'
+            'approval_plan_status',
         ]));
     }
 
     public function store(Request $request)
     {
         $this->validate($request, [
-            'payreq_id' => 'required'
+            'payreq_id' => 'required',
         ]);
 
         $payreq = Payreq::findOrFail($request->payreq_id);
@@ -107,8 +107,8 @@ class UserRealizationController extends Controller
                 $lotService = app(LotService::class);
                 $claimResult = $lotService->claim($realization->payreq->lot_no);
 
-                if (!$claimResult['success']) {
-                    throw new \Exception('Failed to claim LOT: ' . $claimResult['message']);
+                if (! $claimResult['success']) {
+                    throw new \Exception('Failed to claim LOT: '.$claimResult['message']);
                 }
 
                 // Update local LOT claim status
@@ -122,7 +122,7 @@ class UserRealizationController extends Controller
 
             // create approval plan
             $approval_plan = app(ApprovalPlanController::class)->create_approval_plan('realization', $realization->id);
-            if (!$approval_plan) {
+            if (! $approval_plan) {
                 throw new \Exception('Failed to create approval plan');
             }
 
@@ -140,7 +140,7 @@ class UserRealizationController extends Controller
             Log::error('Realization Submission Error', [
                 'error' => $e->getMessage(),
                 'realization_id' => $request->realization_id ?? null,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             // If the error is from LOT claiming, show the specific error message
@@ -167,7 +167,7 @@ class UserRealizationController extends Controller
             'realization_details',
             'approved_at',
             'terbilang',
-            'approvers'
+            'approvers',
         ]));
     }
 
@@ -185,7 +185,7 @@ class UserRealizationController extends Controller
             // if realization amount > advance amount, then delete payreq
             if ($realization_amount > $payreq_amount) {
                 // delete payreq
-                $payreq = Payreq::where('remarks', 'LIKE', '%' . $realization->nomor . '%')->first();
+                $payreq = Payreq::where('remarks', 'LIKE', '%'.$realization->nomor.'%')->first();
                 $payreq->delete();
             }
 
@@ -236,6 +236,7 @@ class UserRealizationController extends Controller
     {
         $payreq = Payreq::findOrFail($payreq_id);
         $lotc = LotClaim::where('lot_no', $payreq->lot_no)->first();
+
         return $lotc;
     }
 
@@ -262,40 +263,26 @@ class UserRealizationController extends Controller
             'realization_details',
             // 'project_equipment',
             'equipments',
-            'lotc_detail'
+            'lotc_detail',
         ]));
     }
 
-    public function store_detail(Request $request)
+    public function store_detail(StoreRealizationDetailRequest $request)
     {
-        $this->validate($request, [
-            'description' => 'required',
-            'amount' => 'required',
-        ]);
-
-        $realization = Realization::findOrFail($request->realization_id);
+        $realization = Realization::findOrFail($request->validated('realization_id'));
         $payreq = Payreq::findOrFail($realization->payreq_id);
 
-        // if payreq of rab_id is not null than realization_detail rab_id = payreq rab_id
         if ($payreq->rab_id != null) {
             $rab_id = $payreq->rab_id;
         } else {
             $rab_id = null;
         }
 
-        $realization->realizationDetails()->create([
-            'description' => $request->description,
-            'amount' => str_replace(',', '', $request->amount),
+        $realization->realizationDetails()->create(array_merge($request->realizationDetailPayload(), [
             'project' => $realization->project,
             'department_id' => $realization->department_id,
-            'unit_no' => $request->unit_no,
-            'nopol' => $request->nopol,
-            'type' => $request->type,
-            'qty' => $request->qty,
-            'uom' => $request->uom,
-            'km_position' => $request->km_position,
             'rab_id' => $rab_id,
-        ]);
+        ]));
 
         return redirect()->route('user-payreqs.realizations.add_details', $realization->id);
     }
@@ -327,7 +314,7 @@ class UserRealizationController extends Controller
 
         return datatables()->of($realizations)
             ->editColumn('nomor', function ($realization) {
-                return '<a href="' . route('user-payreqs.realizations.show', $realization->id) . '">' . $realization->nomor . '</a>';
+                return '<a href="'.route('user-payreqs.realizations.show', $realization->id).'">'.$realization->nomor.'</a>';
             })
             ->addColumn('payreq_no', function ($realization) {
                 return $realization->payreq->nomor;
@@ -336,7 +323,7 @@ class UserRealizationController extends Controller
                 return number_format($realization->realizationDetails->sum('amount'), 2, ',', '.');
             })
             ->editColumn('created_at', function ($realization) {
-                return $realization->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
+                return $realization->created_at->addHours(8)->format('d-M-Y H:i').' wita';
             })
             ->addColumn('days', function ($realization) {
                 if ($realization->approved_at) {
@@ -359,20 +346,20 @@ class UserRealizationController extends Controller
                         $statusText = ucfirst($realization->status);
                     } else {
                         $due_date = new \Carbon\Carbon($realization->due_date);
-                        $today = new \Carbon\Carbon();
+                        $today = new \Carbon\Carbon;
                         $dif_days = $due_date->diffInDays($today);
 
                         if ($today > $due_date && $realization->status == 'approved') {
-                            $statusText = ucfirst($realization->status) . '<button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                            $statusText = ucfirst($realization->status).'<button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>'.$dif_days.'</b> days</button>';
                         } else {
-                            $statusText = '<button class="btn btn-xs btn-outline-danger mx-2" style="pointer-events: none;">Approved and due in <b>' . $dif_days . '</b> days</button>';
+                            $statusText = '<button class="btn btn-xs btn-outline-danger mx-2" style="pointer-events: none;">Approved and due in <b>'.$dif_days.'</b> days</button>';
                         }
                     }
                 }
 
                 // Add indicator if realization was modified by approver
                 if ($realization->modified_by_approver) {
-                    $statusText .= ' <span class="badge badge-warning" title="Modified by approver on ' . $realization->modified_by_approver_at->format('d-M-Y H:i') . '"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
+                    $statusText .= ' <span class="badge badge-warning" title="Modified by approver on '.$realization->modified_by_approver_at->format('d-M-Y H:i').'"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
                 }
 
                 return $statusText;
@@ -432,7 +419,6 @@ class UserRealizationController extends Controller
                 $realization_amount += $realization->realizationDetails->sum('amount');
             }
 
-
             $status_cek[] = [
                 'status' => $stat,
                 'count' => $realization_count,
@@ -450,12 +436,12 @@ class UserRealizationController extends Controller
             'count' => $od_realization->count(),
             'amount' => $od_realization->sum(function ($realization) {
                 return $realization->realizationDetails->sum('amount');
-            })
+            }),
         ];
 
         $result = [
             'realization_status' => $status_cek,
-            'overdue_realization' => $overdue_realization
+            'overdue_realization' => $overdue_realization,
         ];
 
         return $result;
@@ -473,7 +459,7 @@ class UserRealizationController extends Controller
 
         return response()->json([
             'success' => true,
-            'details' => $details
+            'details' => $details,
         ]);
     }
 
@@ -486,6 +472,7 @@ class UserRealizationController extends Controller
     public function getDetail($detail_id)
     {
         $detail = RealizationDetail::findOrFail($detail_id);
+
         return response()->json($detail);
     }
 
@@ -493,40 +480,16 @@ class UserRealizationController extends Controller
      * Update a specific detail.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\RealizationDetail  $detail
      * @return \Illuminate\Http\Response
      */
-    public function updateDetail(Request $request, $detail_id)
+    public function updateDetail(UpdateRealizationDetailRequest $request, RealizationDetail $detail)
     {
-        $request->validate([
-            'description' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'unit_no' => 'nullable|string|max:50',
-            'nopol' => 'nullable|string|max:50',
-            'qty' => 'nullable|numeric',
-            'km_position' => 'nullable|numeric',
-            'type' => 'nullable|string|max:50',
-            'uom' => 'nullable|string|max:50',
-        ]);
-
-        $detail = RealizationDetail::findOrFail($detail_id);
-
-        // Update the detail
-        $detail->update([
-            'description' => $request->description,
-            'amount' => $request->amount,
-            'unit_no' => $request->unit_no,
-            'nopol' => $request->nopol,
-            'qty' => $request->qty,
-            'km_position' => $request->km_position,
-            'type' => $request->type,
-            'uom' => $request->uom,
-        ]);
+        $detail->update($request->realizationDetailPayload());
 
         return response()->json([
             'success' => true,
             'message' => 'Detail updated successfully',
-            'detail' => $detail
+            'detail' => $detail->fresh(),
         ]);
     }
 }

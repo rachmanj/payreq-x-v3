@@ -60,6 +60,7 @@
                                 <tr>
                                     <th class="text-right" style="border: 1px solid black;">No</th>
                                     <th style="border: 1px solid black;">Description</th>
+                                    <th style="border: 1px solid black;">Expense date</th>
                                     <th class="text-right" style="border: 1px solid black;">Amount (IDR)</th>
                                 </tr>
                             </thead>
@@ -80,6 +81,8 @@
                                                 @endif
                                             @endif
                                         </td>
+                                        <td style="border: 1px solid black;">
+                                            {{ $item->expense_date ? $item->expense_date->format('d-M-Y') : '—' }}</td>
                                         <td class="text-right" style="border: 1px solid black;">
                                             {{ number_format($item->amount, 2) }}</td>
                                     </tr>
@@ -87,37 +90,37 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <th colspan="2" class="text-right" style="border: 1px solid black;">TOTAL</th>
+                                    <th colspan="3" class="text-right" style="border: 1px solid black;">TOTAL</th>
                                     <th class="text-right" style="border: 1px solid black;">
                                         {{ number_format($realization_details->sum('amount'), 2) }}</th>
                                 </tr>
                                 <tr>
-                                    <th colspan="2" class="text-right" style="border: 1px solid black;">Advance
+                                    <th colspan="3" class="text-right" style="border: 1px solid black;">Advance
                                         Payment
                                     </th>
                                     <th class="text-right" style="border: 1px solid black;">
                                         {{ number_format($realization->payreq->amount, 2) }}</th>
                                 </tr>
                                 <tr>
-                                    <th colspan="2" class="text-right" style="border: 1px solid black;">Variance</th>
+                                    <th colspan="3" class="text-right" style="border: 1px solid black;">Variance</th>
                                     <th class="text-right" style="border: 1px solid black;">
                                         {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}
                                     </th>
                                 </tr>
                                 <tr>
                                     <th class="text-right" style="border: 1px solid black;">Say</th>
-                                    <td colspan="2" style="border: 1px solid black;">{{ ucfirst($terbilang) }}</td>
+                                    <td colspan="3" style="border: 1px solid black;">{{ ucfirst($terbilang) }}</td>
                                 </tr>
                                 <tr>
                                     <th class="text-right" style="border: 1px solid black;">Remarks</th>
-                                    <td colspan="2" style="border: 1px solid black;">
+                                    <td colspan="3" style="border: 1px solid black;">
                                         {{ $realization->payreq->remarks }}
                                     </td>
                                 </tr>
                                 @if ($realization->payreq->rab_id)
                                     <tr>
                                         <th class="text-right" style="border: 1px solid black;">RAB No.</th>
-                                        <td colspan="2" style="border: 1px solid black;">
+                                        <td colspan="3" style="border: 1px solid black;">
                                             {{ $realization->payreq->anggaran->nomor }} |
                                             {{ $realization->payreq->anggaran->rab_project }} |
                                             {{ substr($realization->payreq->anggaran->description, 0, 100) }}</td>

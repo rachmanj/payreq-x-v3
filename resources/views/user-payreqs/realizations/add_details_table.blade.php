@@ -10,7 +10,8 @@
                         <tr>
                             <th width="5%">No</th>
                             <th>Description</th>
-                            <th class="text-right" width="20%">Amount</th>
+                            <th width="12%">Expense date</th>
+                            <th class="text-right" width="16%">Amount</th>
                             <th width="15%">Actions</th>
                         </tr>
                     </thead>
@@ -34,6 +35,7 @@
                                             @endif
                                         @endif
                                     </td>
+                                    <td>{{ $detail->expense_date ? $detail->expense_date->format('d-M-Y') : '—' }}</td>
                                     <td class="text-right">{{ number_format($detail->amount, 2) }}</td>
                                     <td>
                                         <button type="button" class="btn btn-xs btn-info btn-edit"
@@ -49,25 +51,25 @@
                             @endforeach
                         @else
                             <tr id="no-data-row">
-                                <td colspan="4" class="text-center">No Data Found</td>
+                                <td colspan="5" class="text-center">No Data Found</td>
                             </tr>
                         @endif
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="2" class="text-right">Total:</th>
+                            <th colspan="3" class="text-right">Total:</th>
                             <th class="text-right" id="total-amount">
                                 {{ number_format($realization_details->sum('amount'), 2) }}</th>
                             <th></th>
                         </tr>
                         <tr>
-                            <th colspan="2" class="text-right">Payreq Amount:</th>
+                            <th colspan="3" class="text-right">Payreq Amount:</th>
                             <th class="text-right" id="payreq-amount">
                                 {{ number_format($realization->payreq->amount, 2) }}</th>
                             <th></th>
                         </tr>
                         <tr>
-                            <th colspan="2" class="text-right">Variance:</th>
+                            <th colspan="3" class="text-right">Variance:</th>
                             <th class="text-right" id="variance-amount">
                                 {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}
                             </th>
@@ -81,6 +83,20 @@
 </div>
 
 <script>
+    function formatExpenseDateDisplay(raw) {
+        if (!raw) {
+            return '—';
+        }
+        const ymd = String(raw).substring(0, 10);
+        const p = ymd.split('-');
+        if (p.length !== 3) {
+            return '—';
+        }
+        const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        return `${p[2].padStart(2, '0')}-${mo[parseInt(p[1], 10) - 1]}-${p[0]}`;
+    }
+
     // Function to refresh the details table
     function refreshDetailsTable() {
         $.ajax({
@@ -119,6 +135,7 @@
                             <tr id="detail-row-${item.id}">
                                 <td>${index + 1}</td>
                                 <td>${item.description} ${additionalInfo}</td>
+                                <td>${formatExpenseDateDisplay(item.expense_date)}</td>
                                 <td class="text-right">${numberFormat(item.amount)}</td>
                                 <td>
                                     <button type="button" class="btn btn-xs btn-info btn-edit" data-id="${item.id}">
@@ -138,7 +155,7 @@
                     // No data
                     $('#details-table tbody').html(`
                         <tr id="no-data-row">
-                            <td colspan="4" class="text-center">No Data Found</td>
+                            <td colspan="5" class="text-center">No Data Found</td>
                         </tr>
                     `);
                 }
@@ -190,6 +207,11 @@
                     $('#edit-id').val(response.id);
                     $('#edit-description').val(response.description);
                     $('#edit-amount').val(numberFormat(response.amount));
+                    if (response.expense_date) {
+                        $('#edit-expense_date').val(String(response.expense_date).substring(0, 10));
+                    } else {
+                        $('#edit-expense_date').val('');
+                    }
 
                     // Set select values and trigger change for Select2
                     $('#edit-unit_no').val(response.unit_no).trigger('change');
