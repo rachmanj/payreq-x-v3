@@ -22,6 +22,10 @@
                     <form action="{{ route('user-payreqs.advance.proses') }}" method="POST">
                         @csrf
 
+                        @php
+                            $advanceCanSelectRab = auth()->user()->can('rab_select');
+                        @endphp
+
                         <input type="hidden" name="employee_id" value="{{ auth()->user()->id }}">
                         <input type="hidden" name="payreq_type" value="advance">
                         <div class="row">
@@ -352,51 +356,153 @@
                             @enderror
                         </div>
 
+                        @php
+                            $allocationRowsOld = old('allocations');
+                            if (! is_array($allocationRowsOld)) {
+                                $allocationRowsOld = [['anggaran_id' => '', 'amount' => '', 'remarks' => '']];
+                            }
+                            if (count($allocationRowsOld) < 1) {
+                                $allocationRowsOld = [['anggaran_id' => '', 'amount' => '', 'remarks' => '']];
+                            }
+                        @endphp
+
                         <div class="form-group">
                             <label for="amount">Amount</label>
                             <input type="text" name="amount" id="amount" class="form-control"
                                 value="{{ old('amount') }}" onkeyup="formatNumber(this)">
+                            <small id="amount-help-legacy" class="form-text text-muted">Enter the total advance
+                                amount.</small>
+                            <small id="amount-help-multi" class="form-text text-muted" style="display:none;">Total is
+                                the sum of allocation rows (read-only).</small>
                             @error('amount')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
                         <script>
                             function formatNumber(input) {
-                                // Remove any non-digit characters except dots
                                 let value = input.value.replace(/[^\d.]/g, '');
-
-                                // Ensure only one decimal point
                                 let parts = value.split('.');
                                 if (parts.length > 2) {
                                     parts = [parts[0], parts.slice(1).join('')];
                                 }
-
-                                // Add thousand separators
                                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-                                // Join with decimal part if exists
                                 input.value = parts.join('.');
                             }
                         </script>
 
-                        @can('rab_select')
+                        @if ($advanceCanSelectRab)
                             <div class="form-group">
-                                <label for="rab_id">RAB No</label>
-                                <select name="rab_id" class="form-control select2bs4 @error('rab_id') is-invalid @enderror"
-                                    style="width: 100%;">
-                                    <option value="">-- Select RAB --</option>
-                                    @foreach ($rabs as $rab)
-                                        <option value="{{ $rab->id }}">{{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} |
-                                            {{ $rab->project }} | {{ $rab->description }}</option>
-                                    @endforeach
-                                </select>
-                                @error('rab_id')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                <label>Budget form</label>
+                                <div class="custom-control custom-radio">
+                                    <input type="radio" id="budget_mode_legacy" name="budget_link_mode" value="legacy"
+                                        class="custom-control-input"
+                                        {{ old('budget_link_mode', 'legacy') === 'legacy' ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="budget_mode_legacy">Single anggaran
+                                        (existing form)</label>
+                                </div>
+                                <div class="custom-control custom-radio">
+                                    <input type="radio" id="budget_mode_multi" name="budget_link_mode"
+                                        value="multi_allocation" class="custom-control-input"
+                                        {{ old('budget_link_mode') === 'multi_allocation' ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="budget_mode_multi">Multi-row — one payreq,
+                                        many anggaran</label>
+                                </div>
+                                @error('budget_link_mode')
+                                    <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
-                        @endcan
+
+                            <div id="advance-budget-legacy" class="border rounded p-3 mb-3 bg-light" style="display:none;">
+                                <div class="form-group mb-0">
+                                    <label for="rab_id_legacy">RAB No</label>
+                                    <select name="rab_id" id="rab_id_legacy"
+                                        class="form-control select2bs4 @error('rab_id') is-invalid @enderror"
+                                        style="width: 100%;">
+                                        <option value="">-- Select RAB --</option>
+                                        @foreach ($rabs as $rab)
+                                            <option value="{{ $rab->id }}"
+                                                {{ old('rab_id') == $rab->id ? 'selected' : '' }}>
+                                                {{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} |
+                                                {{ $rab->project }} | {{ $rab->description }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('rab_id')
+                                        <div class="invalid-feedback d-block">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div id="advance-budget-multi" class="border rounded p-3 mb-3 bg-light"
+                                style="display:none;">
+                                <div class="form-group mb-2">
+                                    <label>Anggaran allocation rows</label>
+                                    <small class="text-muted d-block mb-2">Each row maps part of this payreq to an
+                                        anggaran (same anggaran may appear twice). Row amounts must match the total
+                                        amount.</small>
+                                    @error('allocations')
+                                        <div class="text-danger">{{ $message }}</div>
+                                    @enderror
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered mb-0">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Anggaran</th>
+                                                    <th style="width:22%">Amount</th>
+                                                    <th>Remarks</th>
+                                                    <th style="width:52px"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="advance-allocation-body">
+                                                @foreach ($allocationRowsOld as $i => $row)
+                                                    <tr class="allocation-row">
+                                                        <td>
+                                                            <select
+                                                                name="allocations[{{ $i }}][anggaran_id]"
+                                                                class="form-control allocation-rab-select"
+                                                                style="width:100%"
+                                                                data-placeholder="-- Select RAB --">
+                                                                <option value=""></option>
+                                                                @foreach ($rabs as $rab)
+                                                                    <option value="{{ $rab->id }}"
+                                                                        {{ (string) old("allocations.$i.anggaran_id", $row['anggaran_id'] ?? '') === (string) $rab->id ? 'selected' : '' }}>
+                                                                        {{ $rab->rab_no ? $rab->rab_no : $rab->nomor }}
+                                                                        | {{ $rab->project }} |
+                                                                        {{ $rab->description }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <input type="text"
+                                                                name="allocations[{{ $i }}][amount]"
+                                                                class="form-control allocation-amount"
+                                                                value="{{ old("allocations.$i.amount", $row['amount'] ?? '') }}"
+                                                                onkeyup="formatNumber(this)">
+                                                        </td>
+                                                        <td>
+                                                            <input type="text"
+                                                                name="allocations[{{ $i }}][remarks]"
+                                                                class="form-control"
+                                                                value="{{ old("allocations.$i.remarks", $row['remarks'] ?? '') }}">
+                                                        </td>
+                                                        <td class="text-center align-middle">
+                                                            <button type="button"
+                                                                class="btn btn-sm btn-outline-danger btn-remove-allocation-row"
+                                                                title="Remove row">&times;</button>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                        id="btn-add-allocation-row">Add row</button>
+                                </div>
+                            </div>
+                        @else
+                            <input type="hidden" name="budget_link_mode" value="legacy">
+                        @endif
 
                         <div class="card-footer">
                             <div class="row">
@@ -687,6 +793,92 @@
                     $('#selected_lot_display').html(`Selected LOT Number: <strong>${lotNo}</strong>`);
                 }
             }
+
+            @if ($advanceCanSelectRab)
+                function recalcAdvanceAllocationTotal() {
+                    let sum = 0;
+                    $('#advance-allocation-body tr.allocation-row .allocation-amount').each(function() {
+                        const raw = ($(this).val() || '').replace(/,/g, '');
+                        const v = parseFloat(raw);
+                        if (!isNaN(v)) {
+                            sum += v;
+                        }
+                    });
+                    const formatted = sum.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    $('#amount').val(formatted);
+                }
+
+                function applyAdvanceBudgetMode() {
+                    const multi = $('#budget_mode_multi').is(':checked');
+                    if (multi) {
+                        $('#advance-budget-multi').show();
+                        $('#advance-budget-legacy').hide();
+                        $('#rab_id_legacy').prop('disabled', true);
+                        $('#amount-help-multi').show();
+                        $('#amount-help-legacy').hide();
+                        $('#amount').prop('readonly', true).off('keyup.advanceAmount');
+                        recalcAdvanceAllocationTotal();
+                    } else {
+                        $('#advance-budget-multi').hide();
+                        $('#advance-budget-legacy').show();
+                        $('#rab_id_legacy').prop('disabled', false);
+                        $('#amount-help-multi').hide();
+                        $('#amount-help-legacy').show();
+                        $('#amount').prop('readonly', false).off('keyup.advanceAmount').on(
+                            'keyup.advanceAmount',
+                            function() {
+                                formatNumber(this);
+                            });
+                    }
+                }
+
+                $('input[name="budget_link_mode"]').on('change', applyAdvanceBudgetMode);
+                applyAdvanceBudgetMode();
+
+                $('#advance-allocation-body').on('keyup change', '.allocation-amount',
+                    recalcAdvanceAllocationTotal);
+
+                $('#btn-add-allocation-row').click(function() {
+                    const $body = $('#advance-allocation-body');
+                    const $first = $body.find('tr.allocation-row').first();
+                    const idx = $body.find('tr.allocation-row').length;
+                    const $clone = $first.clone();
+                    $clone.find('input, select').each(function() {
+                        const $el = $(this);
+                        const name = $el.attr('name');
+                        if (name && name.indexOf('allocations[') === 0) {
+                            $el.attr('name', name.replace(/allocations\[\d+\]/, 'allocations[' +
+                                idx + ']'));
+                        }
+                        if ($el.hasClass('allocation-amount')) {
+                            $el.val('');
+                        }
+                        if ($el.hasClass('allocation-rab-select')) {
+                            $el.val('');
+                        }
+                        if ($el.is('input[type=text]:not(.allocation-amount)') && !$el.hasClass(
+                                'allocation-rab-select')) {
+                            const nm = $el.attr('name') || '';
+                            if (nm.indexOf('[remarks]') !== -1) {
+                                $el.val('');
+                            }
+                        }
+                    });
+                    $body.append($clone);
+                });
+
+                $('#advance-allocation-body').on('click', '.btn-remove-allocation-row', function() {
+                    const $body = $('#advance-allocation-body');
+                    if ($body.find('tr.allocation-row').length <= 1) {
+                        return;
+                    }
+                    $(this).closest('tr.allocation-row').remove();
+                    recalcAdvanceAllocationTotal();
+                });
+            @endif
 
             // btn-save as draft
             $('#btn-draft').click(function() {

@@ -13,6 +13,7 @@ use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Services\LotService;
+use App\Services\PayreqRealizationBudgetWarningService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -133,8 +134,17 @@ class UserRealizationController extends Controller
                 'nomor' => app(DocumentNumberController::class)->generate_document_number('realization', auth()->user()->project),
             ]);
 
-            return redirect()->route('user-payreqs.realizations.index')
+            $realization->payreq->loadMissing(['anggaranAllocations', 'realization.realizationDetails']);
+
+            $redirect = redirect()->route('user-payreqs.realizations.index')
                 ->with('success', 'Realization submitted successfully');
+
+            $warnMessages = app(PayreqRealizationBudgetWarningService::class)->messages($realization->payreq);
+            if ($warnMessages !== []) {
+                $redirect->with('warning', implode(' ', $warnMessages));
+            }
+
+            return $redirect;
         } catch (\Exception $e) {
             // Log the error
             Log::error('Realization Submission Error', [
@@ -242,7 +252,8 @@ class UserRealizationController extends Controller
 
     public function add_details($realization_id)
     {
-        $realization = Realization::with('payreq')->findOrFail($realization_id);
+        $realization = Realization::with(['payreq.anggaranAllocations.anggaran'])
+            ->findOrFail($realization_id);
         $realization_details = $realization->realizationDetails;
         // $equipments = app(ToolController::class)->getEquipments($realization->project);
         // $equipments = Equipment::where('project', $realization->project)->get();
@@ -258,12 +269,38 @@ class UserRealizationController extends Controller
         // Check if payreq has LOTC
         $lotc_detail = $this->checkPayreqLot($realization->payreq_id);
 
+        $realization_budget_warnings = app(PayreqRealizationBudgetWarningService::class)
+            ->messages($realization->payreq);
+
+        $advance_realization_rab_labels = [];
+        $payreqModel = $realization->payreq;
+        if ($payreqModel && $payreqModel->isAdvanceMultiBudget()) {
+            $payreqModel->loadMissing('anggaranAllocations.anggaran');
+            foreach ($payreqModel->anggaranAllocations as $allocationRow) {
+                if (! $allocationRow->anggaran) {
+                    continue;
+                }
+                $angForLabel = $allocationRow->anggaran;
+                $labelLead = $angForLabel->nomor ?? $angForLabel->rab_no ?? '';
+                if (
+                    filled($angForLabel->rab_no)
+                    && (string) $angForLabel->rab_no !== (string) ($angForLabel->nomor ?? '')
+                ) {
+                    $labelLead .= ' | RAB '.$angForLabel->rab_no;
+                }
+                $label = $labelLead.' | row #'.$allocationRow->id;
+                $advance_realization_rab_labels[(int) $allocationRow->anggaran_id] = $label;
+            }
+        }
+
         return view('user-payreqs.realizations.add_details', compact([
             'realization',
             'realization_details',
             // 'project_equipment',
             'equipments',
             'lotc_detail',
+            'realization_budget_warnings',
+            'advance_realization_rab_labels',
         ]));
     }
 
@@ -272,16 +309,14 @@ class UserRealizationController extends Controller
         $realization = Realization::findOrFail($request->validated('realization_id'));
         $payreq = Payreq::findOrFail($realization->payreq_id);
 
-        if ($payreq->rab_id != null) {
-            $rab_id = $payreq->rab_id;
-        } else {
-            $rab_id = null;
+        $payload = $request->realizationDetailPayload();
+        if (! array_key_exists('rab_id', $payload)) {
+            $payload['rab_id'] = $payreq->rab_id;
         }
 
-        $realization->realizationDetails()->create(array_merge($request->realizationDetailPayload(), [
+        $realization->realizationDetails()->create(array_merge($payload, [
             'project' => $realization->project,
             'department_id' => $realization->department_id,
-            'rab_id' => $rab_id,
         ]));
 
         return redirect()->route('user-payreqs.realizations.add_details', $realization->id);

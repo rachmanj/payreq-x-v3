@@ -53,6 +53,21 @@
     </div>
     <!-- /.row -->
 
+    @if (! empty($realization_budget_warnings))
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-warning mb-0">
+                    <strong>Per-Anggaran check (informational):</strong>
+                    <ul class="mb-0 pl-3">
+                        @foreach ($realization_budget_warnings as $w)
+                            <li>{{ $w }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- DETAILS SECTION --}}
     <div class="row mb-3">
         <div class="col-12">
@@ -105,6 +120,11 @@
                                                     <small>{{ $detail->type ?? '' }}, HM:
                                                         {{ $detail->km_position ?? '' }}</small>
                                                 @endif
+                                            @endif
+                                            @if ($realization->payreq->isAdvanceMultiBudget() && $detail->rab_id)
+                                                <br />
+                                                <small>Anggaran:
+                                                    {{ $advance_realization_rab_labels[$detail->rab_id] ?? ('#' . $detail->rab_id) }}</small>
                                             @endif
                                         </td>
                                         <td>{{ $detail->expense_date ? $detail->expense_date->format('d-M-Y') : '—' }}</td>
@@ -218,6 +238,37 @@
                                 </div>
                             </div>
                         </div>
+
+                        @if ($realization->payreq->isAdvanceMultiBudget())
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="realization_rab_id">Anggaran</label>
+                                        <select name="rab_id" id="realization_rab_id" class="form-control" required>
+                                            <option value="">-- select anggaran --</option>
+                                            @foreach ($realization->payreq->anggaranAllocations as $allocRow)
+                                                @php
+                                                    $rabOptAng = $allocRow->anggaran;
+                                                    $rabOptLead = $rabOptAng->nomor ?? $rabOptAng->rab_no;
+                                                    if (
+                                                        filled($rabOptAng->rab_no)
+                                                        && (string) $rabOptAng->rab_no !== (string) ($rabOptAng->nomor ?? '')
+                                                    ) {
+                                                        $rabOptLead .= ' | RAB '.$rabOptAng->rab_no;
+                                                    }
+                                                @endphp
+                                                <option value="{{ $allocRow->anggaran_id }}">
+                                                    {{ $rabOptLead }}
+                                                    | row #{{ $allocRow->id }}
+                                                    | allocation {{ number_format((float) $allocRow->amount, 2) }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="text-danger" id="rab_id-error"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
                         <hr class="my-3">
                         <h6 class="text-secondary font-weight-bold mb-1">Fleet &amp; equipment</h6>
@@ -369,6 +420,36 @@
                             </div>
                         </div>
 
+                        @if ($realization->payreq->isAdvanceMultiBudget())
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="edit-realization_rab_id">Anggaran</label>
+                                        <select name="rab_id" id="edit-realization_rab_id" class="form-control">
+                                            <option value="">-- select anggaran --</option>
+                                            @foreach ($realization->payreq->anggaranAllocations as $allocRow)
+                                                @php
+                                                    $rabEditOptAng = $allocRow->anggaran;
+                                                    $rabEditOptLead = $rabEditOptAng->nomor ?? $rabEditOptAng->rab_no;
+                                                    if (
+                                                        filled($rabEditOptAng->rab_no)
+                                                        && (string) $rabEditOptAng->rab_no !== (string) ($rabEditOptAng->nomor ?? '')
+                                                    ) {
+                                                        $rabEditOptLead .= ' | RAB '.$rabEditOptAng->rab_no;
+                                                    }
+                                                @endphp
+                                                <option value="{{ $allocRow->anggaran_id }}">
+                                                    {{ $rabEditOptLead }}
+                                                    | row #{{ $allocRow->id }}
+                                                    | allocation {{ number_format((float) $allocRow->amount, 2) }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         <hr class="my-3">
                         <h6 class="text-secondary font-weight-bold mb-1">Fleet &amp; equipment</h6>
                         <p class="text-muted small mb-3">Wajib diisi jika merupakan biaya terkait Unit</p>
@@ -487,6 +568,18 @@
 
             // Join with decimal part if exists
             input.value = parts.join('.');
+        }
+
+        const realizationAdvanceMultiBudget =
+            {{ $realization->payreq->isAdvanceMultiBudget() ? 'true' : 'false' }};
+        const advanceRabLabels = @json($advance_realization_rab_labels ?? []);
+
+        function angLabelForDetail(rabId) {
+            if (!rabId || !realizationAdvanceMultiBudget) {
+                return '';
+            }
+            const key = String(rabId);
+            return advanceRabLabels[key] ? advanceRabLabels[key] : ('#' + key);
         }
 
         // Function to confirm delete - must be globally accessible
@@ -616,10 +709,17 @@
                                     }
                                 }
 
+                                let angHtml = '';
+                                if (realizationAdvanceMultiBudget && item.rab_id) {
+                                    angHtml =
+                                        '<br/><small>Anggaran: ' +
+                                        angLabelForDetail(item.rab_id) + '</small>';
+                                }
+
                                 tableContent += `
                                     <tr id="detail-row-${item.id}">
                                         <td>${index + 1}</td>
-                                        <td>${item.description} ${additionalInfo}</td>
+                                        <td>${item.description} ${additionalInfo}${angHtml}</td>
                                         <td>${formatExpenseDateDisplay(item.expense_date)}</td>
                                         <td class="text-right">${numberFormat(item.amount)}</td>
                                         <td>
@@ -723,6 +823,10 @@
                             $('#edit-km_position').val(response.km_position);
                             $('#edit-type').val(response.type).trigger('change');
                             $('#edit-uom').val(response.uom).trigger('change');
+
+                            if (realizationAdvanceMultiBudget && $('#edit-realization_rab_id').length) {
+                                $('#edit-realization_rab_id').val(response.rab_id || '');
+                            }
 
                             // Show modal
                             $('#edit-detail-modal').modal('show');
@@ -887,6 +991,10 @@
                         $('#add-detail-form')[0].reset();
                         $('#expense_date').val(new Date().toISOString().slice(0, 10));
                         $('.select2bs4').val('').trigger('change');
+                        if ($('#realization_rab_id').length) {
+                            $('#realization_rab_id').val('').removeClass('is-invalid');
+                            $('#rab_id-error').empty();
+                        }
 
                         // Enable submit button if we have details
                         $('#btn-submit-realization').prop('disabled', false);
@@ -900,8 +1008,9 @@
                             const errors = xhr.responseJSON.errors;
                             // Display validation errors
                             $.each(errors, function(field, messages) {
-                                $('#' + field + '-error').text(messages[0]);
-                                $('#' + field).addClass('is-invalid');
+                                const fieldId = field === 'rab_id' ? 'realization_rab_id' : field;
+                                $('#' + fieldId + '-error').text(messages[0]);
+                                $('#' + fieldId).addClass('is-invalid');
                             });
 
                             // Show summary error with toastr
@@ -973,6 +1082,10 @@
                     "type": $('#edit-type').val(),
                     "uom": $('#edit-uom').val()
                 };
+
+                if (realizationAdvanceMultiBudget && $('#edit-realization_rab_id').length) {
+                    formData.rab_id = $('#edit-realization_rab_id').val();
+                }
 
                 $.ajax({
                     url: "{{ url('user-payreqs/realizations/update_detail') }}/" + detailId,

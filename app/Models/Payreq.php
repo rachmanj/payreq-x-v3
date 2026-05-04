@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\PayreqBudgetLinkMode;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Outgoing;
 
 class Payreq extends Model
 {
@@ -74,6 +74,27 @@ class Payreq extends Model
     public function anggaran()
     {
         return $this->belongsTo(Anggaran::class, 'rab_id', 'id');
+    }
+
+    public function anggaranAllocations()
+    {
+        return $this->hasMany(PayreqAnggaranAllocation::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function isAdvanceMultiBudget(): bool
+    {
+        return $this->type === 'advance'
+            && $this->budget_link_mode === PayreqBudgetLinkMode::MULTI_ALLOCATION;
+    }
+
+    public function allocatedAnggaranIds(): array
+    {
+        return $this->anggaranAllocations()
+            ->pluck('anggaran_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function PayreqMigrasi()

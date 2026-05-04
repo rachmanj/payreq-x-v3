@@ -27,6 +27,8 @@ This document summarizes structural flows that extend Laravel defaults. Keep it 
 
 - **`php artisan anggaran:sync-release-totals`** — hourly scheduler (`App\Console\Kernel`) re-syncs approved rows and clears **listing** cache helpers (`flushListingCaches`) without iterating every cached detail key (heavy deployments reserve full **`flushAllReportingCaches`** for manual POST Recalc).
 
+- **`php artisan anggaran:inactivate-many --last-month`** — bulk **`is_active = 0`** for **approved** rows whose **`date`** lies in the prior calendar month (optional **`--project=`**, **`--dry-run`**). **`type = buc`** rows are always skipped. Mirrors Reports **Inactivate Many** behaviour without selecting checkboxes. **Scheduled:** 1st of each month at **05:00** app timezone (`Kernel`).
+
 ### Tests
 
 - `tests/Feature/AnggaranReportsTest.php` covers unauthorized POST paths vs permission gates.

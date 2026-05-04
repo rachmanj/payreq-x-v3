@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Http\Controllers\UserController;
 use App\Http\Requests\Concerns\ValidatesRealizationDetailFleet;
+use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Support\RealizationDetailOdometerMonotonicityValidator;
@@ -73,7 +74,14 @@ class UpdateRealizationDetailRequest extends FormRequest
             return null;
         }
 
-        return Realization::with('payreq')->find($detail->realization_id);
+        return Realization::with([
+            'payreq' => fn ($q) => $q->with('anggaranAllocations'),
+        ])->find($detail->realization_id);
+    }
+
+    private function realizationPayreq(): ?Payreq
+    {
+        return $this->realizeForValidation()?->payreq;
     }
 
     protected function prepareForValidation(): void
@@ -104,6 +112,13 @@ class UpdateRealizationDetailRequest extends FormRequest
      */
     public function rules(): array
     {
+        $payreq = $this->realizationPayreq();
+
+        $rabRules = ['nullable'];
+        if ($payreq !== null && $payreq->isAdvanceMultiBudget()) {
+            $rabRules = ['required', 'integer', 'exists:anggarans,id'];
+        }
+
         return [
             'realization_detail_id' => [
                 Rule::requiredIf(fn () => $this->route()->parameter('detail') === null),
@@ -125,6 +140,7 @@ class UpdateRealizationDetailRequest extends FormRequest
                 'date',
                 'before_or_equal:today',
             ],
+            'rab_id' => $rabRules,
         ];
     }
 
@@ -139,6 +155,7 @@ class UpdateRealizationDetailRequest extends FormRequest
             'qty' => 'quantity',
             'uom' => 'UOM',
             'expense_date' => 'expense date',
+            'rab_id' => 'anggaran',
         ];
     }
 
@@ -148,6 +165,22 @@ class UpdateRealizationDetailRequest extends FormRequest
         if ($realization) {
             $this->applyRealizationFleetValidation($validator, $realization);
             $this->applyExpenseDateBusinessRules($validator, $realization);
+
+            $payreq = $realization->payreq;
+            if ($payreq && $payreq->isAdvanceMultiBudget()) {
+                $allowedIds = $payreq->allocatedAnggaranIds();
+                if (count($allowedIds) === 0) {
+                    $validator->errors()->add(
+                        'rab_id',
+                        'This advance has no allocated anggaran rows; refresh the payreq or contact support.'
+                    );
+                } elseif ($this->filled('rab_id') && ! in_array((int) $this->input('rab_id'), $allowedIds, true)) {
+                    $validator->errors()->add(
+                        'rab_id',
+                        'Selected anggaran must be one of the advance allocations.'
+                    );
+                }
+            }
         }
 
         $excludeId = $this->resolveDetail()?->id;
@@ -168,7 +201,7 @@ class UpdateRealizationDetailRequest extends FormRequest
     {
         $validated = $this->validated();
 
-        $payload = collect($validated)->only([
+        $columns = [
             'description',
             'amount',
             'unit_no',
@@ -178,7 +211,14 @@ class UpdateRealizationDetailRequest extends FormRequest
             'uom',
             'km_position',
             'expense_date',
-        ]);
+        ];
+
+        $payreq = $this->realizationPayreq();
+        if ($payreq !== null && $payreq->isAdvanceMultiBudget()) {
+            $columns[] = 'rab_id';
+        }
+
+        $payload = collect($validated)->only($columns);
 
         return $payload->map(function ($value, string $key) {
             if (in_array($key, ['type', 'unit_no', 'nopol', 'uom'], true)) {
@@ -195,6 +235,10 @@ class UpdateRealizationDetailRequest extends FormRequest
 
             if ($key === 'expense_date' && $value !== null && $value !== '') {
                 return Carbon::parse($value)->format('Y-m-d');
+            }
+
+            if ($key === 'rab_id' && $value !== null && $value !== '') {
+                return (int) $value;
             }
 
             return $value;

@@ -4,9 +4,9 @@ namespace App\Http\Requests;
 
 use App\Http\Controllers\UserController;
 use App\Http\Requests\Concerns\ValidatesRealizationDetailFleet;
+use App\Models\Payreq;
 use App\Models\Realization;
 use App\Support\RealizationDetailOdometerMonotonicityValidator;
-use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -59,6 +59,13 @@ class StoreRealizationDetailRequest extends FormRequest
      */
     public function rules(): array
     {
+        $payreq = $this->realizationPayreq();
+
+        $rabRules = ['nullable'];
+        if ($payreq !== null && $payreq->isAdvanceMultiBudget()) {
+            $rabRules = ['required', 'integer', 'exists:anggarans,id'];
+        }
+
         return [
             'realization_id' => ['required', 'exists:realizations,id'],
             'description' => ['required', 'string', 'max:255'],
@@ -76,6 +83,7 @@ class StoreRealizationDetailRequest extends FormRequest
                 'date',
                 'before_or_equal:today',
             ],
+            'rab_id' => $rabRules,
         ];
     }
 
@@ -90,15 +98,44 @@ class StoreRealizationDetailRequest extends FormRequest
             'qty' => 'quantity',
             'uom' => 'UOM',
             'expense_date' => 'expense date',
+            'rab_id' => 'anggaran',
         ];
+    }
+
+    private function realizationPayreq(): ?Payreq
+    {
+        $realizationId = $this->input('realization_id');
+        if (! $realizationId) {
+            return null;
+        }
+
+        return Realization::with([
+            'payreq' => fn ($q) => $q->with('anggaranAllocations'),
+        ])->find($realizationId)?->payreq;
     }
 
     public function withValidator(Validator $validator): void
     {
-        $realization = Realization::with('payreq')->find($this->input('realization_id'));
+        $realization = Realization::with(['payreq.anggaranAllocations'])->find($this->input('realization_id'));
         if ($realization) {
             $this->applyRealizationFleetValidation($validator, $realization);
             $this->applyExpenseDateBusinessRules($validator, $realization);
+
+            $payreq = $realization->payreq;
+            if ($payreq && $payreq->isAdvanceMultiBudget()) {
+                $allowedIds = $payreq->allocatedAnggaranIds();
+                if (count($allowedIds) === 0) {
+                    $validator->errors()->add(
+                        'rab_id',
+                        'This advance has no allocated anggaran rows; refresh the payreq or contact support.'
+                    );
+                } elseif ($this->filled('rab_id') && ! in_array((int) $this->input('rab_id'), $allowedIds, true)) {
+                    $validator->errors()->add(
+                        'rab_id',
+                        'Selected anggaran must be one of the advance allocations.'
+                    );
+                }
+            }
         }
 
         $validator->after(function ($validator) {
@@ -117,7 +154,7 @@ class StoreRealizationDetailRequest extends FormRequest
     {
         $validated = $this->validated();
 
-        $payload = collect($validated)->only([
+        $columns = [
             'description',
             'amount',
             'unit_no',
@@ -127,7 +164,14 @@ class StoreRealizationDetailRequest extends FormRequest
             'uom',
             'km_position',
             'expense_date',
-        ]);
+        ];
+
+        $payreq = $this->realizationPayreq();
+        if ($payreq !== null && $payreq->isAdvanceMultiBudget()) {
+            $columns[] = 'rab_id';
+        }
+
+        $payload = collect($validated)->only($columns);
 
         return $payload->map(function ($value, string $key) {
             if (in_array($key, ['type', 'unit_no', 'nopol', 'uom'], true)) {
@@ -142,8 +186,8 @@ class StoreRealizationDetailRequest extends FormRequest
                 return (int) $value;
             }
 
-            if ($key === 'expense_date' && $value !== null && $value !== '') {
-                return Carbon::parse($value)->format('Y-m-d');
+            if ($key === 'rab_id' && $value !== null && $value !== '') {
+                return (int) $value;
             }
 
             return $value;

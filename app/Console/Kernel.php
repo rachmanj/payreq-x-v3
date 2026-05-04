@@ -31,6 +31,11 @@ class Kernel extends ConsoleKernel
             ->hourly()
             ->withoutOverlapping()
             ->runInBackground();
+
+        $schedule->command('anggaran:inactivate-many --last-month')
+            ->monthlyOn(1, '05:00')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**
