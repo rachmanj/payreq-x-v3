@@ -8,7 +8,6 @@ use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Support\RealizationDetailOdometerMonotonicityValidator;
-use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -234,7 +233,7 @@ class UpdateRealizationDetailRequest extends FormRequest
             }
 
             if ($key === 'expense_date' && $value !== null && $value !== '') {
-                return Carbon::parse($value)->format('Y-m-d');
+                return static::canonicalDateOnlyString($value);
             }
 
             if ($key === 'rab_id' && $value !== null && $value !== '') {

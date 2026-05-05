@@ -10,6 +10,42 @@ use Illuminate\Validation\Validator;
 
 trait ValidatesRealizationDetailFleet
 {
+    protected static function canonicalDateOnlyString(mixed $value): string
+    {
+        $s = trim((string) $value);
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $s, $m)) {
+            return sprintf('%04d-%02d-%02d', (int) $m[1], (int) $m[2], (int) $m[3]);
+        }
+
+        return Carbon::parse($value)->timezone(config('app.timezone'))->format('Y-m-d');
+    }
+
+    protected static function parseExpenseDateStartOfDay(string $raw): ?Carbon
+    {
+        $s = trim($raw);
+        if ($s === '') {
+            return null;
+        }
+
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $s, $m)) {
+            try {
+                return Carbon::createFromFormat(
+                    'Y-m-d',
+                    sprintf('%04d-%02d-%02d', (int) $m[1], (int) $m[2], (int) $m[3]),
+                    config('app.timezone')
+                )->startOfDay();
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        try {
+            return Carbon::parse($s)->timezone(config('app.timezone'))->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     protected function fleetInputFieldNames(): array
     {
         return ['unit_no', 'nopol', 'qty', 'uom', 'km_position'];
@@ -149,13 +185,12 @@ trait ValidatesRealizationDetailFleet
                 return;
             }
 
-            try {
-                $expenseDay = Carbon::parse($raw)->startOfDay();
-            } catch (\Throwable) {
+            $expenseDay = static::parseExpenseDateStartOfDay((string) $raw);
+            if ($expenseDay === null) {
                 return;
             }
 
-            if ($expenseDay->gt(Carbon::today()->startOfDay())) {
+            if ($expenseDay->gt(Carbon::now(config('app.timezone'))->startOfDay())) {
                 $validator->errors()->add('expense_date', 'Expense date cannot be in the future.');
             }
         });

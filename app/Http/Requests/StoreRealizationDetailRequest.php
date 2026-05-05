@@ -186,6 +186,10 @@ class StoreRealizationDetailRequest extends FormRequest
                 return (int) $value;
             }
 
+            if ($key === 'expense_date' && $value !== null && $value !== '') {
+                return static::canonicalDateOnlyString($value);
+            }
+
             if ($key === 'rab_id' && $value !== null && $value !== '') {
                 return (int) $value;
             }

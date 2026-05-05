@@ -31,8 +31,11 @@ class RealizationDetailOdometerMonotonicityValidator
             return;
         }
 
+        $candidateRaw = trim((string) $expenseRaw);
+        $candidateDay = preg_match('/^\d{4}-\d{2}-\d{2}$/', $candidateRaw)
+            ? $candidateRaw
+            : Carbon::parse($candidateRaw)->timezone(config('app.timezone'))->toDateString();
         $candidateHm = (int) $kmRaw;
-        $candidateDay = Carbon::parse((string) $expenseRaw)->toDateString();
 
         $rows = RealizationDetail::query()
             ->where('unit_no', $unitNo)
@@ -45,9 +48,14 @@ class RealizationDetailOdometerMonotonicityValidator
         $buckets = [];
 
         foreach ($rows as $row) {
-            $day = $row->expense_date instanceof Carbon
-                ? $row->expense_date->toDateString()
-                : Carbon::parse($row->expense_date)->toDateString();
+            $rawDay = $row->getRawOriginal('expense_date');
+            if ($rawDay !== null && $rawDay !== '') {
+                $day = substr((string) $rawDay, 0, 10);
+            } elseif ($row->expense_date instanceof Carbon) {
+                $day = $row->expense_date->timezone(config('app.timezone'))->toDateString();
+            } else {
+                $day = Carbon::parse($row->expense_date)->timezone(config('app.timezone'))->toDateString();
+            }
             $buckets[$day][] = (int) $row->km_position;
         }
 
