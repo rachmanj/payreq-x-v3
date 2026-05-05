@@ -164,7 +164,7 @@ class UpdateRealizationDetailRequest extends FormRequest
         $realization = $this->realizeForValidation();
         if ($realization) {
             $this->applyRealizationFleetValidation($validator, $realization);
-            $this->applyExpenseDateBusinessRules($validator, $realization);
+            $this->applyExpenseDateBusinessRules($validator);
 
             $payreq = $realization->payreq;
             if ($payreq && $payreq->isAdvanceMultiBudget()) {

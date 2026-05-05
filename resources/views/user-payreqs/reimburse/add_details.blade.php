@@ -312,8 +312,7 @@
                                             class="text-muted font-weight-normal d-block">(tanggal bon/nota/kwitansi/invoice)</small></label>
                                     <input type="date" name="expense_date" id="expense_date" class="form-control"
                                         value="{{ old('expense_date', date('Y-m-d')) }}" max="{{ date('Y-m-d') }}">
-                                    <small class="form-text text-muted">Not after today; not before payreq
-                                        approval.</small>
+                                    <small class="form-text text-muted">Not after today.</small>
                                     <div class="text-danger" id="expense_date-error"></div>
                                 </div>
                             </div>
@@ -466,8 +465,7 @@
                                             class="text-muted font-weight-normal d-block">(tanggal bon/nota/kwitansi/invoice)</small></label>
                                     <input type="date" name="expense_date" id="edit-expense_date" class="form-control"
                                         max="{{ date('Y-m-d') }}">
-                                    <small class="form-text text-muted">Not after today; not before payreq
-                                        approval.</small>
+                                    <small class="form-text text-muted">Not after today.</small>
                                     <div class="text-danger" id="edit-expense_date-error"></div>
                                 </div>
                             </div>

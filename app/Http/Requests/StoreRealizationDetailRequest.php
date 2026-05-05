@@ -119,7 +119,7 @@ class StoreRealizationDetailRequest extends FormRequest
         $realization = Realization::with(['payreq.anggaranAllocations'])->find($this->input('realization_id'));
         if ($realization) {
             $this->applyRealizationFleetValidation($validator, $realization);
-            $this->applyExpenseDateBusinessRules($validator, $realization);
+            $this->applyExpenseDateBusinessRules($validator);
 
             $payreq = $realization->payreq;
             if ($payreq && $payreq->isAdvanceMultiBudget()) {

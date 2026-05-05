@@ -141,9 +141,9 @@ trait ValidatesRealizationDetailFleet
         }
     }
 
-    protected function applyExpenseDateBusinessRules(Validator $validator, Realization $realization): void
+    protected function applyExpenseDateBusinessRules(Validator $validator): void
     {
-        $validator->after(function ($validator) use ($realization) {
+        $validator->after(function ($validator) {
             $raw = $this->input('expense_date');
             if ($raw === null || $raw === '') {
                 return;
@@ -157,17 +157,6 @@ trait ValidatesRealizationDetailFleet
 
             if ($expenseDay->gt(Carbon::today()->startOfDay())) {
                 $validator->errors()->add('expense_date', 'Expense date cannot be in the future.');
-            }
-
-            $payreq = $realization->relationLoaded('payreq')
-                ? $realization->payreq
-                : $realization->payreq()->first();
-
-            if ($payreq && $payreq->approved_at) {
-                $approvalDay = Carbon::parse($payreq->approved_at)->startOfDay();
-                if ($expenseDay->lt($approvalDay)) {
-                    $validator->errors()->add('expense_date', 'Expense date cannot be before the payment request approval date.');
-                }
             }
         });
     }
