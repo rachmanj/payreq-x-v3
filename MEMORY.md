@@ -1,3 +1,17 @@
+### [039] Realization detail `expense_date` — PHP trait compat, calendar JSON, validation trim (2026-04-29) ✅ COMPLETE
+
+**Challenge:** Production (PHP **< 8.2**) threw **"Traits cannot have constants"** because **`ValidatesRealizationDetailFleet`** used **`protected const`**. After **`expense_date`** shipped, saves “lost” a calendar day in the UI: Laravel JSON emitted Carbon as **ISO8601 UTC** while pages used **`substring(0, 10)`**, so **`Asia/Makassar`** midnight became the **previous** UTC date. Stakeholders removed the rule **“not before payreq approval”** but copy and server checks still referenced it.
+
+**Solution:** Trait uses **`fleetInputFieldNames()`** instead of constants. Dropped **`payreq->approved_at`** floor in **`applyExpenseDateBusinessRules`**; kept **not after today** using **`APP_TIMEZONE`**; Blade helper text **“Not after today.”** only. **`RealizationDetail::attributesToArray()`** forces **`expense_date`** to **`Y-m-d`** (prefer **`getRawOriginal`**) for arrays/JSON. Trait **`canonicalDateOnlyString`** / **`parseExpenseDateStartOfDay`** normalize **`YYYY-MM-DD`** without ambiguous **`Carbon::parse`** drift. **`RealizationDetailOdometerMonotonicityValidator`** buckets existing rows using DB raw **`expense_date`** where possible; restored **`$candidateHm`** after an edit regression.
+
+**Key learning:** Browser **`type=date`** + **`substring(0, 10)`** requires APIs to expose **calendar** **`Y-m-d`**, not midnight datetime as UTC ISO. Trait constants need PHP **8.2+**.
+
+**Implementation / file map:** `app/Http/Requests/Concerns/ValidatesRealizationDetailFleet.php`, `app/Models/RealizationDetail.php`, `StoreRealizationDetailRequest.php`, `UpdateRealizationDetailRequest.php`, `RealizationDetailOdometerMonotonicityValidator.php`, `resources/views/user-payreqs/realizations/add_details.blade.php`, `resources/views/user-payreqs/reimburse/add_details.blade.php`.
+
+**Docs:** `docs/architecture.md`, `docs/decisions.md` (ADR-PAYREQ-01, ADR-PAYREQ-02, ADR-COMPAT-01).
+
+---
+
 ### [038] Anggaran (RAB) module — release parity, auth, reporting dashboard, POST recalc (2026-04-29) ✅ COMPLETE
 
 **Challenge:** User-payreq RAB screens and reporting RAB grids could disagree on utilization because stored **`balance`/`persen`**, cached **`release_to_date`** reads, and **`old_rab_id`** migration paths were implemented separately. **`GET`** Recalc was unsafe; bulk activate/inactivate shared **`recalculate_release`** with unrelated duties; listing bulk actions only affected the current DataTables page without UX honesty; scheduled jobs that flushed every per-row cache key could run far too long.
@@ -925,7 +939,7 @@
 -   **Refresh Interval**: Maintained 5-minute update cycle for real-time data
 
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2026-04-28
+**Last Updated**: 2026-04-29
 
 ## Memory Maintenance Guidelines
 

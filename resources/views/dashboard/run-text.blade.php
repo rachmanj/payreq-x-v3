@@ -25,15 +25,19 @@
 
             if (data.success && data.rate) {
                 const formattedRate = new Intl.NumberFormat('id-ID').format(data.rate);
-                const updateTime = new Date(data.scraped_at).toLocaleString('id-ID', {
+                const updatedAt = new Date(data.scraped_at);
+                const updateLabel = updatedAt.toLocaleString('id-ID', {
                     timeZone: 'Asia/Jakarta',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit',
-                    hour12: false
+                    hour12: false,
                 });
 
                 const tickerText =
-                    `Exchange Rate: 1 USD = IDR ${formattedRate} (Source: Kemenkeu Kurs Pajak) | Last Updated: ${updateTime} WIB | `;
+                    `Exchange Rate: 1 USD = IDR ${formattedRate} (Source: Kemenkeu Kurs Pajak) | Last Updated: ${updateLabel} WIB | `;
                 document.getElementById('currency-ticker-text').innerText = tickerText + tickerText;
             } else {
                 document.getElementById('currency-ticker-text').innerText =

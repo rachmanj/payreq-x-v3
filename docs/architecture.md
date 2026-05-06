@@ -33,6 +33,18 @@ This document summarizes structural flows that extend Laravel defaults. Keep it 
 
 - `tests/Feature/AnggaranReportsTest.php` covers unauthorized POST paths vs permission gates.
 
+## User-payreq: realization / reimbursement detail lines (`realization_details`)
+
+- **Controllers / requests:** Realization flows use **`UserRealizationController`** + **`StoreRealizationDetailRequest`** / **`UpdateRealizationDetailRequest`**; reimbursement detail CRUD uses **`PayreqReimburseController`** with the **same** Form Requests (shared rules).
+- **Fleet, dates, HM:** Concern **`App\Http\Requests\Concerns\ValidatesRealizationDetailFleet`**; cross-day HM monotonicity **`App\Support\RealizationDetailOdometerMonotonicityValidator`**.
+- **`expense_date` (SQL `DATE`):**
+  - **JSON / `toArray()`:** **`RealizationDetail::attributesToArray()`** overrides serialization so **`expense_date`** is **`Y-m-d`** (prefers **`getRawOriginal('expense_date')`**). Avoids **UTC ISO8601** midnight shifting the calendar day when the front end uses **`String(...).substring(0, 10)`**.
+  - **Payload / validation helpers:** Trait methods **`canonicalDateOnlyString`** (persist normalized **`YYYY-MM-DD`**) and **`parseExpenseDateStartOfDay`** (“not in the future” vs **`Carbon::now(config('app.timezone'))`**).
+  - **Business rule:** Expense date **must not be after today**; there is **no** minimum tied to **payreq approval** date (removed).
+- **PHP before 8.2:** The fleet field list is **`fleetInputFieldNames()`**, not a trait **`const`** (traits cannot declare constants before PHP 8.2).
+
+See **ADR-PAYREQ-01** (shared reimburse/realization validation), **ADR-PAYREQ-02**, **ADR-COMPAT-01**.
+
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling).
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-PAYREQ-01/02, ADR-COMPAT-01.
