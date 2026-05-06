@@ -26,12 +26,18 @@
                     @endif
                     <br>
                     @if ($overdue_payreqs > 0)
-                        <p class="text-red">Terdapat <b>{{ $overdue_payreqs }}</b> Payreq Advance yang Overdue. Silahkan
-                            buat Realization terlebih dahulu..</p>
+                        <p class="text-red mb-1">Terdapat <b>{{ $overdue_payreqs }}</b> Payreq Advance yang Overdue.
+                            Silahkan buat Realization terlebih dahulu..
+                            <a href="{{ route('user-payreqs.overdue-documents.index') }}"
+                                class="text-red font-weight-bold ml-1"><u>Lihat dokumen overdue</u></a>
+                        </p>
                     @endif
                     @if ($overdue_realizations > 0)
-                        <p class="text-red">Terdapat <b>{{ $overdue_realizations }}</b> dokumen Realization yang belum
-                            diserahkan ke Accounting. Silahkan segera diselesaikan ..</p>
+                        <p class="text-red mb-1">Terdapat <b>{{ $overdue_realizations }}</b> dokumen Realization yang belum
+                            diserahkan ke Accounting. Silahkan segera diselesaikan ..
+                            <a href="{{ route('user-payreqs.overdue-documents.index') }}"
+                                class="text-red font-weight-bold ml-1"><u>Lihat dokumen overdue</u></a>
+                        </p>
                     @endif
                 </div>
 
@@ -80,6 +86,7 @@
             </div> <!-- /.modal-content -->
         </div> <!-- /.modal-dialog -->
     </div> <!-- /.modal -->
+
 @endsection
 
 @section('styles')

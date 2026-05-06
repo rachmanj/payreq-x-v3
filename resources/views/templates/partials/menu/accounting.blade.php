@@ -27,6 +27,13 @@
 
         @hasanyrole('superadmin|admin|cashier')
             <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
+            @can('approve_overdue_extension')
+                <li><a href="{{ route('document-overdue.extensions.index') }}" class="dropdown-item">Approve overdue extensions
+                        @if (isset($pendingExtensionsCount) && $pendingExtensionsCount > 0)
+                            <span class="badge badge-warning">{{ $pendingExtensionsCount }}</span>
+                        @endif
+                    </a></li>
+            @endcan
             <li><a href="{{ route('accounting.customers.index') }}" class="dropdown-item">Customer List</a></li>
             <li><a href="{{ route('accounting.daily-tx.index') }}" class="dropdown-item">Daily Tx Upload</a></li>
         @endhasanyrole

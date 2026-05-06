@@ -90,3 +90,29 @@ Lightweight records of intent and trade-offs. Numbering is sequential by topic a
 - Older PHP stacks load the concern; behaviour unchanged on PHP 8.2+.
 
 ---
+
+## ADR-OVERDUE-EXT-01 — Overdue extension workflow, eligibility alignment, approver access, dashboard signal
+
+**Status:** Accepted (2026-05-06)
+
+**Context**
+
+- Payreq/realization documents can become overdue; only some projects (**000H**, **APS**) participate in a formal **request → approve/reject** extension flow alongside legacy admin **extend** actions on document-overdue screens.
+- Submit-time eligibility initially diverged from list queries when **due date = today** (“overdue” in SQL **`due_date < now()`** sense vs **end-of-day** parsing).
+- **`superadmin`** / **`admin`** users needed the approval UI without depending solely on Spatie permission rows copied per environment.
+- The dashboard includes **`Announcement::visibleToUser()`**, whose **`scopeCurrent`** used MySQL-only **`DATE_ADD`**, breaking **`GET /dashboard`** under **SQLite** PHPUnit configuration.
+
+**Decision**
+
+1. Persist extension requests on **`overdue_extensions`** with statuses **`pending`** / **`approved`** / **`rejected`**; **`OverdueExtensionController`** owns listing JSON, user **`store`**, and **`approve`** / **`reject`** (transactions updating **`payreqs.due_date`** or **`realizations.due_date`** on approve).
+2. User-facing extension UX lives on **`user-payreqs/overdue-documents`** (not duplicated inline on generic My Payreqs index); **`store`** enforces owner, eligible project, document state (**advance + paid** vs **approved realization**), **`Carbon::parse($due_date)->lt(now())`**, and single pending row per document.
+3. **`Gate::before`**: users with roles **`superadmin`** or **`admin`** implicitly pass **`approve_overdue_extension`**; others rely on Spatie **`approve_overdue_extension`** as usual.
+4. Dashboard shows a **pending count** card for users who can approve, linking to **`document-overdue.extensions.index`**.
+5. **`Announcement::scopeCurrent`**: branch **`DATE_ADD`** (MySQL default) vs SQLite-compatible **`date(...)`** arithmetic so announcement scopes remain correct in production while PHPUnit can render the dashboard.
+
+**Consequences**
+
+- Positive: one pipeline for extension history + approvals; eligibility matches overdue listings; admins retain access without fragile permission DB drift; approvers see backlog from **`/dashboard`**.
+- Negative: **`Gate::before`** must stay narrow (single ability string check) to avoid accidental broad bypass; dual SQL for **`scopeCurrent`** must be kept in sync when the “current window” rule changes.
+
+---

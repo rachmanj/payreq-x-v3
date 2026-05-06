@@ -1,3 +1,17 @@
+### [040] Document overdue extensions — workflow, dashboard card, eligibility parity, SQLite announcements (2026-05-06) ✅ COMPLETE
+
+**Challenge:** Requestors needed a formal **pending → approved/rejected** overdue extension path for eligible projects (**000H**, **APS**) without cluttering **My Payreqs**; submit eligibility had to match **overdue** listings (**due date = today** treated consistently). Approvers (**superadmin**/**admin**) needed access without relying only on synced Spatie permission rows. Approvers also needed a **dashboard** signal for pending queue volume. **`GET /dashboard`** failed under PHPUnit (**SQLite**) because **`Announcement::scopeCurrent`** used MySQL **`DATE_ADD`** only.
+
+**Solution:** **`overdue_extensions`** + **`OverdueExtension`** model; **`OverdueExtensionController`** (**DataTables** index/data, **`store`** for document owners, **`approve`**/**`reject`** with transactional **`due_date`** updates). User surface **`user-payreqs/overdue-documents`** + modals; **`store`** checks owner, project list, document state (**advance + paid** vs **approved realization**), **`Carbon::parse($due_date)->lt(now())`**, single pending row per document. **`AuthServiceProvider::Gate::before`** grants **`approve_overdue_extension`** for **`superadmin`**/**`admin`**. **`DashboardUserController`** feeds **`pending_overdue_extension_count`**; **`dashboard/row2`** card links to **`document-overdue.extensions.index`** (**`data-dashboard-pending-extension-requests`**). **`Announcement::scopeCurrent`** branches SQLite vs default MySQL interval comparison.
+
+**Key learning:** Align submit-time **overdue** checks with listing SQL (**`< now()`** on the calendar **`due_date`**, not **endOfDay** drift). Keep **`Gate::before`** scoped to a single ability string. Dashboard views that touch **`Announcement`** must remain portable when **`phpunit.xml`** forces **SQLite**.
+
+**Implementation / file map:** `database/migrations/*create_overdue_extensions_table*`, `app/Models/OverdueExtension.php`, `app/Http/Controllers/OverdueExtensionController.php`, `StoreOverdueExtensionRequest.php`, `ReviewOverdueExtensionRequest.php`, `UserPayreqController` (**overdueDocuments**), `DashboardUserController.php`, `resources/views/dashboard/row2.blade.php`, `resources/views/user-payreqs/overdue-documents.blade.php`, `resources/views/user-payreqs/partials/extension-request-modals.blade.php`, `routes/user_payreqs.php`, `routes/web.php` (**document-overdue** group), `AuthServiceProvider.php`, `Announcement.php` (**scopeCurrent**), `tests/Feature/OverdueExtensionTest.php`.
+
+**Docs:** `docs/architecture.md`, `docs/decisions.md` (**ADR-OVERDUE-EXT-01**), `docs/todo.md`.
+
+---
+
 ### [039] Realization detail `expense_date` — PHP trait compat, calendar JSON, validation trim (2026-04-29) ✅ COMPLETE
 
 **Challenge:** Production (PHP **< 8.2**) threw **"Traits cannot have constants"** because **`ValidatesRealizationDetailFleet`** used **`protected const`**. After **`expense_date`** shipped, saves “lost” a calendar day in the UI: Laravel JSON emitted Carbon as **ISO8601 UTC** while pages used **`substring(0, 10)`**, so **`Asia/Makassar`** midnight became the **previous** UTC date. Stakeholders removed the rule **“not before payreq approval”** but copy and server checks still referenced it.

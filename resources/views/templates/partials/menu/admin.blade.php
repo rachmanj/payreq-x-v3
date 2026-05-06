@@ -6,6 +6,13 @@
         <li><a href="{{ route('currencies.index') }}" class="dropdown-item">Currencies</a></li>
         {{-- <li><a href="{{ route('adv-category.index') }}" class="dropdown-item">Advance Category</a></li> --}}
         <li><a href="{{ route('document-overdue.payreq.index') }}" class="dropdown-item">Documents Overdue</a></li>
+        @can('approve_overdue_extension')
+            <li><a href="{{ route('document-overdue.extensions.index') }}" class="dropdown-item">Approve overdue extensions
+                    @if (isset($pendingExtensionsCount) && $pendingExtensionsCount > 0)
+                        <span class="badge badge-warning">{{ $pendingExtensionsCount }}</span>
+                    @endif
+                </a></li>
+        @endcan
         @can('akses_sync_buc')
             <li><a href="{{ route('rabs.sync.index') }}" class="dropdown-item">Sync BUCs</a></li>
         @endcan

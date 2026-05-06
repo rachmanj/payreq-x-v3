@@ -11,6 +11,7 @@ use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\OutgoingController;
+use App\Http\Controllers\OverdueExtensionController;
 use App\Http\Controllers\ParameterController;
 use App\Http\Controllers\PayreqOverdueController;
 use App\Http\Controllers\PermissionController;
@@ -91,14 +92,32 @@ Route::middleware('auth')->group(function () {
         // Payreq Overdue
         Route::get('payreq', [PayreqOverdueController::class, 'index'])->name('payreq.index');
         Route::get('payreq/data', [PayreqOverdueController::class, 'data'])->name('payreq.data');
-        Route::post('payreq/extend', [PayreqOverdueController::class, 'extend'])->name('payreq.extend');
-        Route::post('payreq/bulk-extend', [PayreqOverdueController::class, 'bulkExtend'])->name('payreq.bulk-extend');
+        Route::post('payreq/extend', [PayreqOverdueController::class, 'extend'])
+            ->name('payreq.extend')
+            ->middleware('can:approve_overdue_extension');
+        Route::post('payreq/bulk-extend', [PayreqOverdueController::class, 'bulkExtend'])
+            ->name('payreq.bulk-extend')
+            ->middleware('can:approve_overdue_extension');
 
         // Realization Overdue
         Route::get('realization', [RealizationOverdueController::class, 'index'])->name('realization.index');
         Route::get('realization/data', [RealizationOverdueController::class, 'data'])->name('realization.data');
-        Route::post('realization/extend', [RealizationOverdueController::class, 'extend'])->name('realization.extend');
-        Route::post('realization/bulk-extend', [RealizationOverdueController::class, 'bulkExtend'])->name('realization.bulk-extend');
+        Route::post('realization/extend', [RealizationOverdueController::class, 'extend'])
+            ->name('realization.extend')
+            ->middleware('can:approve_overdue_extension');
+        Route::post('realization/bulk-extend', [RealizationOverdueController::class, 'bulkExtend'])
+            ->name('realization.bulk-extend')
+            ->middleware('can:approve_overdue_extension');
+
+        Route::get('extensions', [OverdueExtensionController::class, 'index'])->name('extensions.index');
+        Route::get('extensions/data', [OverdueExtensionController::class, 'data'])->name('extensions.data');
+        Route::post('extensions', [OverdueExtensionController::class, 'store'])->name('extensions.store');
+        Route::put('extensions/{extension}/approve', [OverdueExtensionController::class, 'approve'])
+            ->name('extensions.approve')
+            ->middleware('can:approve_overdue_extension');
+        Route::put('extensions/{extension}/reject', [OverdueExtensionController::class, 'reject'])
+            ->name('extensions.reject')
+            ->middleware('can:approve_overdue_extension');
     });
 
     // JOURNALS

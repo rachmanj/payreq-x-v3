@@ -19,6 +19,7 @@ class RoleController extends Controller
     {
         $this->ensurePcbcWarningPermissionExists();
         $this->ensureValidatePcbcReportPermissionExists();
+        $this->ensureApproveOverdueExtensionPermissionExists();
         $permissions = Permission::orderBy('name', 'asc')->get();
 
         return view('roles.create', compact('permissions'));
@@ -46,6 +47,7 @@ class RoleController extends Controller
     {
         $this->ensurePcbcWarningPermissionExists();
         $this->ensureValidatePcbcReportPermissionExists();
+        $this->ensureApproveOverdueExtensionPermissionExists();
         $role = Role::find($id);
         $permissions = Permission::orderBy('name', 'asc')->get();
         $rolePermissions = $role->permissions()->get()->pluck('id')->toArray();
@@ -292,6 +294,14 @@ class RoleController extends Controller
     {
         Permission::firstOrCreate(
             ['name' => 'validate_pcbc_report'],
+            ['guard_name' => 'web'],
+        );
+    }
+
+    private function ensureApproveOverdueExtensionPermissionExists(): void
+    {
+        Permission::firstOrCreate(
+            ['name' => 'approve_overdue_extension'],
             ['guard_name' => 'web'],
         );
     }

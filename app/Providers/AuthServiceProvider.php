@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-// use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -24,6 +24,16 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        //
+        Gate::before(function ($user, string $ability) {
+            if ($ability !== 'approve_overdue_extension') {
+                return null;
+            }
+
+            if ($user !== null && method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['superadmin', 'admin'])) {
+                return true;
+            }
+
+            return null;
+        });
     }
 }

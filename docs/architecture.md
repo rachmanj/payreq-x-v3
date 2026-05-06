@@ -45,6 +45,48 @@ This document summarizes structural flows that extend Laravel defaults. Keep it 
 
 See **ADR-PAYREQ-01** (shared reimburse/realization validation), **ADR-PAYREQ-02**, **ADR-COMPAT-01**.
 
+## Document overdue extensions
+
+### Data model
+
+- Table **`overdue_extensions`**: links a **`document_type`** (**`payreq`** | **`realization`**) + **`document_id`** to **`user_id`** (requestor), **`current_due_date`**, **`requested_due_date`**, **`reason`**, **`status`** (**`pending`** | **`approved`** | **`rejected`**), optional reviewer metadata.
+- **`App\Models\OverdueExtension`**: **`eligibleProjects()`** returns **`['000H', 'APS']`**; scopes **`pending()`** / **`approved()`** / **`rejected()`**.
+
+### User submission
+
+- **Listing:** **`GET user-payreqs/overdue-documents`** (`UserPayreqController::overdueDocuments`) — overdue payreqs/realizations with extension counts and modals (`resources/views/user-payreqs/overdue-documents.blade.php`, partial **`user-payreqs/partials/extension-request-modals.blade.php`**).
+- **POST** **`document-overdue/extensions`** (`OverdueExtensionController::store`, validated by **`StoreOverdueExtensionRequest`**) — authenticated owner only; project must be eligible; **payreq**: **`type = advance`**, **`status = paid`**, **`due_date`** set; **realization**: **`status = approved`**, **`due_date`** set; **no second pending** row per document. Successful submit redirects to **`user-payreqs.index`** with flash success.
+- **Overdue eligibility** for submit matches overdue listings: **`Carbon::parse($due_date)->lt(now())`** (same calendar-day semantics as **`due_date < now()`** in SQL-style comparisons — not “end of due date”).
+
+### Approver UI and routes (`routes/web.php`, prefix **`document-overdue`**)
+
+- **`GET document-overdue/extensions`** — DataTable index (**`OverdueExtensionController@index`**, **`can:approve_overdue_extension`** on **`index`** / **`data`**).
+- **`PUT document-overdue/extensions/{extension}/approve|reject`** — **`approve_overdue_extension`** middleware on approve/reject; **`ReviewOverdueExtensionRequest`** on reject.
+- Payreq/realization overdue screens retain **direct / bulk extend** actions (**`PayreqOverdueController`**, **`RealizationOverdueController`**) gated by **`can:approve_overdue_extension`** where applicable.
+- Sidebar / menus: links **Approve overdue extensions** under Accounting (roles **`superadmin|admin|cashier`**) and Admin (**`akses_admin`**), using **`route('document-overdue.extensions.index')`**.
+
+### Authorization
+
+- Spatie permission **`approve_overdue_extension`** (seeded / **`RoleController`** ensures definition when editing roles).
+- **`AuthServiceProvider::boot`**: **`Gate::before`** grants **`approve_overdue_extension`** when the user has role **`superadmin`** or **`admin`**, so approval surfaces work even if permission rows are missing from a synced role.
+
+### Dashboard
+
+- **`DashboardUserController::index`**: when **`auth()->user()->can('approve_overdue_extension')`**, passes **`pending_overdue_extension_count`** = **`OverdueExtension::query()->pending()->count()`**.
+- **`resources/views/dashboard/row2.blade.php`**: stat card **Pending overdue extension requests**, link to **`document-overdue.extensions.index`**, attribute **`data-dashboard-pending-extension-requests`** for tests/DOM hooks. Wrapped in **`@can('approve_overdue_extension')`**.
+
+### Layout note (extension modals elsewhere)
+
+- **`templates/main.blade.php`** exposes **`@yield('modals')`** after the main wrapper so Bootstrap modals are not trapped inside nested markup; validation errors can surface via Toastr / reopen modal patterns on user overdue views as implemented.
+
+### Announcements × PHPUnit (`Announcement::scopeCurrent`)
+
+- **`scopeCurrent`** uses **`DATE_ADD(...)`** on MySQL for “active window” math; **SQLite** (PHPUnit **`phpunit.xml`** `:memory:`) uses a **`date(..., '+' || duration_days || ' days')`** expression so **`dashboard/index`** (which loads **`dashboard/announcements`**) does not 500 during feature tests.
+
+### Tests
+
+- **`tests/Feature/OverdueExtensionTest.php`** — permissions, submit/eligibility, approve flow, overdue-documents page, dashboard pending card visibility/count.
+
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-PAYREQ-01/02, ADR-COMPAT-01.
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-PAYREQ-01/02, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**.

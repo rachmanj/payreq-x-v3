@@ -342,11 +342,26 @@
                             @hasanyrole('superadmin|admin|cashier')
                                 <li class="nav-item">
                                     <a href="{{ route('document-overdue.payreq.index') }}"
-                                        class="nav-link {{ request()->routeIs('document-overdue.*') ? 'active' : '' }}">
+                                        class="nav-link {{ (request()->routeIs('document-overdue.payreq.*') || request()->routeIs('document-overdue.realization.*')) ? 'active' : '' }}">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Documents Overdue</p>
                                     </a>
                                 </li>
+                                @can('approve_overdue_extension')
+                                    <li class="nav-item">
+                                        <a href="{{ route('document-overdue.extensions.index') }}"
+                                            class="nav-link {{ request()->routeIs('document-overdue.extensions.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Approve overdue extensions
+                                                @if (isset($pendingExtensionsCount) && $pendingExtensionsCount > 0)
+                                                    <span
+                                                        class="badge badge-warning right">{{ $pendingExtensionsCount }}</span>
+                                                @endif
+                                            </p>
+                                        </a>
+                                    </li>
+                                @endcan
                                 <li class="nav-item">
                                     <a href="{{ route('accounting.customers.index') }}"
                                         class="nav-link {{ request()->routeIs('accounting.customers.*') ? 'active' : '' }}">
@@ -496,11 +511,25 @@
                             </li>
                             <li class="nav-item">
                                 <a href="{{ route('document-overdue.payreq.index') }}"
-                                    class="nav-link {{ request()->routeIs('document-overdue.*') ? 'active' : '' }}">
+                                    class="nav-link {{ (request()->routeIs('document-overdue.payreq.*') || request()->routeIs('document-overdue.realization.*')) ? 'active' : '' }}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Documents Overdue</p>
                                 </a>
                             </li>
+                            @can('approve_overdue_extension')
+                                <li class="nav-item">
+                                    <a href="{{ route('document-overdue.extensions.index') }}"
+                                        class="nav-link {{ request()->routeIs('document-overdue.extensions.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>
+                                            Approve overdue extensions
+                                            @if (isset($pendingExtensionsCount) && $pendingExtensionsCount > 0)
+                                                <span class="badge badge-warning right">{{ $pendingExtensionsCount }}</span>
+                                            @endif
+                                        </p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('akses_sync_buc')
                                 <li class="nav-item">
                                     <a href="{{ route('rabs.sync.index') }}"

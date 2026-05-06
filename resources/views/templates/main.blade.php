@@ -90,6 +90,8 @@
         </div>
         <!-- ./wrapper -->
 
+        @yield('modals')
+
         <!-- REQUIRED SCRIPTS -->
         @include('templates.partials.script')
 
@@ -132,6 +134,12 @@
             @if (Session::has('warning'))
                 toastr.warning("{{ Session::get('warning') }}");
             @endif
+
+            @if (isset($errors) && $errors->any())
+                @foreach ($errors->all() as $error)
+                    toastr.error(@json($error));
+                @endforeach
+            @endif
         </script>
 
         <!-- SweetAlert2 for permission errors -->
@@ -150,9 +158,6 @@
                 });
             </script>
         @endif
-
-        <!-- Modals -->
-        @yield('modals')
 
         <!-- Sidebar State Management -->
         <script>

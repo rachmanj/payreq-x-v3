@@ -27,14 +27,14 @@ class PayreqOverdueController extends Controller
         $request->validate([
             'payreq_ids' => 'required|array',
             'payreq_ids.*' => 'exists:payreqs,id',
-            'new_due_date' => 'required|date'
+            'new_due_date' => 'required|date',
         ]);
 
         $count = Payreq::whereIn('id', $request->payreq_ids)
             ->update(['due_date' => $request->new_due_date]);
 
         return redirect()->route('document-overdue.payreq.index')
-            ->with('success', $count . ' payment requests have been updated successfully.');
+            ->with('success', $count.' payment requests have been updated successfully.');
     }
 
     public function data()
@@ -47,16 +47,21 @@ class PayreqOverdueController extends Controller
 
         return datatables()->of($payreqs)
             ->addColumn('checkbox', function ($payreq) {
-                return '<input type="checkbox" name="payreq_ids[]" class="payreq-checkbox" value="' . $payreq->id . '">';
+                if (! auth()->user()?->can('approve_overdue_extension')) {
+                    return '';
+                }
+
+                return '<input type="checkbox" name="payreq_ids[]" class="payreq-checkbox" value="'.$payreq->id.'">';
             })
             ->addColumn(('employee'), function ($payreq) {
                 return $payreq->requestor->name;
             })
             ->editColumn('nomor', function ($approved) {
-                return '<a href="#" style="color: black" title="' . $approved->remarks . '">' . $approved->nomor . '</a>';
+                return '<a href="#" style="color: black" title="'.$approved->remarks.'">'.$approved->nomor.'</a>';
             })
             ->addColumn('dfp', function ($payreq) {
                 $last_outgoing = $payreq->outgoings->last();
+
                 return Carbon::parse($last_outgoing->outgoing_date)->diffInDays(now()); // Days from paid date
             })
             ->addColumn('dfd', function ($payreq) {

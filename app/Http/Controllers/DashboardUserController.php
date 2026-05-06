@@ -6,6 +6,7 @@ use App\Http\Controllers\Accounting\SapSyncController;
 use App\Models\ApprovalPlan;
 use App\Models\Dokumen;
 use App\Models\Outgoing;
+use App\Models\OverdueExtension;
 use App\Models\Payreq;
 use Carbon\Carbon;
 
@@ -34,6 +35,11 @@ class DashboardUserController extends Controller
                 ->count();
         }
 
+        $pending_overdue_extension_count = 0;
+        if (auth()->user()->can('approve_overdue_extension')) {
+            $pending_overdue_extension_count = OverdueExtension::query()->pending()->count();
+        }
+
         return view('dashboard.index', compact([
             'wait_approve',
             'user_ongoing_payreqs',
@@ -44,6 +50,7 @@ class DashboardUserController extends Controller
             'chart_activites',
             'your_team',
             'pcbc_pending_validation_count',
+            'pending_overdue_extension_count',
         ]));
     }
 

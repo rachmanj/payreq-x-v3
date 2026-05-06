@@ -6,6 +6,10 @@ _(none — add items here)_
 
 ## Recently completed
 
+- **2026-05-06** — **Document overdue extensions (request / approve) + dashboard pending card**
+  - Table **`overdue_extensions`**, **`OverdueExtensionController`** (**list**, **store**, **approve**, **reject**), **`StoreOverdueExtensionRequest`** / **`ReviewOverdueExtensionRequest`**, routes under **`document-overdue`**. User listing **`user-payreqs/overdue-documents`** + extension modals; submit eligibility aligned with overdue semantics (**`Carbon::parse($due_date)->lt(now())`**). Spatie **`approve_overdue_extension`** + **`Gate::before`** for **`superadmin`**/**`admin`**. Dashboard **`pending_overdue_extension_count`** card in **`dashboard/row2`** ( **`data-dashboard-pending-extension-requests`** ). **`Announcement::scopeCurrent`** SQLite branch so PHPUnit (**`:memory:`**) can load **`dashboard/index`**. Tests: **`tests/Feature/OverdueExtensionTest.php`**.  
+  - Docs: `docs/architecture.md`, `docs/decisions.md` (**ADR-OVERDUE-EXT-01**), `MEMORY.md` **[040]**.
+
 - **2026-04-29** — **Cashier: Realization Attachments**
   - Module for uploading/downloading/deleting images & PDFs per **`realizations`** row (`realization_attachments` table, private disk). Spatie permissions **`akses_realization_attachments`**, **`create_realization_attachments`**, **`delete_realization_attachments`**, **`realization_attachments_scope_bo`** (seeder + idempotent migration inserting permission rows + cache reset). **`RealizationAttachmentsAccessService`** scopes lists: HO (**000H**) all projects; **`realization_attachments_scope_bo`** non-HO/non-APS projects **and** **`whereHas('attachments')`** only; others own project. Sidebar menu (`sidebar.blade.php`) — **not** only `menu/cashier.blade.php` (unused in main layout). DataTable filters + Employee Name column + action badge when attachments exist; detail shows remarks.  
   - Docs: `docs/architecture.md`, `docs/decisions.md` (ADR-REALIZATION-ATTACH-01), `MEMORY.md` [037].

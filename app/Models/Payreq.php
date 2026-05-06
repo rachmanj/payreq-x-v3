@@ -44,6 +44,12 @@ class Payreq extends Model
         return $this->hasOne(Realization::class);
     }
 
+    public function overdueExtensions()
+    {
+        return $this->hasMany(OverdueExtension::class, 'document_id')
+            ->where('document_type', OverdueExtension::DOCUMENT_PAYREQ);
+    }
+
     public function rab()
     {
         return $this->belongsTo(Rab::class, 'rab_id', 'id')->withDefault([

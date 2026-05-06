@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\ApprovalPlan;
 use App\Models\Outgoing;
+use App\Models\OverdueExtension;
 use App\Models\Payreq;
 use App\Models\Realization;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class UserPayreqController extends Controller
@@ -36,8 +36,48 @@ class UserPayreqController extends Controller
             'enable_payreq',
             'overdue_document_count',
             'overdue_payreqs',
-            'overdue_realizations'
+            'overdue_realizations',
         ]));
+    }
+
+    public function overdueDocuments()
+    {
+        $userId = auth()->user()->id;
+
+        $extensionCountRelations = [
+            'overdueExtensions as overdue_extensions_total_count',
+            'overdueExtensions as overdue_extensions_pending_count' => function ($query) {
+                $query->where('status', OverdueExtension::STATUS_PENDING);
+            },
+            'overdueExtensions as overdue_extensions_approved_count' => function ($query) {
+                $query->where('status', OverdueExtension::STATUS_APPROVED);
+            },
+        ];
+
+        $overduePayreqs = Payreq::query()
+            ->where('user_id', $userId)
+            ->where('type', 'advance')
+            ->where('status', 'paid')
+            ->whereNotNull('due_date')
+            ->where('due_date', '<', now())
+            ->withCount($extensionCountRelations)
+            ->orderBy('due_date')
+            ->get();
+
+        $overdueRealizations = Realization::query()
+            ->where('user_id', $userId)
+            ->where('status', 'approved')
+            ->whereNotNull('due_date')
+            ->where('due_date', '<', now())
+            ->with('payreq')
+            ->withCount($extensionCountRelations)
+            ->orderBy('due_date')
+            ->get();
+
+        return view('user-payreqs.overdue-documents', compact(
+            'overduePayreqs',
+            'overdueRealizations'
+        ));
     }
 
     public function update(Request $request, $id)
@@ -66,7 +106,7 @@ class UserPayreqController extends Controller
 
         if ($payreq->submit_at) {
             $date = new \Carbon\Carbon($payreq->submit_at);
-            $submit_at = $date->addHours(8)->format('d-M-Y H:i:s') . ' wita';
+            $submit_at = $date->addHours(8)->format('d-M-Y H:i:s').' wita';
         } else {
             $submit_at = '';
         }
@@ -82,7 +122,7 @@ class UserPayreqController extends Controller
             $paid_date = app(ToolController::class)->getPaidDate($payreq->id);
             $cashier = $payreq->last_outgoing()->cashier->name;
             $paid_date_conv = new \Carbon\Carbon($paid_date);
-            $paid_date = " on " .  $paid_date_conv->format('d-M-Y') . " by " . $cashier;
+            $paid_date = ' on '.$paid_date_conv->format('d-M-Y').' by '.$cashier;
         } else {
             $paid_date = '';
         }
@@ -119,7 +159,7 @@ class UserPayreqController extends Controller
                     'payreq',
                     'terbilang',
                     'realization_details',
-                    'approvers'
+                    'approvers',
                 ]));
             }
 
@@ -127,14 +167,14 @@ class UserPayreqController extends Controller
                 'payreq',
                 'terbilang',
                 'realization_details',
-                'approvers'
+                'approvers',
             ]));
         } else {
             if ($payreq->project == '022C' && $payreq->type == 'advance') {
                 return view('user-payreqs.advance.print_pdf_signed_advance_022c', compact([
                     'payreq',
                     'terbilang',
-                    'approvers'
+                    'approvers',
                 ]));
             }
 
@@ -142,14 +182,14 @@ class UserPayreqController extends Controller
                 return view('user-payreqs.advance.print_pdf_signed_advance', compact([
                     'payreq',
                     'terbilang',
-                    'approvers'
+                    'approvers',
                 ]));
             }
 
             return view('user-payreqs.advance.print_pdf', compact([
                 'payreq',
                 'terbilang',
-                'approvers'
+                'approvers',
             ]));
         }
     }
@@ -211,9 +251,10 @@ class UserPayreqController extends Controller
 
                 $notif = '';
                 if ($notif_count > 0) {
-                    $notif = '<span class="badge badge-info">' . $notif_count . '</span>';
+                    $notif = '<span class="badge badge-info">'.$notif_count.'</span>';
                 }
-                return '<a href="' . route('user-payreqs.show', $payreq->id) . '">' . $payreq->nomor . '</a>' . $notif;
+
+                return '<a href="'.route('user-payreqs.show', $payreq->id).'">'.$payreq->nomor.'</a>'.$notif;
             })
             ->editColumn('type', function ($payreq) {
                 return ucfirst($payreq->type);
@@ -225,23 +266,23 @@ class UserPayreqController extends Controller
                     $statusText = 'Waiting Approval';
                 } elseif ($payreq->status === 'approved') {
                     $approved_date = new \Carbon\Carbon($payreq->approved_at);
-                    $statusText = '<button class="btn btn-xs btn-success" style="pointer-events: none;">APPROVED at ' . $approved_date->addHours(8)->format('d-M-Y H:i') . ' wita </button>';
+                    $statusText = '<button class="btn btn-xs btn-success" style="pointer-events: none;">APPROVED at '.$approved_date->addHours(8)->format('d-M-Y H:i').' wita </button>';
                 } elseif ($payreq->status === 'revise') {
                     $statusText = '<span class="badge badge-warning">REVISED</span>';
                 } elseif ($payreq->status === 'split') {
                     $amount_paid = Outgoing::where('payreq_id', $payreq->id)->sum('amount');
                     $amount_remain = $payreq->amount - $amount_paid;
-                    $statusText = '<button class="btn btn-xs btn-warning" style="pointer-events: none;">Payment SPLITTED</button>' . ' Remain amount: ' . number_format($amount_remain, 2);
+                    $statusText = '<button class="btn btn-xs btn-warning" style="pointer-events: none;">Payment SPLITTED</button>'.' Remain amount: '.number_format($amount_remain, 2);
                 } elseif ($payreq->status === 'paid') {
                     // get difference between due_date and today
                     $due_date = new \Carbon\Carbon($payreq->due_date);
-                    $today = new \Carbon\Carbon();
+                    $today = new \Carbon\Carbon;
                     $dif_days = $due_date->diffInDays($today);
 
                     if ($today > $due_date) {
-                        $statusText = '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button><button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>' . $dif_days . '</b> days</button>';
+                        $statusText = '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button><button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>'.$dif_days.'</b> days</button>';
                     } else {
-                        $statusText = '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button> and due in<b> ' . $dif_days . ' </b> days';
+                        $statusText = '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button> and due in<b> '.$dif_days.' </b> days';
                     }
                 } else {
                     $statusText = ucfirst($payreq->status);
@@ -249,7 +290,7 @@ class UserPayreqController extends Controller
 
                 // Add indicator if realization was modified by approver (for reimburse type)
                 if ($payreq->type === 'reimburse' && $payreq->realization && $payreq->realization->modified_by_approver) {
-                    $statusText .= ' <span class="badge badge-warning" title="Modified by approver on ' . $payreq->realization->modified_by_approver_at->format('d-M-Y H:i') . '"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
+                    $statusText .= ' <span class="badge badge-warning" title="Modified by approver on '.$payreq->realization->modified_by_approver_at->format('d-M-Y H:i').'"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
                 }
 
                 return $statusText;
@@ -267,23 +308,27 @@ class UserPayreqController extends Controller
                             foreach ($payreq->realization->realizationDetails as $detail) {
                                 $amount += $detail->amount;
                             }
+
                             return number_format($amount, 2);
                         }
                     }
+
                     return number_format($payreq->amount, 2);
                 }
             })
             ->editColumn('submit_at', function ($payreq) {
                 if ($payreq->status == 'draft') {
-                    return "Created at " . $payreq->created_at->addHours(8)->format('d-M-Y H:i') . ' wita';
+                    return 'Created at '.$payreq->created_at->addHours(8)->format('d-M-Y H:i').' wita';
                 }
                 if ($payreq->status == 'paid') {
                     $paid_date = App(ToolController::class)->getPaidDate($payreq->id);
                     $paid_date = new \Carbon\Carbon($paid_date);
-                    return 'Paid at ' . $paid_date->addHours(8)->format('d-M-Y');
+
+                    return 'Paid at '.$paid_date->addHours(8)->format('d-M-Y');
                 }
                 $submit_date = new \Carbon\Carbon($payreq->submit_at);
-                return 'Submit at ' . $submit_date->addHours(8)->format('d-M-Y H:i') . ' wita';
+
+                return 'Submit at '.$submit_date->addHours(8)->format('d-M-Y H:i').' wita';
             })
             ->addColumn('action', 'user-payreqs.action')
             ->rawColumns(['action', 'nomor', 'status'])
@@ -306,7 +351,7 @@ class UserPayreqController extends Controller
             $status_cek[] = [
                 'status' => $stat,
                 'count' => $count,
-                'amount' => $amount
+                'amount' => $amount,
             ];
         }
 
@@ -316,12 +361,12 @@ class UserPayreqController extends Controller
 
         $over_due_payreq = [
             'count' => $od_payreq->count(),
-            'amount' => $od_payreq->sum('amount')
+            'amount' => $od_payreq->sum('amount'),
         ];
 
         $result = [
             'payreq_status' => $status_cek,
-            'over_due_payreq' => $over_due_payreq
+            'over_due_payreq' => $over_due_payreq,
         ];
 
         return $result;

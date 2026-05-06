@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\OverdueExtension;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,5 +24,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        View::composer(['templates.partials.sidebar', 'templates.partials.menu.accounting', 'templates.partials.menu.admin'], function ($view): void {
+            $pendingExtensionsCount = 0;
+            if (Auth::check() && Auth::user()?->can('approve_overdue_extension')) {
+                $pendingExtensionsCount = OverdueExtension::query()->pending()->count();
+            }
+
+            $view->with('pendingExtensionsCount', $pendingExtensionsCount);
+        });
     }
 }

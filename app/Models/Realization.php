@@ -66,4 +66,10 @@ class Realization extends Model
     {
         return $this->hasMany(RealizationAttachment::class)->orderByDesc('created_at');
     }
+
+    public function overdueExtensions()
+    {
+        return $this->hasMany(OverdueExtension::class, 'document_id')
+            ->where('document_type', OverdueExtension::DOCUMENT_REALIZATION);
+    }
 }

@@ -16,36 +16,44 @@
                 <div class="card-header">
                     <a href="#" class="text-bold" style="color: black;">PAYMENT REQUEST</a> |
                     <a href="{{ route('document-overdue.realization.index') }}">Realizations</a>
+                    @can('approve_overdue_extension')
+                        | <a href="{{ route('document-overdue.extensions.index') }}"
+                            class="{{ request()->routeIs('document-overdue.extensions.*') ? 'text-bold' : '' }}"
+                            style="color: black;">Approve overdue extensions</a>
+                    @endcan
                 </div>
 
                 <div class="card-body">
-                    <form id="bulk-update-form" method="POST" action="{{ route('document-overdue.payreq.bulk-extend') }}">
-                        @csrf
-                        <div class="row mb-3">
-                            <div class="col-md-2">
-                                <button id="select-all" class="btn btn-sm btn-outline-primary mr-2">Select All</button>
-                                <button id="deselect-all" class="btn btn-sm btn-outline-secondary">Deselect All</button>
-                            </div>
-                            <div id="bulk-actions" class="col-md-10" style="display: none;">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text">New Due Date</span>
-                                            </div>
-                                            <input type="date" name="new_due_date" id="new_due_date" class="form-control"
-                                                required>
-                                            <div class="input-group-append">
-                                                <button type="submit" class="btn btn-primary">Update Selected
-                                                    Records</button>
+                    @can('approve_overdue_extension')
+                        <form id="bulk-update-form" method="POST" action="{{ route('document-overdue.payreq.bulk-extend') }}">
+                            @csrf
+                            <div class="row mb-3">
+                                <div class="col-md-2">
+                                    <button id="select-all" class="btn btn-sm btn-outline-primary mr-2">Select All</button>
+                                    <button id="deselect-all" class="btn btn-sm btn-outline-secondary">Deselect All</button>
+                                </div>
+                                <div id="bulk-actions" class="col-md-10" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">New Due Date</span>
+                                                </div>
+                                                <input type="date" name="new_due_date" id="new_due_date" class="form-control"
+                                                    required>
+                                                <div class="input-group-append">
+                                                    <button type="submit" class="btn btn-primary">Update Selected
+                                                        Records</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </form>
+                    @endcan
 
-                        <table id="payreq-overdue" class="table table-bordered table-striped">
+                    <table id="payreq-overdue" class="table table-bordered table-striped">
                             <thead>
                                 <tr>
                                     <th><input type="checkbox" id="check-all"></th>
@@ -62,7 +70,6 @@
                                 </tr>
                             </thead>
                         </table>
-                    </form>
                 </div>
             </div>
 

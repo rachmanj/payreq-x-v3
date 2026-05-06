@@ -1,15 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserOngoingController;
-use App\Http\Controllers\UserRealizationController;
 use App\Http\Controllers\UserPayreq\FakturController;
 use App\Http\Controllers\UserPayreq\LotClaimController;
-use App\Http\Controllers\UserPayreqHistoriesController;
-use App\Http\Controllers\UserPayreq\UserAnggaranController;
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Http\Controllers\UserPayreq\PayreqReimburseController;
+use App\Http\Controllers\UserPayreq\UserAnggaranController;
+use App\Http\Controllers\UserPayreqController;
+use App\Http\Controllers\UserPayreqHistoriesController;
+use App\Http\Controllers\UserRealizationController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
 
@@ -75,6 +75,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
 
     // PAYREQS INDEX
     Route::get('/data', [UserPayreqController::class, 'data'])->name('data');
+    Route::get('/overdue-documents', [UserPayreqController::class, 'overdueDocuments'])->name('overdue-documents.index');
     Route::get('/', [UserPayreqController::class, 'index'])->name('index');
     Route::get('/{id}', [UserPayreqController::class, 'show'])->name('show');
     Route::post('/cancel', [UserPayreqController::class, 'cancel'])->name('cancel');
@@ -91,7 +92,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::post('/search-lot', [PayreqAdvanceController::class, 'searchLOT'])->name('search-lot');
     });
 
-    //REIMBURSE TYPE
+    // REIMBURSE TYPE
     Route::prefix('reimburse')->name('reimburse.')->group(function () {
         Route::get('/create', [PayreqReimburseController::class, 'create'])->name('create');
         Route::get('/{id}/edit', [PayreqReimburseController::class, 'edit'])->name('edit');
@@ -103,7 +104,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::post('/update_detail', [PayreqReimburseController::class, 'update_detail'])->name('update_detail');
     });
 
-    //FAKTURS
+    // FAKTURS
     Route::prefix('fakturs')->name('fakturs.')->group(function () {
         Route::get('/index', [FakturController::class, 'index'])->name('index');
         Route::get('/data', [FakturController::class, 'data'])->name('data');

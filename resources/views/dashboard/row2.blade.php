@@ -59,6 +59,31 @@
     </div>
 @endcan
 
+@can('approve_overdue_extension')
+    <div class="col-lg-4 col-md-6 col-12">
+        <div
+            class="modern-stat-card {{ $pending_overdue_extension_count > 0 ? 'stat-warning' : 'stat-success' }}"
+            data-dashboard-pending-extension-requests="{{ $pending_overdue_extension_count }}">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-plus"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ $pending_overdue_extension_count }}</div>
+                <div class="stat-label">Pending overdue extension requests</div>
+                <div class="stat-info">
+                    <i
+                        class="fas {{ $pending_overdue_extension_count > 0 ? 'fa-exclamation-circle' : 'fa-check-circle' }}"></i>
+                    {{ $pending_overdue_extension_count > 0 ? 'Awaiting your review' : 'Nothing pending' }}
+                </div>
+            </div>
+            <a href="{{ route('document-overdue.extensions.index') }}" class="stat-action"
+                title="Open overdue extension approvals">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+@endcan
+
 <style>
     .modern-stat-card {
         background: #fff;
