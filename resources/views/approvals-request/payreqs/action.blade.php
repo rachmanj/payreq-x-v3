@@ -7,7 +7,7 @@
 
     {{-- modal update --}}
     <div class="modal fade" id="approvals-update-{{ $model->id }}">
-        <div class="modal-dialog modal-md">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <h4 class="modal-title">Approval for Payreq No. {{ $model->payreq->nomor }}</h4>
@@ -73,7 +73,18 @@
                             </div>
                         @endif
 
-                        @if ($model->payreq->rab_id != null)
+                        @if ($model->payreq->isAdvanceMultiBudget() && $model->payreq->anggaranAllocations->isNotEmpty())
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group mb-2">
+                                        <label>Anggaran allocations</label>
+                                        @include('user-payreqs.partials.show_advance_allocation_table', [
+                                            'payreq' => $model->payreq,
+                                        ])
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif ($model->payreq->rab_id != null)
                             <div class="row">
                                 <div class="col-12">
                                     <div class="form-group">

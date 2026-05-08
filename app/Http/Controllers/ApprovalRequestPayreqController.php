@@ -34,16 +34,23 @@ class ApprovalRequestPayreqController extends Controller
             'realization',
             'realization_details',
             'departments',
-            'projects'
+            'projects',
         ]));
     }
 
     public function data()
     {
-        $approval_requests = ApprovalPlan::where('document_type', 'payreq')
+        $approval_requests = ApprovalPlan::query()
+            ->where('document_type', 'payreq')
             ->where('is_open', 1)
             ->where('status', 0)
             ->where('approver_id', auth()->user()->id)
+            ->with([
+                'payreq.requestor',
+                'payreq.anggaran',
+                'payreq.anggaranAllocations.anggaran',
+                'payreq.realization.realizationDetails',
+            ])
             ->get();
 
         return datatables()->of($approval_requests)
@@ -106,7 +113,7 @@ class ApprovalRequestPayreqController extends Controller
             $realization = $document->payreq->realization;
 
             // Delete removed details
-            if ($request->has('deleted_ids') && !empty($request->deleted_ids)) {
+            if ($request->has('deleted_ids') && ! empty($request->deleted_ids)) {
                 RealizationDetail::whereIn('id', $request->deleted_ids)
                     ->where('realization_id', $realization->id)
                     ->delete();
@@ -169,9 +176,10 @@ class ApprovalRequestPayreqController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update details: ' . $e->getMessage(),
+                'message' => 'Failed to update details: '.$e->getMessage(),
             ], 500);
         }
     }
