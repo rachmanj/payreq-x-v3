@@ -48,6 +48,8 @@
         @can('akses_koran')
             <li><a href="{{ route('cashier.koran.index', ['page' => 'dashboard']) }}" class="dropdown-item">Rekening
                     Koran</a></li>
+            <li><a href="{{ route('cashier.bank-reconciliation.index') }}" class="dropdown-item">Bank Reconciliation</a>
+            </li>
         @endcan
         {{-- @can('akses_dokumen_upload')
       <li><a href="{{ route('cashier.dokumen.index') }}" class="dropdown-item">Upload Dokumen</a></li>

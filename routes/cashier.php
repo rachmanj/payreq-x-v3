@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Cashier\BankReconciliationController;
 use App\Http\Controllers\Cashier\BankTransactionController;
 use App\Http\Controllers\Cashier\BilyetAuditController;
 use App\Http\Controllers\Cashier\BilyetController;
@@ -192,6 +193,20 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::prefix('sap-transactions')->name('sap-transactions.')->group(function () {
         Route::get('/', [SapTransactionController::class, 'index'])->name('index');
         Route::post('/data', [SapTransactionController::class, 'data'])->name('data');
+    });
+
+    Route::prefix('bank-reconciliation')->name('bank-reconciliation.')->group(function () {
+        Route::get('/', [BankReconciliationController::class, 'index'])->name('index');
+        Route::get('/create', [BankReconciliationController::class, 'create'])->name('create');
+        Route::post('/', [BankReconciliationController::class, 'store'])->name('store');
+        Route::get('/{bank_reconciliation}', [BankReconciliationController::class, 'show'])->name('show');
+        Route::get('/{bank_reconciliation}/status', [BankReconciliationController::class, 'status'])->name('status');
+        Route::post('/{bank_reconciliation}/parse', [BankReconciliationController::class, 'parseStatement'])->name('parse');
+        Route::post('/{bank_reconciliation}/fetch-sap', [BankReconciliationController::class, 'fetchSapLines'])->name('fetch-sap');
+        Route::post('/{bank_reconciliation}/auto-match', [BankReconciliationController::class, 'autoMatch'])->name('auto-match');
+        Route::post('/{bank_reconciliation}/match', [BankReconciliationController::class, 'manualMatch'])->name('match');
+        Route::post('/{bank_reconciliation}/complete', [BankReconciliationController::class, 'complete'])->name('complete');
+        Route::get('/{bank_reconciliation}/report', [BankReconciliationController::class, 'report'])->name('report');
     });
 
     Route::prefix('bank-transactions')->name('bank-transactions.')->group(function () {

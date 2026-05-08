@@ -42,6 +42,13 @@ return [
         'timeout' => env('SAP_BRIDGE_TIMEOUT', 30),
     ],
 
+    'openrouter' => [
+        'api_key' => env('OPENROUTER_API_KEY'),
+        'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+        'model' => env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001'),
+        'timeout' => env('OPENROUTER_TIMEOUT', 120),
+    ],
+
     'lot' => [
         'base_url' => env('LOT_API_BASE_URL'),
         'search_endpoint' => env('LOT_API_SEARCH_ENDPOINT'),

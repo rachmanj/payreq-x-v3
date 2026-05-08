@@ -148,14 +148,30 @@
                                                             <i class="fas fa-times"></i>
                                                         </span>
                                                     @else
-                                                        <a href="{{ $month['filename1'] }}" 
-                                                            target="_blank" 
-                                                            class="status-badge status-complete"
-                                                            data-toggle="tooltip" 
-                                                            data-placement="top" 
-                                                            title="Uploaded: {{ $month['upload_date'] ?? 'N/A' }}">
-                                                            <i class="fas fa-check"></i>
-                                                        </a>
+                                                        <span class="d-inline-flex align-items-center justify-content-center flex-wrap"
+                                                            style="gap: 4px;">
+                                                            <a href="{{ $month['filename1'] }}"
+                                                                target="_blank"
+                                                                class="status-badge status-complete"
+                                                                data-toggle="tooltip"
+                                                                data-placement="top"
+                                                                title="Uploaded: {{ $month['upload_date'] ?? 'N/A' }}">
+                                                                <i class="fas fa-check"></i>
+                                                            </a>
+                                                            @if (! empty($month['dokumen_id']))
+                                                                <a href="{{ route('cashier.bank-reconciliation.create', [
+                                                                    'giro_id' => $giro['giro_id'],
+                                                                    'dokumen_id' => $month['dokumen_id'],
+                                                                    'periode' => $year . '-' . $month['month'] . '-01',
+                                                                ]) }}"
+                                                                    class="badge badge-light border"
+                                                                    data-toggle="tooltip"
+                                                                    data-placement="top"
+                                                                    title="Bank reconciliation">
+                                                                    <i class="fas fa-balance-scale text-primary"></i>
+                                                                </a>
+                                                            @endif
+                                                        </span>
                                                     @endif
                                                 </td>
                                             @endforeach

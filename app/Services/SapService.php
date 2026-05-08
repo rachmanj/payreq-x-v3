@@ -10,20 +10,23 @@ use Illuminate\Support\Facades\Log;
 class SapService
 {
     protected Client $client;
+
     protected CookieJar $cookieJar;
+
     protected array $config;
+
     protected bool $isLoggedIn = false;
 
     public function __construct()
     {
         $this->config = [
-            'base_uri' => rtrim(config('services.sap.server_url'), '/') . '/',
+            'base_uri' => rtrim(config('services.sap.server_url'), '/').'/',
             'db_name' => config('services.sap.db_name'),
             'user' => config('services.sap.user'),
             'password' => config('services.sap.password'),
         ];
 
-        $this->cookieJar = new CookieJar();
+        $this->cookieJar = new CookieJar;
         $this->client = new Client([
             'base_uri' => $this->config['base_uri'],
             'cookies' => $this->cookieJar,
@@ -53,6 +56,7 @@ class SapService
                     'company_db' => $this->config['db_name'],
                     'user' => $this->config['user'],
                 ]);
+
                 return true;
             }
 
@@ -69,7 +73,7 @@ class SapService
                 'user' => $this->config['user'],
             ]);
 
-            throw new \Exception('SAP B1 login failed: ' . $errorMessage);
+            throw new \Exception('SAP B1 login failed: '.$errorMessage);
         }
     }
 
@@ -91,7 +95,7 @@ class SapService
 
     public function ensureSession(): void
     {
-        if (!$this->hasValidSession()) {
+        if (! $this->hasValidSession()) {
             $this->login();
         }
     }
@@ -105,6 +109,7 @@ class SapService
                 Log::warning('SAP B1 session expired, re-logging in');
                 $this->isLoggedIn = false;
                 $this->login();
+
                 return $callback();
             }
             throw $e;
@@ -141,7 +146,7 @@ class SapService
                 }
 
                 $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
-                throw new \Exception('Failed to create journal entry. Status: ' . $statusCode . '. Error: ' . $errorMessage);
+                throw new \Exception('Failed to create journal entry. Status: '.$statusCode.'. Error: '.$errorMessage);
             } catch (RequestException $e) {
                 $errorMessage = 'Unknown error';
                 if ($e->getResponse()) {
@@ -154,7 +159,7 @@ class SapService
                             : $errorBody['error']['message'];
                     }
                 }
-                throw new \Exception('SAP B1 Error: ' . $errorMessage, 0, $e);
+                throw new \Exception('SAP B1 Error: '.$errorMessage, 0, $e);
             }
         });
     }
@@ -165,7 +170,7 @@ class SapService
 
         return $this->handleSessionExpiration(function () {
             $response = $this->client->post('ProjectsService_GetProjectList', [
-                'json' => new \stdClass(),
+                'json' => new \stdClass,
             ]);
 
             $body = json_decode($response->getBody()->getContents(), true);
@@ -208,11 +213,13 @@ class SapService
             });
 
             $body = json_decode($response->getBody()->getContents(), true);
+
             return $body['value'] ?? (is_array($body) ? $body : []);
         } catch (\Exception $e) {
             Log::warning('Failed to query SAP B1 for items', [
                 'error' => $e->getMessage(),
             ]);
+
             return [];
         }
     }
@@ -233,6 +240,7 @@ class SapService
             Log::warning('Failed to query SAP B1 for service items', [
                 'error' => $e->getMessage(),
             ]);
+
             return [];
         }
     }
@@ -257,7 +265,7 @@ class SapService
             $body = json_decode($response->getBody()->getContents(), true);
             $items = $body['value'] ?? (is_array($body) ? $body : []);
 
-            if (!is_array($items)) {
+            if (! is_array($items)) {
                 $items = [];
             }
 
@@ -300,7 +308,7 @@ class SapService
                 }
 
                 $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
-                throw new \Exception('Failed to create AR Invoice. Status: ' . $statusCode . '. Error: ' . $errorMessage);
+                throw new \Exception('Failed to create AR Invoice. Status: '.$statusCode.'. Error: '.$errorMessage);
             } catch (RequestException $e) {
                 $errorMessage = 'Unknown error';
                 if ($e->getResponse()) {
@@ -313,7 +321,7 @@ class SapService
                             : $errorBody['error']['message'];
                     }
                 }
-                throw new \Exception('SAP B1 Error: ' . $errorMessage, 0, $e);
+                throw new \Exception('SAP B1 Error: '.$errorMessage, 0, $e);
             }
         });
     }
@@ -348,7 +356,7 @@ class SapService
                 }
 
                 $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
-                throw new \Exception('Failed to create AP Invoice. Status: ' . $statusCode . '. Error: ' . $errorMessage);
+                throw new \Exception('Failed to create AP Invoice. Status: '.$statusCode.'. Error: '.$errorMessage);
             } catch (RequestException $e) {
                 $errorMessage = 'Unknown error';
                 if ($e->getResponse()) {
@@ -361,7 +369,7 @@ class SapService
                             : $errorBody['error']['message'];
                     }
                 }
-                throw new \Exception('SAP B1 Error: ' . $errorMessage, 0, $e);
+                throw new \Exception('SAP B1 Error: '.$errorMessage, 0, $e);
             }
         });
     }
@@ -396,7 +404,7 @@ class SapService
                 }
 
                 $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
-                throw new \Exception('Failed to create Outgoing Payment. Status: ' . $statusCode . '. Error: ' . $errorMessage);
+                throw new \Exception('Failed to create Outgoing Payment. Status: '.$statusCode.'. Error: '.$errorMessage);
             } catch (RequestException $e) {
                 $errorMessage = 'Unknown error';
                 if ($e->getResponse()) {
@@ -409,7 +417,7 @@ class SapService
                             : $errorBody['error']['message'];
                     }
                 }
-                throw new \Exception('SAP B1 Error: ' . $errorMessage, 0, $e);
+                throw new \Exception('SAP B1 Error: '.$errorMessage, 0, $e);
             }
         });
     }
@@ -492,6 +500,78 @@ class SapService
         }
 
         return null;
+    }
+
+    /**
+     * @return array<int, array{doc_date: ?string, posting_date: ?string, doc_num: string, ref_doc_num: string, transaction_id: string, description: string, project_code: string, debit: float, credit: float}>
+     */
+    public function getGLLines(string $accountCode, string $dateFrom, string $dateTo): array
+    {
+        $accountCode = trim($accountCode);
+        if ($accountCode === '') {
+            return [];
+        }
+
+        $this->ensureSession();
+
+        $lines = [];
+        $skip = 0;
+        $top = 100;
+        $filter = "RefDate ge '".$dateFrom."' and RefDate le '".$dateTo."'";
+
+        do {
+            $response = $this->handleSessionExpiration(function () use ($filter, $skip, $top) {
+                return $this->client->get('JournalEntries', [
+                    'query' => [
+                        '$expand' => 'JournalEntryLines',
+                        '$filter' => $filter,
+                        '$top' => $top,
+                        '$skip' => $skip,
+                    ],
+                ]);
+            });
+
+            $body = json_decode($response->getBody()->getContents(), true);
+            $items = $body['value'] ?? [];
+
+            foreach ($items as $journal) {
+                $journalLines = $journal['JournalEntryLines'] ?? [];
+
+                foreach ($journalLines as $line) {
+                    if (($line['AccountCode'] ?? '') !== $accountCode) {
+                        continue;
+                    }
+
+                    $debit = (float) ($line['Debit'] ?? 0);
+                    $credit = (float) ($line['Credit'] ?? 0);
+
+                    if ($debit === 0.0 && $credit === 0.0) {
+                        continue;
+                    }
+
+                    $refDate = isset($journal['RefDate']) ? substr((string) $journal['RefDate'], 0, 10) : null;
+
+                    $projectCode = (string) ($line['ProjectCode'] ?? $line['ProfitCenter'] ?? $line['CostingCode'] ?? '');
+
+                    $lines[] = [
+                        'doc_date' => $refDate,
+                        'posting_date' => $refDate,
+                        'doc_num' => (string) ($journal['DocNum'] ?? ''),
+                        'ref_doc_num' => trim((string) ($journal['Reference'] ?? '').' '.(string) ($journal['Reference2'] ?? '')),
+                        'transaction_id' => (string) ($journal['JdtNum'] ?? $journal['DocEntry'] ?? ''),
+                        'description' => trim((string) ($line['LineMemo'] ?? '').(($line['LineMemo'] ?? '') !== '' ? ' ' : '').(string) ($journal['Memo'] ?? '')),
+                        'project_code' => trim($projectCode),
+                        'debit' => $debit,
+                        'credit' => $credit,
+                    ];
+                }
+            }
+
+            $count = count($items);
+            $skip += $top;
+        } while ($count === $top);
+
+        return $lines;
     }
 
     public function __destruct()

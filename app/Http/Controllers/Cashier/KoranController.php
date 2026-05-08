@@ -29,6 +29,7 @@ class KoranController extends Controller
             $year = request()->query('year', date('Y'));
             $korans = $this->check_koran_files($year);
             $statistics = $this->calculateStatistics($korans);
+
             return view($views['dashboard'], compact('giros', 'year', 'korans', 'statistics'));
         }
 
@@ -48,7 +49,7 @@ class KoranController extends Controller
             'giro_id' => $request->giro_id,
             'type' => 'koran',
             'project' => $request->project,
-            'periode' => $request->periode ? $request->periode . '-01' : null,
+            'periode' => $request->periode ? $request->periode.'-01' : null,
             'remarks' => $request->remarks,
             'created_by' => auth()->user()->id,
         ]);
@@ -68,23 +69,25 @@ class KoranController extends Controller
     private function uploadFile($file)
     {
         $extension = $file->getClientOriginalExtension();
-        $filename = 'koran_' . rand() . '.' . $extension;
+        $filename = 'koran_'.rand().'.'.$extension;
         $file->move(public_path('dokumens'), $filename);
+
         return $filename;
     }
 
     public function check_koran_files($year)
     {
         $userRoles = app(UserController::class)->getUserRoles();
-        
+
         if (array_intersect($this->allowedRoles, $userRoles)) {
             $giros = Giro::with('bank')->orderBy('bank_id', 'asc')->get();
         } else {
             $giros = Giro::with('bank')->where('project', auth()->user()->project)->orderBy('bank_id', 'asc')->get();
         }
-        
+
         $months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
         $result = [];
+        $year_data = [];
 
         foreach ($giros as $giro) {
             $korans = Dokumen::where('type', 'koran')
@@ -103,11 +106,13 @@ class KoranController extends Controller
                 if ($has_file) {
                     $completed_count++;
                 }
+
                 return [
                     'month' => $month,
                     'status' => $has_file,
                     'filename1' => $koran ? $koran->filename1 : null,
                     'upload_date' => $koran && $koran->created_at ? \Carbon\Carbon::parse($koran->created_at)->format('d M Y') : null,
+                    'dokumen_id' => $koran ? $koran->id : null,
                 ];
             }, $months);
 
@@ -120,7 +125,7 @@ class KoranController extends Controller
                 'completed_count' => $completed_count,
                 'total_months' => 12,
                 'completion_percentage' => round(($completed_count / 12) * 100, 1),
-                'acc_name_full' => $giro->acc_no . ' - ' . $giro->acc_name . ' - ' . $giro->project,
+                'acc_name_full' => $giro->acc_no.' - '.$giro->acc_name.' - '.$giro->project,
                 'data' => $giro_data,
             ];
         }
@@ -174,7 +179,7 @@ class KoranController extends Controller
             ->addColumn('account', function ($dokumen) {
                 return $dokumen->giro_id === null
                     ? '<small>No Giro Assigned</small>'
-                    : '<small>' . $dokumen->giro->acc_no . ' - ' . $dokumen->giro->acc_name . '</small>';
+                    : '<small>'.$dokumen->giro->acc_no.' - '.$dokumen->giro->acc_name.'</small>';
             })
             ->addColumn('account_project', function ($dokumen) {
                 return $dokumen->giro_id === null
