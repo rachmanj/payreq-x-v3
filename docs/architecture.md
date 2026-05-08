@@ -113,6 +113,40 @@ See **ADR-PAYREQ-03**.
 
 - **`tests/Feature/OverdueExtensionTest.php`** — permissions, submit/eligibility, approve flow, overdue-documents page, dashboard pending card visibility/count.
 
+## Cashier: Bank reconciliation (Koran PDF ↔ SAP GL)
+
+### Routes (`routes/cashier.php`, prefix **`cashier/bank-reconciliation`**)
+
+- **CRUD / flow:** **`BankReconciliationController`** — **`index`**, **`create`**, **`store`**, **`show`** (review), **`report`**, **`status`** (JSON for polling), **`complete`**.
+- **Async rebuild:** **`POST …/parse`** (re-queue PDF parse), **`POST …/fetch-sap`** (re-fetch GL snapshot), **`POST …/auto-match`** (queue auto-match job).
+- **Matching:** **`POST …/match`** — manual **N:M** group (validated arrays **`bank_statement_line_ids[]`**, **`sap_gl_line_ids[]`**). **`POST …/unmatch/{reconciliation_match_group}`** — removes one **`ReconciliationMatchGroup`** and sets contained lines back to **unmatched** (blocked when reconciliation **`completed`**).
+
+### Data model
+
+- **`bank_reconciliations`**: ties **`giro_id`**, optional **`dokumen_id`** (Koran **`dokumens`** row), **`periode`**, balances (bank vs books), **`status`**, **`notes`** on failure.
+- **`bank_statement_lines`**, **`sap_gl_lines`**: per-reconciliation rows with **`matched_status`** (**`unmatched`**, **`matched`**, **`manual`**, **`excluded`**).
+- **N:M matching** is stored as **match groups**, not pairwise rows:
+  - **`reconciliation_match_groups`**: **`match_type`** (**`auto_exact`**, **`auto_fuzzy`**, **`auto_split`**, **`manual`**), **`confidence_score`**, stored **`bank_total`** / **`sap_total`** / **`difference`** (net debit − credit per side).
+  - **`match_group_bank_lines`**, **`match_group_sap_lines`**: pivot to statement / GL lines; **each bank line and each SAP line may appear in at most one group** (unique on **`bank_statement_line_id`** and **`sap_gl_line_id`**).
+
+### Domain services & jobs
+
+- **`BankStatementParserService`** + **`ParseBankStatementJob`**: resolves Koran PDF path (filesystem / URL quirks), calls **`OpenRouterService`** to extract structured bank lines; persists **`bank_statement_lines`** and opening/closing balances when available.
+- **`SapService::getGLLines`** + **`FetchSapGlLinesJob`**: pulls SAP / bridge GL lines for the account/period into **`sap_gl_lines`** (query shape avoids invalid **`$select`** with **`$expand`** on the OData side).
+- **`ReconciliationMatchingService`** + **`AutoMatchReconciliationJob`**: clears prior **auto** groups only, then **1:1** exact amount/date, **1:1** fuzzy (LLM-assisted), then **subset-sum splits** (**`auto_split`**, bounded combo size / date window / amount tolerance **0.005**). **`manualGroup`** / **`deleteMatchGroup`** / **`persistMatchGroup`** centralize group persistence and line status updates.
+- Queued jobs use **`$this->afterCommit()`** in constructors (avoid duplicate **`$afterCommit`** property conflicts with **`Queueable`**).
+
+### HTTP validation
+
+- **`ManualMatchGroupBankReconciliationRequest`**: all IDs belong to the route **`bank_reconciliation`**, lines are **unmatched**, nets sum within **0.005** (aligned with **`ReconciliationMatchingService`**).
+
+### UI
+
+- **Review:** **`resources/views/cashier/bank-reconciliation/show.blade.php`** — match group summary table with **Unmatch**; bank/SAP grids with optional multi-select checkboxes (unmatched only) and fixed bottom bar showing running net totals before **Match selected as group**.
+- **Koran shortcut:** **`KoranController`** (and **`resources/views/cashier/koran/dashboard.blade.php`**) surfaces **`reconciliation_id`** / **`reconciliation_status`** per month where applicable; cashier menu links into bank reconciliation where wired.
+
+See **ADR-BANK-REC-01**.
+
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**.
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-BANK-REC-01**.

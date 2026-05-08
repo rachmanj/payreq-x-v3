@@ -142,3 +142,28 @@ Lightweight records of intent and trade-offs. Numbering is sequential by topic a
 - Negative: **`Gate::before`** must stay narrow (single ability string check) to avoid accidental broad bypass; dual SQL for **`scopeCurrent`** must be kept in sync when the “current window” rule changes.
 
 ---
+
+## ADR-BANK-REC-01 — Bank reconciliation **match groups** (N:M) instead of pairwise **`reconciliation_matches`**
+
+**Status:** Accepted (2026-05-08)
+
+**Context**
+
+- Real-world bank vs ledger ties are often **one bank movement ↔ several postings**, **several bank lines ↔ one posting**, or **many ↔ many**; storing only **one bank ↔ one SAP** rows duplicated intent and blocked legitimate splits.
+- Auto-match already needed **subset-sum** style grouping for splits; manual UX forced users into unnatural pairwise selects.
+
+**Decision**
+
+1. Replace legacy pairwise **`reconciliation_matches`** with **`reconciliation_match_groups`** plus pivots **`match_group_bank_lines`** and **`match_group_sap_lines`** (migration migrates old rows then drops the old table).
+2. Enforce **at most one group membership per bank line and per SAP line** via **unique** constraints on **`bank_statement_line_id`** and **`sap_gl_line_id`** in the pivot tables.
+3. Store rolled-up **`bank_total`**, **`sap_total`**, **`difference`** on the group for review/reporting; **`match_type`** distinguishes **`auto_exact`**, **`auto_fuzzy`**, **`auto_split`**, **`manual`**.
+4. **Manual matching** submits **arrays** of IDs validated by **`ManualMatchGroupBankReconciliationRequest`**; totals must agree within **0.005**, consistent with **`ReconciliationMatchingService::AMOUNT_TOLERANCE`**.
+5. **Undo** is **`deleteMatchGroup`** (explicit **`POST`** **`…/unmatch/{reconciliation_match_group}`**), which restores contained lines to **`unmatched`**; disallowed when the parent **`bank_reconciliations.status`** is **`completed`**.
+6. **Auto-match** clears **auto** groups only (**exact**, **fuzzy**, **split**) before recomputing, preserving **manual** groups.
+
+**Consequences**
+
+- Positive: one schema for manual splits and algorithmic splits; UI and audits describe **groups** naturally.
+- Negative: consumers must stop referencing **`ReconciliationMatch`** / **`BankReconciliation::matches`**; any external reporting must pivot via **`reconciliation_match_groups`**.
+
+---

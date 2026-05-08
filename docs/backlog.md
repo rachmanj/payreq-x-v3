@@ -4,5 +4,6 @@
 - Optional: move exempt project list from `config/pcbc_compliance.php` to admin-managed settings (DB) without deploy.
 - Optional: expand automated tests for `PcbcComplianceService` (week boundary edge cases, exempt users).
 - Optional: feature tests for PCBC validate/reject routes and for compliance queries ignoring non-`validated` `dokumens`.
+- Optional: feature tests for cashier bank reconciliation — manual **N:M** **`POST …/match`** (validation vs tolerance **0.005**), **`POST …/unmatch/{reconciliation_match_group}`**, and completed reconciliation guardrails.
 
 _Prioritise and promote items to `docs/todo.md` when scheduled._

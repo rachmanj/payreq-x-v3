@@ -205,6 +205,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/{bank_reconciliation}/fetch-sap', [BankReconciliationController::class, 'fetchSapLines'])->name('fetch-sap');
         Route::post('/{bank_reconciliation}/auto-match', [BankReconciliationController::class, 'autoMatch'])->name('auto-match');
         Route::post('/{bank_reconciliation}/match', [BankReconciliationController::class, 'manualMatch'])->name('match');
+        Route::post('/{bank_reconciliation}/unmatch/{reconciliation_match_group}', [BankReconciliationController::class, 'unmatch'])->name('unmatch');
         Route::post('/{bank_reconciliation}/complete', [BankReconciliationController::class, 'complete'])->name('complete');
         Route::get('/{bank_reconciliation}/report', [BankReconciliationController::class, 'report'])->name('report');
     });

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
+use App\Models\BankReconciliation;
 use App\Models\Dokumen;
 use App\Models\Giro;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -89,6 +91,14 @@ class KoranController extends Controller
         $result = [];
         $year_data = [];
 
+        $reconciliationIndex = BankReconciliation::query()
+            ->whereIn('giro_id', $giros->pluck('id')->all())
+            ->whereYear('periode', $year)
+            ->get(['id', 'giro_id', 'periode', 'status'])
+            ->keyBy(function (BankReconciliation $row): string {
+                return $row->giro_id.'_'.Carbon::parse($row->periode)->format('m');
+            });
+
         foreach ($giros as $giro) {
             $korans = Dokumen::where('type', 'koran')
                 ->where('giro_id', $giro->id)
@@ -96,23 +106,27 @@ class KoranController extends Controller
                 ->whereIn(DB::raw('LPAD(MONTH(periode), 2, "0")'), $months)
                 ->get()
                 ->keyBy(function ($item) {
-                    return \Carbon\Carbon::parse($item->periode)->format('m');
+                    return Carbon::parse($item->periode)->format('m');
                 });
 
             $completed_count = 0;
-            $giro_data = array_map(function ($month) use ($korans, &$completed_count) {
+            $giro_data = array_map(function ($month) use ($korans, &$completed_count, $giro, $reconciliationIndex) {
                 $koran = $korans->get($month);
                 $has_file = $koran && $koran->filename1 !== null;
                 if ($has_file) {
                     $completed_count++;
                 }
 
+                $reconciliation = $reconciliationIndex->get($giro->id.'_'.$month);
+
                 return [
                     'month' => $month,
                     'status' => $has_file,
                     'filename1' => $koran ? $koran->filename1 : null,
-                    'upload_date' => $koran && $koran->created_at ? \Carbon\Carbon::parse($koran->created_at)->format('d M Y') : null,
+                    'upload_date' => $koran && $koran->created_at ? Carbon::parse($koran->created_at)->format('d M Y') : null,
                     'dokumen_id' => $koran ? $koran->id : null,
+                    'reconciliation_id' => $reconciliation?->id,
+                    'reconciliation_status' => $reconciliation?->status,
                 ];
             }, $months);
 

@@ -6,6 +6,9 @@ _(none — add items here)_
 
 ## Recently completed
 
+- **2026-05-08** — **Cashier bank reconciliation — N:M match groups (**`reconciliation_match_groups`** + pivots)**  
+  Koran PDF parse (**`OpenRouterService`** / **`BankStatementParserService`**) + SAP GL fetch (**`SapService`**); **`ReconciliationMatchingService`** persists **groups** (auto exact/fuzzy/split + manual arrays); **`ManualMatchGroupBankReconciliationRequest`**; review UI multi-select + **Unmatch**; **`POST …/unmatch/{reconciliation_match_group}`**; Koran dashboard reconciliation status hints; queued jobs **`afterCommit()`** constructor pattern. Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-BANK-REC-01)**, **`MEMORY.md` [042]**.
+
 - **2026-05-08** — **Advance payreq multi-row budgets (**`budget_link_mode`** + **`payreq_anggaran_allocations`)**  
   User advance create/edit (**`rab_select`**): legacy single **`rab_id`** vs multi-row allocation grid with total = sum(rows). Persist mode + **`PayreqAnggaranAllocation`**; **`ProcessAdvancePayreqRequest`** / **`PayreqAdvanceController`**; **`UserPayreqController::show`** + partial **`show_advance_allocation_table`**; advance prints **`print_budget_table_body`** across all Advance PDF skins; realization **`add_details`** per-line **`rab_id`** / warnings / labels (**`rab_no`** when distinct); edit form **`payreq_no`** **`readonly`** (POST-safe). Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-PAYREQ-03)**, **`MEMORY.md` [041]**.
 

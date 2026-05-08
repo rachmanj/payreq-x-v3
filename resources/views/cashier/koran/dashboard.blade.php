@@ -75,6 +75,14 @@
                             </a>
                         </div>
                     </div>
+                    <div class="koran-recon-legend mt-2 small text-white">
+                        <span class="mr-3" style="opacity:.85" title="Bank reconciliation status"><i
+                                class="fas fa-balance-scale mr-1"></i>Belum</span>
+                        <span class="mr-3"><i class="fas fa-spinner text-warning mr-1"></i>Memproses</span>
+                        <span class="mr-3"><i class="fas fa-tasks text-info mr-1"></i>Dalam review</span>
+                        <span class="mr-3"><i class="fas fa-exclamation-triangle text-danger mr-1"></i>Gagal</span>
+                        <span><i class="fas fa-check-double text-success mr-1"></i>Selesai</span>
+                    </div>
                 </div>
 
                 <div class="card-body p-0">
@@ -159,17 +167,64 @@
                                                                 <i class="fas fa-check"></i>
                                                             </a>
                                                             @if (! empty($month['dokumen_id']))
-                                                                <a href="{{ route('cashier.bank-reconciliation.create', [
-                                                                    'giro_id' => $giro['giro_id'],
-                                                                    'dokumen_id' => $month['dokumen_id'],
-                                                                    'periode' => $year . '-' . $month['month'] . '-01',
-                                                                ]) }}"
-                                                                    class="badge badge-light border"
-                                                                    data-toggle="tooltip"
-                                                                    data-placement="top"
-                                                                    title="Bank reconciliation">
-                                                                    <i class="fas fa-balance-scale text-primary"></i>
-                                                                </a>
+                                                                @php
+                                                                    $brId = $month['reconciliation_id'] ?? null;
+                                                                    $brStatus = $month['reconciliation_status'] ?? null;
+                                                                @endphp
+                                                                @if (
+                                                                    $brId &&
+                                                                        $brStatus === \App\Models\BankReconciliation::STATUS_COMPLETED)
+                                                                    <a href="{{ route('cashier.bank-reconciliation.report', $brId) }}"
+                                                                        class="badge badge-light border koran-recon-badge"
+                                                                        data-toggle="tooltip"
+                                                                        data-placement="top"
+                                                                        title="Rekonsiliasi selesai — lihat laporan">
+                                                                        <i class="fas fa-check-double text-success"></i>
+                                                                    </a>
+                                                                @elseif ($brId && $brStatus === \App\Models\BankReconciliation::STATUS_FAILED)
+                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
+                                                                        class="badge badge-light border koran-recon-badge"
+                                                                        data-toggle="tooltip"
+                                                                        data-placement="top"
+                                                                        title="Rekonsiliasi gagal — buka untuk perbaiki / parse ulang">
+                                                                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                                                                    </a>
+                                                                @elseif (
+                                                                    $brId &&
+                                                                        $brStatus === \App\Models\BankReconciliation::STATUS_PROCESSING)
+                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
+                                                                        class="badge badge-light border koran-recon-badge"
+                                                                        data-toggle="tooltip"
+                                                                        data-placement="top"
+                                                                        title="Rekonsiliasi sedang diproses (antrian)">
+                                                                        <i class="fas fa-spinner fa-spin text-warning"></i>
+                                                                    </a>
+                                                                @elseif (
+                                                                    $brId &&
+                                                                        in_array($brStatus, [
+                                                                            \App\Models\BankReconciliation::STATUS_IN_REVIEW,
+                                                                            \App\Models\BankReconciliation::STATUS_DRAFT,
+                                                                        ], true))
+                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
+                                                                        class="badge badge-light border koran-recon-badge"
+                                                                        data-toggle="tooltip"
+                                                                        data-placement="top"
+                                                                        title="Rekonsiliasi dalam review — lanjutkan pencocokan">
+                                                                        <i class="fas fa-tasks text-info"></i>
+                                                                    </a>
+                                                                @else
+                                                                    <a href="{{ route('cashier.bank-reconciliation.create', [
+                                                                        'giro_id' => $giro['giro_id'],
+                                                                        'dokumen_id' => $month['dokumen_id'],
+                                                                        'periode' => $year . '-' . $month['month'] . '-01',
+                                                                    ]) }}"
+                                                                        class="badge badge-light border koran-recon-badge"
+                                                                        data-toggle="tooltip"
+                                                                        data-placement="top"
+                                                                        title="Mulai rekonsiliasi bank">
+                                                                        <i class="fas fa-balance-scale text-primary"></i>
+                                                                    </a>
+                                                                @endif
                                                             @endif
                                                         </span>
                                                     @endif
@@ -235,6 +290,17 @@
             font-weight: 600;
             border-color: white;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .koran-recon-legend {
+            opacity: 0.95;
+        }
+
+        .koran-recon-badge {
+            min-width: 26px;
+            justify-content: center;
+            display: inline-flex;
+            align-items: center;
         }
 
         .info-box {

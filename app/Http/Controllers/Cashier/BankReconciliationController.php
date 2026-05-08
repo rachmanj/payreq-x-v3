@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
-use App\Http\Requests\ManualMatchBankReconciliationRequest;
+use App\Http\Requests\ManualMatchGroupBankReconciliationRequest;
 use App\Http\Requests\StoreBankReconciliationRequest;
 use App\Jobs\AutoMatchReconciliationJob;
 use App\Jobs\FetchSapGlLinesJob;
@@ -13,6 +13,7 @@ use App\Models\BankReconciliation;
 use App\Models\BankStatementLine;
 use App\Models\Dokumen;
 use App\Models\Giro;
+use App\Models\ReconciliationMatchGroup;
 use App\Models\SapGlLine;
 use App\Services\ReconciliationMatchingService;
 use Carbon\Carbon;
@@ -102,7 +103,10 @@ class BankReconciliationController extends Controller
             'dokumen',
             'bankStatementLines' => fn ($q) => $q->orderBy('line_order')->orderBy('id'),
             'sapGlLines' => fn ($q) => $q->orderBy('posting_date')->orderBy('id'),
-            'matches',
+            'matchGroups' => fn ($q) => $q->with([
+                'matchGroupBankLines.bankStatementLine',
+                'matchGroupSapLines.sapGlLine',
+            ])->orderBy('id'),
         ]);
 
         return view('cashier.bank-reconciliation.show', compact('bankReconciliation'));
@@ -112,11 +116,14 @@ class BankReconciliationController extends Controller
     {
         $this->authorizeReconciliationAccess($bankReconciliation);
 
+        $groupCount = $bankReconciliation->matchGroups()->count();
+
         return response()->json([
             'status' => $bankReconciliation->status,
             'bank_lines_count' => $bankReconciliation->bankStatementLines()->count(),
             'sap_lines_count' => $bankReconciliation->sapGlLines()->count(),
-            'matches_count' => $bankReconciliation->matches()->count(),
+            'match_groups_count' => $groupCount,
+            'matches_count' => $groupCount,
         ]);
     }
 
@@ -156,18 +163,42 @@ class BankReconciliationController extends Controller
         return back()->with('success', 'Auto-match job queued.');
     }
 
-    public function manualMatch(ManualMatchBankReconciliationRequest $request, BankReconciliation $bankReconciliation, ReconciliationMatchingService $matchingService): RedirectResponse
+    public function manualMatch(ManualMatchGroupBankReconciliationRequest $request, BankReconciliation $bankReconciliation, ReconciliationMatchingService $matchingService): RedirectResponse
     {
         $this->authorizeReconciliationAccess($bankReconciliation);
 
         abort_if($bankReconciliation->status === BankReconciliation::STATUS_COMPLETED, 422);
 
-        $bankLine = BankStatementLine::query()->findOrFail((int) $request->validated()['bank_statement_line_id']);
-        $sapLine = SapGlLine::query()->findOrFail((int) $request->validated()['sap_gl_line_id']);
+        $validated = $request->validated();
 
-        $matchingService->manualPair($bankReconciliation, $bankLine, $sapLine);
+        $bankLines = BankStatementLine::query()
+            ->whereIn('id', array_map('intval', $validated['bank_statement_line_ids']))
+            ->orderBy('id')
+            ->get()
+            ->all();
 
-        return back()->with('success', 'Lines matched.');
+        $sapLines = SapGlLine::query()
+            ->whereIn('id', array_map('intval', $validated['sap_gl_line_ids']))
+            ->orderBy('id')
+            ->get()
+            ->all();
+
+        $matchingService->manualGroup($bankReconciliation, $bankLines, $sapLines);
+
+        return back()->with('success', 'Lines matched as one group.');
+    }
+
+    public function unmatch(BankReconciliation $bankReconciliation, ReconciliationMatchGroup $reconciliationMatchGroup, ReconciliationMatchingService $matchingService): RedirectResponse
+    {
+        $this->authorizeReconciliationAccess($bankReconciliation);
+
+        abort_if($bankReconciliation->status === BankReconciliation::STATUS_COMPLETED, 422);
+
+        abort_unless((int) $reconciliationMatchGroup->bank_reconciliation_id === (int) $bankReconciliation->id, 404);
+
+        $matchingService->deleteMatchGroup($reconciliationMatchGroup);
+
+        return back()->with('success', 'Match group removed.');
     }
 
     public function complete(BankReconciliation $bankReconciliation): RedirectResponse
@@ -195,7 +226,6 @@ class BankReconciliationController extends Controller
             'giro.bank',
             'bankStatementLines',
             'sapGlLines',
-            'matches',
         ]);
 
         $unmatchedBank = $bankReconciliation->bankStatementLines->where('matched_status', BankStatementLine::MATCH_UNMATCHED);

@@ -1,3 +1,17 @@
+### [042] Cashier bank reconciliation — N:M match groups (PDF/Koran ↔ SAP GL) (2026-05-08) ✅ COMPLETE
+
+**Challenge:** Pairwise **`reconciliation_matches`** could not represent **one bank line ↔ many SAP lines** (or the reverse) cleanly; manual UX needed multi-select and a single validated total; auto-match subset splits and manual flows should share one persistence model.
+
+**Solution:** Schema **`reconciliation_match_groups`** with **`match_group_bank_lines`** / **`match_group_sap_lines`** (unique per **`bank_statement_line_id`** / **`sap_gl_line_id`** so each line joins **at most one** group); migration from legacy pairwise rows where applicable. **`ReconciliationMatchingService`** **`persistMatchGroup`**, **`deleteMatchGroup`**, **`manualGroup`**, **`clearAutoMatchGroups`** (auto types only); amount tolerance **0.005** for service + **`ManualMatchGroupBankReconciliationRequest`**. **`BankReconciliationController`** **`manualMatch`** / **`unmatch`**; **`status`** JSON **`match_groups_count`** (**`matches_count`** alias). Review **`bank-reconciliation/show`**: group table + checkbox grids + sticky totals bar. Queued jobs (**`ParseBankStatementJob`**, **`FetchSapGlLinesJob`**, **`AutoMatchReconciliationJob`**) call **`afterCommit()`** in **`__construct`** to avoid **`Queueable`** **`$afterCommit`** conflicts.
+
+**Key learning:** Keep validation tolerance constants aligned between Form Request and service; document **group-level** totals on **`reconciliation_match_groups`** so operators see imbalance without recomputing from pivots.
+
+**Implementation / file map:** Migration **`2026_05_08_082902_migrate_to_reconciliation_match_groups_for_nm_matching.php`**; models **`BankReconciliation`**, **`BankStatementLine`**, **`SapGlLine`**, **`ReconciliationMatchGroup`**, **`MatchGroupBankLine`**, **`MatchGroupSapLine`**; **`BankReconciliationController`**, **`ManualMatchGroupBankReconciliationRequest`**; **`ReconciliationMatchingService`**; jobs **`ParseBankStatementJob`**, **`FetchSapGlLinesJob`**, **`AutoMatchReconciliationJob`**; **`BankStatementParserService`**, **`OpenRouterService`**, **`SapService`**; views **`resources/views/cashier/bank-reconciliation/{index,create,show,report}.blade.php`**; **`routes/cashier.php`** ( **`bank-reconciliation`**, **`unmatch`** ); Koran **`KoranController`** / **`koran/dashboard.blade.php`** as surfaced.
+
+**Docs:** `docs/architecture.md`, `docs/decisions.md` (**ADR-BANK-REC-01**), `docs/todo.md`, `README.md` (ADR index).
+
+---
+
 ### [041] Advance payreq multi-row budgets (allocation table, UX, prints, detail view) + edit form POST fix (2026-05-08) ✅ COMPLETE
 
 **Challenge:** Some advances tie **total amount** across **many anggaran** rows instead of legacy **one **`rab_id`**. Needed consistent validation, parity for users **without **`rab_select`**, realization lines that attach expenses to **per-line **`rab_id`**, warnings/labels, readable **prints** (all Advance PDF variants), and **detail** (**`/user-payreqs/{id}`**) without N+1. Separately, **draft edit** submits failed validation (**“The payreq no field is required.”**) because **`disabled`** **`payreq_no`** is never POSTed.

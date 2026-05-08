@@ -59,8 +59,8 @@ class BankReconciliation extends Model
         return $this->hasMany(SapGlLine::class);
     }
 
-    public function matches(): HasMany
+    public function matchGroups(): HasMany
     {
-        return $this->hasMany(ReconciliationMatch::class);
+        return $this->hasMany(ReconciliationMatchGroup::class);
     }
 }
