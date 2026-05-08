@@ -43,10 +43,19 @@
                         <dd class="col-sm-8">: {{ $submit_at }}</dd>
                         <dt class="col-sm-4">Due date</dt>
                         <dd class="col-sm-8">: {{ $due_date }}</dd>
-                        <dt class="col-sm-4">RAB</dt>
-                        <dd class="col-sm-8">:
-                            {{ $payreq->rab_id ? 'No. ' . $payreq->anggaran->nomor . ' | ' . $payreq->anggaran->rab_project . ' | ' . $payreq->anggaran->description : '' }}
-                        </dd>
+                        @if ($payreq->type === 'advance'
+                            && $payreq->isAdvanceMultiBudget()
+                            && $payreq->anggaranAllocations->isNotEmpty())
+                            <dt class="col-sm-4">Anggaran allocations</dt>
+                            <dd class="col-sm-8">
+                                @include('user-payreqs.partials.show_advance_allocation_table')
+                            </dd>
+                        @else
+                            <dt class="col-sm-4">RAB</dt>
+                            <dd class="col-sm-8">:
+                                {{ $payreq->rab_id ? 'No. ' . $payreq->anggaran->nomor . ' | ' . $payreq->anggaran->rab_project . ' | ' . $payreq->anggaran->description : '' }}
+                            </dd>
+                        @endif
                         <dt class="col-sm-4">Created at</dt>
                         <dd class="col-sm-8">: {{ $payreq->created_at->format('d-M-Y H:i:s') . ' wita' }}</dd>
                     </div>

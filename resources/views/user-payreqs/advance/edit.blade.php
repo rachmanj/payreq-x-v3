@@ -59,7 +59,7 @@
                                     <label for="payreq_no">Payreq No</label>
                                     <input type="hidden" name="payreq_id" value="{{ $payreq->id }}">
                                     <input type="text" name="payreq_no" value="{{ $payreq->nomor }}" class="form-control"
-                                        disabled>
+                                        readonly>
                                 </div>
                             </div>
                             <div class="col-4">

@@ -73,6 +73,32 @@ Lightweight records of intent and trade-offs. Numbering is sequential by topic a
 
 ---
 
+## ADR-PAYREQ-03 — Advance payreq multi-allocation (**`budget_link_mode`**) vs legacy single **`rab_id`**
+
+**Status:** Accepted (2026-05-08)
+
+**Context**
+
+- Advances sometimes need **one cash payment split across multiple anggaran** rows without issuing separate payreq documents.
+- Realization (**`realization_details`**) historically assumed a single payreq **`rab_id`**; multi-budget advances need **per-detail **`rab_id`** consistent with allocations.
+- Users without budget-picker permission (**`rab_select`**) must remain on legacy single-RAB UX.
+- Operational surfaces (**print**, **owner detail**) must expose each allocation clearly; drafts submitted from **edit** must include immutable fields the server validates (e.g. **Payreq No**).
+
+**Decision**
+
+1. Persist mode on **`payreqs`** as **`budget_link_mode`** (**`legacy`** | **`multi_allocation`**; **`App\Support\PayreqBudgetLinkMode`**). Child allocations live in **`payreq_anggaran_allocations`** with **`payreq_id`**, **`anggaran_id`**, **`amount`**, **`remarks`**, **`sort_order`**.
+2. **Creation/update:** **`ProcessAdvancePayreqRequest`** + **`PayreqAdvanceController::proses`** — multi mode **`required`** **`allocations[]`** rows; **`withValidator`** enforces \(\sum\) row **`amount`** = header **`amount`**. Mode **cannot change after** draft creation (edit submit).
+3. **`prepareForValidation`** merges formatted amounts; if **`rab_select`** is denied, **`budget_link_mode`** is forced to **`legacy`** and **`allocations`** cleared so server rules match constrained clients.
+4. **Realizations:** When **`Payreq::isAdvanceMultiBudget()`**, realization detail endpoints accept/require **`rab_id`** per line aligned with **`StoreRealizationDetailRequest`** / **`UpdateRealizationDetailRequest`** and warning copy from **`PayreqRealizationBudgetWarningService`** where applicable.
+5. **UX consistency:** Prints use **`advance/partials/print_budget_table_body`**; **`user-payreqs/show`** lists allocations via **`partials/show_advance_allocation_table`**. Advance **edit** uses **`readonly`** (**not **`disabled`**) on **`payreq_no`** so validation receives the field.
+
+**Consequences**
+
+- Positive: clearer audit trail per anggaran share; realization lines can reconcile to budgets independently; RBAC-aligned simplification for non-**`rab_select`** users.
+- Negative: API/printing/reporting callers outside Blade may still assume a single **`payreq.rab_id`**—extend intentionally where totals must split.
+
+---
+
 ## ADR-COMPAT-01 — No constants in **`ValidatesRealizationDetailFleet`**
 
 **Status:** Accepted (2026-04-29)

@@ -6,6 +6,9 @@ _(none — add items here)_
 
 ## Recently completed
 
+- **2026-05-08** — **Advance payreq multi-row budgets (**`budget_link_mode`** + **`payreq_anggaran_allocations`)**  
+  User advance create/edit (**`rab_select`**): legacy single **`rab_id`** vs multi-row allocation grid with total = sum(rows). Persist mode + **`PayreqAnggaranAllocation`**; **`ProcessAdvancePayreqRequest`** / **`PayreqAdvanceController`**; **`UserPayreqController::show`** + partial **`show_advance_allocation_table`**; advance prints **`print_budget_table_body`** across all Advance PDF skins; realization **`add_details`** per-line **`rab_id`** / warnings / labels (**`rab_no`** when distinct); edit form **`payreq_no`** **`readonly`** (POST-safe). Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-PAYREQ-03)**, **`MEMORY.md` [041]**.
+
 - **2026-05-06** — **Document overdue extensions (request / approve) + dashboard pending card**
   - Table **`overdue_extensions`**, **`OverdueExtensionController`** (**list**, **store**, **approve**, **reject**), **`StoreOverdueExtensionRequest`** / **`ReviewOverdueExtensionRequest`**, routes under **`document-overdue`**. User listing **`user-payreqs/overdue-documents`** + extension modals; submit eligibility aligned with overdue semantics (**`Carbon::parse($due_date)->lt(now())`**). Spatie **`approve_overdue_extension`** + **`Gate::before`** for **`superadmin`**/**`admin`**. Dashboard **`pending_overdue_extension_count`** card in **`dashboard/row2`** ( **`data-dashboard-pending-extension-requests`** ). **`Announcement::scopeCurrent`** SQLite branch so PHPUnit (**`:memory:`**) can load **`dashboard/index`**. Tests: **`tests/Feature/OverdueExtensionTest.php`**.  
   - Docs: `docs/architecture.md`, `docs/decisions.md` (**ADR-OVERDUE-EXT-01**), `MEMORY.md` **[040]**.

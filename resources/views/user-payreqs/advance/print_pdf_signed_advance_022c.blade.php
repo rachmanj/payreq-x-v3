@@ -73,14 +73,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td style="border: 1px solid black;">1</td>
-                                <td style="border: 1px solid black;">{{ $payreq->remarks }} <br>
-                                    {{ $payreq->rab_id ? 'RAB No. ' . $payreq->anggaran->nomor . ' | ' . $payreq->anggaran->rab_project . ' | ' . substr($payreq->anggaran->description, 0, 100) : '' }}
-                                </td>
-                                <td class="text-right" style="border: 1px solid black;">
-                                    {{ number_format($payreq->amount, 2) }}</td>
-                            </tr>
+                            @include('user-payreqs.advance.partials.print_budget_table_body')
                         </tbody>
                         <tfoot>
                             <tr>

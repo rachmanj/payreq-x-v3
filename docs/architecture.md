@@ -45,6 +45,32 @@ This document summarizes structural flows that extend Laravel defaults. Keep it 
 
 See **ADR-PAYREQ-01** (shared reimburse/realization validation), **ADR-PAYREQ-02**, **ADR-COMPAT-01**.
 
+## User-payreq: advance budget modes (legacy vs multi-allocation)
+
+### Data model
+
+- **`payreqs.budget_link_mode`**: **`legacy`** (default) or **`multi_allocation`** (stored string; see **`PayreqBudgetLinkMode`**).
+- **`payreq_anggaran_allocations`**: one row per allocation — **`payreq_id`**, **`anggaran_id`**, **`amount`**, **`remarks`**, **`sort_order`**. Loaded via **`Payreq::anggaranAllocations()`** (ordered by **`sort_order`**, **`id`**).
+
+### Behaviour
+
+- **Legacy:** Existing behaviour — principal **`rab_id`** on **`payreqs`** ties the draft to **one** anggaran row; **`amount`** is the payreq total.
+- **Multi-allocation (**`Payreq::isAdvanceMultiBudget()`**): **`allocations`** array POSTed from advance **create/edit**; sum of row **`amount`** must equal header **`amount`**. **`ProcessAdvancePayreqRequest`** validates rows; **`PayreqAdvanceController::proses`** saves payreq + allocation rows transactionally.
+- **`Gate::rab_select`**: **`ProcessAdvancePayreqRequest::prepareForValidation()`** forces **`budget_link_mode = legacy`** and clears **`allocations`** when denied; UI should match (advance create uses **`rab_select`** for budget-form radios vs hidden legacy-only).
+
+### Locks and realization
+
+- On **edit**, requested **`budget_link_mode`** must match the stored mode (validated in **`ProcessAdvancePayreqRequest::withValidator`**).
+- Multi advance realizations attach **`rab_id`** on **`realization_details`** chosen from allocation anggaran; warnings via **`PayreqRealizationBudgetWarningService`**. Add/edit realization detail Blades (**`resources/views/user-payreqs/realizations/add_details.blade.php`**) expose per-line **`rab_id`** selects with labels including distinct **`rab_no`**.
+
+### User-facing surfaces
+
+- **Advance create/edit:** **`resources/views/user-payreqs/advance/create.blade.php`**, **`edit.blade.php`** — budget radios, allocation grid, JS total sync (**`advanceCanSelectRab`**). **Payreq No on edit:** use **`readonly`**, **not **`disabled`**, so **`payreq_no`** is included in **`POST`** to **`advance.proses`**.
+- **My payreq detail:** **`GET user-payreqs/{id}`** — **`UserPayreqController::show`** eager-loads **`anggaranAllocations.anggaran`**; **`user-payreqs/show`** replaces single **RAB** line with **`user-payreqs/partials/show_advance_allocation_table`** when multi-row data exists.
+- **Print PDF:** **`UserPayreqController::print`** — advance templates include **`advance/partials/print_budget_table_body`** so line items repeat per allocation (default + signed + **`022c`** variants).
+
+See **ADR-PAYREQ-03**.
+
 ## Document overdue extensions
 
 ### Data model
@@ -89,4 +115,4 @@ See **ADR-PAYREQ-01** (shared reimburse/realization validation), **ADR-PAYREQ-02
 
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-PAYREQ-01/02, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**.
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**.

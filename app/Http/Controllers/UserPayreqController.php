@@ -90,7 +90,12 @@ class UserPayreqController extends Controller
 
     public function show($id)
     {
-        $payreq = Payreq::findOrFail($id);
+        $payreq = Payreq::query()
+            ->with([
+                'anggaranAllocations.anggaran',
+                'anggaran',
+            ])
+            ->findOrFail($id);
 
         // update is_read to 1
         ApprovalPlan::where('document_id', $payreq->id)
@@ -147,7 +152,14 @@ class UserPayreqController extends Controller
 
     public function print($id)
     {
-        $payreq = Payreq::findOrFail($id);
+        $payreq = Payreq::query()
+            ->with([
+                'requestor',
+                'department',
+                'anggaran',
+                'anggaranAllocations.anggaran',
+            ])
+            ->findOrFail($id);
         $terbilang = app(ToolController::class)->terbilang($payreq->amount);
         $approvers = app(ToolController::class)->getApproversName($id, 'payreq');
 
