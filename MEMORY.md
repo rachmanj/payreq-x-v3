@@ -1,3 +1,31 @@
+### [044] In-app HELP chatbox — RAG over manuals, bilingual `docs/manuals`, `akses_help` (2026-05-09) ✅ COMPLETE
+
+**Challenge:** Users needed searchable **how-to** guidance aligned with actual menus (**Cashier**, **My PayReqs**, **Reports**) without tying answers to live financial data.
+
+**Solution:** Stateless RAG pipeline: **`help_embeddings`** (chunk + JSON vectors), **`App\Services\Help\{HelpOpenRouterClient, HelpManualChunker, HelpAssistantService, HelpVector}`**, **`POST /help/ask`** + **`POST /help/feedback`** (**`routes/help.php`**; **`permission:akses_help`**, **`throttle:30,1`**). **`php artisan help:reindex`** rebuilds embeddings from **`docs/manuals/*.md`** (chunks on **`##`**; locales from **`-en.md`** / **`-id.md`**). **`akses_help`** migration grants **superadmin** / **admin** / **cashier** initially. Modal HELP UI (**`templates/partials/help-panel.blade.php`**, topbar **`?`**). Maintainer rule: **always** pair English + Indonesian manuals; starter topics include bank reconciliation + RAB. **`.gitignore`**: **`/docs/*`** with **`!/docs/manuals/`** so manuals stay in Git.
+
+**Key learning:** Reindex must run whenever manuals change; keep UI labels in prose identical to app strings so the model does not hallucinate menus. Separate **`HelpOpenRouterClient`** from **`OpenRouterService`** avoids coupling HELP embedding/chat to Koran PDF chat payloads.
+
+**Implementation / file map:** Migrations **`2026_05_09_103043_create_help_embeddings_table`**, **`create_help_feedbacks_table`**, **`insert_akses_help_permission_into_permissions_table`**; **`App\Models\{HelpEmbedding, HelpFeedback}`**; **`App\Http\Controllers\Help\HelpController`**, **`Help\{HelpAskRequest, HelpFeedbackRequest}`**; **`config/help.php`**; **`config/services.php`** (openrouter help/embedding keys); **`docs/manuals/README.md`**, **`getting-started-{en,id}.md`**, **`bank-reconciliation-manual-{en,id}.md`**, **`anggaran-manual-{en,id}.md`**; **`tests/Feature/Help/{HelpAskTest, HelpFeedbackTest}.php`**.
+
+**Docs:** `docs/architecture.md`, `docs/decisions.md` (**ADR-HELP-01**), `README.md` (ADR index).
+
+---
+
+### [043] Anggaran (RAB) rebuild — detail lines, admin dashboard, fund pool, consolidated, alerts, periodic expiry (2026-05-09) ✅ COMPLETE
+
+**Challenge:** RAB was a single header amount only; admins lacked consolidated views, fund-pool workflow, department rollups, and structured spending alerts. Periodic budgets needed automatic deactivation after the period. The prior reports dashboard lived on **`AnggaranController::dashboard`** with minimal KPIs.
+
+**Solution:** Table **`anggaran_details`** (FK **`anggarans`**, optional **`accounts`**, qty/unit/price/amount, **`sort_order`**). **`anggarans`** gained **`warning_threshold`** (default 80%), **`fund_status`** (`pending` | `pooled` | `released`), **`fund_pooled_at`**, **`fund_pooled_by`**. **`AnggaranDetail`** model; **`UserAnggaranController`** syncs **`details[]`** from create/edit; **`ProcessAnggaranRequest`** validates line fields; optional **`DELETE user-payreqs/anggarans/{anggaran}/details/{detail}`** via **`UserAnggaranDetailController`**. **`AnggaranReleaseService`** extended: **`parsePersenToFloat`**, **`isOverThreshold`**, **`isExceeded`**, **`aggregateDashboardStats`**, **`aggregateByDepartment`**, **`dashboardBaseQuery`**. **`AnggaranDashboardController`**: rich **`reports/anggaran/dashboard`** (cards, by-type/by-project, expiring-soon, exceeded list, async **`/dashboard/by-department`**, DataTables **`/dashboard/release-data`**). **`AnggaranFundPoolController`** + **`reports/anggaran/fund-pool`** (**`recalculate_release`**): mark pooled (pending only), mark released (pooled only). **`AnggaranConsolidatedController`** + **`reports/anggaran/consolidated`** with filters and per-project **by-department** table. **`anggaran:expire-periodic`** (approved **`periode`** rows; end = **`end_date`** or **end of `periode_anggaran` month**) — scheduled daily **`01:00`** in **`App\Console\Kernel`**. Reports/user **show** Blades: utilization banners + budget lines. Reports **edit**: **`warning_threshold`**. **`Anggaran::payreqs()`** fixed to **`hasMany(Payreq::class, 'rab_id')`**. Report index menu: Consolidated + Fund pool.
+
+**Key learning:** Keep aggregate dashboard queries on approved/active scoped builders; fund-pool POST actions should constrain transitions (**pending→pooled**, **pooled→released**) to avoid invalid state. Periodic expiry should treat missing **`end_date`** by deriving month-end from **`periode_anggaran`** when present.
+
+**Implementation / file map:** Migrations **`2026_05_09_042050_create_anggaran_details_table`**, **`2026_05_09_042058_add_dashboard_fields_to_anggarans_table`**; **`app/Models/{AnggaranDetail,Anggaran}.php`**; **`AnggaranReleaseService`**, **`AnggaranDashboardController`**, **`AnggaranFundPoolController`**, **`AnggaranConsolidatedController`**; **`UserAnggaranController`**, **`UserAnggaranDetailController`**; **`ExpirePeriodicAnggarans`**, **`Kernel`**, **`routes/{reports,user_payreqs}.php`**; views **`reports/anggaran/{dashboard,fund-pool,consolidated,show,edit}.blade.php`**, **`user-payreqs/anggarans/{create,edit,show}.blade.php`**, **`partials/budget-detail-rows.blade.php`**; **`ReportIndexController`**.
+
+**Docs:** `docs/architecture.md`, `docs/decisions.md` (**ADR-ANGGRAN-02**), `README.md` (ADR index).
+
+---
+
 ### [042] Cashier bank reconciliation — N:M match groups (PDF/Koran ↔ SAP GL) (2026-05-08) ✅ COMPLETE
 
 **Challenge:** Pairwise **`reconciliation_matches`** could not represent **one bank line ↔ many SAP lines** (or the reverse) cleanly; manual UX needed multi-select and a single validated total; auto-match subset splits and manual flows should share one persistence model.
@@ -64,7 +92,7 @@
 
 **Implementation / file map:** `app/Services/AnggaranReleaseService.php`, `app/Policies/AnggaranPolicy.php`, `app/Providers/AuthServiceProvider.php`, `app/Http/Requests/UserPayreq/ProcessAnggaranRequest.php`, `app/Http/Controllers/UserPayreq/UserAnggaranController.php`, `app/Http/Controllers/Reports/AnggaranController.php`, `routes/reports.php`, `app/Console/Commands/AnggaranSyncReleaseTotalsCommand.php`, `app/Console/Kernel.php`, `database/migrations/2026_04_29_120000_add_anggaran_bulk_activate_deactivate_permission.php`, `resources/views/reports/anggaran/{index,inactive,dashboard}.blade.php`, `resources/views/user-payreqs/anggarans/{create,edit,show,index}.blade.php`, `app/Http/Controllers/Reports/ReportIndexController.php`, `tests/Feature/AnggaranReportsTest.php`.
 
-**Docs:** `docs/architecture.md`, `docs/decisions.md` (ADR-ANGGRAN-01).
+**Docs:** `docs/architecture.md`, `docs/decisions.md` (ADR-ANGGRAN-01). **Supplement (2026-05-09):** dashboard scope expanded and moved to **`AnggaranDashboardController`** — see **`MEMORY.md` [043]**, **ADR-ANGGRAN-02**.
 
 ---
 

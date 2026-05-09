@@ -144,6 +144,15 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row mt-2">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="warning_threshold">Spending alert threshold (%)</label>
+                                <input type="number" name="warning_threshold" id="warning_threshold" class="form-control" min="1" max="100" value="{{ old('warning_threshold', $anggaran->warning_threshold ?? 80) }}">
+                                <small class="text-muted">Progress bar warning from this utilization % (default 80).</small>
+                            </div>
+                        </div>
+                    </div>
                     {{-- this row will show depent on what radio button input is clicked --}}
                     <hr>
                     <div class="row" id="periode">

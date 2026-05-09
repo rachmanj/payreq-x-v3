@@ -6,6 +6,9 @@ _(none — add items here)_
 
 ## Recently completed
 
+- **2026-05-09** — **Anggaran (RAB) rebuild**  
+  **`anggaran_details`** + user **`details[]`** sync; **`warning_threshold`**, **`fund_status`** / pool timestamps; **`AnggaranDashboardController`** (KPIs, by-department JSON, release DataTable), **`AnggaranConsolidatedController`**, **`AnggaranFundPoolController`** (**`recalculate_release`**); **`anggaran:expire-periodic`** daily (**`App\Console\Kernel`**); **`AnggaranReleaseService`** aggregations + alert helpers; reports/user show lines + banners; **`UserAnggaranDetailController`** line delete. Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-ANGGRAN-02)**, **`MEMORY.md` [043]**, **`README.md`**.
+
 - **2026-05-08** — **Cashier bank reconciliation — N:M match groups (**`reconciliation_match_groups`** + pivots)**  
   Koran PDF parse (**`OpenRouterService`** / **`BankStatementParserService`**) + SAP GL fetch (**`SapService`**); **`ReconciliationMatchingService`** persists **groups** (auto exact/fuzzy/split + manual arrays); **`ManualMatchGroupBankReconciliationRequest`**; review UI multi-select + **Unmatch**; **`POST …/unmatch/{reconciliation_match_group}`**; Koran dashboard reconciliation status hints; queued jobs **`afterCommit()`** constructor pattern. Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-BANK-REC-01)**, **`MEMORY.md` [042]**.
 

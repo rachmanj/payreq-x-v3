@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Reports\AnggaranConsolidatedController;
 use App\Http\Controllers\Reports\AnggaranController;
+use App\Http\Controllers\Reports\AnggaranDashboardController;
+use App\Http\Controllers\Reports\AnggaranFundPoolController;
 use App\Http\Controllers\Reports\BilyetController;
 use App\Http\Controllers\Reports\CashierRekapAdvanceController;
 use App\Http\Controllers\Reports\DocumentCreationController;
@@ -78,7 +81,13 @@ Route::prefix('reports')->name('reports.')->group(function () {
     });
 
     Route::prefix('anggaran')->name('anggaran.')->group(function () {
-        Route::get('/dashboard', [AnggaranController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard', [AnggaranDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/by-department', [AnggaranDashboardController::class, 'byDepartment'])->name('dashboard.by-department');
+        Route::get('/dashboard/release-data', [AnggaranDashboardController::class, 'releaseData'])->name('dashboard.release-data');
+        Route::get('/fund-pool', [AnggaranFundPoolController::class, 'index'])->name('fund-pool.index');
+        Route::post('/fund-pool/pool', [AnggaranFundPoolController::class, 'markPooled'])->name('fund-pool.pool');
+        Route::post('/fund-pool/release', [AnggaranFundPoolController::class, 'markReleased'])->name('fund-pool.release');
+        Route::get('/consolidated', [AnggaranConsolidatedController::class, 'index'])->name('consolidated');
         Route::get('/', [AnggaranController::class, 'index'])->name('index');
         Route::get('/inactive', [AnggaranController::class, 'inactive'])->name('inactive');
         Route::get('/data', [AnggaranController::class, 'data'])->name('data');

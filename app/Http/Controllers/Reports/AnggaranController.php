@@ -40,42 +40,9 @@ class AnggaranController extends Controller
         return redirect()->route('reports.anggaran.index', ['status' => 'inactive']);
     }
 
-    public function dashboard()
-    {
-        $userRoles = app(UserController::class)->getUserRoles();
-        $project = auth()->user()->project;
-
-        $query = Anggaran::query()->where('is_active', 1);
-
-        if (! array_intersect(['superadmin', 'admin'], $userRoles)) {
-            $query->where('project', $project);
-        }
-
-        if (array_intersect(['superadmin', 'admin'], $userRoles)) {
-            $query->whereIn('status', ['approved']);
-        }
-
-        $approvedSubset = (clone $query)->where('status', 'approved');
-
-        $stats = [
-            'count_visible' => (clone $query)->count(),
-            'count_approved' => (clone $approvedSubset)->count(),
-            'sum_budget_approved' => (float) (clone $approvedSubset)->sum('amount'),
-            'sum_balance_approved' => (float) (clone $approvedSubset)->sum('balance'),
-        ];
-
-        $stats['avg_utilization'] = $stats['sum_budget_approved'] > 0
-            ? round(($stats['sum_balance_approved'] / $stats['sum_budget_approved']) * 100, 2)
-            : 0.0;
-
-        return view('reports.anggaran.dashboard', compact('stats'));
-    }
-
     public function edit($id)
     {
-        $anggaran = Cache::remember('anggaran_'.$id, $this->cacheTTL, function () use ($id) {
-            return Anggaran::findOrFail($id);
-        });
+        $anggaran = Anggaran::query()->with('details.account')->findOrFail($id);
 
         $projects = Cache::remember('projects_all', $this->cacheTTL, function () {
             return Project::orderBy('code', 'asc')->get();
@@ -124,6 +91,7 @@ class AnggaranController extends Controller
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date,
                 'is_active' => $request->is_active,
+                'warning_threshold' => min(100, max(1, (int) $request->input('warning_threshold', $anggaran->warning_threshold ?? 80))),
             ]);
 
             if ($request->file_upload) {
@@ -149,13 +117,15 @@ class AnggaranController extends Controller
 
     public function show($id)
     {
-        $anggaran = Anggaran::findOrFail($id);
+        $anggaran = Anggaran::query()->with(['details.account', 'department'])->findOrFail($id);
         $summary = $this->releaseService->progressSummary($anggaran);
         $progres_persen = $summary['persen'];
         $total_release = $summary['amount'];
         $statusColor = $this->statusColor((float) $progres_persen);
+        $spendingWarning = $this->releaseService->isOverThreshold($anggaran);
+        $spendingExceeded = $this->releaseService->isExceeded($anggaran);
 
-        return view('reports.anggaran.show', compact('anggaran', 'progres_persen', 'total_release', 'statusColor'));
+        return view('reports.anggaran.show', compact('anggaran', 'progres_persen', 'total_release', 'statusColor', 'spendingWarning', 'spendingExceeded'));
     }
 
     public function data()

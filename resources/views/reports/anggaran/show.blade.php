@@ -17,9 +17,14 @@
           <a href="{{ route('reports.anggaran.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
         <div class="card-body">
+          @if ($spendingExceeded)
+            <div class="alert alert-danger">Utilization exceeds 100% of this budget.</div>
+          @elseif ($spendingWarning)
+            <div class="alert alert-warning">Utilization is at or above the alert threshold ({{ (int) ($anggaran->warning_threshold ?? 80) }}%).</div>
+          @endif
           <dl class="row">
             <dt class="col-sm-4">RAB No</dt>
-            <dd class="col-sm-8">: {{ $anggaran->nomor }} {{ $anggaran->rab_no != null ? '| ' . $anggaran->rab_no : '' }}</b> @if ($anggaran->filename) <a href="{{ asset('file_upload/') . '/'. $anggaran->filename }}" class='btn btn-xs btn-success' target=_blank>Show RAB</a> @endif</dd>
+            <dd class="col-sm-8">: {{ $anggaran->nomor }} {{ $anggaran->rab_no != null ? '| ' . $anggaran->rab_no : '' }} @if ($anggaran->filename) <a href="{{ asset('file_upload/') . '/'. $anggaran->filename }}" class='btn btn-xs btn-success' target=_blank>Show RAB</a> @endif</dd>
             <dt class="col-sm-4">Date | Periode</dt>
             <dd class="col-sm-8">: {{ date('d-M-Y', strtotime($anggaran->date)) }} | {{ $anggaran->periode_anggaran !== null ? date('M-Y', strtotime($anggaran->periode_anggaran)) : '-' }}</dd>
             <dt class="col-sm-4">Description</dt>
@@ -29,17 +34,21 @@
             <dt class="col-sm-4">Department</dt>
             <dd class="col-sm-8">: {{ $anggaran->createdBy->department->department_name }}</dd>
             <dt class="col-sm-4">Periode: Anggaran | OFR</dt>
-            <dd class="col-sm-8">: {{ $anggaran->periode_anggaran != null ? date('M Y', strtotime($anggaran->periode_anggaran)) : '-' }} | {{ date('M Y', strtotime($anggaran->periode_ofr)) }}</dd>
+            <dd class="col-sm-8">: {{ $anggaran->periode_anggaran != null ? date('M Y', strtotime($anggaran->periode_anggaran)) : '-' }} | {{ $anggaran->periode_ofr != null ? date('M Y', strtotime($anggaran->periode_ofr)) : '-' }}</dd>
             <dt class="col-sm-4">Budget</dt>
             <dd class="col-sm-8">: Rp.{{ number_format($anggaran->amount, 2) }}</dd>
             <dt class="col-sm-4">Release to Date</dt>
-            <dd class="col-sm-8">: Rp. {{ number_format($total_release, 2) }}
+            <dd class="col-sm-8">: Rp. {{ number_format($total_release, 2) }}</dd>
             <dt class="col-sm-4">Status</dt>
             <dd class="col-sm-8">: {{ ucfirst($anggaran->status) }}</dd>
             <dt class="col-sm-4">Created by</dt>
             <dd class="col-sm-8">: {{ $anggaran->createdBy->name }}</dd>
+            <dt class="col-sm-4">Fund status</dt>
+            <dd class="col-sm-8">: {{ $anggaran->fund_status ?? 'pending' }}</dd>
+            <dt class="col-sm-4">Alert threshold</dt>
+            <dd class="col-sm-8">: {{ (int) ($anggaran->warning_threshold ?? 80) }}%</dd>
             <dt class="col-sm-4">Progress</dt>
-            <dd class="col-sm-4">
+            <dd class="col-sm-8">
               <div class="text-center"><small>{{ number_format($progres_persen, 2) }}%</small>
                 <div class="progress">
                   <div class="progress-bar progress-bar-striped {{ $statusColor }} text-center" role="progressbar" style="width: {{ $progres_persen }}%" aria-valuenow="{{ $progres_persen }}" aria-valuemin="0" aria-valuemax="100">
@@ -48,6 +57,26 @@
               </div>
             </dd>
           </dl>
+          @if ($anggaran->details->isNotEmpty())
+            <h5 class="mt-3">Budget lines</h5>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead><tr><th>Account</th><th>Description</th><th class="text-right">Qty</th><th>Unit</th><th class="text-right">Unit price</th><th class="text-right">Amount</th></tr></thead>
+                <tbody>
+                  @foreach ($anggaran->details as $line)
+                    <tr>
+                      <td>{{ $line->account ? $line->account->account_number . ' — ' . $line->account->account_name : '—' }}</td>
+                      <td>{{ $line->description }}</td>
+                      <td class="text-right">{{ number_format((float) $line->qty, 4) }}</td>
+                      <td>{{ $line->unit }}</td>
+                      <td class="text-right">{{ number_format((float) $line->unit_price, 2) }}</td>
+                      <td class="text-right">{{ number_format((float) $line->amount, 2) }}</td>
+                    </tr>
+                  @endforeach
+                </tbody>
+              </table>
+            </div>
+          @endif
         </div>
         <div class="card-body">
           <table id="payreq-buc" class="table table-bordered table-striped">

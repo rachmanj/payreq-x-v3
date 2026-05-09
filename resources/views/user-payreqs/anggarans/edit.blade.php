@@ -96,6 +96,31 @@
                         </div>
                     </div>
 
+                    <div class="card card-outline card-secondary mt-2">
+                        <div class="card-header"><h5 class="mb-0">Budget detail lines</h5></div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0" id="tbl-budget-details">
+                                    <thead>
+                                        <tr>
+                                            <th style="min-width:220px">Account</th>
+                                            <th>Description</th>
+                                            <th style="width:90px">Qty</th>
+                                            <th style="width:90px">Unit</th>
+                                            <th style="width:110px">Unit price</th>
+                                            <th style="width:110px">Amount</th>
+                                            <th style="width:40px"></th>
+                                        </tr>
+                                    </thead>
+                                    @include('user-payreqs.anggarans.partials.budget-detail-rows', ['accounts' => $accounts, 'details' => $anggaran->details])
+                                </table>
+                            </div>
+                            <div class="p-2">
+                                <button type="button" class="btn btn-sm btn-secondary" id="btn-add-budget-detail">Add line</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-12">
                             <label for="rab_type">Type</label>
@@ -206,6 +231,30 @@
 
     $('#btn-submit').on('click', function() {
         $('#button_type_field').val('edit_submit');
+    });
+
+    let detailIdx = $('#budget-detail-body tr').length;
+    $('#btn-add-budget-detail').on('click', function () {
+        const $tr = $('#budget-detail-body tr:first').clone();
+        $tr.find('input,select').each(function () {
+            const name = $(this).attr('name');
+            if (!name) {
+                return;
+            }
+            const newName = name.replace(/details\[\d+\]/, 'details[' + detailIdx + ']');
+            $(this).attr('name', newName);
+            if ($(this).is('select')) {
+                $(this).prop('selectedIndex', 0);
+            } else if ($(this).hasClass('detail-qty')) {
+                $(this).val('1');
+            } else if ($(this).hasClass('detail-unit-price') || $(this).hasClass('detail-amount')) {
+                $(this).val('0');
+            } else {
+                $(this).val('');
+            }
+        });
+        $('#budget-detail-body').append($tr);
+        detailIdx++;
     });
 </script>
 @endsection

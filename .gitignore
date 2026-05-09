@@ -24,4 +24,7 @@ yarn-error.log
 /public/dokumens
 /database/seeders/sql
 api.rest
-/docs
+# Ignore everything under docs except manuals (used by `php artisan help:reindex`)
+/docs/*
+!/docs/manuals/
+!/docs/manuals/**

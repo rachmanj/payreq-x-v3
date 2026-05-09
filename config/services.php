@@ -46,7 +46,11 @@ return [
         'api_key' => env('OPENROUTER_API_KEY'),
         'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
         'model' => env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001'),
+        'help_model' => env('OPENROUTER_HELP_MODEL', env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001')),
+        'embedding_model' => env('OPENROUTER_EMBEDDING_MODEL', 'openai/text-embedding-3-small'),
         'timeout' => env('OPENROUTER_TIMEOUT', 120),
+        'connect_timeout' => env('OPENROUTER_CONNECT_TIMEOUT', 10),
+        'embedding_retries' => (int) env('OPENROUTER_EMBEDDING_RETRIES', 2),
     ],
 
     'lot' => [

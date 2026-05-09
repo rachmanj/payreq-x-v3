@@ -92,6 +92,8 @@
 
         @yield('modals')
 
+        @include('templates.partials.help-panel')
+
         <!-- REQUIRED SCRIPTS -->
         @include('templates.partials.script')
 

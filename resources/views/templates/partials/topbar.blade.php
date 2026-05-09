@@ -9,6 +9,13 @@
 
     <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto">
+        @can('akses_help')
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-toggle="modal" data-target="#helpModal" title="Help">
+                    <i class="fas fa-question-circle"></i>
+                </a>
+            </li>
+        @endcan
         <!-- User Dropdown Menu -->
         <li class="nav-item dropdown">
             <a class="nav-link" data-toggle="dropdown" href="#">

@@ -6,6 +6,7 @@ use App\Http\Controllers\UserPayreq\LotClaimController;
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Http\Controllers\UserPayreq\PayreqReimburseController;
 use App\Http\Controllers\UserPayreq\UserAnggaranController;
+use App\Http\Controllers\UserPayreq\UserAnggaranDetailController;
 use App\Http\Controllers\UserPayreqController;
 use App\Http\Controllers\UserPayreqHistoriesController;
 use App\Http\Controllers\UserRealizationController;
@@ -34,6 +35,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::get('/', [UserAnggaranController::class, 'index'])->name('index');
         Route::get('/create', [UserAnggaranController::class, 'create'])->name('create');
         Route::post('/proses', [UserAnggaranController::class, 'proses'])->name('proses');
+        Route::delete('/{anggaran}/details/{detail}', [UserAnggaranDetailController::class, 'destroy'])->name('details.destroy');
         Route::get('/{id}/show', [UserAnggaranController::class, 'show'])->name('show');
         Route::get('/{id}/edit', [UserAnggaranController::class, 'edit'])->name('edit');
         Route::get('/{id}/data', [UserAnggaranController::class, 'payreqs_data'])->name('payreqs_data');

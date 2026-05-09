@@ -40,6 +40,13 @@ class ProcessAnggaranRequest extends FormRequest
             'start_date' => [Rule::requiredIf(fn () => in_array($this->input('rab_type'), ['event', 'buc'], true)), 'nullable', 'date'],
             'end_date' => [Rule::requiredIf(fn () => in_array($this->input('rab_type'), ['event', 'buc'], true)), 'nullable', 'date', 'after_or_equal:start_date'],
             'file_upload' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
+            'details' => ['nullable', 'array'],
+            'details.*.account_id' => ['nullable', 'integer', 'exists:accounts,id'],
+            'details.*.description' => ['nullable', 'string', 'max:500'],
+            'details.*.qty' => ['nullable', 'numeric', 'min:0'],
+            'details.*.unit' => ['nullable', 'string', 'max:50'],
+            'details.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'details.*.amount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

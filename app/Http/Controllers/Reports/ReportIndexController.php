@@ -162,6 +162,16 @@ class ReportIndexController extends Controller
                         'protector' => 'akses_report_rab',
                     ],
                     [
+                        'name' => 'RAB Consolidated',
+                        'url' => route('reports.anggaran.consolidated'),
+                        'protector' => 'akses_report_rab',
+                    ],
+                    [
+                        'name' => 'RAB Fund pool',
+                        'url' => route('reports.anggaran.fund-pool.index'),
+                        'protector' => 'recalculate_release',
+                    ],
+                    [
                         'name' => 'RAB List',
                         'url' => route('reports.anggaran.index'),
                         'protector' => 'akses_report_rab',

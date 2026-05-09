@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\UserController;
 use App\Http\Requests\UserPayreq\ProcessAnggaranRequest;
+use App\Models\Account;
 use App\Models\Anggaran;
+use App\Models\AnggaranDetail;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
 use App\Services\AnggaranReleaseService;
@@ -34,7 +36,9 @@ class UserAnggaranController extends Controller
             ->where('is_active', 1)
             ->get();
 
-        return view('user-payreqs.anggarans.create', compact('projects', 'periode_anggarans', 'nomor'));
+        $accounts = $this->accountsForBudgetLines();
+
+        return view('user-payreqs.anggarans.create', compact('projects', 'periode_anggarans', 'nomor', 'accounts'));
     }
 
     public function proses(ProcessAnggaranRequest $request)
@@ -81,7 +85,7 @@ class UserAnggaranController extends Controller
     {
         $filename = $this->handleFileUpload($data);
 
-        return Anggaran::create([
+        $anggaran = Anggaran::create([
             'nomor' => $data->nomor,
             'rab_no' => $data->rab_no,
             'date' => $data->date ?: date('Y-m-d'),
@@ -97,11 +101,17 @@ class UserAnggaranController extends Controller
             'end_date' => $data->end_date,
             'created_by' => auth()->user()->id,
         ]);
+
+        if ($data->has('details')) {
+            $this->syncLineItems($anggaran, $data->input('details', []));
+        }
+
+        return $anggaran;
     }
 
     public function edit($id)
     {
-        $anggaran = Anggaran::findOrFail($id);
+        $anggaran = Anggaran::query()->with('details')->findOrFail($id);
         $this->authorize('editThroughPayreq', $anggaran);
 
         $projects = Project::orderBy('code', 'asc')->get();
@@ -118,7 +128,9 @@ class UserAnggaranController extends Controller
             $origin_filename = null;
         }
 
-        return view('user-payreqs.anggarans.edit', compact('anggaran', 'projects', 'periode_anggarans', 'origin_filename'));
+        $accounts = $this->accountsForBudgetLines();
+
+        return view('user-payreqs.anggarans.edit', compact('anggaran', 'projects', 'periode_anggarans', 'origin_filename', 'accounts'));
     }
 
     public function update(ProcessAnggaranRequest $data): Anggaran
@@ -143,6 +155,10 @@ class UserAnggaranController extends Controller
             $anggaran->update(['filename' => $filename]);
         }
 
+        if ($data->has('details')) {
+            $this->syncLineItems($anggaran, $data->input('details', []));
+        }
+
         return $anggaran;
     }
 
@@ -159,17 +175,65 @@ class UserAnggaranController extends Controller
         return $filename;
     }
 
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     */
+    private function syncLineItems(Anggaran $anggaran, array $rows): void
+    {
+        $anggaran->details()->delete();
+
+        foreach (array_values($rows) as $index => $row) {
+            $description = isset($row['description']) ? trim((string) $row['description']) : '';
+            $accountId = isset($row['account_id']) && $row['account_id'] !== '' ? (int) $row['account_id'] : null;
+            $qty = isset($row['qty']) && $row['qty'] !== '' ? (float) $row['qty'] : 1.0;
+            $unit = isset($row['unit']) ? substr((string) $row['unit'], 0, 50) : null;
+            $unitPrice = isset($row['unit_price']) && $row['unit_price'] !== '' ? (float) $row['unit_price'] : 0.0;
+            $amount = isset($row['amount']) && $row['amount'] !== '' ? (float) $row['amount'] : 0.0;
+
+            if ($amount <= 0 && $qty > 0 && $unitPrice > 0) {
+                $amount = round($qty * $unitPrice, 2);
+            }
+
+            if ($description === '' && $amount <= 0 && $accountId === null) {
+                continue;
+            }
+
+            AnggaranDetail::create([
+                'anggaran_id' => $anggaran->id,
+                'account_id' => $accountId,
+                'description' => $description !== '' ? $description : null,
+                'qty' => $qty,
+                'unit' => $unit,
+                'unit_price' => $unitPrice,
+                'amount' => max(0, $amount),
+                'sort_order' => $index,
+            ]);
+        }
+
+        $this->releaseService->forgetDetailCaches((int) $anggaran->id);
+    }
+
+    private function accountsForBudgetLines()
+    {
+        return Account::query()
+            ->where('is_active', true)
+            ->orderBy('account_number')
+            ->get(['id', 'account_number', 'account_name']);
+    }
+
     public function show($id)
     {
-        $anggaran = Anggaran::findOrFail($id);
+        $anggaran = Anggaran::query()->with(['details.account'])->findOrFail($id);
         $this->authorize('view', $anggaran);
 
         $summary = $this->releaseService->progressSummary($anggaran);
         $progres_persen = $summary['persen'];
         $total_release = $summary['amount'];
         $statusColor = $this->statusColor((float) $progres_persen);
+        $spendingWarning = $this->releaseService->isOverThreshold($anggaran);
+        $spendingExceeded = $this->releaseService->isExceeded($anggaran);
 
-        return view('user-payreqs.anggarans.show', compact('anggaran', 'progres_persen', 'statusColor', 'total_release'));
+        return view('user-payreqs.anggarans.show', compact('anggaran', 'progres_persen', 'statusColor', 'total_release', 'spendingWarning', 'spendingExceeded'));
     }
 
     public function data()

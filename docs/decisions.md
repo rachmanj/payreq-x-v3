@@ -29,6 +29,32 @@ Lightweight records of intent and trade-offs. Numbering is sequential by topic a
 
 ---
 
+## ADR-ANGGRAN-02 — RAB detail lines, fund pool, consolidated reporting, utilization alerts, periodic auto-expiry
+
+**Status:** Accepted (2026-05-09)
+
+**Context**
+
+- Budget preparation needed **line-item breakdown** (optional **COA** / **`accounts`** link) while keeping header **`anggarans.amount`** as the ceiling users and approvals already understand.
+- Finance needed **pool → release** stages on cash planning, **project-level consolidation**, and **department rollups** without exporting spreadsheets for every review.
+- Operators needed **visible alerts** when **`persen`** nears or exceeds policy limits, configurable per row via **`warning_threshold`**.
+- **Periodic** (**`periode`**) budgets should **stop being selectable/active** after the period without manual monthly toggles.
+
+**Decision**
+
+1. Add **`anggaran_details`** child table; users submit **`details[]`** from RAB create/edit; server replaces lines on save when **`details`** is present (**full replace** per save for simplicity).
+2. Add **`anggarans.warning_threshold`**, **`fund_status`**, **`fund_pooled_at`**, **`fund_pooled_by`**. Fund transitions: **`recalculate_release`** may mark **pending→pooled** and **pooled→released** only (no skipping stages in controller bulk actions).
+3. Split **reporting** concerns: **`AnggaranDashboardController`** owns the rich dashboard + JSON/DataTables endpoints; listing/recalc/bulk remain **`Reports\AnggaranController`**; **`AnggaranConsolidatedController`** and **`AnggaranFundPoolController`** own their screens.
+4. **Alerts:** UI derives warnings from stored **`persen`** vs **`warning_threshold`** and **> 100%**; no extra persisted “warning flag”.
+5. **Expiry:** Command **`anggaran:expire-periodic`** deactivates (**`is_active = 0`**) only **approved** **`periode`** rows past period end; end date resolves from **`end_date`** or **`periode_anggaran` month-end**. Schedule in **`App\Console\Kernel`** (daily).
+
+**Consequences**
+
+- Positive: clearer budget structure, admin surfaces for consolidation and funding workflow, less manual cleanup for expired periodic headers.
+- Negative: line-item totals are not auto-enforced against header **`amount`** in app logic (operators should reconcile intentionally); fund pool permissions reuse **`recalculate_release`**—split permission later if duties diverge.
+
+---
+
 ## ADR-PAYREQ-01 — Shared realization-detail Form Requests for realization **and** reimburse
 
 **Status:** Accepted (2026-04-28)
@@ -165,5 +191,31 @@ Lightweight records of intent and trade-offs. Numbering is sequential by topic a
 
 - Positive: one schema for manual splits and algorithmic splits; UI and audits describe **groups** naturally.
 - Negative: consumers must stop referencing **`ReconciliationMatch`** / **`BankReconciliation::matches`**; any external reporting must pivot via **`reconciliation_match_groups`**.
+
+---
+
+## ADR-HELP-01 — In-app HELP: RAG on Markdown manuals only (OpenRouter embeddings + chat)
+
+**Status:** Accepted (2026-05-09)
+
+**Context**
+
+- Users need guided answers for workflows (**RAB**, **bank reconciliation**, etc.) without granting an LLM direct database queries or hallucinated shortcuts.
+- Manuals evolve independently of code releases; embeddings must refresh explicitly (**reindex**) so production answers stay deterministic relative to indexed text.
+- The product UI mixes English labels (**Bank Reconciliation**, **How-to**) with bilingual end users — retrieval should favour **`locale`**-tagged chunks (**`-id.md`** / **`-en.md`**).
+
+**Decision**
+
+1. Store vectors in **`help_embeddings`** (**JSON** float arrays), full rebuild via **`php artisan help:reindex`** (truncate + chunk + embed batch); chunks split on **`##`** under **`docs/manuals/`**.
+2. Gate low-confidence retrieval with **`HELP_SIMILARITY_THRESHOLD`** — below threshold returns **`not_documented`** without spending chat tokens.
+3. Server-side only OpenRouter (**`OPENROUTER_API_KEY`**); separate HTTP client (**`HelpOpenRouterClient`**) from **`OpenRouterService`** used for unrelated flows (e.g. Koran PDF extraction).
+4. Protect routes with **`akses_help`** (**Spatie**) + **`throttle`**; expose UI only via **`@can('akses_help')`**.
+5. Maintain **paired** manuals **`topic-en.md`** + **`topic-id.md`** for every topic shipped to HELP.
+6. **`.gitignore`**: ignore generic **`docs/*`** except **`docs/manuals/**`** so handbooks remain version-controlled.
+
+**Consequences**
+
+- Positive: predictable behaviour (documentation truth); admins control scope via markdown and roles; HELP does not expose live payreq or ledger balances.
+- Negative: operational **`help:reindex`** after manual edits; retrieval quality depends on authoring and thresholds; feedback email needs working mail when **`HELP_FEEDBACK_NOTIFY_EMAIL`** is set.
 
 ---

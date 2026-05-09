@@ -4,34 +4,49 @@ This document summarizes structural flows that extend Laravel defaults. Keep it 
 
 ## Anggaran / RAB (budget requests)
 
+### Data model (header + lines)
+
+- **`anggarans`**: budget header (existing fields unchanged for approvals, `balance`/`persen`, `type` `periode|event|buc`, etc.). Added: **`warning_threshold`** (0–100, default **80**) for utilization alerts; **`fund_status`** **`pending`** → **`pooled`** → **`released`**; **`fund_pooled_at`**, **`fund_pooled_by`** (`users` FK).
+- **`anggaran_details`**: optional **`account_id`**, description, qty, unit, **`unit_price`**, **`amount`**, **`sort_order`**; cascades on parent delete.
+- **`App\Models\Anggaran`**: **`details()`**, **`department()`**, **`fundPooledBy()`**, fund-status constants; **`payreqs()`** uses **`hasMany(Payreq::class, 'rab_id')`** (payreq column is **`rab_id`**, not **`anggaran_id`**).
+
 ### User-payreq surface (`routes/user_payreqs.php`)
 
-- List/detail/edit/create views live under `resources/views/user-payreqs/anggarans/`.
-- **`App\Http\Controllers\UserPayreq\UserAnggaranController`** handles drafts/submit wiring (`ApprovalPlanController`), DataTables JSON endpoints, and delegates monetary math to **`App\Services\AnggaranReleaseService`**.
-- **`App\Http\Requests\UserPayreq\ProcessAnggaranRequest`** validates create/update in one POST endpoint (`proses`) including conditional rules per `rab_type`.
-- **`App\Policies\AnggaranPolicy`**: `view` expresses listing/leasing visibility aligned with merged scopes (`superadmin`/`admin`, cashier-by-project, creator, approved project/department scoping); **`editThroughPayreq`** restricts edits to creator + `editable` + prior visibility.
+- List/detail/edit/create views live under `resources/views/user-payreqs/anggarans/`; budget lines UI + partial **`partials/budget-detail-rows.blade.php`**.
+- **`App\Http\Controllers\UserPayreq\UserAnggaranController`** — drafts/submit (**`ApprovalPlanController`**), DataTables, **`AnggaranReleaseService`**; syncs **`details[]`** on create/update when present; passes **`Account`** list for line selectors.
+- **`App\Http\Requests\UserPayreq\ProcessAnggaranRequest`** — **`rab_type`** conditionals plus **`details.*`** (account, description, qty, unit, unit_price, amount).
+- **`App\Http\Controllers\UserPayreq\UserAnggaranDetailController`** — **`DELETE .../anggarans/{anggaran}/details/{detail}`** (authorized via **`editThroughPayreq`**).
+- **`App\Policies\AnggaranPolicy`**: unchanged intent — **`view`**, **`editThroughPayreq`** for user flows.
+- **Show:** banners when utilization **`≥ warning_threshold`** or **> 100%**; table of **budget lines** when any exist.
 
 ### Reports surface (`routes/reports.php`, prefix `reports/anggaran`)
 
-- **Dashboard**: `GET reports/anggaran/dashboard` — summarized KPIs for rows visible under the same project/status conventions as the RAB DataTables listing (`reports/anggaran.dashboard`).
-- **Listing/DataTables**: `reports/anggaran/data` — applies active/inactive and admin-vs-non-admin filters consistently with bulk operations (see `Reports\AnggaranController::authorizedBulkIds`).
-- **Recalculate**: `POST reports/anggaran/recalculate` — authorization **`recalculate_release`** (Spatie). Runs **`AnggaranReleaseService::syncAllApprovedStoredTotals`** then **`flushAllReportingCaches`** so caches aligned after manual rebuild.
-- **Bulk activate/deactivate**: `POST update_many` / `activate_many` — authorization **`anggaran_bulk_activate_deactivate`**. IDs requested by the client are intersected with server-side scoped IDs before mutation.
+- **Dashboard**: **`GET reports/anggaran/dashboard`** — **`App\Http\Controllers\Reports\AnggaranDashboardController@index`**: KPI cards (totals, near-threshold count, exceeded count, pending fund pool), by-type / by-project breakdowns, expiring periodic (30 days), exceeded shortlist, filters (`project`, `type`, `fund_status`). **`GET reports/anggaran/dashboard/by-department?project=`** — JSON for async department rollup. **`GET reports/anggaran/dashboard/release-data`** — server-side DataTable of approved active budgets (amount, stored release, remaining, utilization bar, fund badge, payreq count, department).
+- **Consolidated**: **`GET reports/anggaran/consolidated`** — **`AnggaranConsolidatedController`**: same filters, pageable listing, grand totals, **by-department** section when a project is selected.
+- **Fund pool**: **`GET|POST reports/anggaran/fund-pool`** — **`AnggaranFundPoolController`**: list/filter approved active rows; **`POST .../fund-pool/pool`** marks **pending → pooled** (optionally sets **`fund_pooled_at`** / **`fund_pooled_by`**); **`POST .../fund-pool/release`** marks **pooled → released** only. Both require **`recalculate_release`**.
+- **Listing/DataTables**: `reports/anggaran/data` — **`Reports\AnggaranController`**; bulk IDs intersected in **`authorizedBulkIds`**.
+- **Recalculate**: `POST reports/anggaran/recalculate` — **`recalculate_release`**; **`syncAllApprovedStoredTotals`** + **`flushAllReportingCaches`**.
+- **Bulk activate/deactivate**: **`anggaran_bulk_activate_deactivate`** permission.
+- **Edit/show**: reports **edit** can set **`warning_threshold`**; **show** loads **`details.account`**, spending banners, fund fields.
 
 ### Shared domain logic (`AnggaranReleaseService`)
 
-- **`effectiveRabIdForPayqueries`**: uses **`old_rab_id`** when set so migrated rows reconcile payreq linkage consistently across User-payreq progress UI and reporting totals.
-- **`calculateTotalRelease`**, **`progressSummary`**, **`syncStoredTotals`**, **`syncAllApprovedStoredTotals`**: single pipeline for stored **`balance`** / **`persen`** and displayed breakdown tables.
+- **`effectiveRabIdForPayqueries`**, **`calculateTotalRelease`**, **`progressSummary`**, **`syncStoredTotals`**, **`syncAllApprovedStoredTotals`**, cache helpers (**`forgetDetailCaches`**, **`flushListingCaches`**, **`flushAllReportingCaches`**) — unchanged role for stored **`balance`** / **`persen`**.
+- Added: **`parsePersenToFloat`**, **`isOverThreshold`**, **`isExceeded`**, **`aggregateDashboardStats`** (scoped to user/role + optional filters), **`aggregateByDepartment`**, **`dashboardBaseQuery`**.
 
 ### Operational tooling
 
-- **`php artisan anggaran:sync-release-totals`** — hourly scheduler (`App\Console\Kernel`) re-syncs approved rows and clears **listing** cache helpers (`flushListingCaches`) without iterating every cached detail key (heavy deployments reserve full **`flushAllReportingCaches`** for manual POST Recalc).
+- **`php artisan anggaran:sync-release-totals`** — hourly in **`App\Console\Kernel`**; **`flushListingCaches`** after sync (not full per-id detail flush).
 
-- **`php artisan anggaran:inactivate-many --last-month`** — bulk **`is_active = 0`** for **approved** rows whose **`date`** lies in the prior calendar month (optional **`--project=`**, **`--dry-run`**). **`type = buc`** rows are always skipped. Mirrors Reports **Inactivate Many** behaviour without selecting checkboxes. **Scheduled:** 1st of each month at **05:00** app timezone (`Kernel`).
+- **`php artisan anggaran:inactivate-many --last-month`** — monthly **05:00**; skips **`buc`**.
+
+- **`php artisan anggaran:expire-periodic`** — daily **01:00**: **approved** rows with **`type = periode`**, **`is_active = 1`**, period end **before today** — end date = **`end_date`** if set, else **last day of `periode_anggaran` month**; sets **`is_active = 0`**, listing cache flush.
 
 ### Tests
 
-- `tests/Feature/AnggaranReportsTest.php` covers unauthorized POST paths vs permission gates.
+- **`tests/Feature/AnggaranReportsTest.php`** — recalculate + bulk permission gates (extend when new routes need coverage).
+
+See **ADR-ANGGRAN-01**, **ADR-ANGGRAN-02**.
 
 ## User-payreq: realization / reimbursement detail lines (`realization_details`)
 
@@ -147,6 +162,49 @@ See **ADR-PAYREQ-03**.
 
 See **ADR-BANK-REC-01**.
 
+## In-app HELP (RAG over manuals)
+
+**Stateless** **how-to** assistant: each request is answered from **indexed Markdown** only (no live DB / tool calling). Menus in the UI remain **Cashier** → **Bank Reconciliation**, **My PayReqs** → **RAB**, **?** Help launcher, etc.—the feature does not rename modules.
+
+### Routes & auth (`routes/help.php`, included from `routes/web.php` inside **`auth`**)
+
+- **`POST /help/ask`** (**`help.ask`**) — JSON **`{ message, locale? }`**; returns **`{ answer, sources[], not_documented }`**. Middleware: **`permission:akses_help`**, **`throttle:30,1`**.
+- **`POST /help/feedback`** (**`help.feedback`**) — JSON **`{ type, title, body, steps_to_reproduce? }`**; **`201`** + **`{ message, id }`**. Optional plaintext email when **`config('help.feedback_notify_email')`** is set.
+
+### Permission & UI
+
+- Spatie permission **`akses_help`**: migration assigns to roles **`superadmin`**, **`admin`**, **`cashier`**; others via Roles UI.
+- Topbar **`?`** and modal partial **`templates/partials/help-panel.blade.php`** are wrapped in **`@can('akses_help')`**; included from **`templates/main.blade.php`**.
+
+### Data model
+
+- **`help_embeddings`**: **`chunk_key`** (unique), **`source_path`**, **`heading`**, **`locale`**, **`content`**, **`embedding`** (JSON float array). Model **`App\Models\HelpEmbedding`**.
+- **`help_feedbacks`**: **`user_id`**, **`type`**, **`title`**, **`body`**, **`steps_to_reproduce`**. Model **`App\Models\HelpFeedback`** (**`protected $table = 'help_feedbacks'`**).
+
+### Services & command
+
+- **`App\Services\Help\HelpOpenRouterClient`** — **`/embeddings`** and **`/chat/completions`** vs OpenRouter (config under **`services.openrouter`** + **`HELP_*`** / **`OPENROUTER_*`** env). Retries / connect timeout for embeddings.
+- **`App\Services\Help\HelpManualChunker`** — reads **`docs/manuals/*.md`** (split on **`##`**); optional **`docs/help-navigation.json`**; filename suffixes **`-en.md`** / **`-id.md`** set chunk **`locale`** for retrieval boost.
+- **`App\Services\Help\HelpAssistantService`** — embed question, cosine similarity + locale boost, **`HELP_SIMILARITY_THRESHOLD`** gate, top-**`K`** context, strict system prompt (answer only from context).
+- **`App\Services\Help\HelpVector`** — **`cosineSimilarity`**.
+- **`php artisan help:reindex`** — **`App\Console\Commands\HelpReindexCommand`**: truncate **`help_embeddings`**, batch embed, insert rows. **Operational:** run after manual edits under **`docs/manuals/`**.
+
+### Config
+
+- **`config/help.php`** — threshold, top K, batch size, manuals path, navigation JSON path, feedback email, locale boost weights.
+- **`config/services.php`** — **`openrouter.help_model`**, **`embedding_model`**, **`connect_timeout`**, **`embedding_retries`** (chat still uses existing **`OpenRouterService`** for other features e.g. Koran PDF parsing).
+
+### Author-maintained manuals (`docs/manuals/`)
+
+- **Bilingual by policy:** every topic ships as **`*-en.md`** and **`*-id.md`** (see **`docs/manuals/README.md`**).
+- **tracked in Git:** **`.gitignore`** uses **`/docs/*`** with negation **`!/docs/manuals/`** so manuals are versioned while other **`docs/`** paths can stay ignored.
+
+### Tests
+
+- **`tests/Feature/Help/HelpAskTest.php`**, **`tests/Feature/Help/HelpFeedbackTest.php`** — **`Http::fake`** OpenRouter, permission gates, **`not_documented`** / chat path.
+
+See **ADR-HELP-01**.
+
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-BANK-REC-01**.
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-BANK-REC-01**, **ADR-HELP-01**.
