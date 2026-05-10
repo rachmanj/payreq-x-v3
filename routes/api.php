@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\BilyetApiController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\MenuSearchController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\BucSyncController;
 use Illuminate\Http\Request;
@@ -9,6 +10,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/menu/search', [MenuSearchController::class, 'index'])->name('api.menu.search');
 });
 
 Route::get('rabs/get-payreqs', [BucSyncController::class, 'get_buc_payreqs'])->name('get_buc_payreqs');
@@ -60,7 +65,7 @@ Route::get('/dashboard/exchange-rate-usd', function () {
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
-            'message' => 'Error fetching USD rate: ' . $e->getMessage(),
+            'message' => 'Error fetching USD rate: '.$e->getMessage(),
         ], 500);
     }
 })->name('api.dashboard.exchange-rate-usd');

@@ -219,3 +219,27 @@ Lightweight records of intent and trade-offs. Numbering is sequential by topic a
 - Negative: operational **`help:reindex`** after manual edits; retrieval quality depends on authoring and thresholds; feedback email needs working mail when **`HELP_FEEDBACK_NOTIFY_EMAIL`** is set.
 
 ---
+
+## ADR-NAV-01 — Top navbar menu search (session-authenticated JSON + mirrored RBAC)
+
+**Status:** Accepted (2026-05-10)
+
+**Context**
+
+- The primary shell (**AdminLTE** sidebar + top bar) accumulates many nested destinations; users requested faster jumps without expanding tree menus.
+- Search results must **never** expose URLs the signed-in user cannot open—the surface area matches **`templates/partials/sidebar.blade.php`**, including exceptional flows (**PCBC** sanction locking **Ready to Pay** / **Incoming List** only).
+
+**Decision**
+
+1. Serve **`GET /api/menu/search`** under **`routes/api.php`** with **`middleware(['web', 'auth'])`** so **session** authentication matches Blade pages (not **`auth:sanctum`** alone).
+2. Encode menu rows in **`App\Services\MenuSearchService`** with explicit **`User::can`** / **`hasAnyRole`** checks aligned to the sidebar; inject **`PcbcComplianceService`** where cashier sanction affects visibility.
+3. Cache assembled **`items`** per user (**TTL 3600** s) keyed by **sorted Spatie permission names** plus a **sanction suffix** so permission-only cache keys do not leak outdated cashier links after sanction changes.
+4. Front-end: **`public/js/menu-search.js`** + **`public/css/menu-search.css`**, included from **`templates/partials/{script,head}.blade.php`**; markup lives in **`templates/partials/topbar.blade.php`**.
+5. Accept **second source of truth** risk: new sidebar links require parallel updates in **`MenuSearchService`** until a shared menu definition exists.
+
+**Consequences**
+
+- Positive: fast navigation with keyboard shortcut and minimal server load after first fetch; RBAC parity when service stays in sync with sidebar.
+- Negative: drift if sidebar changes omit **`MenuSearchService`**; large menus may warrant lowering TTL or explicit cache bust hooks when roles change in-session.
+
+---

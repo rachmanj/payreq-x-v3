@@ -1,3 +1,17 @@
+### [045] Top navbar menu search — permission-aware `/api/menu/search`, RBAC parity with sidebar, PCBC cache suffix (2026-05-10) ✅ COMPLETE
+
+**Challenge:** Users needed to jump to sidebar destinations without expanding **AdminLTE** tree menus; results had to respect **Spatie** gates like **`templates/partials/sidebar.blade.php`** and **PCBC** sanction behaviour (**Ready to Pay** / **Incoming List** hidden when sanctioned, other cashier transaction links unchanged).
+
+**Solution:** **`App\Services\MenuSearchService`** builds flat JSON items (**`title`**, **`route`**, **`icon`**, **`category`**, **`breadcrumb`**, **`keywords`**, **`searchText`**); **`App\Http\Controllers\Api\MenuSearchController`** exposes **`GET /api/menu/search`** (**`routes/api.php`**) with **`middleware(['web', 'auth'])`** for session cookies; **`Cache::remember`** **3600** s with key **`menu_items_user_{id}_{md5(permissions + sanction suffix)}`**. Front-end: **`public/js/menu-search.js`** (single fetch, debounce, arrows/Enter/Escape, **Ctrl+K**), **`public/css/menu-search.css`**, markup in **`templates/partials/topbar.blade.php`**, assets linked from **`templates/partials/{head,script}.blade.php`**.
+
+**Key learning:** Permission-only cache fingerprints miss **PCBC** sanction flips—mix **`PcbcComplianceService::isSanctioned`** into the fingerprint for users in cashier PCBC scope. **`MenuSearchService`** is a **second source of truth** vs Blade until a shared menu definition exists.
+
+**Implementation / file map:** **`app/Services/MenuSearchService.php`**, **`app/Http/Controllers/Api/MenuSearchController.php`**, **`routes/api.php`**, **`public/js/menu-search.js`**, **`public/css/menu-search.css`**, **`resources/views/templates/partials/{topbar,head,script}.blade.php`**.
+
+**Docs:** **`docs/architecture.md`** (Navigation: top-bar menu search), **`docs/decisions.md`** (**ADR-NAV-01**), **`docs/menu-search-feature-reference.md`** (portable spec + AccountingOne paths), **`README.md`** (doc index), **`docs/manuals/README.md`** (technical reference), **`MEMORY.md`** **[045]**; end-user hint in **`docs/manuals/getting-started-{en,id}.md`**.
+
+---
+
 ### [044] In-app HELP chatbox — RAG over manuals, bilingual `docs/manuals`, `akses_help` (2026-05-09) ✅ COMPLETE
 
 **Challenge:** Users needed searchable **how-to** guidance aligned with actual menus (**Cashier**, **My PayReqs**, **Reports**) without tying answers to live financial data.

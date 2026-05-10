@@ -7,6 +7,15 @@
         </li>
     </ul>
 
+    <div id="menu-search-container" class="d-none d-md-flex flex-grow-1 justify-content-center px-2">
+        <div id="menu-search-input-wrapper">
+            <input type="text" id="menu-search-input" class="form-control form-control-sm" placeholder="Search Menu here"
+                autocomplete="off" aria-label="Search menu">
+            <i id="menu-search-icon" class="fas fa-search"></i>
+            <div id="menu-search-results"></div>
+        </div>
+    </div>
+
     <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto">
         @can('akses_help')

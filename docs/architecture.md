@@ -205,6 +205,31 @@ See **ADR-BANK-REC-01**.
 
 See **ADR-HELP-01**.
 
+## Navigation: top-bar menu search
+
+Permission-aware **quick navigation**: authenticated users search sidebar destinations from **`templates/partials/topbar.blade.php`** (desktop **`md+`** only); behaviour mirrors **`templates/partials/sidebar.blade.php`** gates (**Spatie** **`can`** / **`canAny`**, **`hasAnyRole`**) plus **`PcbcComplianceService`** for **Ready to Pay** / **Incoming List** when weekly PCBC sanctions apply (**same rule as sidebar**, which hides links rather than exposing locked URLs).
+
+### Routes & payload (`routes/api.php`)
+
+- **`GET /api/menu/search`** (**`api.menu.search`**) — JSON **`{ items: [...] }`**. Middleware **`web`** + **`auth`** so **session** cookies apply (consistent with Blade shell).
+- Optional **`?q=`** — substring filter server-side on concatenated **`searchText`**, capped at **15** rows (primary UX still filters client-side after one fetch).
+
+### Implementation files
+
+- **`App\Services\MenuSearchService`** — builds flat **`items`** with **`title`**, **`route`** (**absolute URL** via **`URL::to(route(...))`**), **`icon`**, **`category`**, **`breadcrumb`**, **`keywords`**, **`searchText`** (lowercased).
+- **`App\Http\Controllers\Api\MenuSearchController`** — **`Cache::remember`** TTL **3600** s; cache key **`menu_items_user_{id}_{md5(sorted permission names + PCBC sanction suffix)}`** so role updates and sanction toggles do not serve stale cashier entries without clearing permissions.
+
+### Front-end assets
+
+- **`public/js/menu-search.js`** — loaded after jQuery in **`templates/partials/script.blade.php`**; loads **`/api/menu/search`** once, debounced typing (**300** ms), keyboard (**↑/↓**, **Enter**, **Escape**), **Ctrl+K / Cmd+K** focuses **`#menu-search-input`** (skips when focus is another input/textarea).
+- **`public/css/menu-search.css`** — linked from **`templates/partials/head.blade.php`** (dark **`navbar-dark`** styling + **`navbar-light`** overrides).
+
+### Maintainer rule
+
+New sidebar entries **must** be reflected in **`MenuSearchService`** (or future shared menu definition) or search results drift from visible navigation.
+
+See **`docs/menu-search-feature-reference.md`** (portable spec) and **ADR-NAV-01**.
+
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-BANK-REC-01**, **ADR-HELP-01**.
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**.
