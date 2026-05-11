@@ -105,3 +105,13 @@
 .navbar-light #menu-search-icon {
     color: #adb5bd;
 }
+
+.menu-search-status {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    color: #6c757d;
+}
+
+.menu-search-status.menu-search-status-error {
+    color: #856404;
+}

@@ -209,9 +209,10 @@ See **ADR-HELP-01**.
 
 Permission-aware **quick navigation**: authenticated users search sidebar destinations from **`templates/partials/topbar.blade.php`** (desktop **`md+`** only); behaviour mirrors **`templates/partials/sidebar.blade.php`** gates (**Spatie** **`can`** / **`canAny`**, **`hasAnyRole`**) plus **`PcbcComplianceService`** for **Ready to Pay** / **Incoming List** when weekly PCBC sanctions apply (**same rule as sidebar**, which hides links rather than exposing locked URLs).
 
-### Routes & payload (`routes/api.php`)
+### Routes & payload (`routes/web.php` and `routes/api.php`)
 
-- **`GET /api/menu/search`** (**`api.menu.search`**) — JSON **`{ items: [...] }`**. Middleware **`web`** + **`auth`** so **session** cookies apply (consistent with Blade shell).
+- **`GET /menu/search-items`** (**`menu.search.items`**) — **preferred** for the Blade shell: registered in **`routes/web.php`** inside **`auth`** so the request uses the normal **`web`** middleware stack only (session cookies behave the same as full-page loads). JSON **`{ items: [...] }`**.
+- **`GET /api/menu/search`** (**`api.menu.search`**) — retained for compatibility; uses **`web`** + **`auth`** on top of the **`api`** group (throttling applies). The navbar passes the **web** URL via **`data-menu-search-url`**.
 - Optional **`?q=`** — substring filter server-side on concatenated **`searchText`**, capped at **15** rows (primary UX still filters client-side after one fetch).
 
 ### Implementation files

@@ -7,7 +7,8 @@
         </li>
     </ul>
 
-    <div id="menu-search-container" class="d-none d-md-flex flex-grow-1 justify-content-center px-2">
+    <div id="menu-search-container" class="d-none d-md-flex flex-grow-1 justify-content-center px-2"
+        data-menu-search-url="{{ route('menu.search.items') }}">
         <div id="menu-search-input-wrapper">
             <input type="text" id="menu-search-input" class="form-control form-control-sm" placeholder="Search Menu here"
                 autocomplete="off" aria-label="Search menu">

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\Api\MenuSearchController;
 use App\Http\Controllers\BucSyncController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\DashboardUserController;
@@ -41,6 +42,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    Route::get('/menu/search-items', [MenuSearchController::class, 'index'])->name('menu.search.items');
 
     // USERS
     Route::prefix('users')->name('users.')->group(function () {

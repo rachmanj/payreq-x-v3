@@ -1,123 +1,171 @@
 (function ($) {
     'use strict';
 
-    var allMenuItems = [];
-    var filteredItems = [];
-    var selectedIndex = -1;
-    var debounceTimer = null;
-    var MENU_SEARCH_URL = '/api/menu/search';
-
-    function fetchItems() {
-        $.ajax({
-            url: MENU_SEARCH_URL,
-            method: 'GET',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            success: function (data) {
-                allMenuItems = data.items || [];
-                var v = $('#menu-search-input').val();
-                if (v && String(v).trim()) {
-                    filterItems(String(v));
-                }
-            },
-        });
-    }
-
-    function sortFiltered(term, items) {
-        items.sort(function (a, b) {
-            var at = a.title.toLowerCase();
-            var bt = b.title.toLowerCase();
-            var rank = function (t) {
-                if (t.indexOf(term) === 0) {
-                    return 0;
-                }
-                if (t.indexOf(term) >= 0) {
-                    return 1;
-                }
-                return 2;
-            };
-            var ar = rank(at);
-            var br = rank(bt);
-            if (ar !== br) {
-                return ar - br;
-            }
-            return at.localeCompare(bt);
-        });
-        return items.slice(0, 15);
-    }
-
-    function filterItems(raw) {
-        var term = String(raw).trim().toLowerCase();
-        var $results = $('#menu-search-results');
-
-        if (!term) {
-            filteredItems = [];
-            selectedIndex = -1;
-            $results.empty().removeClass('show');
-            return;
-        }
-
-        filteredItems = allMenuItems.filter(function (item) {
-            return item.searchText.indexOf(term) !== -1;
-        });
-        filteredItems = sortFiltered(term, filteredItems);
-        renderResults();
-    }
-
-    function renderResults() {
-        var $results = $('#menu-search-results');
-        $results.empty();
-        selectedIndex = -1;
-
-        if (!filteredItems.length) {
-            $results.removeClass('show');
-            return;
-        }
-
-        filteredItems.forEach(function (item, idx) {
-            var $row = $('<div/>', {
-                class: 'menu-search-item',
-                'data-index': idx,
-                'data-url': item.route,
-            });
-            var $icon = $('<i/>', { class: item.icon + ' menu-search-item-icon' });
-            var $title = $('<div/>', { class: 'menu-search-item-title', text: item.title });
-            var $meta = $('<div/>', { class: 'menu-search-item-meta', text: item.breadcrumb });
-            $row.append($('<div/>', { class: 'd-flex align-items-start' }).append($icon).append($('<div/>').append($title).append($meta)));
-            $results.append($row);
-        });
-
-        $results.addClass('show');
-    }
-
-    function updateActiveHighlight() {
-        $('#menu-search-results .menu-search-item').removeClass('menu-search-item-active');
-        if (selectedIndex >= 0 && selectedIndex < filteredItems.length) {
-            $('#menu-search-results .menu-search-item').eq(selectedIndex).addClass('menu-search-item-active');
-        }
-    }
-
-    function navigateToSelected() {
-        var idx = selectedIndex;
-        if (idx < 0 && filteredItems.length > 0) {
-            idx = 0;
-        }
-        if (idx >= 0 && idx < filteredItems.length) {
-            window.location.href = filteredItems[idx].route;
-        }
-    }
-
-    function closeResults() {
-        $('#menu-search-results').empty().removeClass('show');
-        filteredItems = [];
-        selectedIndex = -1;
-    }
-
     $(document).ready(function () {
         var $input = $('#menu-search-input');
         var $wrapper = $('#menu-search-container');
 
         if (!$input.length || !$wrapper.length) {
             return;
+        }
+
+        var allMenuItems = [];
+        var filteredItems = [];
+        var selectedIndex = -1;
+        var debounceTimer = null;
+        var loadState = 'loading';
+
+        var apiUrl = $wrapper.data('menu-search-url');
+        if (!apiUrl || apiUrl === '') {
+            apiUrl = '/api/menu/search';
+        }
+
+        function showResultsPanel(text, options) {
+            var opts = options || {};
+            var $results = $('#menu-search-results');
+            $results.empty();
+            var cls = 'menu-search-status';
+            if (opts.isError) {
+                cls += ' menu-search-status-error';
+            }
+            $results.append($('<div/>', { class: cls, text: text }));
+            $results.addClass('show');
+        }
+
+        function fetchItems() {
+            loadState = 'loading';
+            $.ajax({
+                url: apiUrl,
+                method: 'GET',
+                dataType: 'json',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+                .done(function (data) {
+                    loadState = 'ready';
+                    allMenuItems = (data && data.items) ? data.items : [];
+                    var v = $input.val();
+                    if (v && String(v).trim()) {
+                        filterItems(String(v));
+                    }
+                })
+                .fail(function (xhr) {
+                    loadState = 'error';
+                    allMenuItems = [];
+                    if (xhr.status === 401 || xhr.status === 419) {
+                        showResultsPanel('Session expired. Reload the page and sign in again.', { isError: true });
+                    } else if (xhr.status === 429) {
+                        showResultsPanel('Too many requests. Wait a moment and try again.', { isError: true });
+                    } else {
+                        showResultsPanel('Menu search could not load. Refresh the page or contact support.', { isError: true });
+                    }
+                });
+        }
+
+        function sortFiltered(term, items) {
+            items.sort(function (a, b) {
+                var at = a.title.toLowerCase();
+                var bt = b.title.toLowerCase();
+                var rank = function (t) {
+                    if (t.indexOf(term) === 0) {
+                        return 0;
+                    }
+                    if (t.indexOf(term) >= 0) {
+                        return 1;
+                    }
+                    return 2;
+                };
+                var ar = rank(at);
+                var br = rank(bt);
+                if (ar !== br) {
+                    return ar - br;
+                }
+                return at.localeCompare(bt);
+            });
+            return items.slice(0, 15);
+        }
+
+        function filterItems(raw) {
+            var term = String(raw).trim().toLowerCase();
+            var $results = $('#menu-search-results');
+
+            if (!term) {
+                filteredItems = [];
+                selectedIndex = -1;
+                $results.empty().removeClass('show');
+                return;
+            }
+
+            if (loadState === 'loading') {
+                showResultsPanel('Loading menu…');
+                return;
+            }
+
+            if (loadState === 'error') {
+                return;
+            }
+
+            filteredItems = allMenuItems.filter(function (item) {
+                return item.searchText.indexOf(term) !== -1;
+            });
+            filteredItems = sortFiltered(term, filteredItems);
+            renderResults();
+        }
+
+        function renderResults() {
+            var $results = $('#menu-search-results');
+            $results.empty();
+            selectedIndex = -1;
+
+            if (!filteredItems.length) {
+                if (allMenuItems.length > 0) {
+                    showResultsPanel('No matching menu items.');
+                } else {
+                    $results.removeClass('show');
+                }
+                return;
+            }
+
+            filteredItems.forEach(function (item, idx) {
+                var $row = $('<div/>', {
+                    class: 'menu-search-item',
+                    'data-index': idx,
+                    'data-url': item.route,
+                });
+                var $icon = $('<i/>', { class: item.icon + ' menu-search-item-icon' });
+                var $title = $('<div/>', { class: 'menu-search-item-title', text: item.title });
+                var $meta = $('<div/>', { class: 'menu-search-item-meta', text: item.breadcrumb });
+                $row.append($('<div/>', { class: 'd-flex align-items-start' }).append($icon).append($('<div/>').append($title).append($meta)));
+                $results.append($row);
+            });
+
+            $results.addClass('show');
+        }
+
+        function updateActiveHighlight() {
+            $('#menu-search-results .menu-search-item').removeClass('menu-search-item-active');
+            if (selectedIndex >= 0 && selectedIndex < filteredItems.length) {
+                $('#menu-search-results .menu-search-item').eq(selectedIndex).addClass('menu-search-item-active');
+            }
+        }
+
+        function navigateToSelected() {
+            var idx = selectedIndex;
+            if (idx < 0 && filteredItems.length > 0) {
+                idx = 0;
+            }
+            if (idx >= 0 && idx < filteredItems.length) {
+                window.location.href = filteredItems[idx].route;
+            }
+        }
+
+        function closeResults() {
+            if (loadState === 'error') {
+                $('#menu-search-results').empty().removeClass('show');
+                return;
+            }
+            $('#menu-search-results').empty().removeClass('show');
+            filteredItems = [];
+            selectedIndex = -1;
         }
 
         fetchItems();
@@ -131,7 +179,18 @@
         });
 
         $input.on('keydown', function (e) {
-            if (!$('#menu-search-results').hasClass('show') || !filteredItems.length) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                $('#menu-search-results').empty().removeClass('show');
+                filteredItems = [];
+                selectedIndex = -1;
+                return;
+            }
+
+            var $results = $('#menu-search-results');
+            var statusOnly = $results.find('.menu-search-status').length > 0;
+
+            if (statusOnly || !$results.hasClass('show') || !filteredItems.length) {
                 return;
             }
 
@@ -146,14 +205,11 @@
             } else if (e.key === 'Enter') {
                 e.preventDefault();
                 navigateToSelected();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                closeResults();
             }
         });
 
-        $('#menu-search-results').on('mousedown', '.menu-search-item', function (e) {
-            e.preventDefault();
+        $('#menu-search-results').on('mousedown', '.menu-search-item', function (event) {
+            event.preventDefault();
             var url = $(this).data('url');
             if (url) {
                 window.location.href = url;
