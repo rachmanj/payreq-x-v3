@@ -90,6 +90,10 @@
               {
                 "targets": [4],
                 "className": "text-right"
+              },
+              {
+                "targets": [-1],
+                "className": "text-nowrap"
               }
             ]
     })

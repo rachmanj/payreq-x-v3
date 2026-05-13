@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\VerificationJournalController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('verifications')->name('verifications.')->group(function () {
     Route::get('/data', [VerificationController::class, 'data'])->name('data');
@@ -27,6 +27,7 @@ Route::prefix('verifications')->name('verifications.')->group(function () {
         Route::get('/remove_all_fromcart', [VerificationJournalController::class, 'remove_all_fromcart'])->name('remove_all_fromcart');
         Route::get('/{id}/show', [VerificationJournalController::class, 'show'])->name('show');
         Route::get('/{id}/print', [VerificationJournalController::class, 'print'])->name('print');
+        Route::get('/{id}/print-sap-journal', [VerificationJournalController::class, 'printSapJournal'])->name('print_sap_journal');
         Route::delete('/{id}', [VerificationJournalController::class, 'destroy'])->name('destroy');
         Route::post('/move_selected_to_cart', [VerificationJournalController::class, 'moveSelectedToCart'])->name('move_selected_to_cart');
         Route::post('/remove_selected_from_cart', [VerificationJournalController::class, 'removeSelectedFromCart'])->name('remove_selected_from_cart');

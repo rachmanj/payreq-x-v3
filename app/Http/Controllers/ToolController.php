@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalPlan;
-use App\Models\CashJournal;
 use App\Models\Outgoing;
 use App\Models\Payreq;
 use App\Models\Realization;
@@ -15,55 +14,137 @@ class ToolController extends Controller
     public function getApiProjects() // api call to arkFleet
     {
         $url = env('URL_PROJECTS');
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client;
         $response = $client->request('GET', $url);
         $projects = json_decode($response->getBody()->getContents(), true)['data'];
 
         return $projects;
     }
 
-    function penyebut($nilai)
+    public function penyebut($nilai)
     {
         $nilai = abs($nilai);
-        $huruf = array("", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas");
-        $temp = "";
+        $huruf = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
+        $temp = '';
         if ($nilai < 12) {
-            $temp = " " . $huruf[$nilai];
-        } else if ($nilai < 20) {
-            $temp = $this->penyebut($nilai - 10) . " belas";
-        } else if ($nilai < 100) {
-            $temp = $this->penyebut($nilai / 10) . " puluh" . $this->penyebut($nilai % 10);
-        } else if ($nilai < 200) {
-            $temp = " seratus" . $this->penyebut($nilai - 100);
-        } else if ($nilai < 1000) {
-            $temp = $this->penyebut($nilai / 100) . " ratus" . $this->penyebut($nilai % 100);
-        } else if ($nilai < 2000) {
-            $temp = " seribu" . $this->penyebut($nilai - 1000);
-        } else if ($nilai < 1000000) {
-            $temp = $this->penyebut($nilai / 1000) . " ribu" . $this->penyebut($nilai % 1000);
-        } else if ($nilai < 1000000000) {
-            $temp = $this->penyebut($nilai / 1000000) . " juta" . $this->penyebut($nilai % 1000000);
-        } else if ($nilai < 1000000000000) {
-            $temp = $this->penyebut($nilai / 1000000000) . " milyar" . $this->penyebut(fmod($nilai, 1000000000));
-        } else if ($nilai < 1000000000000000) {
-            $temp = $this->penyebut($nilai / 1000000000000) . " trilyun" . $this->penyebut(fmod($nilai, 1000000000000));
+            $temp = ' '.$huruf[$nilai];
+        } elseif ($nilai < 20) {
+            $temp = $this->penyebut($nilai - 10).' belas';
+        } elseif ($nilai < 100) {
+            $temp = $this->penyebut($nilai / 10).' puluh'.$this->penyebut($nilai % 10);
+        } elseif ($nilai < 200) {
+            $temp = ' seratus'.$this->penyebut($nilai - 100);
+        } elseif ($nilai < 1000) {
+            $temp = $this->penyebut($nilai / 100).' ratus'.$this->penyebut($nilai % 100);
+        } elseif ($nilai < 2000) {
+            $temp = ' seribu'.$this->penyebut($nilai - 1000);
+        } elseif ($nilai < 1000000) {
+            $temp = $this->penyebut($nilai / 1000).' ribu'.$this->penyebut($nilai % 1000);
+        } elseif ($nilai < 1000000000) {
+            $temp = $this->penyebut($nilai / 1000000).' juta'.$this->penyebut($nilai % 1000000);
+        } elseif ($nilai < 1000000000000) {
+            $temp = $this->penyebut($nilai / 1000000000).' milyar'.$this->penyebut(fmod($nilai, 1000000000));
+        } elseif ($nilai < 1000000000000000) {
+            $temp = $this->penyebut($nilai / 1000000000000).' trilyun'.$this->penyebut(fmod($nilai, 1000000000000));
         }
+
         return $temp;
     }
 
-    function terbilang($nilai)
+    public function terbilang($nilai)
     {
         if ($nilai < 0) {
-            $hasil = "minus " . trim($this->penyebut($nilai));
+            $hasil = 'minus '.trim($this->penyebut($nilai));
         } else {
             $hasil = trim($this->penyebut($nilai));
         }
-        return $hasil . " rupiah";
+
+        return $hasil.' rupiah';
+    }
+
+    public function numberToWordsEnglish(float $amount): string
+    {
+        $amount = round($amount, 2);
+        $sign = '';
+        if ($amount < 0) {
+            $sign = 'MINUS ';
+            $amount = abs($amount);
+        }
+        $rupeesInteger = (int) floor($amount);
+        $cents = (int) round(($amount - $rupeesInteger) * 100);
+        $cents = min(99, $cents);
+
+        $rupiahWords = strtoupper($this->englishWordsForNonNegativeInteger($rupeesInteger));
+        $centWords = strtoupper($this->englishWordsForNonNegativeInteger($cents));
+
+        return $sign.$rupiahWords.' RUPIAH POINT '.$centWords.' CENTS';
+    }
+
+    private function englishWordsForNonNegativeInteger(int $number): string
+    {
+        if ($number === 0) {
+            return 'zero';
+        }
+
+        $ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+            'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+        $tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+        $underHundred = function (int $n) use ($ones, $tens): string {
+            if ($n < 20) {
+                return $ones[$n];
+            }
+            $tenPortion = intdiv($n, 10);
+            $rest = $n % 10;
+            if ($rest === 0) {
+                return $tens[$tenPortion];
+            }
+
+            return $tens[$tenPortion].'-'.$ones[$rest];
+        };
+
+        $underThousand = function (int $n) use ($underHundred, $ones): string {
+            if ($n < 100) {
+                return $underHundred($n);
+            }
+            $hundredsDigit = intdiv($n, 100);
+            $rest = $n % 100;
+            $prefix = $ones[$hundredsDigit].' hundred';
+            if ($rest === 0) {
+                return $prefix;
+            }
+
+            return $prefix.' '.$underHundred($rest);
+        };
+
+        $parts = [];
+        $billion = intdiv($number, 1000000000);
+        $remainder = $number % 1000000000;
+        $million = intdiv($remainder, 1000000);
+        $remainder = $remainder % 1000000;
+        $thousand = intdiv($remainder, 1000);
+        $remainder = $remainder % 1000;
+
+        if ($billion > 0) {
+            $parts[] = $underThousand($billion).' billion';
+        }
+        if ($million > 0) {
+            $parts[] = $underThousand($million).' million';
+        }
+        if ($thousand > 0) {
+            $parts[] = $underThousand($thousand).' thousand';
+        }
+        if ($remainder > 0) {
+            $parts[] = $underThousand($remainder);
+        }
+
+        return implode(' ', $parts);
     }
 
     public function getUserRoles()
     {
         $roles = User::find(auth()->user()->id)->getRoleNames()->toArray();
+
         // $roles = "Ninja";
         return $roles;
     }
@@ -83,7 +164,7 @@ class ToolController extends Controller
         $realization_project_count = Realization::where('project', auth()->user()->project)
             ->whereIn('status', $status_include)
             ->count();
-        $nomor = 'RQ' . Carbon::now()->addHours(8)->format('y') . substr(auth()->user()->project, 0, 3) . str_pad($realization_project_count + 1, 3, '0', STR_PAD_LEFT);
+        $nomor = 'RQ'.Carbon::now()->addHours(8)->format('y').substr(auth()->user()->project, 0, 3).str_pad($realization_project_count + 1, 3, '0', STR_PAD_LEFT);
 
         return $nomor;
     }
@@ -94,7 +175,7 @@ class ToolController extends Controller
         $realization_project_count = Realization::where('project', $realization->payreq->project)
             ->where('status', 'approved')
             ->count();
-        $nomor = Carbon::now()->format('y') . 'R' . substr(auth()->user()->project, 1, 2)  . str_pad($realization->id, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y').'R'.substr(auth()->user()->project, 1, 2).str_pad($realization->id, 5, '0', STR_PAD_LEFT);
         // $nomor = Carbon::now()->format('y') . substr(auth()->user()->project, 0, 3)  . str_pad($realization_project_count + 1, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
@@ -104,21 +185,21 @@ class ToolController extends Controller
     {
 
         $journal_type = $type == 'cash-out' ? 'COJ' : 'CIJ';
-        $nomor = Carbon::now()->format('y') . $journal_type . substr(auth()->user()->project, 0, 3)  . str_pad($journal_id, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y').$journal_type.substr(auth()->user()->project, 0, 3).str_pad($journal_id, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }
 
     public function generateVerificationJournalNumber($journal_id)
     {
-        $nomor = Carbon::now()->format('y') . 'VJ' . substr(auth()->user()->project, 0, 3)  . str_pad($journal_id, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y').'VJ'.substr(auth()->user()->project, 0, 3).str_pad($journal_id, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }
 
     public function generateManualIncomingNumber($incoming_id)
     {
-        $nomor = Carbon::now()->format('y') . 'MIJ' . substr(auth()->user()->project, 0, 3)  . str_pad($incoming_id, 5, '0', STR_PAD_LEFT);
+        $nomor = Carbon::now()->format('y').'MIJ'.substr(auth()->user()->project, 0, 3).str_pad($incoming_id, 5, '0', STR_PAD_LEFT);
 
         return $nomor;
     }
@@ -127,7 +208,7 @@ class ToolController extends Controller
     {
         $url = env('URL_EQUIPMENTS');
 
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client;
 
         try {
             $response = $client->request('GET', $url);
@@ -158,9 +239,9 @@ class ToolController extends Controller
 
     /**
      * Get approval document counts for API
-     * 
+     *
      * Returns the count of pending approval documents as JSON
-     * 
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function approval_documents_count_api()
@@ -172,9 +253,9 @@ class ToolController extends Controller
 
     /**
      * Get approval document counts
-     * 
+     *
      * Returns the count of pending approval documents
-     * 
+     *
      * @return array
      */
     public function approval_documents_count()
@@ -220,7 +301,7 @@ class ToolController extends Controller
                 ->first();
 
             return $lastOutgoing->outgoing_date;
-        };
+        }
     }
 
     public function getApproversName($document_id, $document_type)

@@ -19,7 +19,7 @@ class VerificationJournalController extends Controller
         $realizations_count = $this->available_realizations();
 
         return view('verifications.journal.index', compact([
-            'realizations_count'
+            'realizations_count',
         ]));
     }
 
@@ -52,7 +52,6 @@ class VerificationJournalController extends Controller
             $rows_count_text = false;
         }
 
-
         return view('verifications.journal.create', compact([
             'select_all_button',
             'remove_all_button',
@@ -72,14 +71,15 @@ class VerificationJournalController extends Controller
             ->map(function ($detail) {
                 $account = Account::where('account_number', $detail->account_code)->first();
                 $dept = Department::where('sap_code', $detail->cost_center)->first();
-                $detail->account_name = $account ? $account->account_name : "not found";
+                $detail->account_name = $account ? $account->account_name : 'not found';
                 $detail->dept_akronim = $dept->akronim;
+
                 return $detail;
             });
 
         return view('verifications.journal.show', compact([
             'vj',
-            'vj_details'
+            'vj_details',
         ]));
     }
 
@@ -92,18 +92,45 @@ class VerificationJournalController extends Controller
             ->map(function ($detail) {
                 $account = Account::where('account_number', $detail->account_code)->first();
                 $detail->account_name = $account->account_name;
+
                 return $detail;
             });
 
         return view('verifications.journal.print_journal', compact([
             'vj',
-            'vj_details'
+            'vj_details',
+        ]));
+    }
+
+    public function printSapJournal(int $id)
+    {
+        $vj = VerificationJournal::findOrFail($id);
+        if ($vj->sap_journal_no === null) {
+            abort(404);
+        }
+
+        $vjDetails = VerificationJournalDetail::where('verification_journal_id', $id)
+            ->orderBy('id', 'asc')
+            ->get()
+            ->map(function ($detail) {
+                $account = Account::where('account_number', $detail->account_code)->first();
+                $detail->account_name = $account ? $account->account_name : 'not found';
+
+                return $detail;
+            });
+
+        $amountInWords = app(ToolController::class)->numberToWordsEnglish((float) $vj->amount);
+
+        return view('verifications.journal.print_sap_journal', compact([
+            'vj',
+            'vjDetails',
+            'amountInWords',
         ]));
     }
 
     public function add_to_cart(Request $request)
     {
-        $flag = 'VJTEMP' . auth()->user()->id; // JTEMP = Journal Temporary
+        $flag = 'VJTEMP'.auth()->user()->id; // JTEMP = Journal Temporary
 
         $realization = Realization::findOrFail($request->realization_id);
         $realization->flag = $flag;
@@ -131,7 +158,7 @@ class VerificationJournalController extends Controller
 
         $realizations = $this->getToCartRealizations();
 
-        $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
+        $flag = 'VJTEMP'.auth()->user()->id; // VJTEMP = Verification Journal Temporary
 
         foreach ($realizations as $realization) {
             $realization->flag = $flag;
@@ -143,7 +170,7 @@ class VerificationJournalController extends Controller
 
     public function remove_all_fromcart()
     {
-        $flag = 'VJTEMP' . auth()->user()->id;
+        $flag = 'VJTEMP'.auth()->user()->id;
         $realizations = Realization::where('flag', $flag)
             ->get();
 
@@ -203,14 +230,14 @@ class VerificationJournalController extends Controller
 
     public function store(Request $request)
     {
-        $realizations = Realization::where('flag', 'VJTEMP' . auth()->user()->id)
+        $realizations = Realization::where('flag', 'VJTEMP'.auth()->user()->id)
             ->get();
 
         $realization_details = $realizations->pluck('realizationDetails')->flatten();
 
         $verification_amount = $realization_details->sum('amount');
 
-        $verification_journal = new VerificationJournal();
+        $verification_journal = new VerificationJournal;
         $verification_journal->date = $request->date;
         $verification_journal->amount = $verification_amount;
         $verification_journal->description = $request->description;
@@ -221,7 +248,7 @@ class VerificationJournalController extends Controller
         $nomor = app(ToolController::class)->generateVerificationJournalNumber($verification_journal->id);
 
         $verification_journal->update([
-            'nomor' => $nomor
+            'nomor' => $nomor,
         ]);
 
         // update realization table for verification_journal_id and remove flag
@@ -281,7 +308,7 @@ class VerificationJournalController extends Controller
 
     public function moveSelectedToCart(Request $request)
     {
-        $flag = 'VJTEMP' . auth()->user()->id; // JTEMP = Journal Temporary
+        $flag = 'VJTEMP'.auth()->user()->id; // JTEMP = Journal Temporary
 
         $realizations = Realization::whereIn('id', $request->ids)->get();
         foreach ($realizations as $realization) {
@@ -310,7 +337,7 @@ class VerificationJournalController extends Controller
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $verification_journals = VerificationJournal::orderBy('date', 'desc')
                 ->get();
-        } else if (in_array('cashier', $userRoles)) {
+        } elseif (in_array('cashier', $userRoles)) {
             $projects = ['000H', 'APS'];
             $verification_journals = VerificationJournal::whereIn('project', $projects)
                 ->orderBy('date', 'desc')
@@ -324,6 +351,7 @@ class VerificationJournalController extends Controller
         return datatables()->of($verification_journals)
             ->editColumn('date', function ($journal) {
                 $date = new \Carbon\Carbon($journal->date);
+
                 return $date->addHours(8)->format('d-M-Y');
             })
             ->addColumn('status', function ($journal) {
@@ -341,11 +369,14 @@ class VerificationJournalController extends Controller
                     return '-';
                 } else {
                     $date = new \Carbon\Carbon($journal->sap_posting_date);
+
                     return $date->addHours(8)->format('d-M-Y');
                 }
             })
             ->addIndexColumn()
-            ->addColumn('action', 'verifications.journal.action')
+            ->addColumn('action', function ($journal) {
+                return view('verifications.journal.action', ['model' => $journal])->render();
+            })
             ->rawColumns(['status', 'action'])
             ->toJson();
     }
@@ -416,18 +447,18 @@ class VerificationJournalController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
-        // Map and enhance each record    
+        // Map and enhance each record
         $vj_details = $vj_details->map(function ($detail) {
             // Get account information
             $account = Account::where('account_number', $detail->account_code)->first();
             $dept = Department::where('sap_code', $detail->cost_center)->first();
 
-            $detail->account_name = $account ? $account->account_name : "not found";
-            $detail->dept_akronim = $dept ? $dept->akronim : "";
+            $detail->account_name = $account ? $account->account_name : 'not found';
+            $detail->dept_akronim = $dept ? $dept->akronim : '';
 
             // Format for display in table
-            $detail->akun = $detail->account_code . ' - ' . $detail->account_name;
-            $detail->cost_center = $detail->cost_center . ' <br><small><b> ' . $detail->dept_akronim . '</b></small>';
+            $detail->akun = $detail->account_code.' - '.$detail->account_name;
+            $detail->cost_center = $detail->cost_center.' <br><small><b> '.$detail->dept_akronim.'</b></small>';
 
             // Enrich description with additional information from realization details - only for debit entries
             if ($detail->realization_no && $detail->debit_credit === 'debit') {
@@ -458,7 +489,7 @@ class VerificationJournalController extends Controller
                     }
 
                     // If no match found, try just by account
-                    if (!$r_details) {
+                    if (! $r_details) {
                         foreach ($r_details_all as $rd) {
                             $rd_account = $rd->account_id ? Account::find($rd->account_id) : null;
                             $rd_account_number = $rd_account ? $rd_account->account_number : null;
@@ -471,7 +502,7 @@ class VerificationJournalController extends Controller
                     }
 
                     // If still no match found but there's only one realization detail, use that
-                    if (!$r_details && count($r_details_all) === 1) {
+                    if (! $r_details && count($r_details_all) === 1) {
                         $r_details = $r_details_all->first();
                     }
 
@@ -480,33 +511,33 @@ class VerificationJournalController extends Controller
                         // Build additional info string
                         $additionalInfo = [];
 
-                        if (!empty($r_details->unit_no)) {
-                            $additionalInfo[] = "Unit: " . $r_details->unit_no;
+                        if (! empty($r_details->unit_no)) {
+                            $additionalInfo[] = 'Unit: '.$r_details->unit_no;
                         }
 
-                        if (!empty($r_details->nopol)) {
-                            $additionalInfo[] = "Nopol: " . $r_details->nopol;
+                        if (! empty($r_details->nopol)) {
+                            $additionalInfo[] = 'Nopol: '.$r_details->nopol;
                         }
 
-                        if (!empty($r_details->type)) {
-                            $additionalInfo[] = "Type: " . $r_details->type;
+                        if (! empty($r_details->type)) {
+                            $additionalInfo[] = 'Type: '.$r_details->type;
                         }
 
-                        if (!empty($r_details->qty)) {
-                            $additionalInfo[] = "Qty: " . $r_details->qty;
+                        if (! empty($r_details->qty)) {
+                            $additionalInfo[] = 'Qty: '.$r_details->qty;
 
-                            if (!empty($r_details->uom)) {
-                                $additionalInfo[count($additionalInfo) - 1] .= " " . $r_details->uom;
+                            if (! empty($r_details->uom)) {
+                                $additionalInfo[count($additionalInfo) - 1] .= ' '.$r_details->uom;
                             }
                         }
 
-                        if (!empty($r_details->km_position)) {
-                            $additionalInfo[] = "KM: " . $r_details->km_position;
+                        if (! empty($r_details->km_position)) {
+                            $additionalInfo[] = 'KM: '.$r_details->km_position;
                         }
 
                         // Add additional info to description if any exists
                         if (count($additionalInfo) > 0) {
-                            $detail->description = $detail->description . "\n[" . implode(' | ', $additionalInfo) . "]";
+                            $detail->description = $detail->description."\n[".implode(' | ', $additionalInfo).']';
                         }
                     }
                 }
@@ -561,7 +592,7 @@ class VerificationJournalController extends Controller
 
     public function getIncartRealizations()
     {
-        $flag = 'VJTEMP' . auth()->user()->id; // VJTEMP = Verification Journal Temporary
+        $flag = 'VJTEMP'.auth()->user()->id; // VJTEMP = Verification Journal Temporary
 
         $realizations = Realization::where('flag', $flag)->get();
 

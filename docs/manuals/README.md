@@ -22,4 +22,6 @@ Markdown files in this directory are indexed by `php artisan help:reindex`.
 
 System design (API, tables, OpenRouter, **`akses_help`**): **`docs/architecture.md`** (section *In-app HELP*). Rationale: **`docs/decisions.md`** (**ADR-HELP-01**). Task log: **`MEMORY.md`** entry **[044]**.
 
+**Verification journal — SAP browser print** (repeating **`thead`**, title size, print limits): **`docs/architecture.md`** (section *Verification journal: SAP-aligned print*). Task log: **`MEMORY.md`** entry **[046]**.
+
 Navigation (**menu search** bar, **`GET /api/menu/search`**, RBAC parity with sidebar): **`docs/architecture.md`** (section *Navigation: top-bar menu search*). Rationale: **`docs/decisions.md`** (**ADR-NAV-01**). Portable field notes: **`docs/menu-search-feature-reference.md`**. Task log: **`MEMORY.md`** entry **[045]**.

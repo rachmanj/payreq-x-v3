@@ -12,10 +12,10 @@
 This repository’s **internal** technical notes, architecture, and task history live in:
 
 - [docs/manuals/README.md](docs/manuals/README.md) — authoring rules for **in-app HELP**: bilingual **`*-en.md`** / **`*-id.md`**, **`##`** chunking, **`php artisan help:reindex`**
-- [docs/architecture.md](docs/architecture.md) — module structure and flows (Anggaran/RAB — **header + `anggaran_details`**, dashboard/consolidated/fund pool, **`anggaran:expire-periodic`**; User-payreq **advance budget modes** (legacy vs multi-allocation); **`realization_details`** validation & **`expense_date`** serialization; **document overdue extensions** workflow + dashboard card; **Cashier bank reconciliation** (Koran PDF / SAP GL, **N:M match groups**); **in-app HELP (RAG)** over `docs/manuals`, **`help:reindex`**, **`akses_help`**); **top-bar menu search** (**`/api/menu/search`**, **`MenuSearchService`**, PCBC-aware cache key); exchange-rate command notes where documented)
+- [docs/architecture.md](docs/architecture.md) — module structure and flows (Anggaran/RAB — **header + `anggaran_details`**, dashboard/consolidated/fund pool, **`anggaran:expire-periodic`**; User-payreq **advance budget modes** (legacy vs multi-allocation); **`realization_details`** validation & **`expense_date`** serialization; **document overdue extensions** workflow + dashboard card; **Cashier bank reconciliation** (Koran PDF / SAP GL, **N:M match groups**); **in-app HELP (RAG)** over `docs/manuals`, **`help:reindex`**, **`akses_help`**); **top-bar menu search** (**`/api/menu/search`**, **`MenuSearchService`**, PCBC-aware cache key); **Verification journal** SAP-aligned **browser print** (`print_sap_journal`, repeating **`thead`**, print limitations); exchange-rate command notes where documented)
 - [docs/decisions.md](docs/decisions.md) — ADRs **ADR-ANGGRAN-01**, **ADR-ANGGRAN-02**, **ADR-PAYREQ-01**, **ADR-PAYREQ-02**, **ADR-PAYREQ-03**, **ADR-COMPAT-01**, **ADR-OVERDUE-EXT-01**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**
 - [docs/todo.md](docs/todo.md) / [docs/backlog.md](docs/backlog.md) — task tracking
-- [MEMORY.md](MEMORY.md) — significant fixes and learnings (numbered log)
+- [MEMORY.md](MEMORY.md) — significant fixes and learnings (numbered log; e.g. **[046]** SAP print template)
 
 ## About Laravel
 

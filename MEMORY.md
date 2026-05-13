@@ -1,3 +1,17 @@
+### [046] Verification journal — SAP print template layout (repeating header, title size, footer) (2026-05-13) ✅ COMPLETE
+
+**Challenge:** The browser **Print SAP Journal** view needed a clearer **JOURNAL VOUCHER** title, a **document header that repeats on each printed page** when line rows span multiple sheets, and removal of a misleading static **“— 1 of 1 —”** footer (not driven by real page count).
+
+**Solution:** **`resources/views/verifications/journal/print_sap_journal.blade.php`**: **`p.jv-title`** set to **`font-size: 20px`**; voucher header (logo, voucher meta, company block, title) moved into **`table.lines`** **`thead`** as the first row (**`tr.jv-page-header`**, one **`td`** **`colspan="6"`**) so browsers repeat it with the column-header row on table page breaks; **`thead { display: table-header-group; }`** and borderless styling for that row; **`.footer-page`** and its **`<p>`** removed.
+
+**Key learning:** Arbitrary **`div`** headers do **not** repeat in print; nesting the banner inside **`thead`** is the reliable HTML/CSS approach **for pages where the same table continues**. Content **after** the table (description, signatures) on a **new** page may still not show the banner—native print has no running header; use PDF tooling if every physical page must show it.
+
+**Implementation / file map:** **`resources/views/verifications/journal/print_sap_journal.blade.php`**.
+
+**Docs:** **`docs/architecture.md`** (*Verification journal: SAP-aligned print*), **`README.md`** (project documentation index).
+
+---
+
 ### [045] Top navbar menu search — permission-aware `/api/menu/search`, RBAC parity with sidebar, PCBC cache suffix (2026-05-10) ✅ COMPLETE
 
 **Challenge:** Users needed to jump to sidebar destinations without expanding **AdminLTE** tree menus; results had to respect **Spatie** gates like **`templates/partials/sidebar.blade.php`** and **PCBC** sanction behaviour (**Ready to Pay** / **Incoming List** hidden when sanctioned, other cashier transaction links unchanged).

@@ -231,6 +231,27 @@ New sidebar entries **must** be reflected in **`MenuSearchService`** (or future 
 
 See **`docs/menu-search-feature-reference.md`** (portable spec) and **ADR-NAV-01**.
 
+## Verification journal: SAP-aligned print
+
+Browser **print** layout for the SAP-style journal voucher (opened in a new tab, **`window.print()`** on load).
+
+### Route and view
+
+- **`GET`** **`verifications/.../{id}/print-sap-journal`** — **`VerificationJournalController::printSapJournal`** (**`routes/verification.php`**, name **`verifications.journal.print_sap_journal`**). Linked from verification journal and SAP sync row actions as **SAPJ**.
+- **Blade:** **`resources/views/verifications/journal/print_sap_journal.blade.php`** — self-contained **`@media print`** styles, **`table.lines`** for detail rows.
+
+### Print behaviour (maintainer notes)
+
+- **Title:** **`p.jv-title`** (**JOURNAL VOUCHER**) uses **`font-size: 20px`** for readability on printouts.
+- **Repeating header:** The top banner (logo, voucher no / date / doc curr, company lines, title) lives in **`thead`** as **`tr.jv-page-header`** (first row), followed by the column-header **`th`** row. On multi-page prints, browsers repeat **both** **`thead`** rows when **`table.lines`** breaks across pages. **`thead`** is set to **`display: table-header-group`** for predictable print table-header behaviour; the banner row uses **`border: none`** so it does not appear as a grid cell.
+- **Footer:** A static **“page X of Y”** line is **not** rendered (native HTML print does not provide a simple, accurate page total without PDF/running elements).
+
+### Limitation
+
+If the **table** fits on one page but **blocks below** the table (e.g. signatures) flow to a **second** page, the voucher banner may **not** repeat there—only continuation pages **of the same table** get the repeated **`thead`**. Full **every-page** headers need a PDF generator or other print stack features.
+
+Task log: **`MEMORY.md` [046]**.
+
 ## Related docs
 
 - `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**.
