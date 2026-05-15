@@ -84,6 +84,15 @@ class OverdueExtension extends Model
         };
     }
 
+    public function resolveRemarks(): ?string
+    {
+        return match ($this->document_type) {
+            self::DOCUMENT_PAYREQ => $this->resolvePayreq()?->remarks,
+            self::DOCUMENT_REALIZATION => $this->resolveRealization()?->remarks,
+            default => null,
+        };
+    }
+
     public function extensionSequence(): array
     {
         $ids = static::query()

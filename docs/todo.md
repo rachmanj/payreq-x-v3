@@ -6,6 +6,10 @@ _(none — add items here)_
 
 ## Recently completed
 
+- **2026-05-15** — **Overdue extensions — approver UX (pending-only, approve modal, 7-day cap, remarks)**  
+  **`OverdueExtensionController::data()`** **`pending()`** only; **Remarks** column + **`resolveRemarks()`**; **`ApproveOverdueExtensionRequest`** + approve **modal** (editable **`requested_due_date`**); **`StoreOverdueExtensionRequest`** **today+7** cap + modal **`max`**; extension modals **Reason** required marker. Tests extended in **`OverdueExtensionTest`**.  
+  - Docs: **`docs/architecture.md`**, **`docs/decisions.md`** (**ADR-OVERDUE-EXT-02**), **`MEMORY.md` [047]**.
+
 - **2026-05-09** — **Anggaran (RAB) rebuild**  
   **`anggaran_details`** + user **`details[]`** sync; **`warning_threshold`**, **`fund_status`** / pool timestamps; **`AnggaranDashboardController`** (KPIs, by-department JSON, release DataTable), **`AnggaranConsolidatedController`**, **`AnggaranFundPoolController`** (**`recalculate_release`**); **`anggaran:expire-periodic`** daily (**`App\Console\Kernel`**); **`AnggaranReleaseService`** aggregations + alert helpers; reports/user show lines + banners; **`UserAnggaranDetailController`** line delete. Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-ANGGRAN-02)**, **`MEMORY.md` [043]**, **`README.md`**.
 

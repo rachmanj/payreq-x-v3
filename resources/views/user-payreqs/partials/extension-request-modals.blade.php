@@ -35,12 +35,15 @@
                                 <input type="date" name="requested_due_date" id="requested-payreq-{{ $payreq->id }}"
                                     class="form-control form-control-sm" required
                                     min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}"
+                                    max="{{ \Carbon\Carbon::today()->addDays(7)->toDateString() }}"
                                     value="{{ \Carbon\Carbon::tomorrow()->toDateString() }}">
                             </div>
                             <div class="form-group">
-                                <label for="reason-payreq-{{ $payreq->id }}">Reason</label>
+                                <label for="reason-payreq-{{ $payreq->id }}">Reason <span
+                                        class="text-danger">*</span></label>
                                 <textarea name="reason" id="reason-payreq-{{ $payreq->id }}"
-                                    class="form-control form-control-sm" rows="3" required maxlength="500"></textarea>
+                                    class="form-control form-control-sm" rows="3" required maxlength="500"
+                                    aria-required="true"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -92,12 +95,15 @@
                                 <input type="date" name="requested_due_date" id="requested-real-{{ $realization->id }}"
                                     class="form-control form-control-sm" required
                                     min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}"
+                                    max="{{ \Carbon\Carbon::today()->addDays(7)->toDateString() }}"
                                     value="{{ \Carbon\Carbon::tomorrow()->toDateString() }}">
                             </div>
                             <div class="form-group">
-                                <label for="reason-real-{{ $realization->id }}">Reason</label>
+                                <label for="reason-real-{{ $realization->id }}">Reason <span
+                                        class="text-danger">*</span></label>
                                 <textarea name="reason" id="reason-real-{{ $realization->id }}"
-                                    class="form-control form-control-sm" rows="3" required maxlength="500"></textarea>
+                                    class="form-control form-control-sm" rows="3" required maxlength="500"
+                                    aria-required="true"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">

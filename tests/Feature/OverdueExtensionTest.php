@@ -163,7 +163,7 @@ class OverdueExtensionTest extends TestCase
         $payload = [
             'document_type' => 'payreq',
             'document_id' => $payreq->id,
-            'requested_due_date' => '2026-05-25',
+            'requested_due_date' => '2026-05-16',
             'reason' => 'Second pending',
         ];
 
@@ -217,7 +217,9 @@ class OverdueExtensionTest extends TestCase
         ]);
 
         $this->actingAs($approver)
-            ->put(route('document-overdue.extensions.approve', $extension))
+            ->put(route('document-overdue.extensions.approve', $extension), [
+                'requested_due_date' => '2026-05-30',
+            ])
             ->assertRedirect(route('document-overdue.extensions.index'))
             ->assertSessionHas('success');
 
@@ -227,6 +229,81 @@ class OverdueExtensionTest extends TestCase
         $extension->refresh();
         $this->assertSame(OverdueExtension::STATUS_APPROVED, $extension->status);
         $this->assertSame($approver->id, $extension->reviewed_by);
+        $this->assertSame('2026-05-30', Carbon::parse($extension->requested_due_date)->toDateString());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_approver_can_change_requested_due_date_when_approving(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-05-10 12:00:00'));
+
+        $owner = User::factory()->create();
+        $approver = User::factory()->create();
+        $approver->givePermissionTo('approve_overdue_extension');
+
+        $payreq = Payreq::query()->create([
+            'user_id' => $owner->id,
+            'nomor' => 'EXT-TEST-APPR-MOD',
+            'type' => 'advance',
+            'status' => 'paid',
+            'amount' => 5000,
+            'due_date' => '2026-05-01',
+            'project' => '000H',
+            'remarks' => 'Mod test',
+        ]);
+
+        $extension = OverdueExtension::query()->create([
+            'document_type' => OverdueExtension::DOCUMENT_PAYREQ,
+            'document_id' => $payreq->id,
+            'user_id' => $owner->id,
+            'current_due_date' => '2026-05-01',
+            'requested_due_date' => '2026-05-30',
+            'reason' => 'Original ask',
+            'status' => OverdueExtension::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($approver)
+            ->put(route('document-overdue.extensions.approve', $extension), [
+                'requested_due_date' => '2026-05-22',
+            ])
+            ->assertRedirect(route('document-overdue.extensions.index'))
+            ->assertSessionHas('success');
+
+        $payreq->refresh();
+        $this->assertSame('2026-05-22', Carbon::parse($payreq->due_date)->toDateString());
+
+        $extension->refresh();
+        $this->assertSame('2026-05-22', Carbon::parse($extension->requested_due_date)->toDateString());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_user_cannot_submit_extension_requested_date_more_than_seven_days_ahead(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-05-10 12:00:00'));
+
+        $user = User::factory()->create();
+        $payreq = Payreq::query()->create([
+            'user_id' => $user->id,
+            'nomor' => 'EXT-TEST-7DAY',
+            'type' => 'advance',
+            'status' => 'paid',
+            'amount' => 1000,
+            'due_date' => '2026-05-01',
+            'project' => '000H',
+            'remarks' => 'Seven day rule',
+        ]);
+
+        $this->actingAs($user)
+            ->from(route('user-payreqs.index'))
+            ->post(route('document-overdue.extensions.store'), [
+                'document_type' => 'payreq',
+                'document_id' => $payreq->id,
+                'requested_due_date' => '2026-05-18',
+                'reason' => 'Too far out',
+            ])
+            ->assertSessionHasErrors('requested_due_date');
 
         Carbon::setTestNow();
     }

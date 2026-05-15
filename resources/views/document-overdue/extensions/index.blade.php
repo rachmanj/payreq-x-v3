@@ -17,6 +17,7 @@
                     <a href="{{ route('document-overdue.payreq.index') }}">Payment Request</a> |
                     <a href="{{ route('document-overdue.realization.index') }}">Realizations</a> |
                     <span class="text-bold" style="color: black;">APPROVE OVERDUE EXTENSIONS</span>
+                    <span class="text-muted small ml-2">(pending only)</span>
                 </div>
 
                 <div class="card-body">
@@ -30,9 +31,9 @@
                                 <th>Current Due Date</th>
                                 <th>Requested Date</th>
                                 <th>Reason</th>
+                                <th>Remarks</th>
                                 <th>Ext. #</th>
                                 <th>Submitted</th>
-                                <th>Status</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -98,6 +99,11 @@
                         searchable: false
                     },
                     {
+                        data: 'remarks',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'extension_seq',
                         orderable: false,
                         searchable: false
@@ -107,11 +113,6 @@
                         name: 'created_at'
                     },
                     {
-                        data: 'status',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
                         data: 'action',
                         orderable: false,
                         searchable: false
@@ -119,14 +120,14 @@
                 ],
                 fixedHeader: true,
                 order: [
-                    [8, 'desc']
+                    [9, 'desc']
                 ],
                 columnDefs: [{
-                        targets: [3, 4, 5],
+                        targets: [4, 5],
                         className: 'text-center'
                     },
                     {
-                        targets: [7],
+                        targets: [8],
                         className: 'text-right'
                     },
                 ]

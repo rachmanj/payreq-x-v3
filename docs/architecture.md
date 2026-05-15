@@ -91,18 +91,20 @@ See **ADR-PAYREQ-03**.
 ### Data model
 
 - Table **`overdue_extensions`**: links a **`document_type`** (**`payreq`** | **`realization`**) + **`document_id`** to **`user_id`** (requestor), **`current_due_date`**, **`requested_due_date`**, **`reason`**, **`status`** (**`pending`** | **`approved`** | **`rejected`**), optional reviewer metadata.
-- **`App\Models\OverdueExtension`**: **`eligibleProjects()`** returns **`['000H', 'APS']`**; scopes **`pending()`** / **`approved()`** / **`rejected()`**.
+- **`App\Models\OverdueExtension`**: **`eligibleProjects()`** returns **`['000H', 'APS']`**; scopes **`pending()`** / **`approved()`** / **`rejected()`**; **`resolveRemarks()`** returns the linked payreq or realization **`remarks`** for listing tooltips.
 
 ### User submission
 
 - **Listing:** **`GET user-payreqs/overdue-documents`** (`UserPayreqController::overdueDocuments`) — overdue payreqs/realizations with extension counts and modals (`resources/views/user-payreqs/overdue-documents.blade.php`, partial **`user-payreqs/partials/extension-request-modals.blade.php`**).
 - **POST** **`document-overdue/extensions`** (`OverdueExtensionController::store`, validated by **`StoreOverdueExtensionRequest`**) — authenticated owner only; project must be eligible; **payreq**: **`type = advance`**, **`status = paid`**, **`due_date`** set; **realization**: **`status = approved`**, **`due_date`** set; **no second pending** row per document. Successful submit redirects to **`user-payreqs.index`** with flash success.
+- **Requested date window:** server rule **`before_or_equal:`** calendar **today + 7 days** (with **`after:today`**); modal date inputs use matching **`min`/`max`** on **`extension-request-modals.blade.php`**. **Reason** field is **`required`** (label shows a required marker in the modal).
 - **Overdue eligibility** for submit matches overdue listings: **`Carbon::parse($due_date)->lt(now())`** (same calendar-day semantics as **`due_date < now()`** in SQL-style comparisons — not “end of due date”).
 
 ### Approver UI and routes (`routes/web.php`, prefix **`document-overdue`**)
 
-- **`GET document-overdue/extensions`** — DataTable index (**`OverdueExtensionController@index`**, **`can:approve_overdue_extension`** on **`index`** / **`data`**).
-- **`PUT document-overdue/extensions/{extension}/approve|reject`** — **`approve_overdue_extension`** middleware on approve/reject; **`ReviewOverdueExtensionRequest`** on reject.
+- **`GET document-overdue/extensions`** — DataTable index (**`OverdueExtensionController@index`**, **`can:approve_overdue_extension`** on **`index`** / **`data`**). **`data()`** scopes **`pending()`** only (approved/rejected rows do not appear); grid includes a **Remarks** column (truncated HTML) and omits a redundant **Status** column.
+- **`PUT document-overdue/extensions/{extension}/approve`** — **`ApproveOverdueExtensionRequest`** (**`requested_due_date`**: required **`date`**, **`after:today`**); approver **Approve** opens a modal (**`document-overdue/extensions/action.blade.php`**) with read-only context and an editable **Requested new due date**; controller persists the chosen date on **`overdue_extensions`** and copies it to **`payreqs.due_date`** / **`realizations.due_date`** when approved. Must be strictly **after** **`current_due_date`** on the extension row (validation error otherwise).
+- **`PUT document-overdue/extensions/{extension}/reject`** — **`ReviewOverdueExtensionRequest`** (reject modal with **`review_notes`**).
 - Payreq/realization overdue screens retain **direct / bulk extend** actions (**`PayreqOverdueController`**, **`RealizationOverdueController`**) gated by **`can:approve_overdue_extension`** where applicable.
 - Sidebar / menus: links **Approve overdue extensions** under Accounting (roles **`superadmin|admin|cashier`**) and Admin (**`akses_admin`**), using **`route('document-overdue.extensions.index')`**.
 
@@ -126,7 +128,9 @@ See **ADR-PAYREQ-03**.
 
 ### Tests
 
-- **`tests/Feature/OverdueExtensionTest.php`** — permissions, submit/eligibility, approve flow, overdue-documents page, dashboard pending card visibility/count.
+- **`tests/Feature/OverdueExtensionTest.php`** — permissions, submit/eligibility, **7-day cap**, approve flow (**including approver-chosen date**), overdue-documents page, dashboard pending card visibility/count.
+
+See **ADR-OVERDUE-EXT-01**, **ADR-OVERDUE-EXT-02**.
 
 ## Cashier: Bank reconciliation (Koran PDF ↔ SAP GL)
 
@@ -254,4 +258,4 @@ Task log: **`MEMORY.md` [046]**.
 
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**.
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-OVERDUE-EXT-02**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**.

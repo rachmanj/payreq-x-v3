@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ApproveOverdueExtensionRequest;
 use App\Http\Requests\ReviewOverdueExtensionRequest;
 use App\Http\Requests\StoreOverdueExtensionRequest;
 use App\Models\OverdueExtension;
@@ -10,6 +11,7 @@ use App\Models\Realization;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -29,6 +31,7 @@ class OverdueExtensionController extends Controller
     {
         $query = OverdueExtension::query()
             ->with(['requestor', 'reviewer'])
+            ->pending()
             ->orderByDesc('created_at');
 
         return datatables()->eloquent($query)
@@ -51,7 +54,14 @@ class OverdueExtensionController extends Controller
                 return $extension->requested_due_date?->format('d-M-Y') ?? '—';
             })
             ->editColumn('reason', function (OverdueExtension $extension) {
-                return '<span title="'.e($extension->reason).'">'.e(\Illuminate\Support\Str::limit($extension->reason, 80)).'</span>';
+                return '<span title="'.e($extension->reason).'">'.e(Str::limit($extension->reason, 80)).'</span>';
+            })
+            ->addColumn('remarks', function (OverdueExtension $extension) {
+                $r = $extension->resolveRemarks();
+
+                return $r
+                    ? '<span title="'.e($r).'">'.e(Str::limit($r, 60)).'</span>'
+                    : '—';
             })
             ->addColumn('extension_seq', function (OverdueExtension $extension) {
                 $seq = $extension->extensionSequence();
@@ -61,18 +71,10 @@ class OverdueExtensionController extends Controller
             ->editColumn('created_at', function (OverdueExtension $extension) {
                 return $extension->created_at?->timezone(config('app.timezone'))->format('d-M-Y H:i') ?? '—';
             })
-            ->editColumn('status', function (OverdueExtension $extension) {
-                return match ($extension->status) {
-                    OverdueExtension::STATUS_PENDING => '<span class="badge badge-warning">pending</span>',
-                    OverdueExtension::STATUS_APPROVED => '<span class="badge badge-success">approved</span>',
-                    OverdueExtension::STATUS_REJECTED => '<span class="badge badge-danger">rejected</span>',
-                    default => e($extension->status),
-                };
-            })
             ->addColumn('action', function (OverdueExtension $extension) {
                 return view('document-overdue.extensions.action', ['extension' => $extension])->render();
             })
-            ->rawColumns(['reason', 'status', 'action'])
+            ->rawColumns(['reason', 'remarks', 'action'])
             ->toJson();
     }
 
@@ -155,14 +157,21 @@ class OverdueExtensionController extends Controller
         return redirect()->route('user-payreqs.index')->with('success', 'Overdue extension request submitted.');
     }
 
-    public function approve(OverdueExtension $extension): RedirectResponse
+    public function approve(ApproveOverdueExtensionRequest $request, OverdueExtension $extension): RedirectResponse
     {
-        abort_unless(auth()->user()?->can('approve_overdue_extension'), 403);
-
         abort_if($extension->status !== OverdueExtension::STATUS_PENDING, 422);
 
-        DB::transaction(function () use ($extension) {
+        $newDate = Carbon::parse($request->validated()['requested_due_date'])->toDateString();
+
+        if (Carbon::parse($newDate)->lte($extension->current_due_date)) {
+            throw ValidationException::withMessages([
+                'requested_due_date' => ['The approved due date must be after the document\'s current due date.'],
+            ]);
+        }
+
+        DB::transaction(function () use ($extension, $newDate) {
             $extension->update([
+                'requested_due_date' => $newDate,
                 'status' => OverdueExtension::STATUS_APPROVED,
                 'reviewed_by' => auth()->id(),
                 'reviewed_at' => now(),
@@ -171,11 +180,11 @@ class OverdueExtensionController extends Controller
 
             if ($extension->document_type === OverdueExtension::DOCUMENT_PAYREQ) {
                 Payreq::query()->whereKey($extension->document_id)->update([
-                    'due_date' => $extension->requested_due_date->toDateString(),
+                    'due_date' => $newDate,
                 ]);
             } elseif ($extension->document_type === OverdueExtension::DOCUMENT_REALIZATION) {
                 Realization::query()->whereKey($extension->document_id)->update([
-                    'due_date' => $extension->requested_due_date->toDateString(),
+                    'due_date' => $newDate,
                 ]);
             }
         });

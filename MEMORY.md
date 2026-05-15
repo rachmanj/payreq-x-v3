@@ -1,3 +1,17 @@
+### [047] Overdue extensions — pending-only approver list, approve modal + editable date, 7-day request cap, remarks column, Reason label (2026-05-15) ✅ COMPLETE
+
+**Challenge:** Approvers needed a **queue** of **pending** extension requests only (not mixed with settled rows). **Approve** had to open a **modal** summarizing the request so the approver could **confirm or change** the **requested due date** before applying it to the document. Policy required requestors to pick a new due date **no more than 7 calendar days from today** (still **after today**). The grid needed **payreq/realization remarks** for faster review. The **Reason** field label did not read as required despite server and HTML validation.
+
+**Solution:** **`data()`** uses **`OverdueExtension::pending()`**; drop **Status** from the DataTable; add **`resolveRemarks()`** and a **Remarks** column. **`ApproveOverdueExtensionRequest`** validates **`requested_due_date`**; **`approve()`** updates **`overdue_extensions.requested_due_date`** then **`payreqs`/`realizations`** **`due_date`**; **`action.blade.php`** modals for approve vs existing reject. **`StoreOverdueExtensionRequest`** **`before_or_equal:`** today+7; **`extension-request-modals`** **`max`** on date inputs; **Reason** label includes a red required asterisk and textareas use **`aria-required`**. Feature tests cover 7-day rejection and approver-chosen approval date.
+
+**Key learning:** Keep approver **after today** rule aligned with **`min=tomorrow`** in modals in the app **timezone**; **`pending()`** on the JSON endpoint must match dashboard **`pending()`** counts conceptually.
+
+**Implementation / file map:** **`OverdueExtensionController.php`**, **`ApproveOverdueExtensionRequest.php`**, **`StoreOverdueExtensionRequest.php`**, **`OverdueExtension.php`**, **`document-overdue/extensions/{index,action}.blade.php`**, **`user-payreqs/partials/extension-request-modals.blade.php`**, **`tests/Feature/OverdueExtensionTest.php`**.
+
+**Docs:** **`docs/architecture.md`**, **`docs/decisions.md`** (**ADR-OVERDUE-EXT-02**), **`docs/todo.md`**.
+
+---
+
 ### [046] Verification journal — SAP print template layout (repeating header, title size, footer) (2026-05-13) ✅ COMPLETE
 
 **Challenge:** The browser **Print SAP Journal** view needed a clearer **JOURNAL VOUCHER** title, a **document header that repeats on each printed page** when line rows span multiple sheets, and removal of a misleading static **“— 1 of 1 —”** footer (not driven by real page count).

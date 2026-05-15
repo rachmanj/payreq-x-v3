@@ -169,6 +169,32 @@ Lightweight records of intent and trade-offs. Numbering is sequential by topic a
 
 ---
 
+## ADR-OVERDUE-EXT-02 — Approver queue UX: pending-only grid, approve modal + editable date, 7-day request cap, remarks column
+
+**Status:** Accepted (2026-05-15)
+
+**Context**
+
+- The approver DataTable mixed all extension statuses; operators wanted a **queue of items awaiting decision** only.
+- Approvers needed to **confirm or adjust** the **requested due date** at approval time (not a blind one-click approve).
+- Requestors could ask arbitrarily far-ahead dates; policy capped **new** requests to **within 7 calendar days of today** while still **after today**.
+- Listing **document remarks** next to the extension reason improved triage without opening each record.
+
+**Decision**
+
+1. **`OverdueExtensionController::data()`** applies **`pending()`**; **Status** column removed from the grid (every row is pending).
+2. **`PUT …/approve`** uses **`ApproveOverdueExtensionRequest`** with **`requested_due_date`**; **`approve()`** updates **`overdue_extensions.requested_due_date`** then applies that date to the payreq/realization; rejects if not after **`current_due_date`**. UI: modal in **`document-overdue/extensions/action.blade.php`**.
+3. **`StoreOverdueExtensionRequest`** adds **`before_or_equal:`** **today + 7 days**; Blade modals add **`max`** on **`type=date`** to match.
+4. **`OverdueExtension::resolveRemarks()`** + **Remarks** column in the approver DataTable.
+5. User extension modals: **Reason** label indicates required (paired with **`required`** / **`aria-required`** on the textarea).
+
+**Consequences**
+
+- Positive: smaller approver queue; audit trail shows the **final** approved date on **`overdue_extensions`**; requestors cannot stretch deadlines beyond the 7-day policy in one hop.
+- Negative: approver list no longer surfaces historical approved/rejected rows (use reporting or DB if needed).
+
+---
+
 ## ADR-BANK-REC-01 — Bank reconciliation **match groups** (N:M) instead of pairwise **`reconciliation_matches`**
 
 **Status:** Accepted (2026-05-08)
