@@ -69,6 +69,17 @@
                         </div>
                     </div>
 
+                    @if (filled($model->requestor_remarks))
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="rab_requestor_remarks_display">Requestor's reply</label>
+                                    <textarea id="rab_requestor_remarks_display" class="form-control" rows="2" readonly>{{ $model->requestor_remarks }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="row">
                         <div class="col-6">
                             <div class="form-group">

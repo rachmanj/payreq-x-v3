@@ -10,6 +10,7 @@ use App\Http\Requests\UserPayreq\ProcessAnggaranRequest;
 use App\Models\Account;
 use App\Models\Anggaran;
 use App\Models\AnggaranDetail;
+use App\Models\ApprovalPlan;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
 use App\Services\AnggaranReleaseService;
@@ -233,7 +234,19 @@ class UserAnggaranController extends Controller
         $spendingWarning = $this->releaseService->isOverThreshold($anggaran);
         $spendingExceeded = $this->releaseService->isExceeded($anggaran);
 
-        return view('user-payreqs.anggarans.show', compact('anggaran', 'progres_persen', 'statusColor', 'total_release', 'spendingWarning', 'spendingExceeded'));
+        ApprovalPlan::where('document_id', $anggaran->id)
+            ->where('document_type', 'rab')
+            ->where('is_read', 0)
+            ->update(['is_read' => 1]);
+
+        $approval_plans = ApprovalPlan::where('document_id', $anggaran->id)
+            ->where('document_type', 'rab')
+            ->with('approver')
+            ->get();
+
+        $approval_plan_status = app(ApprovalPlanController::class)->approvalStatus();
+
+        return view('user-payreqs.anggarans.show', compact('anggaran', 'progres_persen', 'statusColor', 'total_release', 'spendingWarning', 'spendingExceeded', 'approval_plans', 'approval_plan_status'));
     }
 
     public function data()

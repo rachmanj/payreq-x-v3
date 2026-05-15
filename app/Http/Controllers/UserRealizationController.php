@@ -56,6 +56,7 @@ class UserRealizationController extends Controller
 
         $approval_plans = ApprovalPlan::where('document_id', $id)
             ->where('document_type', 'realization')
+            ->with('approver')
             ->get();
 
         $submit_at = new Carbon($realization->submit_at);

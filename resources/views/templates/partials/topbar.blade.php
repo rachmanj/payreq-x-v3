@@ -26,6 +26,25 @@
                 </a>
             </li>
         @endcan
+        @can('akses_approval_request')
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#" id="approver-requestor-replies-toggle"
+                    title="Requestor replies">
+                    <i class="far fa-envelope"></i>
+                    <span
+                        class="badge badge-warning navbar-badge approver-requestor-replies-badge {{ ($unreadRequestorReplyCount ?? 0) > 0 ? '' : 'd-none' }}"
+                        id="approver-requestor-replies-badge">{{ $unreadRequestorReplyCount ?? 0 }}</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right"
+                    style="max-height: 320px; overflow-y: auto;">
+                    <span class="dropdown-item dropdown-header">Requestor replies</span>
+                    <div class="dropdown-divider"></div>
+                    <div id="approver-requestor-replies-list" class="px-2 py-1 text-muted small">
+                        Loading…
+                    </div>
+                </div>
+            </li>
+        @endcan
         <!-- User Dropdown Menu -->
         <li class="nav-item dropdown">
             <a class="nav-link" data-toggle="dropdown" href="#">

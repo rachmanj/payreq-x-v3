@@ -52,6 +52,17 @@
                             </div>
                         </div>
 
+                        @if (filled($model->requestor_remarks))
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label for="requestor_remarks_display">Requestor's reply</label>
+                                        <textarea id="requestor_remarks_display" class="form-control" rows="2" readonly>{{ $model->requestor_remarks }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         @if ($model->payreq->lot_no != null)
                             <div class="row">
                                 <div class="col-12">

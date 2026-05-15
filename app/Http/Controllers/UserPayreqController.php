@@ -105,6 +105,7 @@ class UserPayreqController extends Controller
 
         $approval_plans = ApprovalPlan::where('document_id', $payreq->id)
             ->where('document_type', 'payreq')
+            ->with('approver')
             ->get();
 
         $approval_plan_status = app(ApprovalPlanController::class)->approvalStatus();

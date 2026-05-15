@@ -9,6 +9,7 @@ use App\Models\Payreq;
 use App\Models\Realization;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * ApprovalPlanController
@@ -25,8 +26,8 @@ class ApprovalPlanController extends Controller
      * It identifies the appropriate approvers from the ApprovalStage model and
      * creates an approval plan entry for each approver.
      *
-     * @param string $document_type Type of document ('payreq', 'realization', 'rab')
-     * @param int $document_id ID of the document
+     * @param  string  $document_type  Type of document ('payreq', 'realization', 'rab')
+     * @param  int  $document_id  ID of the document
      * @return int|bool Number of approvers created or false if failed
      */
     public function create_approval_plan($document_type, $document_id)
@@ -85,8 +86,8 @@ class ApprovalPlanController extends Controller
      * 3 = Reject
      * 4 = Canceled
      *
-     * @param Request $request The HTTP request containing approval data
-     * @param int $id The ID of the approval plan to update
+     * @param  Request  $request  The HTTP request containing approval data
+     * @param  int  $id  The ID of the approval plan to update
      * @return \Illuminate\Http\RedirectResponse Redirect to appropriate page
      */
     public function update(Request $request, $id)
@@ -147,7 +148,7 @@ class ApprovalPlanController extends Controller
             $payment_request = Payreq::where('id', $document->payreq_id)->first();
             if ($payment_request) {
                 $payment_request->update([
-                    'status' => 'paid'
+                    'status' => 'paid',
                 ]);
             }
 
@@ -166,7 +167,7 @@ class ApprovalPlanController extends Controller
             $payment_request = Payreq::where('id', $document->payreq_id)->first();
             if ($payment_request) {
                 $payment_request->update([
-                    'status' => 'paid'
+                    'status' => 'paid',
                 ]);
             }
 
@@ -254,21 +255,164 @@ class ApprovalPlanController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => ucfirst($document_type) . ' has been ' . $status_text,
-                'document_type' => $document_type
+                'message' => ucfirst($document_type).' has been '.$status_text,
+                'document_type' => $document_type,
             ]);
         }
 
         // Redirect to appropriate page based on document type for non-AJAX requests
         if ($document_type === 'payreq') {
-            return redirect()->route('approvals.request.payreqs.index')->with('success', 'Payment Request has been ' . $status_text);
+            return redirect()->route('approvals.request.payreqs.index')->with('success', 'Payment Request has been '.$status_text);
         } elseif ($document_type === 'realization') {
-            return redirect()->route('approvals.request.realizations.index')->with('success', 'Realization has been ' . $status_text);
+            return redirect()->route('approvals.request.realizations.index')->with('success', 'Realization has been '.$status_text);
         } elseif ($document_type === 'rab') {
-            return redirect()->route('approvals.request.anggarans.index')->with('success', 'Budget (RAB) has been ' . $status_text);
+            return redirect()->route('approvals.request.anggarans.index')->with('success', 'Budget (RAB) has been '.$status_text);
         } else {
             return false; // Invalid document type
         }
+    }
+
+    public function updateRequestorRemarks(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'requestor_remarks' => ['nullable', 'string', 'max:65535'],
+        ]);
+
+        $approvalPlan = ApprovalPlan::findOrFail($id);
+
+        $ownerId = $this->resolveApprovalPlanDocumentOwnerId($approvalPlan);
+
+        if ($ownerId === null || (int) $ownerId !== (int) $request->user()->id) {
+            abort(403);
+        }
+
+        if (filled($approvalPlan->requestor_remarks)) {
+            return response()->json([
+                'message' => 'Your reply has already been submitted and cannot be changed.',
+            ], 403);
+        }
+
+        $remarks = $validated['requestor_remarks'] ?? null;
+        $attributes = [
+            'requestor_remarks' => $remarks,
+        ];
+
+        if (filled($remarks)) {
+            $attributes['requestor_remarks_updated_at'] = now();
+            $attributes['approver_read_requestor_reply_at'] = null;
+        } else {
+            $attributes['requestor_remarks_updated_at'] = null;
+        }
+
+        $approvalPlan->update($attributes);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Your reply has been saved.',
+        ]);
+    }
+
+    public function requestorRepliesInbox(Request $request)
+    {
+        $this->authorizeRequestorReplyInboxAccess($request);
+
+        $userId = (int) $request->user()->id;
+
+        $unreadCount = ApprovalPlan::unreadRequestorReplyCountForApprover($userId);
+
+        $items = ApprovalPlan::query()
+            ->where('approver_id', $userId)
+            ->whereNotNull('remarks')
+            ->where('remarks', '!=', '')
+            ->whereNotNull('requestor_remarks')
+            ->where('requestor_remarks', '!=', '')
+            ->whereNotNull('requestor_remarks_updated_at')
+            ->with(['payreq', 'realization', 'anggaran'])
+            ->orderByDesc('requestor_remarks_updated_at')
+            ->limit(20)
+            ->get()
+            ->map(function (ApprovalPlan $plan) {
+                return [
+                    'id' => $plan->id,
+                    'title' => $this->inboxItemTitle($plan),
+                    'preview' => Str::limit(strip_tags((string) $plan->requestor_remarks), 100),
+                    'time' => optional($plan->requestor_remarks_updated_at)->diffForHumans(),
+                    'url' => route('approvals.plan.conversation', $plan->id),
+                    'unread' => $plan->isApproverUnreadRequestorReply(),
+                ];
+            });
+
+        return response()->json([
+            'unread_count' => $unreadCount,
+            'items' => $items,
+        ]);
+    }
+
+    public function markRequestorReplyRead(Request $request, int $id)
+    {
+        $this->authorizeRequestorReplyInboxAccess($request);
+
+        $plan = ApprovalPlan::findOrFail($id);
+
+        abort_unless((int) $plan->approver_id === (int) $request->user()->id, 403);
+
+        $plan->markApproverReadRequestorReply();
+
+        return response()->json([
+            'success' => true,
+        ]);
+    }
+
+    public function conversation(Request $request, int $id)
+    {
+        $this->authorizeRequestorReplyInboxAccess($request);
+
+        $plan = ApprovalPlan::query()
+            ->with(['payreq.requestor', 'realization.payreq.requestor', 'anggaran.createdBy'])
+            ->findOrFail($id);
+
+        abort_unless((int) $plan->approver_id === (int) $request->user()->id, 403);
+
+        $plan->markApproverReadRequestorReply();
+
+        $backRoute = match ($plan->document_type) {
+            'payreq' => route('approvals.request.payreqs.index'),
+            'realization' => route('approvals.request.realizations.index'),
+            'rab' => route('approvals.request.anggarans.index'),
+            default => route('dashboard.index'),
+        };
+
+        return view('approvals-request.plan-conversation', [
+            'plan' => $plan,
+            'backRoute' => $backRoute,
+            'documentTitle' => $this->inboxItemTitle($plan),
+            'approval_plan_status' => $this->approvalStatus(),
+        ]);
+    }
+
+    protected function authorizeRequestorReplyInboxAccess(Request $request): void
+    {
+        abort_unless($request->user()->can('akses_approval_request'), 403);
+    }
+
+    protected function inboxItemTitle(ApprovalPlan $plan): string
+    {
+        return match ($plan->document_type) {
+            'payreq' => 'Payreq '.($plan->payreq?->nomor ?? '#'.$plan->document_id),
+            'realization' => 'Realization '.($plan->realization?->nomor ?? '#'.$plan->document_id),
+            'rab' => 'RAB '.($plan->anggaran?->nomor ?? '#'.$plan->document_id),
+            default => 'Approval #'.$plan->id,
+        };
+    }
+
+    protected function resolveApprovalPlanDocumentOwnerId(ApprovalPlan $approvalPlan): int|string|null
+    {
+        return match ($approvalPlan->document_type) {
+            'payreq' => Payreq::query()->whereKey($approvalPlan->document_id)->value('user_id'),
+            'realization' => Realization::query()->whereKey($approvalPlan->document_id)->value('user_id'),
+            'rab' => Anggaran::query()->whereKey($approvalPlan->document_id)->value('created_by'),
+            default => null,
+        };
     }
 
     /**
@@ -295,8 +439,8 @@ class ApprovalPlanController extends Controller
      * This function is called when a document is rejected or needs revision.
      * It marks all open approval plans for the document as closed (is_open = 0).
      *
-     * @param string $document_type Type of document
-     * @param int $document_id ID of the document
+     * @param  string  $document_type  Type of document
+     * @param  int  $document_id  ID of the document
      * @return void
      */
     public function closeOpenApprovalPlans($document_type, $document_id)
@@ -328,7 +472,7 @@ class ApprovalPlanController extends Controller
      *
      * This method allows approving multiple documents at once.
      *
-     * @param Request $request The HTTP request containing the IDs of documents to approve
+     * @param  Request  $request  The HTTP request containing the IDs of documents to approve
      * @return \Illuminate\Http\JsonResponse JSON response with success/error message
      */
     public function bulkApprove(Request $request)
@@ -352,6 +496,7 @@ class ApprovalPlanController extends Controller
             // Skip if not the correct document type or already processed
             if ($approval_plan->document_type !== $document_type || $approval_plan->status !== 0 || $approval_plan->is_open !== 1) {
                 $failCount++;
+
                 continue;
             }
 
@@ -371,6 +516,7 @@ class ApprovalPlanController extends Controller
                 $document = Anggaran::findOrFail($approval_plan->document_id);
             } else {
                 $failCount++;
+
                 continue;
             }
 
@@ -461,7 +607,7 @@ class ApprovalPlanController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $successCount . ' ' . $documentTypeLabel . ($successCount > 1 ? 's' : '') . ' have been approved successfully' . ($failCount > 0 ? ' (' . $failCount . ' failed)' : ''),
+                'message' => $successCount.' '.$documentTypeLabel.($successCount > 1 ? 's' : '').' have been approved successfully'.($failCount > 0 ? ' ('.$failCount.' failed)' : ''),
             ]);
         } else {
             return response()->json([

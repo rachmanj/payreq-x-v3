@@ -80,6 +80,7 @@
                                 <th>Approver</th>
                                 <th>Status</th>
                                 <th>Comment</th>
+                                <th>Your reply</th>
                                 <th>Response at</th>
                             </tr>
                         </thead>
@@ -95,13 +96,16 @@
                                             @endif
                                         @endforeach
                                         <td>{{ $item->remarks }}</td>
+                                        @include('user-payreqs.partials.approval-plan-your-reply-cell', [
+                                            'item' => $item,
+                                        ])
                                         <td>{{ $item->status === 0 ? ' - ' : $item->updated_at->format('d-M-Y H:i:s') . ' wita' }}
                                         </td>
                                     </tr>
                                 @endforeach
                             @else
                                 <tr>
-                                    <td colspan="5" class="text-center">No Approval Plans Found</td>
+                                    <td colspan="6" class="text-center">No Approval Plans Found</td>
                                 </tr>
                             @endif
                     </table>
@@ -413,4 +417,5 @@
             });
         });
     </script>
+    @include('user-payreqs.partials.save-requestor-remark-script')
 @endsection

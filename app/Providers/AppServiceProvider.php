@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\ApprovalPlan;
 use App\Models\OverdueExtension;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
@@ -32,6 +33,14 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with('pendingExtensionsCount', $pendingExtensionsCount);
+        });
+
+        View::composer('templates.partials.topbar', function ($view): void {
+            $unreadRequestorReplyCount = 0;
+            if (Auth::check() && Auth::user()?->can('akses_approval_request')) {
+                $unreadRequestorReplyCount = ApprovalPlan::unreadRequestorReplyCountForApprover((int) Auth::id());
+            }
+            $view->with('unreadRequestorReplyCount', $unreadRequestorReplyCount);
         });
     }
 }

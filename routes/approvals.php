@@ -1,13 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApprovalPlanController;
-use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\ApprovalRequestAnggaranController;
 use App\Http\Controllers\ApprovalRequestPayreqController;
 use App\Http\Controllers\ApprovalRequestRealizationController;
+use App\Http\Controllers\ApprovalStageController;
 use App\Http\Controllers\ToolController;
-
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('approvals')->name('approvals.')->group(function () {
     Route::prefix('request')->name('request.')->group(function () {
@@ -31,7 +30,11 @@ Route::prefix('approvals')->name('approvals.')->group(function () {
         });
     });
     Route::prefix('plan')->name('plan.')->group(function () {
+        Route::get('/requestor-replies', [ApprovalPlanController::class, 'requestorRepliesInbox'])->name('requestor-replies.inbox');
+        Route::put('/{id}/requestor-replies/mark-read', [ApprovalPlanController::class, 'markRequestorReplyRead'])->name('requestor-replies.mark-read');
+        Route::get('/{id}/conversation', [ApprovalPlanController::class, 'conversation'])->name('conversation');
         Route::put('/{id}/update', [ApprovalPlanController::class, 'update'])->name('update');
+        Route::put('/{id}/requestor-remarks', [ApprovalPlanController::class, 'updateRequestorRemarks'])->name('requestor-remarks.update');
         Route::post('/bulk-approve', [ApprovalPlanController::class, 'bulkApprove'])->name('bulk-approve');
     });
 });

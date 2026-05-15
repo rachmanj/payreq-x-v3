@@ -104,6 +104,16 @@
                     <input type="hidden" name="document_type" value="realization">
 
                     <div class="modal-body">
+                        @if (filled($document->requestor_remarks))
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label for="realization_requestor_remarks_display">Requestor's reply</label>
+                                        <textarea id="realization_requestor_remarks_display" class="form-control" rows="2" readonly>{{ $document->requestor_remarks }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                         <div class="row">
                             <div class="col-12">
                                 <div class="form-group">
