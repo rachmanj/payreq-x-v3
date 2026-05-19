@@ -125,7 +125,7 @@ class UpdateRealizationDetailRequest extends FormRequest
                 'exists:realization_details,id',
             ],
             'description' => ['required', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0'],
             'type' => ['nullable', Rule::in(['fuel', 'service', 'tax', 'other'])],
             'unit_no' => ['nullable', 'string', 'max:20'],
             'nopol' => ['nullable', 'string', 'max:50'],

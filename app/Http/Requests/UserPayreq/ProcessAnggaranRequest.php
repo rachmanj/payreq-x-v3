@@ -34,7 +34,7 @@ class ProcessAnggaranRequest extends FormRequest
             'date' => ['nullable', 'date'],
             'project' => ['required', 'string', 'exists:projects,code'],
             'description' => ['required', 'string'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0'],
             'rab_type' => ['required', Rule::in(['periode', 'event', 'buc'])],
             'periode_anggaran' => [Rule::requiredIf(fn () => $this->input('rab_type') === 'periode'), 'nullable', 'date'],
             'start_date' => [Rule::requiredIf(fn () => in_array($this->input('rab_type'), ['event', 'buc'], true)), 'nullable', 'date'],
@@ -57,7 +57,7 @@ class ProcessAnggaranRequest extends FormRequest
     {
         return [
             'button_type.required' => 'Invalid submit action.',
-            'amount.min' => 'Amount must be greater than zero.',
+            'amount.min' => 'Amount must be greater than or equal to zero.',
             'file_upload.max' => 'The file may not be greater than 10 MB.',
         ];
     }
