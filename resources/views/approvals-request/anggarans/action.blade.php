@@ -23,7 +23,7 @@
 
 {{-- modal update --}}
 <div class="modal fade" id="approvals-update-{{ $model->id }}">
-    <div class="modal-dialog modal-md">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title">Approval for RAB No. {{ $model->anggaran->nomor }}</h4>
@@ -79,6 +79,11 @@
                             </div>
                         </div>
                     @endif
+
+                    @include('approvals-request.anggarans.details_table', [
+                        'anggaran' => $model->anggaran,
+                        'compact' => true,
+                    ])
 
                     <div class="row">
                         <div class="col-6">

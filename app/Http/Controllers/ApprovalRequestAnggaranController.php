@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalPlan;
-use Illuminate\Http\Request;
 
 class ApprovalRequestAnggaranController extends Controller
 {
@@ -16,10 +15,12 @@ class ApprovalRequestAnggaranController extends Controller
 
     public function data()
     {
-        $approval_requests = ApprovalPlan::where('document_type', 'rab')
+        $approval_requests = ApprovalPlan::query()
+            ->where('document_type', 'rab')
             ->where('is_open', 1)
             ->where('status', 0)
             ->where('approver_id', auth()->user()->id)
+            ->with(['anggaran.details', 'anggaran.createdBy'])
             ->get();
 
         return datatables()->of($approval_requests)

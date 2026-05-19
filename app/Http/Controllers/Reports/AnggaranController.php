@@ -117,7 +117,7 @@ class AnggaranController extends Controller
 
     public function show($id)
     {
-        $anggaran = Anggaran::query()->with(['details.account', 'department'])->findOrFail($id);
+        $anggaran = Anggaran::query()->with(['details', 'department'])->findOrFail($id);
         $summary = $this->releaseService->progressSummary($anggaran);
         $progres_persen = $summary['persen'];
         $total_release = $summary['amount'];

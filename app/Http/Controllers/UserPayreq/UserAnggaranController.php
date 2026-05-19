@@ -7,13 +7,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\UserController;
 use App\Http\Requests\UserPayreq\ProcessAnggaranRequest;
-use App\Models\Account;
 use App\Models\Anggaran;
 use App\Models\AnggaranDetail;
 use App\Models\ApprovalPlan;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
 use App\Services\AnggaranReleaseService;
+use App\Support\AnggaranFormDetails;
 use Illuminate\Support\Str;
 
 class UserAnggaranController extends Controller
@@ -37,9 +37,9 @@ class UserAnggaranController extends Controller
             ->where('is_active', 1)
             ->get();
 
-        $accounts = $this->accountsForBudgetLines();
+        $detailRows = AnggaranFormDetails::rowsForForm();
 
-        return view('user-payreqs.anggarans.create', compact('projects', 'periode_anggarans', 'nomor', 'accounts'));
+        return view('user-payreqs.anggarans.create', compact('projects', 'periode_anggarans', 'nomor', 'detailRows'));
     }
 
     public function proses(ProcessAnggaranRequest $request)
@@ -103,9 +103,7 @@ class UserAnggaranController extends Controller
             'created_by' => auth()->user()->id,
         ]);
 
-        if ($data->has('details')) {
-            $this->syncLineItems($anggaran, $data->input('details', []));
-        }
+        $this->syncLineItems($anggaran, $data->input('details', []));
 
         return $anggaran;
     }
@@ -129,9 +127,9 @@ class UserAnggaranController extends Controller
             $origin_filename = null;
         }
 
-        $accounts = $this->accountsForBudgetLines();
+        $detailRows = AnggaranFormDetails::rowsForForm($anggaran);
 
-        return view('user-payreqs.anggarans.edit', compact('anggaran', 'projects', 'periode_anggarans', 'origin_filename', 'accounts'));
+        return view('user-payreqs.anggarans.edit', compact('anggaran', 'projects', 'periode_anggarans', 'origin_filename', 'detailRows'));
     }
 
     public function update(ProcessAnggaranRequest $data): Anggaran
@@ -156,9 +154,7 @@ class UserAnggaranController extends Controller
             $anggaran->update(['filename' => $filename]);
         }
 
-        if ($data->has('details')) {
-            $this->syncLineItems($anggaran, $data->input('details', []));
-        }
+        $this->syncLineItems($anggaran, $data->input('details', []));
 
         return $anggaran;
     }
@@ -185,23 +181,18 @@ class UserAnggaranController extends Controller
 
         foreach (array_values($rows) as $index => $row) {
             $description = isset($row['description']) ? trim((string) $row['description']) : '';
-            $accountId = isset($row['account_id']) && $row['account_id'] !== '' ? (int) $row['account_id'] : null;
             $qty = isset($row['qty']) && $row['qty'] !== '' ? (float) $row['qty'] : 1.0;
             $unit = isset($row['unit']) ? substr((string) $row['unit'], 0, 50) : null;
             $unitPrice = isset($row['unit_price']) && $row['unit_price'] !== '' ? (float) $row['unit_price'] : 0.0;
-            $amount = isset($row['amount']) && $row['amount'] !== '' ? (float) $row['amount'] : 0.0;
+            $amount = AnggaranFormDetails::lineAmountFromRow($row);
 
-            if ($amount <= 0 && $qty > 0 && $unitPrice > 0) {
-                $amount = round($qty * $unitPrice, 2);
-            }
-
-            if ($description === '' && $amount <= 0 && $accountId === null) {
+            if ($description === '' && $amount <= 0) {
                 continue;
             }
 
             AnggaranDetail::create([
                 'anggaran_id' => $anggaran->id,
-                'account_id' => $accountId,
+                'account_id' => null,
                 'description' => $description !== '' ? $description : null,
                 'qty' => $qty,
                 'unit' => $unit,
@@ -214,17 +205,9 @@ class UserAnggaranController extends Controller
         $this->releaseService->forgetDetailCaches((int) $anggaran->id);
     }
 
-    private function accountsForBudgetLines()
-    {
-        return Account::query()
-            ->where('is_active', true)
-            ->orderBy('account_number')
-            ->get(['id', 'account_number', 'account_name']);
-    }
-
     public function show($id)
     {
-        $anggaran = Anggaran::query()->with(['details.account'])->findOrFail($id);
+        $anggaran = Anggaran::query()->with('details')->findOrFail($id);
         $this->authorize('view', $anggaran);
 
         $summary = $this->releaseService->progressSummary($anggaran);
