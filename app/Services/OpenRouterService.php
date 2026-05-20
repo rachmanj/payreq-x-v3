@@ -96,6 +96,81 @@ PROMPT;
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function extractReceiptFromImageBase64(string $base64Image, string $mimeType = 'image/jpeg'): array
+    {
+        $prompt = <<<'PROMPT'
+You are parsing a photo that may contain ONE or MORE Indonesian Pertamina SPBU fuel receipts laid out together.
+Identify every individual receipt visible in the image (each separate slip is one receipt).
+Return ONLY valid JSON (no markdown fences) with this exact shape:
+{"receipts":[{"description":string,"amount":number,"expense_date":"Y-m-d"|null,"km_position":number|null,"qty":number|null,"unit_no":string|null,"nopol":string|null,"type":"fuel","uom":"liter","confidence":number},...]}
+
+Rules (apply to each receipt object):
+- description: if fuel grade (e.g. Pertamax, Dexlite) AND SPBU station number are readable, use "BBM [Grade] - SPBU [No]". Otherwise use exactly "Fuel Kendaraan".
+- amount: total transaction amount in Rupiah (integer, no separators).
+- expense_date: transaction date as Y-m-d.
+- km_position: odometer/HM reading as integer only (strip "KM" prefix). null if absent.
+- qty: fuel volume in liters as number. null if absent.
+- unit_no: look for HANDWRITTEN text matching two uppercase letters, one space, three digits (e.g. "VA 057", "VA 083"). Return exactly as written including the space. null if not found.
+- nopol: printed vehicle plate if present. null if "Not Entered", blank, or unreadable.
+- type: always "fuel".
+- uom: always "liter".
+- confidence: 0-1 estimate per receipt.
+- Include one object in "receipts" for every distinct receipt visible. Do not merge multiple receipts into one object.
+PROMPT;
+
+        $messages = [
+            [
+                'role' => 'user',
+                'content' => [
+                    ['type' => 'text', 'text' => $prompt],
+                    [
+                        'type' => 'image_url',
+                        'image_url' => [
+                            'url' => 'data:'.$mimeType.';base64,'.$base64Image,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $json = $this->chat($messages);
+        $content = data_get($json, 'choices.0.message.content');
+        if (! is_string($content)) {
+            throw new OpenRouterException('Invalid OpenRouter response: missing message content.', 500, is_array($json) ? $json : null);
+        }
+
+        return $this->decodeReceiptJsonPayload($content);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function decodeReceiptJsonPayload(string $content): array
+    {
+        $trimmed = trim($content);
+        if (preg_match('/^```(?:json)?\s*([\s\S]*?)\s*```$/m', $trimmed, $matches)) {
+            $trimmed = trim($matches[1]);
+        }
+
+        $decoded = json_decode($trimmed, true);
+        if (! is_array($decoded)) {
+            throw new OpenRouterException('AI returned invalid JSON.', 500);
+        }
+
+        if (isset($decoded['receipts']) && is_array($decoded['receipts'])) {
+            return array_values($decoded['receipts']);
+        }
+
+        if (isset($decoded['description']) || isset($decoded['amount'])) {
+            return [$decoded];
+        }
+
+        throw new OpenRouterException('AI returned invalid JSON: missing receipts array.', 500);
+    }
+
+    /**
      * @return array{opening_balance: float|null, closing_balance: float|null, lines: array<int, array<string, mixed>>}
      */
     protected function decodeJsonPayload(string $content): array

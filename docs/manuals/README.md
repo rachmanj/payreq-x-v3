@@ -17,10 +17,13 @@ Markdown files in this directory are indexed by `php artisan help:reindex`.
 | Getting started | `getting-started-en.md` | `getting-started-id.md` |
 | Bank reconciliation | `bank-reconciliation-manual-en.md` | `bank-reconciliation-manual-id.md` |
 | RAB / Anggaran | `anggaran-manual-en.md` | `anggaran-manual-id.md` |
+| Realization — scan fuel receipts (AI) | `realization-fuel-receipt-scan-manual-en.md` | `realization-fuel-receipt-scan-manual-id.md` |
 
 ## Technical reference
 
 System design (API, tables, OpenRouter, **`akses_help`**): **`docs/architecture.md`** (section *In-app HELP*). Rationale: **`docs/decisions.md`** (**ADR-HELP-01**). Task log: **`MEMORY.md`** entry **[044]**.
+
+**Realization — AI fuel receipt scan** (**Scan Fuel Receipts**, multi-receipt OpenRouter, bulk save): **`docs/architecture.md`** (subsection *AI scan: fuel receipts*). Rationale: **`docs/decisions.md`** (**ADR-REALIZATION-FUEL-SCAN-01**). Task log: **`MEMORY.md`** entry **[048]**.
 
 **Verification journal — SAP browser print** (repeating **`thead`**, title size, print limits): **`docs/architecture.md`** (section *Verification journal: SAP-aligned print*). Task log: **`MEMORY.md`** entry **[046]**.
 

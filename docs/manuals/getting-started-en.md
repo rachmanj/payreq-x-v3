@@ -14,6 +14,8 @@ On wider screens, use **Search Menu here** in the top bar to filter pages you ar
 
 Click the question mark (**?**) in the top navbar to open the HELP panel. Ask how-to questions in the **How-to** tab or send bug and feature feedback in **Report / request**.
 
+Example topics in HELP: **bank reconciliation**, **RAB / Anggaran**, and **scan fuel receipts for realization** (**Scan Fuel Receipts** on the realization details page — fuel nota only).
+
 ## After documentation changes
 
 An administrator runs `php artisan help:reindex` on the server so answers reflect the latest manuals.

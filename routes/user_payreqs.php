@@ -72,6 +72,8 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::get('/get_details/{realization}', [UserRealizationController::class, 'getDetails'])->name('get_details');
         Route::get('/get_detail/{detail}', [UserRealizationController::class, 'getDetail'])->name('get_detail');
         Route::post('/update_detail/{detail}', [UserRealizationController::class, 'updateDetail'])->name('update_detail');
+        Route::post('/scan-receipt', [UserRealizationController::class, 'scanReceipt'])->name('scan_receipt');
+        Route::post('/bulk-store-details', [UserRealizationController::class, 'bulkStoreDetails'])->name('bulk_store_details');
     });
     Route::resource('realizations', UserRealizationController::class);
 

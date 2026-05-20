@@ -14,6 +14,8 @@ Di layar lebar, gunakan kolom **Search Menu here** di bilah atas untuk menyaring
 
 Klik ikon tanda tanya (**?**) di bilah atas untuk membuka panel **Help**. Ajukan pertanyaan cara pakai di tab **How-to** atau kirim laporan bug dan permintaan fitur di tab **Report / request**.
 
+Contoh topik di HELP: **rekonsiliasi bank**, **RAB / Anggaran**, dan **scan nota BBM untuk realisasi** (tombol **Scan Fuel Receipts** di halaman detail realisasi — hanya nota BBM).
+
 ## Setelah dokumentasi berubah
 
 Administrator menjalankan `php artisan help:reindex` di server agar jawaban HELP mengikuti manual terbaru.

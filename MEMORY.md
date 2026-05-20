@@ -1,3 +1,17 @@
+### [048] Realization fuel receipt AI scan — multi-receipt JSON, Scan Fuel Receipts bulk UI, HELP manuals (2026-05-19) ✅ COMPLETE
+
+**Challenge:** Users photograph **many SPBU fuel nota** in one image when realizing advances, but the first AI integration returned **one detail line per image**. Handwritten **unit_no** uses **`VA 057`** (space). Operators needed HELP guidance aligned with UI labels (**Scan Fuel Receipts**, **Hanya Nota Pembelian Fuel**).
+
+**Solution:** **`OpenRouterService::extractReceiptFromImageBase64`** returns **`receipts[]`** (multi-slip prompt); **`scanReceipt`** responds with **`data`** array; **`bulkStoreDetails`** + **`BulkStoreRealizationDetailsRequest`**; bulk modal **Scan All** → one review row per receipt; card button **Scan Fuel Receipts**. Modal **Scan Receipt with AI** gated by **`config('features.receipt_scan_in_detail_modal', false)`**. Bilingual manuals **`docs/manuals/realization-fuel-receipt-scan-manual-{en,id}.md`**.
+
+**Key learning:** Reuse **`OpenRouterService`** for vision (not **`HelpOpenRouterClient`**); run **`php artisan help:reindex`** after manual edits. Collage quality depends on **`OPENROUTER_MODEL`** — Flash may miss slips; Pro/4o for hard batches.
+
+**Implementation / file map:** **`OpenRouterService`**, **`UserRealizationController`** (`scanReceipt`, `bulkStoreDetails`, `normalizeScannedReceiptData`), **`BulkStoreRealizationDetailsRequest`**, **`routes/user_payreqs.php`**, **`add_details.blade.php`**, **`partials/{receipt-scan,bulk-scan-modal,receipt-scan-scripts}.blade.php`**.
+
+**Docs:** **`docs/architecture.md`** (*AI scan: fuel receipts*), **`docs/decisions.md`** (**ADR-REALIZATION-FUEL-SCAN-01**), **`docs/manuals/README.md`**, **`docs/todo.md`**, **`README.md`**.
+
+---
+
 ### [047] Overdue extensions — pending-only approver list, approve modal + editable date, 7-day request cap, remarks column, Reason label (2026-05-15) ✅ COMPLETE
 
 **Challenge:** Approvers needed a **queue** of **pending** extension requests only (not mixed with settled rows). **Approve** had to open a **modal** summarizing the request so the approver could **confirm or change** the **requested due date** before applying it to the document. Policy required requestors to pick a new due date **no more than 7 calendar days from today** (still **after today**). The grid needed **payreq/realization remarks** for faster review. The **Reason** field label did not read as required despite server and HTML validation.

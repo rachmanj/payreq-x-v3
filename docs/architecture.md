@@ -60,6 +60,33 @@ See **ADR-ANGGRAN-01**, **ADR-ANGGRAN-02**.
 
 See **ADR-PAYREQ-01** (shared reimburse/realization validation), **ADR-PAYREQ-02**, **ADR-COMPAT-01**.
 
+### AI scan: fuel receipts → realization detail lines
+
+Bulk and optional single-receipt vision extraction for **SPBU / Pertamina fuel nota** on **`resources/views/user-payreqs/realizations/add_details.blade.php`**.
+
+#### Routes (`routes/user_payreqs.php`, prefix **`user-payreqs/realizations`**)
+
+- **`POST …/scan-receipt`** (**`user-payreqs.realizations.scan_receipt`**) — **`UserRealizationController::scanReceipt`**: multipart **`receipt`** image (max 10 MB); returns JSON **`{ success, data: […], count }`** (one normalized object per receipt detected).
+- **`POST …/bulk-store-details`** (**`user-payreqs.realizations.bulk_store_details`**) — **`bulkStoreDetails`**: body **`realization_id`** + **`details[]`**; validated by **`BulkStoreRealizationDetailsRequest`**; creates rows like **`store_detail`** (project/department, default **`rab_id`** when not multi-budget).
+
+#### OpenRouter / vision
+
+- **`App\Services\OpenRouterService::extractReceiptFromImageBase64`**: multimodal chat (**`image_url`** base64) with prompt returning **`{"receipts":[{…},…]}`** — multiple slips in one photo yield multiple objects. Field rules include handwritten **unit_no** as **`VA 057`** (space preserved in AI output; server normalizes for storage/matching).
+- Config: **`config/services.php`** **`openrouter.*`** (**`OPENROUTER_API_KEY`**, **`OPENROUTER_MODEL`**, default **`google/gemini-2.0-flash-001`**). Separate from **`HelpOpenRouterClient`** (HELP RAG).
+
+#### UI
+
+- Card header button **Scan Fuel Receipts** (subtitle **Hanya Nota Pembelian Fuel**) → modal **`#bulk-scan-modal`** (**`partials/bulk-scan-modal.blade.php`**): multi-file select, **Scan All** (sequential AJAX per file), editable review table, **Save All**.
+- **Scan Receipt with AI** inside Add/Edit detail modals (**`partials/receipt-scan.blade.php`**) gated by **`config('features.receipt_scan_in_detail_modal', false)`** (hidden by default; enable via **`RECEIPT_SCAN_IN_DETAIL_MODAL=true`** when wired in config).
+- Front-end: **`partials/receipt-scan-scripts.blade.php`** — **`resolveUnitNoOptionValue`** matches equipment **`unit_code`**; bulk loop adds **one table row per** element in **`response.data`**.
+
+#### Validation / persistence
+
+- Single-row rules reuse **`ValidatesRealizationDetailFleet`** + **`RealizationDetailOdometerMonotonicityValidator`** (bulk request applies per row).
+- **`normalizeScannedReceiptData`** maps **Not Entered** nopol to null, strips non-digits from amount/KM, default description **Fuel Kendaraan**.
+
+See **ADR-REALIZATION-FUEL-SCAN-01**. Maintainer manuals: **`docs/manuals/realization-fuel-receipt-scan-manual-{en,id}.md`**; run **`php artisan help:reindex`** after edits.
+
 ## User-payreq: advance budget modes (legacy vs multi-allocation)
 
 ### Data model
@@ -258,4 +285,4 @@ Task log: **`MEMORY.md` [046]**.
 
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-OVERDUE-EXT-02**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**.
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-OVERDUE-EXT-02**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**, **ADR-REALIZATION-FUEL-SCAN-01**.

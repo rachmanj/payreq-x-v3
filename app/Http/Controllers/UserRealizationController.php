@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\OpenRouterException;
 use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
+use App\Http\Requests\BulkStoreRealizationDetailsRequest;
 use App\Http\Requests\StoreRealizationDetailRequest;
 use App\Http\Requests\UpdateRealizationDetailRequest;
 use App\Models\ApprovalPlan;
@@ -13,8 +15,10 @@ use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Services\LotService;
+use App\Services\OpenRouterService;
 use App\Services\PayreqRealizationBudgetWarningService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -527,5 +531,159 @@ class UserRealizationController extends Controller
             'message' => 'Detail updated successfully',
             'detail' => $detail->fresh(),
         ]);
+    }
+
+    public function scanReceipt(Request $request, OpenRouterService $openRouter): JsonResponse
+    {
+        $request->validate([
+            'receipt' => ['required', 'file', 'mimes:jpeg,jpg,png,webp,gif', 'max:10240'],
+        ]);
+
+        $file = $request->file('receipt');
+        $mimeType = $file->getMimeType() ?: 'image/jpeg';
+        $base64 = base64_encode((string) file_get_contents($file->getRealPath()));
+
+        try {
+            $extractedReceipts = $openRouter->extractReceiptFromImageBase64($base64, $mimeType);
+        } catch (OpenRouterException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], $exception->getStatusCode() >= 400 ? $exception->getStatusCode() : 422);
+        }
+
+        $data = array_map(
+            fn (array $receipt) => $this->normalizeScannedReceiptData($receipt),
+            $extractedReceipts
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+            'count' => count($data),
+        ]);
+    }
+
+    public function bulkStoreDetails(BulkStoreRealizationDetailsRequest $request): JsonResponse
+    {
+        $realization = Realization::findOrFail($request->validated('realization_id'));
+        $payreq = Payreq::findOrFail($realization->payreq_id);
+
+        $saved = 0;
+        $errors = [];
+
+        foreach ($request->normalizedDetailPayloads() as $index => $payload) {
+            try {
+                if (! array_key_exists('rab_id', $payload)) {
+                    $payload['rab_id'] = $payreq->rab_id;
+                }
+
+                $realization->realizationDetails()->create(array_merge($payload, [
+                    'project' => $realization->project,
+                    'department_id' => $realization->department_id,
+                ]));
+
+                $saved++;
+            } catch (\Throwable $exception) {
+                $errors[] = [
+                    'index' => $index,
+                    'message' => $exception->getMessage(),
+                ];
+            }
+        }
+
+        if ($saved === 0 && $errors !== []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save realization details.',
+                'saved' => 0,
+                'errors' => $errors,
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'saved' => $saved,
+            'errors' => $errors,
+            'message' => $saved === 1
+                ? '1 detail saved successfully.'
+                : "{$saved} details saved successfully.",
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $extracted
+     * @return array<string, mixed>
+     */
+    protected function normalizeScannedReceiptData(array $extracted): array
+    {
+        $description = trim((string) ($extracted['description'] ?? ''));
+        if ($description === '') {
+            $description = 'Fuel Kendaraan';
+        }
+
+        $unitNo = $extracted['unit_no'] ?? null;
+        if (is_string($unitNo) && $unitNo !== '') {
+            $unitNo = strtoupper(preg_replace('/\s+/', '', $unitNo));
+        } else {
+            $unitNo = null;
+        }
+
+        $nopol = $extracted['nopol'] ?? null;
+        if (is_string($nopol)) {
+            $nopol = trim($nopol);
+            if ($nopol === '' || strcasecmp($nopol, 'Not Entered') === 0) {
+                $nopol = null;
+            }
+        } else {
+            $nopol = null;
+        }
+
+        $kmPosition = $extracted['km_position'] ?? null;
+        if ($kmPosition !== null && $kmPosition !== '') {
+            $kmPosition = (int) preg_replace('/\D/', '', (string) $kmPosition);
+            if ($kmPosition === 0) {
+                $kmPosition = null;
+            }
+        } else {
+            $kmPosition = null;
+        }
+
+        $qty = $extracted['qty'] ?? null;
+        if ($qty !== null && $qty !== '') {
+            $qty = (float) str_replace(',', '.', (string) $qty);
+        } else {
+            $qty = null;
+        }
+
+        $amount = $extracted['amount'] ?? 0;
+        if (is_string($amount)) {
+            $amount = (float) preg_replace('/\D/', '', $amount);
+        }
+        $amount = (float) $amount;
+
+        $expenseDate = $extracted['expense_date'] ?? null;
+        if (is_string($expenseDate) && $expenseDate !== '') {
+            try {
+                $expenseDate = Carbon::parse($expenseDate)->format('Y-m-d');
+            } catch (\Throwable) {
+                $expenseDate = null;
+            }
+        } else {
+            $expenseDate = null;
+        }
+
+        return [
+            'description' => $description,
+            'amount' => $amount,
+            'expense_date' => $expenseDate,
+            'km_position' => $kmPosition,
+            'qty' => $qty,
+            'unit_no' => $unitNo,
+            'nopol' => $nopol,
+            'type' => 'fuel',
+            'uom' => 'liter',
+            'confidence' => isset($extracted['confidence']) ? (float) $extracted['confidence'] : null,
+        ];
     }
 }

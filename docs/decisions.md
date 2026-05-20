@@ -269,3 +269,29 @@ Lightweight records of intent and trade-offs. Numbering is sequential by topic a
 - Negative: drift if sidebar changes omit **`MenuSearchService`**; large menus may warrant lowering TTL or explicit cache bust hooks when roles change in-session.
 
 ---
+
+## ADR-REALIZATION-FUEL-SCAN-01 — Realization fuel receipt vision scan (multi-receipt JSON, bulk save)
+
+**Status:** Accepted (2026-05-19)
+
+**Context**
+
+- Users photograph many **SPBU fuel nota** at once (collage or batch photos) when realizing advances; manual entry of description, amount, date, **VA ###** unit codes, and HM is slow and error-prone.
+- Bank reconciliation already uses **`OpenRouterService`** for Koran PDF vision; HELP uses a **separate** **`HelpOpenRouterClient`** — fuel receipt scan should not couple to HELP embeddings.
+- A first implementation returned **one JSON object per image**, so collages produced only **one** detail line.
+
+**Decision**
+
+1. **`extractReceiptFromImageBase64`** prompts for **`{"receipts":[…]}`** with **one object per visible slip**; decode accepts legacy single-object responses by wrapping in an array.
+2. **`scanReceipt`** returns **`data`** always as an **array** (length **`count`**); front-end **bulk** modal appends **one review row per receipt**; optional modal scan fills **`data[0]`** only and directs users to **Scan Fuel Receipts** when **`data.length > 1`**.
+3. **Bulk persist** via **`bulkStoreDetails`** + **`BulkStoreRealizationDetailsRequest`** (same fleet/odometer rules as **`StoreRealizationDetailRequest`** per row).
+4. **UI scope:** primary entry **Scan Fuel Receipts** on realization **add_details** (label **Hanya Nota Pembelian Fuel**); per-modal scan behind **`features.receipt_scan_in_detail_modal`** default **false**.
+5. **unit_no:** AI instructed to return handwritten pattern **`VA 057`** (space); server/JS normalize for **`Equipment`** **`unit_code`** matching.
+6. **HELP:** bilingual manuals **`realization-fuel-receipt-scan-manual-{en,id}.md`**; **`help:reindex`** after manual changes.
+
+**Consequences**
+
+- Positive: faster realization entry for fleet fuel; multi-nota photos supported; documentation discoverable via in-app HELP.
+- Negative: depends on **`OPENROUTER_API_KEY`** and model quality for handwriting; synchronous scan can be slow for many files; operators must review AI rows before **Save All**.
+
+---

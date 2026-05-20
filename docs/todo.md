@@ -6,6 +6,10 @@ _(none — add items here)_
 
 ## Recently completed
 
+- **2026-05-19** — **Realization fuel receipt AI scan (multi-receipt, bulk Save All, HELP manuals)**  
+  **`OpenRouterService`** **`receipts[]`** JSON; **`scanReceipt`** / **`bulkStoreDetails`**; **Scan Fuel Receipts** + review modal; optional modal scan behind **`features.receipt_scan_in_detail_modal`**. Manuals **`realization-fuel-receipt-scan-manual-{en,id}.md`**; **`help:reindex`**.  
+  - Docs: **`docs/architecture.md`**, **`docs/decisions.md`** (**ADR-REALIZATION-FUEL-SCAN-01**), **`MEMORY.md` [048]**.
+
 - **2026-05-15** — **Overdue extensions — approver UX (pending-only, approve modal, 7-day cap, remarks)**  
   **`OverdueExtensionController::data()`** **`pending()`** only; **Remarks** column + **`resolveRemarks()`**; **`ApproveOverdueExtensionRequest`** + approve **modal** (editable **`requested_due_date`**); **`StoreOverdueExtensionRequest`** **today+7** cap + modal **`max`**; extension modals **Reason** required marker. Tests extended in **`OverdueExtensionTest`**.  
   - Docs: **`docs/architecture.md`**, **`docs/decisions.md`** (**ADR-OVERDUE-EXT-02**), **`MEMORY.md` [047]**.

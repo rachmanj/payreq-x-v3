@@ -86,6 +86,11 @@
                             Submit Realization
                         </button>
                     </form>
+                    <button type="button" class="btn btn-sm btn-warning float-right mr-2 text-left" data-toggle="modal"
+                        data-target="#bulk-scan-modal">
+                        <i class="fas fa-camera"></i> Scan Fuel Receipts
+                        <small class="d-block font-weight-normal" style="font-size: 0.65rem; line-height: 1.1;">Hanya Nota Pembelian Fuel</small>
+                    </button>
                     <button type="button" class="btn btn-sm btn-success float-right mr-2" data-toggle="modal"
                         data-target="#add-detail-modal">
                         <i class="fas fa-plus"></i> Add Detail
@@ -218,6 +223,10 @@
                                     <i class="fas fa-plus"></i> New LOTC
                                 </a>
                             </div>
+                        @endif
+
+                        @if (config('features.receipt_scan_in_detail_modal', false))
+                            @include('user-payreqs.realizations.partials.receipt-scan', ['prefix' => '', 'scanInputId' => 'receipt-scan-input', 'scanBtnId' => 'btn-scan-receipt', 'scanPreviewId' => 'receipt-scan-preview', 'scanAlertId' => 'receipt-scan-alert'])
                         @endif
 
                         <div class="row">
@@ -403,6 +412,10 @@
                             </div>
                         @endif
 
+                        @if (config('features.receipt_scan_in_detail_modal', false))
+                            @include('user-payreqs.realizations.partials.receipt-scan', ['prefix' => 'edit-', 'scanInputId' => 'edit-receipt-scan-input', 'scanBtnId' => 'btn-edit-scan-receipt', 'scanPreviewId' => 'edit-receipt-scan-preview', 'scanAlertId' => 'edit-receipt-scan-alert'])
+                        @endif
+
                         <div class="row">
                             <div class="col-md-8">
                                 <div class="form-group mb-md-0">
@@ -537,6 +550,8 @@
         </div>
     </div>
     <!-- End Edit Modal -->
+
+    @include('user-payreqs.realizations.partials.bulk-scan-modal')
 @endsection
 
 @section('scripts')
@@ -1174,7 +1189,17 @@
             // Load initial data
             refreshDetailsTable();
 
+            window.showAlert = showAlert;
+            window.refreshDetailsTable = refreshDetailsTable;
+
+            if (typeof initReceiptScanFeatures === 'function') {
+                initReceiptScanFeatures();
+            }
+
             console.log("Document ready completed");
         });
     </script>
+
+    @include('user-payreqs.realizations.partials.receipt-scan-scripts')
 @endsection
+
