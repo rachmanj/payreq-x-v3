@@ -53,6 +53,12 @@
                     </div>
                 </div>
 
+                @php
+                    $realizationAdvanceMultiBudget =
+                        $realization->payreq->isAdvanceMultiBudget()
+                        && $realization->payreq->anggaranAllocations->isNotEmpty();
+                    $printDetailColspan = $realizationAdvanceMultiBudget ? 4 : 3;
+                @endphp
                 <div class="row">
                     <div class="col-12 table-responsive">
                         <table class="table table-bordered" style="border: 1px solid black;">
@@ -61,6 +67,9 @@
                                     <th class="text-right" style="border: 1px solid black;">No</th>
                                     <th style="border: 1px solid black;">Description</th>
                                     <th style="border: 1px solid black;">Expense date</th>
+                                    @if ($realizationAdvanceMultiBudget)
+                                        <th style="border: 1px solid black;">Anggaran</th>
+                                    @endif
                                     <th class="text-right" style="border: 1px solid black;">Amount (IDR)</th>
                                 </tr>
                             </thead>
@@ -83,6 +92,14 @@
                                         </td>
                                         <td style="border: 1px solid black;">
                                             {{ $item->expense_date ? $item->expense_date->format('d-M-Y') : '—' }}</td>
+                                        @if ($realizationAdvanceMultiBudget)
+                                            <td style="border: 1px solid black;">
+                                                @include('user-payreqs.partials.anggaran_line', [
+                                                    'ang' => $item->anggaran,
+                                                    'maxDescription' => 80,
+                                                ])
+                                            </td>
+                                        @endif
                                         <td class="text-right" style="border: 1px solid black;">
                                             {{ number_format($item->amount, 2) }}</td>
                                     </tr>
@@ -90,40 +107,56 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <th colspan="3" class="text-right" style="border: 1px solid black;">TOTAL</th>
+                                    <th colspan="{{ $printDetailColspan }}" class="text-right"
+                                        style="border: 1px solid black;">TOTAL</th>
                                     <th class="text-right" style="border: 1px solid black;">
                                         {{ number_format($realization_details->sum('amount'), 2) }}</th>
                                 </tr>
                                 <tr>
-                                    <th colspan="3" class="text-right" style="border: 1px solid black;">Advance
+                                    <th colspan="{{ $printDetailColspan }}" class="text-right"
+                                        style="border: 1px solid black;">Advance
                                         Payment
                                     </th>
                                     <th class="text-right" style="border: 1px solid black;">
                                         {{ number_format($realization->payreq->amount, 2) }}</th>
                                 </tr>
                                 <tr>
-                                    <th colspan="3" class="text-right" style="border: 1px solid black;">Variance</th>
+                                    <th colspan="{{ $printDetailColspan }}" class="text-right"
+                                        style="border: 1px solid black;">Variance</th>
                                     <th class="text-right" style="border: 1px solid black;">
                                         {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}
                                     </th>
                                 </tr>
                                 <tr>
                                     <th class="text-right" style="border: 1px solid black;">Say</th>
-                                    <td colspan="3" style="border: 1px solid black;">{{ ucfirst($terbilang) }}</td>
+                                    <td colspan="{{ $printDetailColspan }}" style="border: 1px solid black;">
+                                        {{ ucfirst($terbilang) }}</td>
                                 </tr>
                                 <tr>
                                     <th class="text-right" style="border: 1px solid black;">Remarks</th>
-                                    <td colspan="3" style="border: 1px solid black;">
+                                    <td colspan="{{ $printDetailColspan }}" style="border: 1px solid black;">
                                         {{ $realization->payreq->remarks }}
                                     </td>
                                 </tr>
-                                @if ($realization->payreq->rab_id)
+                                @if ($realizationAdvanceMultiBudget)
+                                    <tr>
+                                        <th class="text-right align-top" style="border: 1px solid black;">Advance
+                                            allocations</th>
+                                        <td colspan="{{ $printDetailColspan }}" style="border: 1px solid black;">
+                                            @include('user-payreqs.partials.show_advance_allocation_table', [
+                                                'payreq' => $realization->payreq,
+                                            ])
+                                        </td>
+                                    </tr>
+                                @elseif ($realization->payreq->rab_id && $realization->payreq->anggaran)
                                     <tr>
                                         <th class="text-right" style="border: 1px solid black;">RAB No.</th>
-                                        <td colspan="3" style="border: 1px solid black;">
-                                            {{ $realization->payreq->anggaran->nomor }} |
-                                            {{ $realization->payreq->anggaran->rab_project }} |
-                                            {{ substr($realization->payreq->anggaran->description, 0, 100) }}</td>
+                                        <td colspan="{{ $printDetailColspan }}" style="border: 1px solid black;">
+                                            @include('user-payreqs.partials.anggaran_line', [
+                                                'ang' => $realization->payreq->anggaran,
+                                                'maxDescription' => 100,
+                                            ])
+                                        </td>
                                     </tr>
                                 @endif
                             </tfoot>

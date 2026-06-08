@@ -39,6 +39,15 @@ class ApprovalPlan extends Model
         return $this->belongsTo(Anggaran::class, 'document_id', 'id');
     }
 
+    public function scopePendingRealizationApprovals(Builder $query, int $approverId): Builder
+    {
+        return $query->where('is_open', 1)
+            ->where('document_type', 'realization')
+            ->where('status', 0)
+            ->where('approver_id', $approverId)
+            ->whereHas('realization');
+    }
+
     public function scopeEligibleForApproverRequestorReplyInbox(Builder $query, int $approverId): Builder
     {
         return $query->where('approver_id', $approverId)

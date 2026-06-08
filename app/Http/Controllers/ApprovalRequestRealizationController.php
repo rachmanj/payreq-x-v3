@@ -38,10 +38,8 @@ class ApprovalRequestRealizationController extends Controller
 
     public function data()
     {
-        $approval_requests = ApprovalPlan::where('is_open', 1)
-            ->where('document_type', 'realization')
-            ->where('status', 0)
-            ->where('approver_id', auth()->user()->id)
+        $approval_requests = ApprovalPlan::pendingRealizationApprovals(auth()->user()->id)
+            ->with(['realization.payreq.requestor', 'realization.realizationDetails'])
             ->get();
 
         return datatables()->of($approval_requests)
@@ -49,22 +47,30 @@ class ApprovalRequestRealizationController extends Controller
                 return $approval_request->id;
             })
             ->addColumn('nomor', function ($approval_request) {
-                return $approval_request->realization->nomor;
+                return $approval_request->realization?->nomor ?? '-';
             })
             ->addColumn('payreq_no', function ($approval_request) {
-                return $approval_request->realization->payreq->nomor;
+                return $approval_request->realization?->payreq?->nomor ?? '-';
             })
             ->addColumn('submit_at', function ($approval_request) {
-                return $approval_request->realization->submit_at->addHours(8)->format('d-M-Y H:i:s') . ' wita';
+                $submitAt = $approval_request->realization?->submit_at;
+
+                return $submitAt
+                    ? $submitAt->addHours(8)->format('d-M-Y H:i:s') . ' wita'
+                    : '-';
             })
             ->addColumn('amount', function ($approval_request) {
-                return number_format($approval_request->realization->realizationDetails->sum('amount'), 2);
+                $details = $approval_request->realization?->realizationDetails;
+
+                return number_format($details?->sum('amount') ?? 0, 2);
             })
             ->addColumn('requestor', function ($approval_request) {
-                return $approval_request->realization->requestor->name;
+                return $approval_request->realization?->requestor?->name ?? '-';
             })
             ->addColumn('days', function ($approval_request) {
-                return $approval_request->realization->submit_at->diffInDays(now());
+                $submitAt = $approval_request->realization?->submit_at;
+
+                return $submitAt ? $submitAt->diffInDays(now()) : '-';
             })
             ->addIndexColumn()
             ->addColumn('action', 'approvals-request.realizations.action')

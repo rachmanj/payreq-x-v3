@@ -266,10 +266,7 @@ class ToolController extends Controller
             ->where('approver_id', auth()->user()->id)
             ->count();
 
-        $approval_request_for_realizations = ApprovalPlan::where('is_open', 1)
-            ->where('document_type', 'realization')
-            ->where('status', 0)
-            ->where('approver_id', auth()->user()->id)
+        $approval_request_for_realizations = ApprovalPlan::pendingRealizationApprovals(auth()->user()->id)
             ->count();
 
         $approval_request_for_rabs = ApprovalPlan::where('is_open', 1)

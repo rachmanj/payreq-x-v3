@@ -1,3 +1,15 @@
+### [049] Realization approval badge vs table mismatch — orphan `approval_plans` (2026-06-08) ✅ COMPLETE
+
+**Challenge:** Badge on `/approvals/request/realizations` showed **12** for **wahyuansyar** while the DataTable returned **0 rows** (`Attempt to read property "nomor" on null`). **`approval_plans` id 23046** pointed to deleted realization **12986**.
+
+**Solution:** **`ApprovalPlan::scopePendingRealizationApprovals`** adds **`whereHas('realization')`**; used in **`ToolController::approval_documents_count`** and **`ApprovalRequestRealizationController::data`** with eager loads and null-safe column renderers. Closed orphan plan **23046** (`is_open = 0`).
+
+**Key learning:** Badge count and DataTable must share the same eligibility scope; one broken FK can fail the entire Yajra response.
+
+**Implementation:** **`ApprovalPlan.php`**, **`ToolController.php`**, **`ApprovalRequestRealizationController.php`**.
+
+---
+
 ### [048] Realization fuel receipt AI scan — multi-receipt JSON, Scan Fuel Receipts bulk UI, HELP manuals (2026-05-19) ✅ COMPLETE
 
 **Challenge:** Users photograph **many SPBU fuel nota** in one image when realizing advances, but the first AI integration returned **one detail line per image**. Handwritten **unit_no** uses **`VA 057`** (space). Operators needed HELP guidance aligned with UI labels (**Scan Fuel Receipts**, **Hanya Nota Pembelian Fuel**).

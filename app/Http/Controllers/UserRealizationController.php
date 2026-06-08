@@ -171,7 +171,16 @@ class UserRealizationController extends Controller
 
     public function print($id)
     {
-        $realization = Realization::findOrFail($id);
+        $realization = Realization::query()
+            ->with([
+                'requestor',
+                'department',
+                'payreq.anggaran',
+                'payreq.anggaranAllocations.anggaran',
+                'realizationDetails.anggaran',
+            ])
+            ->findOrFail($id);
+
         $realization_details = $realization->realizationDetails;
         $approved_at = new Carbon($realization->approved_at);
         $terbilang = app(ToolController::class)->terbilang($realization_details->sum('amount'));

@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RealizationDetail extends Model
 {
@@ -64,5 +65,10 @@ class RealizationDetail extends Model
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function anggaran(): BelongsTo
+    {
+        return $this->belongsTo(Anggaran::class, 'rab_id');
     }
 }
