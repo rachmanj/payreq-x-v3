@@ -18,6 +18,16 @@ class BankReconciliation extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const SOURCE_AI = 'ai';
+
+    public const SOURCE_MANUAL = 'manual';
+
+    public const VALIDATION_PENDING = 'pending_validation';
+
+    public const VALIDATION_VALIDATED = 'validated';
+
+    public const VALIDATION_REJECTED = 'rejected';
+
     protected $guarded = [];
 
     protected $casts = [
@@ -27,6 +37,8 @@ class BankReconciliation extends Model
         'opening_balance_book' => 'decimal:2',
         'closing_balance_book' => 'decimal:2',
         'reconciled_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'validated_at' => 'datetime',
     ];
 
     public function giro(): BelongsTo
@@ -49,6 +61,16 @@ class BankReconciliation extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function validatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
+
     public function bankStatementLines(): HasMany
     {
         return $this->hasMany(BankStatementLine::class);
@@ -62,5 +84,23 @@ class BankReconciliation extends Model
     public function matchGroups(): HasMany
     {
         return $this->hasMany(ReconciliationMatchGroup::class);
+    }
+
+    public function isLockedForEditing(): bool
+    {
+        if ($this->status === self::STATUS_COMPLETED) {
+            return true;
+        }
+
+        return $this->validation_status === self::VALIDATION_PENDING;
+    }
+
+    public function isPreparer(int $userId): bool
+    {
+        return in_array($userId, array_filter([
+            $this->created_by,
+            $this->submitted_by,
+            $this->reconciled_by,
+        ]), true);
     }
 }

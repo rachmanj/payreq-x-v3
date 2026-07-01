@@ -267,6 +267,13 @@
                                         <p>Rekening Koran</p>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('cashier.bank-reconciliation.index') }}"
+                                        class="nav-link {{ request()->routeIs('cashier.bank-reconciliation.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Bank Reconciliation</p>
+                                    </a>
+                                </li>
                             @endcan
                             @can('akses_migrasi')
                                 <li class="nav-item">

@@ -29,8 +29,13 @@ class StoreBankReconciliationRequest extends FormRequest
     {
         return [
             'giro_id' => ['required', 'integer', 'exists:giros,id'],
+            'source_mode' => ['required', 'string', Rule::in([
+                BankReconciliation::SOURCE_AI,
+                BankReconciliation::SOURCE_MANUAL,
+            ])],
             'dokumen_id' => [
-                'required',
+                Rule::requiredIf(fn () => $this->input('source_mode') === BankReconciliation::SOURCE_AI),
+                'nullable',
                 'integer',
                 Rule::exists('dokumens', 'id')->where(function ($query): void {
                     $query->where('type', 'koran')
@@ -50,17 +55,19 @@ class StoreBankReconciliationRequest extends FormRequest
 
             $periode = Carbon::parse((string) $this->input('periode'))->startOfMonth();
 
-            $dokumen = \App\Models\Dokumen::query()->find((int) $this->input('dokumen_id'));
-            if ($dokumen === null) {
-                return;
-            }
+            if ($this->input('source_mode') === BankReconciliation::SOURCE_AI) {
+                $dokumen = \App\Models\Dokumen::query()->find((int) $this->input('dokumen_id'));
+                if ($dokumen === null) {
+                    return;
+                }
 
-            if ($dokumen->periode === null) {
-                $validator->errors()->add('dokumen_id', 'Selected dokumen has no period.');
-            } else {
-                $docMonth = Carbon::parse($dokumen->periode)->format('Y-m');
-                if ($docMonth !== $periode->format('Y-m')) {
-                    $validator->errors()->add('periode', 'Periode must match the selected dokumen month.');
+                if ($dokumen->periode === null) {
+                    $validator->errors()->add('dokumen_id', 'Selected dokumen has no period.');
+                } else {
+                    $docMonth = Carbon::parse($dokumen->periode)->format('Y-m');
+                    if ($docMonth !== $periode->format('Y-m')) {
+                        $validator->errors()->add('periode', 'Periode must match the selected dokumen month.');
+                    }
                 }
             }
 
@@ -68,12 +75,13 @@ class StoreBankReconciliationRequest extends FormRequest
                 return;
             }
 
-            $duplicateExists = BankReconciliation::query()
+            $existingReconciliation = BankReconciliation::query()
                 ->where('giro_id', (int) $this->input('giro_id'))
                 ->where('periode', $periode->toDateString())
-                ->exists();
+                ->first();
 
-            if ($duplicateExists) {
+            if ($existingReconciliation !== null) {
+                session()->flash('existing_bank_reconciliation_id', $existingReconciliation->id);
                 $validator->errors()->add('periode', 'A bank reconciliation already exists for this giro and period.');
             }
         });

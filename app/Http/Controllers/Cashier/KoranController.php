@@ -94,7 +94,7 @@ class KoranController extends Controller
         $reconciliationIndex = BankReconciliation::query()
             ->whereIn('giro_id', $giros->pluck('id')->all())
             ->whereYear('periode', $year)
-            ->get(['id', 'giro_id', 'periode', 'status'])
+            ->get(['id', 'giro_id', 'periode', 'status', 'validation_status'])
             ->keyBy(function (BankReconciliation $row): string {
                 return $row->giro_id.'_'.Carbon::parse($row->periode)->format('m');
             });
@@ -127,6 +127,7 @@ class KoranController extends Controller
                     'dokumen_id' => $koran ? $koran->id : null,
                     'reconciliation_id' => $reconciliation?->id,
                     'reconciliation_status' => $reconciliation?->status,
+                    'reconciliation_validation_status' => $reconciliation?->validation_status,
                 ];
             }, $months);
 

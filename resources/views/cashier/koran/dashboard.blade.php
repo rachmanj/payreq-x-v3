@@ -170,16 +170,38 @@
                                                                 @php
                                                                     $brId = $month['reconciliation_id'] ?? null;
                                                                     $brStatus = $month['reconciliation_status'] ?? null;
+                                                                    $brValidation = $month['reconciliation_validation_status'] ?? null;
                                                                 @endphp
                                                                 @if (
                                                                     $brId &&
-                                                                        $brStatus === \App\Models\BankReconciliation::STATUS_COMPLETED)
+                                                                        $brStatus === \App\Models\BankReconciliation::STATUS_COMPLETED &&
+                                                                        $brValidation === \App\Models\BankReconciliation::VALIDATION_VALIDATED)
                                                                     <a href="{{ route('cashier.bank-reconciliation.report', $brId) }}"
                                                                         class="badge badge-light border koran-recon-badge"
                                                                         data-toggle="tooltip"
                                                                         data-placement="top"
                                                                         title="Rekonsiliasi selesai — lihat laporan">
                                                                         <i class="fas fa-check-double text-success"></i>
+                                                                    </a>
+                                                                @elseif (
+                                                                    $brId &&
+                                                                        $brValidation === \App\Models\BankReconciliation::VALIDATION_PENDING)
+                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
+                                                                        class="badge badge-light border koran-recon-badge"
+                                                                        data-toggle="tooltip"
+                                                                        data-placement="top"
+                                                                        title="Menunggu validasi — menunggu persetujuan admin">
+                                                                        <i class="fas fa-user-check text-purple"></i>
+                                                                    </a>
+                                                                @elseif (
+                                                                    $brId &&
+                                                                        $brValidation === \App\Models\BankReconciliation::VALIDATION_REJECTED)
+                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
+                                                                        class="badge badge-light border koran-recon-badge"
+                                                                        data-toggle="tooltip"
+                                                                        data-placement="top"
+                                                                        title="Rekonsiliasi ditolak — perbaiki dan ajukan ulang">
+                                                                        <i class="fas fa-undo text-danger"></i>
                                                                     </a>
                                                                 @elseif ($brId && $brStatus === \App\Models\BankReconciliation::STATUS_FAILED)
                                                                     <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"

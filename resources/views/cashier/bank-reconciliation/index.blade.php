@@ -41,7 +41,13 @@
                                         </small>
                                     </td>
                                     <td>{{ $row->periode?->format('M Y') }}</td>
-                                    <td><span class="badge badge-info">{{ $row->status }}</span></td>
+                                    <td>
+                                        <span class="badge badge-info">{{ $row->status }}</span>
+                                        @if ($row->validation_status)
+                                            <span class="badge badge-warning">{{ $row->validation_status }}</span>
+                                        @endif
+                                        <span class="badge badge-light border">{{ $row->source_mode }}</span>
+                                    </td>
                                     <td><small>{{ $row->updated_at?->diffForHumans() }}</small></td>
                                     <td class="text-right">
                                         <a href="{{ route('cashier.bank-reconciliation.show', $row) }}"

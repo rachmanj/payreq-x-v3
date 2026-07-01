@@ -28,18 +28,36 @@
                 $sapLineGroupId[$row->sap_gl_line_id] = $mg->id;
             }
         }
-        $canEditMatch = $bankReconciliation->status !== \App\Models\BankReconciliation::STATUS_COMPLETED;
+        $canEditMatch = ! $bankReconciliation->isLockedForEditing();
+        $canValidate = auth()->user()?->can('validate_bank_reconciliation')
+            && ! $bankReconciliation->isPreparer((int) auth()->id());
+        $isBalanced = $balanceSummary['is_balanced'] ?? false;
     @endphp
 
     <div class="row pb-5 mb-5">
         <div class="col-12">
+            <div class="mb-3">
+                <a href="{{ route('cashier.bank-reconciliation.index') }}" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Bank Reconciliation
+                </a>
+            </div>
+
             @if (session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
+            @endif
+
+            @if ($bankReconciliation->validation_status === \App\Models\BankReconciliation::VALIDATION_REJECTED && filled($bankReconciliation->rejection_reason))
+                <div class="alert alert-warning">
+                    <strong>Rejected:</strong> {{ $bankReconciliation->rejection_reason }}
+                </div>
             @endif
 
             @if ($bankReconciliation->status === \App\Models\BankReconciliation::STATUS_FAILED && filled($bankReconciliation->notes))
                 <div class="alert alert-danger">
                     <strong>Last error:</strong> {{ $bankReconciliation->notes }}
+                    @if (! $bankReconciliation->dokumen_id)
+                        <br><small class="mt-1 d-block">No koran PDF is linked to this reconciliation — select one below and click Parse PDF.</small>
+                    @endif
                 </div>
             @endif
 
@@ -51,6 +69,10 @@
                         <span class="badge badge-secondary">{{ $bankReconciliation->giro?->project }}</span>
                         <span class="badge badge-primary">{{ $bankReconciliation->periode?->format('M Y') }}</span>
                         <span class="badge badge-dark" id="br-status">{{ $bankReconciliation->status }}</span>
+                        <span class="badge badge-light border">{{ $bankReconciliation->source_mode }}</span>
+                        @if ($bankReconciliation->validation_status)
+                            <span class="badge badge-warning" id="br-validation-status">{{ $bankReconciliation->validation_status }}</span>
+                        @endif
                     </div>
                     <div class="small text-muted" id="br-counts">
                         Bank lines: {{ $bankReconciliation->bankStatementLines->count() }} |
@@ -60,33 +82,85 @@
                 </div>
             </div>
 
-            <div class="btn-toolbar mb-2 flex-wrap" role="toolbar">
-                <form action="{{ route('cashier.bank-reconciliation.parse', $bankReconciliation) }}" method="post"
-                    class="d-inline mr-1 mb-1">
-                    @csrf
-                    <button type="submit" class="btn btn-sm btn-outline-primary">Re-parse PDF (AI)</button>
-                </form>
-                <form action="{{ route('cashier.bank-reconciliation.fetch-sap', $bankReconciliation) }}" method="post"
-                    class="d-inline mr-1 mb-1">
-                    @csrf
-                    <button type="submit" class="btn btn-sm btn-outline-secondary">Fetch SAP lines</button>
-                </form>
-                <form action="{{ route('cashier.bank-reconciliation.auto-match', $bankReconciliation) }}" method="post"
-                    class="d-inline mr-1 mb-1">
-                    @csrf
-                    <button type="submit" class="btn btn-sm btn-outline-success">Auto-match</button>
-                </form>
+            <div class="card card-outline card-warning mb-2">
+                <div class="card-body py-2 d-flex flex-wrap align-items-center">
+                    <span class="mr-3"><strong>Reconciliation totals</strong> (non-excluded lines):</span>
+                    <span class="mr-3">Bank net: <strong id="br-bank-net">{{ number_format($balanceSummary['bank_net'], 2) }}</strong></span>
+                    <span class="mr-3">Book net: <strong id="br-book-net">{{ number_format($balanceSummary['book_net'], 2) }}</strong></span>
+                    <span class="mr-3">Difference: <strong id="br-diff" class="{{ $isBalanced ? 'text-success' : 'text-danger' }}">{{ number_format($balanceSummary['difference'], 2) }}</strong></span>
+                    @if ($isBalanced)
+                        <span class="badge badge-success">Balanced</span>
+                    @else
+                        <span class="badge badge-danger">Not balanced — match or exclude lines until difference is 0</span>
+                    @endif
+                </div>
+            </div>
+
+            @if ($canEditMatch)
+                <div class="btn-toolbar mb-2 flex-wrap" role="toolbar">
+                    @if ($bankReconciliation->dokumen_id)
+                        <form action="{{ route('cashier.bank-reconciliation.parse', $bankReconciliation) }}" method="post"
+                            class="d-inline mr-1 mb-1">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Re-parse PDF (AI)</button>
+                        </form>
+                    @elseif ($bankReconciliation->source_mode === \App\Models\BankReconciliation::SOURCE_AI && $koranDokumens->isNotEmpty())
+                        <form action="{{ route('cashier.bank-reconciliation.parse', $bankReconciliation) }}" method="post"
+                            class="d-inline-flex align-items-center flex-wrap mr-1 mb-1">
+                            @csrf
+                            <select name="dokumen_id" class="form-control form-control-sm mr-1 mb-1" style="min-width:220px" required>
+                                <option value="">-- select koran PDF --</option>
+                                @foreach ($koranDokumens as $doc)
+                                    @php
+                                        $rawPeriode = $doc->getRawOriginal('periode');
+                                        $periodeLabel = $rawPeriode ? \Carbon\Carbon::parse($rawPeriode)->format('Y-m') : '-';
+                                        $fname = basename((string) $doc->getRawOriginal('filename1'));
+                                    @endphp
+                                    <option value="{{ $doc->id }}">{{ $periodeLabel }} — {{ $fname }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary mb-1">Link &amp; Parse PDF (AI)</button>
+                        </form>
+                    @elseif ($bankReconciliation->source_mode === \App\Models\BankReconciliation::SOURCE_AI)
+                        <span class="text-muted small mr-2 mb-1">No koran PDF uploaded for this giro/period — upload on Koran page first.</span>
+                    @endif
+                    <form action="{{ route('cashier.bank-reconciliation.fetch-sap', $bankReconciliation) }}" method="post"
+                        class="d-inline mr-1 mb-1">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Fetch SAP lines</button>
+                    </form>
+                    <form action="{{ route('cashier.bank-reconciliation.auto-match', $bankReconciliation) }}" method="post"
+                        class="d-inline mr-1 mb-1">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-success">Auto-match</button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-outline-info mr-1 mb-1" data-toggle="modal"
+                        data-target="#add-bank-line-modal">Add bank line</button>
+                    <form action="{{ route('cashier.bank-reconciliation.submit', $bankReconciliation) }}" method="post"
+                        class="d-inline mr-1 mb-1"
+                        onsubmit="return confirm('Submit this reconciliation for validation? Editing will be locked.');">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-primary" id="br-submit-btn" @disabled(! $isBalanced)>
+                            Submit for validation
+                        </button>
+                    </form>
+                </div>
+            @elseif ($canValidate && $bankReconciliation->validation_status === \App\Models\BankReconciliation::VALIDATION_PENDING)
+                <div class="btn-toolbar mb-2 flex-wrap" role="toolbar">
+                    <form action="{{ route('cashier.bank-reconciliation.validate', $bankReconciliation) }}" method="post"
+                        class="d-inline mr-1 mb-1"
+                        onsubmit="return confirm('Validate and mark this reconciliation complete?');">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-success">Validate</button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-danger mb-1" data-toggle="modal"
+                        data-target="#reject-modal">Reject</button>
+                </div>
+            @endif
+
+            <div class="mb-2">
                 <a href="{{ route('cashier.bank-reconciliation.report', $bankReconciliation) }}"
-                    class="btn btn-sm btn-default mr-1 mb-1">Report</a>
-                <form action="{{ route('cashier.bank-reconciliation.complete', $bankReconciliation) }}" method="post"
-                    class="d-inline mb-1"
-                    onsubmit="return confirm('Mark reconciliation as complete?');">
-                    @csrf
-                    <button type="submit" class="btn btn-sm btn-danger"
-                        @disabled($bankReconciliation->status === \App\Models\BankReconciliation::STATUS_COMPLETED)>
-                        Complete
-                    </button>
-                </form>
+                    class="btn btn-sm btn-default">Report</a>
             </div>
 
             @if ($errors->any())
@@ -150,13 +224,14 @@
             <div class="row">
                 <div class="col-lg-6">
                     <div class="card card-outline card-info">
-                        <div class="card-header py-2"><strong>Bank statement (PDF / AI)</strong></div>
+                        <div class="card-header py-2"><strong>Bank statement (PDF / manual)</strong></div>
                         <div class="card-body table-responsive p-0">
                             <table class="table table-sm table-striped mb-0">
                                 <thead>
                                     <tr>
                                         @if ($canEditMatch)
                                             <th style="width:28px"></th>
+                                            <th style="width:60px"></th>
                                         @endif
                                         <th style="width:44px">Grp</th>
                                         <th>Date</th>
@@ -171,14 +246,48 @@
                                         @php
                                             $net = (float) $line->debit - (float) $line->credit;
                                             $unmatched = $line->matched_status === \App\Models\BankStatementLine::MATCH_UNMATCHED;
+                                            $lowConfidence = $line->is_ai_extracted && $line->ai_confidence !== null && (float) $line->ai_confidence < 0.7;
                                         @endphp
-                                        <tr>
+                                        <tr class="{{ $lowConfidence ? 'table-warning' : '' }}">
                                             @if ($canEditMatch)
                                                 <td class="align-middle">
                                                     @if ($unmatched)
                                                         <input type="checkbox" class="br-cb-bank"
                                                             value="{{ $line->id }}"
                                                             data-net="{{ $net }}">
+                                                    @endif
+                                                </td>
+                                                <td class="align-middle text-nowrap">
+                                                    @if ($unmatched)
+                                                        <button type="button" class="btn btn-xs btn-outline-secondary edit-bank-line-btn"
+                                                            data-line="{{ e(json_encode([
+                                                                'id' => $line->id,
+                                                                'transaction_date' => $line->transaction_date?->format('Y-m-d'),
+                                                                'value_date' => $line->value_date?->format('Y-m-d'),
+                                                                'description' => $line->description,
+                                                                'reference' => $line->reference,
+                                                                'debit' => $line->debit,
+                                                                'credit' => $line->credit,
+                                                                'balance' => $line->balance,
+                                                                'line_notes' => $line->line_notes,
+                                                            ])) }}">Edit</button>
+                                                        <form method="post"
+                                                            action="{{ route('cashier.bank-reconciliation.lines.destroy', [$bankReconciliation, $line]) }}"
+                                                            class="d-inline"
+                                                            onsubmit="return confirm('Delete this line?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-xs btn-outline-danger">Del</button>
+                                                        </form>
+                                                        <button type="button" class="btn btn-xs btn-outline-warning exclude-bank-btn"
+                                                            data-line-id="{{ $line->id }}">Excl</button>
+                                                    @elseif ($line->matched_status === \App\Models\BankStatementLine::MATCH_EXCLUDED)
+                                                        <form method="post"
+                                                            action="{{ route('cashier.bank-reconciliation.lines.exclude', [$bankReconciliation, $line]) }}"
+                                                            class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-xs btn-outline-info">Include</button>
+                                                        </form>
                                                     @endif
                                                 </td>
                                             @endif
@@ -190,7 +299,15 @@
                                                 @endif
                                             </td>
                                             <td><small>{{ $line->transaction_date?->format('d/m/Y') }}</small></td>
-                                            <td><small>{{ \Illuminate\Support\Str::limit($line->description, 48) }}</small></td>
+                                            <td>
+                                                <small>{{ \Illuminate\Support\Str::limit($line->description, 48) }}</small>
+                                                @if ($line->is_ai_extracted && $line->ai_confidence !== null)
+                                                    <br><small class="text-muted">AI {{ number_format((float) $line->ai_confidence * 100, 0) }}%</small>
+                                                @endif
+                                                @if ($line->exclude_reason)
+                                                    <br><small class="text-muted">Excl: {{ $line->exclude_reason }}</small>
+                                                @endif
+                                            </td>
                                             <td class="text-right small">{{ number_format((float) $line->debit, 2) }}</td>
                                             <td class="text-right small">{{ number_format((float) $line->credit, 2) }}</td>
                                             <td><small>{{ $line->matched_status }}</small></td>
@@ -210,6 +327,7 @@
                                     <tr>
                                         @if ($canEditMatch)
                                             <th style="width:28px"></th>
+                                            <th style="width:44px"></th>
                                         @endif
                                         <th style="width:44px">Grp</th>
                                         <th>Date</th>
@@ -234,6 +352,19 @@
                                                             data-net="{{ $net }}">
                                                     @endif
                                                 </td>
+                                                <td class="align-middle">
+                                                    @if ($unmatched)
+                                                        <button type="button" class="btn btn-xs btn-outline-warning exclude-sap-btn"
+                                                            data-line-id="{{ $line->id }}">Excl</button>
+                                                    @elseif ($line->matched_status === \App\Models\SapGlLine::MATCH_EXCLUDED)
+                                                        <form method="post"
+                                                            action="{{ route('cashier.bank-reconciliation.sap-lines.exclude', [$bankReconciliation, $line]) }}"
+                                                            class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-xs btn-outline-info">Incl</button>
+                                                        </form>
+                                                    @endif
+                                                </td>
                                             @endif
                                             <td class="small">
                                                 @if (isset($sapLineGroupId[$line->id]))
@@ -243,7 +374,12 @@
                                                 @endif
                                             </td>
                                             <td><small>{{ $line->posting_date?->format('d/m/Y') }}</small></td>
-                                            <td><small>{{ \Illuminate\Support\Str::limit($line->description, 48) }}</small></td>
+                                            <td>
+                                                <small>{{ \Illuminate\Support\Str::limit($line->description, 48) }}</small>
+                                                @if ($line->exclude_reason)
+                                                    <br><small class="text-muted">Excl: {{ $line->exclude_reason }}</small>
+                                                @endif
+                                            </td>
                                             <td class="text-right small">{{ number_format((float) $line->debit, 2) }}</td>
                                             <td class="text-right small">{{ number_format((float) $line->credit, 2) }}</td>
                                             <td><small>{{ $line->matched_status }}</small></td>
@@ -283,12 +419,102 @@
                 </form>
             </div>
         </div>
+
+        <div class="modal fade" id="add-bank-line-modal" tabindex="-1">
+            <div class="modal-dialog">
+                <form method="post" action="{{ route('cashier.bank-reconciliation.lines.store', $bankReconciliation) }}"
+                    class="modal-content">
+                    @csrf
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title">Add bank statement line</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        @include('cashier.bank-reconciliation.partials.bank-line-fields')
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Add line</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal fade" id="edit-bank-line-modal" tabindex="-1">
+            <div class="modal-dialog">
+                <form method="post" id="edit-bank-line-form" class="modal-content">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title">Edit bank statement line</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        @include('cashier.bank-reconciliation.partials.bank-line-fields')
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal fade" id="exclude-line-modal" tabindex="-1">
+            <div class="modal-dialog">
+                <form method="post" id="exclude-line-form" class="modal-content">
+                    @csrf
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title">Exclude line</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group mb-0">
+                            <label>Reason</label>
+                            <textarea name="exclude_reason" class="form-control form-control-sm" rows="3" required maxlength="500"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning btn-sm">Exclude</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    @if ($canValidate)
+        <div class="modal fade" id="reject-modal" tabindex="-1">
+            <div class="modal-dialog">
+                <form method="post" action="{{ route('cashier.bank-reconciliation.reject', $bankReconciliation) }}"
+                    class="modal-content">
+                    @csrf
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title">Reject reconciliation</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group mb-0">
+                            <label>Rejection reason</label>
+                            <textarea name="rejection_reason" class="form-control form-control-sm" rows="4" required maxlength="2000"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     @endif
 @endsection
 
 @section('scripts')
     <script>
         const statusUrl = @json(route('cashier.bank-reconciliation.status', $bankReconciliation));
+        const updateLineUrlTemplate = @json(route('cashier.bank-reconciliation.lines.update', [$bankReconciliation, '__LINE__']));
+        const excludeBankUrlTemplate = @json(route('cashier.bank-reconciliation.lines.exclude', [$bankReconciliation, '__LINE__']));
+        const excludeSapUrlTemplate = @json(route('cashier.bank-reconciliation.sap-lines.exclude', [$bankReconciliation, '__LINE__']));
         const MANUAL_TOL = 0.005;
 
         function pollStatus() {
@@ -302,11 +528,23 @@
                 .then(data => {
                     const el = document.getElementById('br-status');
                     const ct = document.getElementById('br-counts');
+                    const vs = document.getElementById('br-validation-status');
                     if (el && data.status) el.textContent = data.status;
+                    if (vs && data.validation_status) vs.textContent = data.validation_status;
                     if (ct && data.bank_lines_count !== undefined) {
                         const mg = data.match_groups_count ?? data.matches_count ?? 0;
                         ct.textContent =
                             `Bank lines: ${data.bank_lines_count} | SAP lines: ${data.sap_lines_count} | Match groups: ${mg}`;
+                    }
+                    if (data.bank_net !== undefined) {
+                        document.getElementById('br-bank-net').textContent = Number(data.bank_net).toFixed(2);
+                        document.getElementById('br-book-net').textContent = Number(data.book_net).toFixed(2);
+                        const diffEl = document.getElementById('br-diff');
+                        diffEl.textContent = Number(data.difference).toFixed(2);
+                        diffEl.classList.toggle('text-success', data.is_balanced);
+                        diffEl.classList.toggle('text-danger', !data.is_balanced);
+                        const submitBtn = document.getElementById('br-submit-btn');
+                        if (submitBtn) submitBtn.disabled = !data.is_balanced;
                     }
                 })
                 .catch(() => {});
@@ -368,5 +606,31 @@
             });
             refreshManualTotals();
         }
+
+        document.querySelectorAll('.edit-bank-line-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const line = JSON.parse(this.dataset.line);
+                const form = document.getElementById('edit-bank-line-form');
+                form.action = updateLineUrlTemplate.replace('__LINE__', line.id);
+                ['transaction_date', 'value_date', 'description', 'reference', 'debit', 'credit', 'balance', 'line_notes'].forEach(f => {
+                    const el = form.querySelector('[name="' + f + '"]');
+                    if (el) el.value = line[f] ?? '';
+                });
+                $('#edit-bank-line-modal').modal('show');
+            });
+        });
+
+        function openExcludeModal(url) {
+            document.getElementById('exclude-line-form').action = url;
+            document.querySelector('#exclude-line-modal textarea[name="exclude_reason"]').value = '';
+            $('#exclude-line-modal').modal('show');
+        }
+
+        document.querySelectorAll('.exclude-bank-btn').forEach(btn => {
+            btn.addEventListener('click', () => openExcludeModal(excludeBankUrlTemplate.replace('__LINE__', btn.dataset.lineId)));
+        });
+        document.querySelectorAll('.exclude-sap-btn').forEach(btn => {
+            btn.addEventListener('click', () => openExcludeModal(excludeSapUrlTemplate.replace('__LINE__', btn.dataset.lineId)));
+        });
     </script>
 @endsection

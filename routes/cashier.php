@@ -206,7 +206,14 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/{bank_reconciliation}/auto-match', [BankReconciliationController::class, 'autoMatch'])->name('auto-match');
         Route::post('/{bank_reconciliation}/match', [BankReconciliationController::class, 'manualMatch'])->name('match');
         Route::post('/{bank_reconciliation}/unmatch/{reconciliation_match_group}', [BankReconciliationController::class, 'unmatch'])->name('unmatch');
-        Route::post('/{bank_reconciliation}/complete', [BankReconciliationController::class, 'complete'])->name('complete');
+        Route::post('/{bank_reconciliation}/lines', [BankReconciliationController::class, 'storeLine'])->name('lines.store');
+        Route::put('/{bank_reconciliation}/lines/{bank_statement_line}', [BankReconciliationController::class, 'updateLine'])->name('lines.update');
+        Route::delete('/{bank_reconciliation}/lines/{bank_statement_line}', [BankReconciliationController::class, 'destroyLine'])->name('lines.destroy');
+        Route::post('/{bank_reconciliation}/lines/{bank_statement_line}/exclude', [BankReconciliationController::class, 'excludeBankLine'])->name('lines.exclude');
+        Route::post('/{bank_reconciliation}/sap-lines/{sap_gl_line}/exclude', [BankReconciliationController::class, 'excludeSapLine'])->name('sap-lines.exclude');
+        Route::post('/{bank_reconciliation}/submit', [BankReconciliationController::class, 'submitForValidation'])->name('submit');
+        Route::post('/{bank_reconciliation}/validate', [BankReconciliationController::class, 'validateReconciliation'])->name('validate');
+        Route::post('/{bank_reconciliation}/reject', [BankReconciliationController::class, 'reject'])->name('reject');
         Route::get('/{bank_reconciliation}/report', [BankReconciliationController::class, 'report'])->name('report');
     });
 

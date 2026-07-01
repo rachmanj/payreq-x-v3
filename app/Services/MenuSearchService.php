@@ -192,6 +192,13 @@ class MenuSearchService
                 $cat,
                 ['bank statement', 'koran']
             );
+            $items[] = $this->makeItem(
+                'Bank Reconciliation',
+                route('cashier.bank-reconciliation.index'),
+                'far fa-circle',
+                $cat,
+                ['bank reconciliation', 'rekonsiliasi', 'reconciliation']
+            );
         }
 
         if ($user->can('akses_migrasi')) {
