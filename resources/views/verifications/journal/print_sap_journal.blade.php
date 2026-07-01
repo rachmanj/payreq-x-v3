@@ -288,7 +288,12 @@
                 <div style="margin-top:10px;"><strong>Date:</strong></div>
             </div>
             <div class="signature-col">
-                <div style="height:52px;"></div>
+                <div style="height:52px;">
+                    @if (in_array($vj->project, ['000H', 'APS'], true))
+                        <img src="{{ asset('sign_rj2.png') }}" alt="Approved signature"
+                            style="max-height:52px; max-width:100%; object-fit:contain; display:block; margin:0 auto;">
+                    @endif
+                </div>
                 <div class="signature-title">Approved By</div>
                 <div style="margin-top:10px;"><strong>Date:</strong></div>
             </div>
