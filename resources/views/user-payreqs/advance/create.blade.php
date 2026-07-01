@@ -23,7 +23,7 @@
                         @csrf
 
                         @php
-                            $advanceCanSelectRab = auth()->user()->can('rab_select');
+                            $advanceCanMultiBudget = auth()->user()->can('rab_select');
                         @endphp
 
                         <input type="hidden" name="employee_id" value="{{ auth()->user()->id }}">
@@ -390,7 +390,7 @@
                             }
                         </script>
 
-                        @if ($advanceCanSelectRab)
+                        @if ($advanceCanMultiBudget)
                             <div class="form-group">
                                 <label>Budget form</label>
                                 <div class="custom-control custom-radio">
@@ -502,6 +502,27 @@
                             </div>
                         @else
                             <input type="hidden" name="budget_link_mode" value="legacy">
+                            <div id="advance-budget-legacy" class="border rounded p-3 mb-3 bg-light">
+                                <div class="form-group mb-0">
+                                    <label for="rab_id_legacy">RAB No</label>
+                                    <select name="rab_id" id="rab_id_legacy"
+                                        class="form-control select2bs4 @error('rab_id') is-invalid @enderror"
+                                        style="width: 100%;">
+                                        <option value="">-- Select RAB --</option>
+                                        @foreach ($rabs as $rab)
+                                            <option value="{{ $rab->id }}"
+                                                {{ old('rab_id') == $rab->id ? 'selected' : '' }}>
+                                                {{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} |
+                                                {{ $rab->project }} | {{ $rab->description }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('rab_id')
+                                        <div class="invalid-feedback d-block">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+                            </div>
                         @endif
 
                         <div class="card-footer">
@@ -794,7 +815,7 @@
                 }
             }
 
-            @if ($advanceCanSelectRab)
+            @if ($advanceCanMultiBudget)
                 function recalcAdvanceAllocationTotal() {
                     let sum = 0;
                     $('#advance-allocation-body tr.allocation-row .allocation-amount').each(function() {

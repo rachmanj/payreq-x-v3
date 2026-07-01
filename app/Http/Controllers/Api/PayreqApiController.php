@@ -11,8 +11,8 @@ use App\Http\Requests\Api\StoreReimbursePayreqRequest;
 use App\Models\Anggaran;
 use App\Models\Payreq;
 use App\Models\Realization;
-use App\Models\RealizationDetail;
 use App\Models\User;
+use App\Services\PayreqBudgetSubmitValidator;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -96,7 +96,7 @@ class PayreqApiController extends Controller
             'realization.realizationDetails',
         ])->find($id);
 
-        if (!$payreq) {
+        if (! $payreq) {
             return response()->json([
                 'success' => false,
                 'message' => 'Payment request not found',
@@ -179,14 +179,7 @@ class PayreqApiController extends Controller
             // Get employee details
             $employee = User::with('department')->findOrFail($request->employee_id);
 
-            // Check RAB validation for specific projects
             $submit = $request->boolean('submit', false);
-            if (in_array($employee->project, ['000H', 'APS']) && $submit && !$request->rab_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'RAB is required for projects 000H and APS when submitting',
-                ], 422);
-            }
 
             // Generate draft document number
             $payreqNo = app(DocumentNumberController::class)
@@ -208,8 +201,9 @@ class PayreqApiController extends Controller
             // Create payreq via existing controller
             $payreq = app(PayreqController::class)->store($payreqData);
 
-            if (!$payreq) {
+            if (! $payreq) {
                 DB::rollBack();
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to create payment request',
@@ -221,6 +215,17 @@ class PayreqApiController extends Controller
 
             // Handle submission if requested
             if ($submit) {
+                $payreqForValidation = $payreq->fresh()->load('anggaranAllocations');
+
+                if ($error = app(PayreqBudgetSubmitValidator::class)->validate($payreqForValidation)) {
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $error,
+                    ], 422);
+                }
+
                 $approversCount = app(ApprovalPlanController::class)
                     ->create_approval_plan('payreq', $payreq->id);
 
@@ -293,7 +298,7 @@ class PayreqApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create payment request: ' . $e->getMessage(),
+                'message' => 'Failed to create payment request: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -309,14 +314,7 @@ class PayreqApiController extends Controller
             // Get employee details
             $employee = User::with('department')->findOrFail($request->employee_id);
 
-            // Check RAB validation for specific projects
             $submit = $request->boolean('submit', false);
-            if (in_array($employee->project, ['000H', 'APS']) && $submit && !$request->rab_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'RAB is required for projects 000H and APS when submitting',
-                ], 422);
-            }
 
             // Generate draft document number for payreq
             $payreqNo = app(DocumentNumberController::class)
@@ -341,8 +339,9 @@ class PayreqApiController extends Controller
             // Create payreq
             $payreq = app(PayreqController::class)->store($payreqData);
 
-            if (!$payreq) {
+            if (! $payreq) {
                 DB::rollBack();
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to create payment request',
@@ -392,6 +391,17 @@ class PayreqApiController extends Controller
 
             // Handle submission if requested
             if ($submit) {
+                $payreqForValidation = $payreq->fresh()->load('anggaranAllocations');
+
+                if ($error = app(PayreqBudgetSubmitValidator::class)->validate($payreqForValidation)) {
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $error,
+                    ], 422);
+                }
+
                 $approversCount = app(ApprovalPlanController::class)
                     ->create_approval_plan('payreq', $payreq->id);
 
@@ -488,7 +498,7 @@ class PayreqApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create reimburse payment request: ' . $e->getMessage(),
+                'message' => 'Failed to create reimburse payment request: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -501,7 +511,7 @@ class PayreqApiController extends Controller
         try {
             $payreq = Payreq::find($id);
 
-            if (!$payreq) {
+            if (! $payreq) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment request not found',
@@ -512,7 +522,7 @@ class PayreqApiController extends Controller
             if ($payreq->status !== 'draft') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only draft payment requests can be cancelled. Current status: ' . $payreq->status,
+                    'message' => 'Only draft payment requests can be cancelled. Current status: '.$payreq->status,
                 ], 422);
             }
 
@@ -536,7 +546,7 @@ class PayreqApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to cancel payment request: ' . $e->getMessage(),
+                'message' => 'Failed to cancel payment request: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -576,7 +586,7 @@ class PayreqApiController extends Controller
                     'date',
                     'periode_anggaran',
                     'periode_ofr',
-                    'created_by'
+                    'created_by',
                 ])
                 ->with(['createdBy:id,name'])
                 ->orderBy('date', 'desc')
@@ -602,7 +612,7 @@ class PayreqApiController extends Controller
                     'date',
                     'periode_anggaran',
                     'periode_ofr',
-                    'created_by'
+                    'created_by',
                 ])
                 ->with(['createdBy:id,name'])
                 ->orderBy('date', 'desc')
@@ -627,7 +637,7 @@ class PayreqApiController extends Controller
                     'date',
                     'periode_anggaran',
                     'periode_ofr',
-                    'created_by'
+                    'created_by',
                 ])
                 ->with(['createdBy:id,name'])
                 ->orderBy('date', 'desc')
@@ -670,7 +680,7 @@ class PayreqApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve RABs: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve RABs: '.$e->getMessage(),
             ], 500);
         }
     }

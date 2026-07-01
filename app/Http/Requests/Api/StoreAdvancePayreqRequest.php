@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests\Api;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 class StoreAdvancePayreqRequest extends FormRequest
 {
@@ -28,15 +29,17 @@ class StoreAdvancePayreqRequest extends FormRequest
             'employee_id' => 'required|exists:users,id',
             'remarks' => 'required|string|max:1000',
             'amount' => 'required|numeric|min:0',
-            'rab_id' => 'nullable|exists:anggarans,id',
+            'rab_id' => [
+                Rule::requiredIf(fn () => $this->boolean('submit')),
+                'nullable',
+                'exists:anggarans,id',
+            ],
             'submit' => 'boolean',
         ];
     }
 
     /**
      * Get custom messages for validator errors.
-     *
-     * @return array
      */
     public function messages(): array
     {
@@ -48,15 +51,14 @@ class StoreAdvancePayreqRequest extends FormRequest
             'amount.required' => 'Amount is required',
             'amount.numeric' => 'Amount must be a valid number',
             'amount.min' => 'Amount must be greater than or equal to 0',
+            'rab_id.required' => 'RAB/Budget is required when submitting',
             'rab_id.exists' => 'RAB/Budget not found in the system',
-            'submit.boolean' => 'Submit flag must be true or false',
         ];
     }
 
     /**
      * Handle a failed validation attempt.
      *
-     * @param  \Illuminate\Contracts\Validation\Validator  $validator
      * @return void
      *
      * @throws \Illuminate\Http\Exceptions\HttpResponseException

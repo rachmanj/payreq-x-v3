@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests\Api;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 class StoreReimbursePayreqRequest extends FormRequest
 {
@@ -27,7 +28,11 @@ class StoreReimbursePayreqRequest extends FormRequest
         return [
             'employee_id' => 'required|exists:users,id',
             'remarks' => 'required|string|max:1000',
-            'rab_id' => 'nullable|exists:anggarans,id',
+            'rab_id' => [
+                Rule::requiredIf(fn () => $this->boolean('submit')),
+                'nullable',
+                'exists:anggarans,id',
+            ],
             'details' => 'required|array|min:1',
             'details.*.description' => 'required|string|max:500',
             'details.*.amount' => 'required|numeric|min:0',
@@ -43,8 +48,6 @@ class StoreReimbursePayreqRequest extends FormRequest
 
     /**
      * Get custom messages for validator errors.
-     *
-     * @return array
      */
     public function messages(): array
     {
@@ -53,6 +56,7 @@ class StoreReimbursePayreqRequest extends FormRequest
             'employee_id.exists' => 'Employee not found in the system',
             'remarks.required' => 'Purpose/remarks is required',
             'remarks.max' => 'Remarks cannot exceed 1000 characters',
+            'rab_id.required' => 'RAB/Budget is required when submitting',
             'rab_id.exists' => 'RAB/Budget not found in the system',
             'details.required' => 'At least one detail item is required for reimburse payment request',
             'details.array' => 'Details must be an array',
@@ -73,7 +77,6 @@ class StoreReimbursePayreqRequest extends FormRequest
     /**
      * Handle a failed validation attempt.
      *
-     * @param  \Illuminate\Contracts\Validation\Validator  $validator
      * @return void
      *
      * @throws \Illuminate\Http\Exceptions\HttpResponseException

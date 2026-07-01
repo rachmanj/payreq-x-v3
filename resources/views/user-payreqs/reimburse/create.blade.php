@@ -61,18 +61,22 @@
                             @enderror
                         </div>
 
-                        @can('rab_select')
-                            <div class="form-group">
-                                <label for="rab_id">RAB No</label>
-                                <select name="rab_id" class="form-control select2bs4">
-                                    <option value="">-- Select RAB --</option>
-                                    @foreach ($rabs as $rab)
-                                        <option value="{{ $rab->id }}">{{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} |
-                                            {{ $rab->rab_project }} | {{ $rab->description }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        @endcan
+                        <div class="form-group">
+                            <label for="rab_id">RAB No</label>
+                            <select name="rab_id" id="rab_id"
+                                class="form-control select2bs4 @error('rab_id') is-invalid @enderror">
+                                <option value="">-- Select RAB --</option>
+                                @foreach ($rabs as $rab)
+                                    <option value="{{ $rab->id }}"
+                                        {{ old('rab_id') == $rab->id ? 'selected' : '' }}>
+                                        {{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} |
+                                        {{ $rab->rab_project }} | {{ $rab->description }}</option>
+                                @endforeach
+                            </select>
+                            @error('rab_id')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
 
                         <div class="card-footer">
                             <div class="row">

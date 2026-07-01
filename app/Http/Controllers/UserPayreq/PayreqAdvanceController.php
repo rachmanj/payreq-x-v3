@@ -10,6 +10,7 @@ use App\Models\Payreq;
 use App\Models\PayreqAnggaranAllocation;
 use App\Models\Realization;
 use App\Services\LotService;
+use App\Services\PayreqBudgetSubmitValidator;
 use App\Support\PayreqBudgetLinkMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -146,59 +147,16 @@ class PayreqAdvanceController extends Controller
 
     public function submit($id)
     {
-        $payreq = Payreq::find($id);
+        $payreq = Payreq::with('anggaranAllocations')->findOrFail($id);
 
-        if (! in_array(auth()->user()->project, ['000H', 'APS'], true)) {
-            $response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $id);
+        if ($error = app(PayreqBudgetSubmitValidator::class)->validate($payreq)) {
+            $payreq->update(['status' => 'draft']);
 
-            if (! $response) {
-                return redirect()->route('user-payreqs.index')->with('error', 'Payreq gagal disubmit. Hubungi IT Administrator');
-            }
-
-            $payreq->update([
-                'status' => 'submitted',
-                'editable' => '0',
-                'deletable' => '0',
-            ]);
-
-            return redirect()->route('user-payreqs.index')->with('success', 'Payreq berhasil disubmit');
-        }
-
-        if ($payreq->isAdvanceMultiBudget()) {
-            if ($payreq->anggaranAllocations()->count() < 1) {
-                return redirect()->route('user-payreqs.index')->with('error', 'Alokasi anggaran minimal satu baris, payreq belum bisa disubmit');
-            }
-
-            $sumAlloc = round((float) $payreq->anggaranAllocations()->sum('amount'), 2);
-            $sumPayreq = round((float) $payreq->amount, 2);
-
-            if (abs($sumAlloc - $sumPayreq) > 0.009) {
-                return redirect()->route('user-payreqs.index')->with('error', 'Jumlah alokasi baris tidak sama dengan total payreq');
-            }
-
-            $response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $id);
-            if (! $response) {
-                return redirect()->route('user-payreqs.index')->with('error', 'Payreq gagal disubmit. Hubungi IT Administrator');
-            }
-
-            $payreq->update([
-                'status' => 'submitted',
-                'editable' => '0',
-                'deletable' => '0',
-            ]);
-
-            return redirect()->route('user-payreqs.index')->with('success', 'Payreq berhasil disubmit');
-        }
-
-        if (! $payreq->rab_id) {
-            $payreq->update([
-                'status' => 'draft',
-            ]);
-
-            return redirect()->route('user-payreqs.index')->with('error', 'RAB harus diisi, payreq belum bisa disubmit');
+            return redirect()->route('user-payreqs.index')->with('error', $error);
         }
 
         $response = app(ApprovalPlanController::class)->create_approval_plan('payreq', $id);
+
         if (! $response) {
             return redirect()->route('user-payreqs.index')->with('error', 'Payreq gagal disubmit. Hubungi IT Administrator');
         }

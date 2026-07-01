@@ -13,6 +13,7 @@ use App\Models\LotClaim;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
+use App\Services\PayreqBudgetSubmitValidator;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -103,17 +104,14 @@ class PayreqReimburseController extends Controller
         $realization = Realization::findOrFail($request->realization_id);
         $payreq = Payreq::findOrFail($realization->payreq_id);
 
-        // cek user project, jika user project adalah 000H, maka field rab_id harus diisi
-        if (in_array(auth()->user()->project, ['000H', 'APS'])) {
-            if ($payreq->rab_id == null) {
-                $payreq->update([
-                    'status' => 'draft',
-                    'editable' => '1',
-                    'deletable' => '1',
-                ]);
+        if ($error = app(PayreqBudgetSubmitValidator::class)->validate($payreq)) {
+            $payreq->update([
+                'status' => 'draft',
+                'editable' => '1',
+                'deletable' => '1',
+            ]);
 
-                return redirect()->route('user-payreqs.index')->with('error', 'RAB harus diisi, payreq belum bisa disubmit');
-            }
+            return redirect()->route('user-payreqs.index')->with('error', $error);
         }
 
         // create approval plan

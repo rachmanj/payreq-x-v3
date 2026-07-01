@@ -420,17 +420,12 @@
                             }
                         </script>
 
-                        @can('rab_select')
-                            <div class="alert alert-secondary py-2">
-                                @if ($editBudgetMode === PayreqBudgetLinkMode::MULTI_ALLOCATION)
+                        @if ($editBudgetMode === PayreqBudgetLinkMode::MULTI_ALLOCATION)
+                            @can('rab_select')
+                                <div class="alert alert-secondary py-2">
                                     <strong>Multi-row budget form</strong> — form type cannot be switched after draft
                                     creation.
-                                @else
-                                    <strong>Legacy budget form</strong> — single anggaran tied to one RAB selector.
-                                @endif
-                            </div>
-
-                            @if ($editBudgetMode === PayreqBudgetLinkMode::MULTI_ALLOCATION)
+                                </div>
                                 <div id="advance-budget-multi" class="border rounded p-3 mb-3 bg-light">
                                     <div class="form-group mb-2">
                                         <label>Anggaran allocation rows</label>
@@ -497,44 +492,33 @@
                                             id="btn-add-allocation-row">Add row</button>
                                     </div>
                                 </div>
-                                <div id="advance-budget-legacy" class="border rounded p-3 mb-3 bg-light"
-                                    style="display:none;">
-                                    <div class="form-group mb-0">
-                                        <label for="rab_id_legacy">RAB No</label>
-                                        <select name="rab_id" id="rab_id_legacy" disabled
-                                            class="form-control select2bs4">
-                                            <option value="">-- Select RAB --</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            @else
-                                <div id="advance-budget-multi" style="display:none;"></div>
-                                <div id="advance-budget-legacy" class="border rounded p-3 mb-3 bg-light">
-                                    <div class="form-group mb-0">
-                                        <label for="rab_id_legacy">RAB No</label><small> (optional for some
-                                            projects)</small>
-                                        <select name="rab_id" id="rab_id_legacy"
-                                            class="form-control select2bs4 @error('rab_id') is-invalid @enderror">
-                                            <option value="">-- Select RAB --</option>
-                                            @foreach ($rabs as $rab)
-                                                <option value="{{ $rab->id }}"
-                                                    {{ (int) old('rab_id', $payreq->rab_id ?? 0) === (int) $rab->id ? 'selected' : '' }}>
-                                                    {{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} |
-                                                    {{ $rab->project }} |
-                                                    {{ $rab->description }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('rab_id')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-                            @endif
+                            @endcan
                         @else
-                            @if ($editBudgetMode !== PayreqBudgetLinkMode::MULTI_ALLOCATION)
-                                <input type="hidden" name="rab_id" value="{{ old('rab_id', $payreq->rab_id) }}">
-                            @endif
-                        @endcan
+                            @can('rab_select')
+                                <div class="alert alert-secondary py-2">
+                                    <strong>Legacy budget form</strong> — single anggaran tied to one RAB selector.
+                                </div>
+                            @endcan
+                            <div id="advance-budget-legacy" class="border rounded p-3 mb-3 bg-light">
+                                <div class="form-group mb-0">
+                                    <label for="rab_id_legacy">RAB No</label>
+                                    <select name="rab_id" id="rab_id_legacy"
+                                        class="form-control select2bs4 @error('rab_id') is-invalid @enderror">
+                                        <option value="">-- Select RAB --</option>
+                                        @foreach ($rabs as $rab)
+                                            <option value="{{ $rab->id }}"
+                                                {{ (int) old('rab_id', $payreq->rab_id ?? 0) === (int) $rab->id ? 'selected' : '' }}>
+                                                {{ $rab->rab_no ? $rab->rab_no : $rab->nomor }} |
+                                                {{ $rab->project }} |
+                                                {{ $rab->description }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('rab_id')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="card-footer">
                             <div class="row">

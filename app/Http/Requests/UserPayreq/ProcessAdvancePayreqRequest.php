@@ -112,6 +112,13 @@ class ProcessAdvancePayreqRequest extends FormRequest
                 }
             }
 
+            if (in_array($button, ['create_submit', 'edit_submit'], true)
+                && $this->input('budget_link_mode') !== PayreqBudgetLinkMode::MULTI_ALLOCATION) {
+                if (empty($this->input('rab_id'))) {
+                    $validator->errors()->add('rab_id', 'RAB wajib diisi untuk submit.');
+                }
+            }
+
             if ($this->input('budget_link_mode') !== PayreqBudgetLinkMode::MULTI_ALLOCATION) {
                 return;
             }
