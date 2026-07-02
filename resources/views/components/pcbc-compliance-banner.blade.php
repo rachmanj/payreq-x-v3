@@ -6,7 +6,7 @@
 
 @if ($c && ($c['show_banner'] ?? false))
     <div data-pcbc-banner
-        class="alert alert-{{ $c['variant'] === 'success' ? 'success' : ($c['variant'] === 'warning' ? 'warning' : ($c['variant'] === 'danger' ? 'danger' : 'info')) }} alert-dismissible fade show border-0 shadow-sm mb-3"
+        class="alert alert-{{ $c['variant'] === 'success' ? 'success' : ($c['variant'] === 'warning' ? 'warning' : ($c['variant'] === 'danger' ? 'danger' : 'info')) }} alert-dismissible fade show border-0 shadow-sm mb-3 no-print"
         role="alert">
         <div class="d-flex flex-wrap align-items-start">
             <div class="mr-2 mt-1">

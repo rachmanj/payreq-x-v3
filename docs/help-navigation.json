@@ -1,0 +1,75 @@
+{
+    "items": [
+        {
+            "title": "Bank Reconciliation / Rekonsiliasi bank",
+            "menu_path": "Cashier → Bank Reconciliation",
+            "route_name": "cashier.bank-reconciliation.index",
+            "url": "/cashier/bank-reconciliation",
+            "permission": "akses_koran",
+            "keywords": [
+                "bank reconciliation",
+                "rekonsiliasi bank",
+                "rekonsiliasi",
+                "cocokkan bank SAP",
+                "match bank SAP",
+                "cara menggunakan fitur bank reconciliation",
+                "bagaimana cara menggunakan bank reconciliation"
+            ],
+            "description": "Match bank statement lines from Rekening Koran PDF to SAP GL lines for a Giro and month. Workflow: upload Koran → Create → Auto-match / manual match → Submit for validation → validator Validate → Report."
+        },
+        {
+            "title": "Bank Reconciliation — Create / Buat rekonsiliasi",
+            "menu_path": "Cashier → Bank Reconciliation → Create",
+            "route_name": "cashier.bank-reconciliation.create",
+            "url": "/cashier/bank-reconciliation/create",
+            "permission": "akses_koran",
+            "keywords": [
+                "create bank reconciliation",
+                "buat rekonsiliasi",
+                "mulai rekonsiliasi"
+            ],
+            "description": "Start a new reconciliation session: select Giro, period, and Koran PDF. Queues PDF parsing and SAP GL fetch."
+        },
+        {
+            "title": "Bank Reconciliation — Pending validation",
+            "menu_path": "Cashier → Bank Reconciliation → Pending validation",
+            "route_name": "cashier.bank-reconciliation.index",
+            "url": "/cashier/bank-reconciliation?view=pending_validation",
+            "permission": "validate_bank_reconciliation",
+            "keywords": [
+                "pending validation",
+                "menunggu validasi",
+                "validate reconciliation",
+                "validasi rekonsiliasi"
+            ],
+            "description": "Validator queue for reconciliations submitted with Submit for validation. Open a session and use Validate or Reject."
+        },
+        {
+            "title": "Rekening Koran / Bank statement dashboard",
+            "menu_path": "Cashier → Rekening Koran",
+            "route_name": "cashier.koran.index",
+            "url": "/cashier/koran?page=dashboard",
+            "permission": "akses_koran",
+            "keywords": [
+                "rekening koran",
+                "koran",
+                "bank statement",
+                "upload koran",
+                "dashboard koran"
+            ],
+            "description": "Grid dashboard: one cell per account and month. Click empty cell to upload PDF; click filled cell for PDF, reconciliation status, and delete (with delete_koran)."
+        },
+        {
+            "title": "Help panel / Bantuan aplikasi",
+            "menu_path": "Top bar → ? (Help)",
+            "permission": "akses_help",
+            "keywords": [
+                "help",
+                "bantuan",
+                "cara pakai",
+                "how to"
+            ],
+            "description": "Click the ? icon in the top bar. Ask how-to questions in the How-to tab. Answers come from docs/manuals indexed by php artisan help:reindex."
+        }
+    ]
+}

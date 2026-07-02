@@ -1,48 +1,92 @@
 # Bank reconciliation (Cashier)
 
-This module matches **bank statement lines** (from a Rekening Koran PDF) to **SAP GL lines** for a given bank account (Giro) and month.
+The **Bank Reconciliation** module matches **bank statement lines** (from a Rekening Koran PDF) to **SAP GL lines** for a bank account (**Giro**) and month.
+
+## How to use Bank Reconciliation
+
+Follow this end-to-end flow:
+
+1. **Upload Rekening Koran (PDF)** — open **Cashier** → **Rekening Koran**. On the **Dashboard**, click an empty month cell for an account. The upload modal opens with account and month locked. Choose the PDF and upload (requires **`upload_koran`**).
+2. **Start reconciliation** — after upload, click the same filled cell. In the modal, use **Mulai rekonsiliasi** / **Start reconciliation**, or open **Cashier** → **Bank Reconciliation** → **Create**.
+3. **Fill Create form** — choose **Giro**, **period** (month), and the **Rekening Koran** document. Submit. Status starts as **processing**; PDF parsing and SAP GL fetch are queued.
+4. **Wait for queue workers** — ensure `php artisan queue:work` is running. Refresh the reconciliation **Review** page until bank and SAP line counts appear.
+5. **Match lines** — use **Auto-match**, or select bank + SAP lines and **Match selected**. Use **Unmatch** to remove a match group.
+6. **Check balance** — the sticky totals bar should be balanced (difference near zero) before submit.
+7. **Submit for validation** — click **Submit for validation**. Editing is locked until a validator approves or rejects.
+8. **Validator** (**`validate_bank_reconciliation`**) — open **Bank Reconciliation** → **Pending validation** tab, or the **Bank reconciliation pending validation** card on the main dashboard. Click **Validate** on a session, then **Validate** (approve) or **Reject** on the review page.
+9. **Report** — after approval, status is **completed** and validated. Open **Report** / reconciliation report to print the summary.
+
+**Short path:** Upload Koran → Create reconciliation → Auto-match / manual match → **Submit for validation** → validator **Validate** → **Report**.
 
 ## Who can open it
 
-Open **Cashier** in the top menu, then **Bank Reconciliation**. You also need permission **akses_koran** (same area as **Rekening Koran**). Elevated roles (for example **admin**, **superadmin**, **cashier**) can see all reconciliations; other users only see reconciliations for bank accounts in their **project**.
+Open **Cashier** in the top menu, then **Bank Reconciliation**. You need permission **`akses_koran`** (same area as **Rekening Koran**). Elevated roles (**admin**, **superadmin**, **cashier**, **approver_bo**, **cashier_bo**, **corsec**) see all reconciliations; others only see accounts in their **project**.
+
+You can also type **Bank Reconciliation** in the top-bar **Search Menu here** field (with **`akses_koran`**).
 
 ## Prerequisites
 
-- A **Giro** (bank account) record exists in the system.
-- A **Rekening Koran** document (**type** `koran`) is uploaded for that Giro in **Rekening Koran** (Cashier → Rekening Koran), for the period you want to reconcile.
+- A **Giro** (bank account) exists in the system.
+- A **Rekening Koran** document (**type** `koran`) is uploaded for that Giro and month.
+
+## Upload Rekening Koran from the dashboard
+
+Open **Cashier** → **Rekening Koran** (**Dashboard**). Click a month cell:
+
+- **Empty cell** — upload modal with locked account/month (**`upload_koran`**). Duplicate uploads for the same account/month are rejected.
+- **Filled cell** — view upload date, open PDF, go to bank reconciliation, or delete PDF (**`delete_koran`**; delete disabled when reconciliation is pending validation or completed).
+
+Small icons on each cell show reconciliation status (not started, processing, in review, pending validation, done).
 
 ## Starting a new reconciliation
 
-1. Go to **Cashier** → **Bank Reconciliation**.  
-2. Use the action to open **Create** (URL path: `/cashier/bank-reconciliation/create`).  
-3. Choose the **Giro** (bank account).  
-4. Choose the **period** (month).  
-5. Choose the **Rekening Koran** document (`koran`) for that Giro.  
-6. Submit. The system creates a reconciliation in **processing** status and queues:
-   - parsing the bank statement PDF into **bank statement lines**;
-   - fetching **SAP GL lines** for that account/period.
+**From Koran dashboard:** click a filled month cell → **Mulai rekonsiliasi** / start reconciliation in the modal.
 
-Wait for the queue workers to finish. Refresh the reconciliation detail page to see updated line counts.
+**From Bank Reconciliation menu:**
 
-## Reconciliation detail screen
+1. **Cashier** → **Bank Reconciliation**.
+2. Open **Create** (`/cashier/bank-reconciliation/create`).
+3. Choose **Giro**, **period**, and **Rekening Koran** document.
+4. Submit. The system queues PDF parsing and SAP GL fetch.
 
-On the reconciliation **show** page you can:
+## Reconciliation detail screen (Review)
 
-- **Re-parse statement** — queues the PDF parsing job again (if the Koran document is attached).  
-- **Fetch SAP lines** — queues another SAP GL fetch.  
-- **Auto-match** — queues automatic matching of bank lines to SAP lines.  
-- **Manual match** — select one or more bank statement lines and one or more SAP GL lines to form a **match group**.  
-- **Unmatch** — remove an existing match group (not available after completion).  
+On the review (**show**) page you can:
 
-Use the **status** endpoint or UI refresh to confirm bank line count, SAP line count, and match groups increase as jobs complete.
+- **Re-parse statement** — re-queue PDF parsing.
+- **Fetch SAP lines** — re-queue SAP GL fetch.
+- **Auto-match** — automatic matching.
+- **Manual match** — select bank and SAP lines → match as one group.
+- **Unmatch** — remove a match group (not available when locked).
+- **Submit for validation** — send to validator when balanced.
 
-## Completing reconciliation
+Refresh the page while queue jobs finish.
 
-When matching is satisfactory, use **Complete** to mark the reconciliation **completed**. After that:
+## Validation (validator role)
 
-- Further auto-match, manual match, and unmatch actions are blocked.  
-- You are redirected to the **report** view for this reconciliation.
+Users with **`validate_bank_reconciliation`** who did **not** prepare the session can:
 
-## Permissions and troubleshooting
+- Use the **Pending validation** tab on **Bank Reconciliation**.
+- Use the **Bank reconciliation pending validation** card on the main dashboard.
+- On a **pending validation** review page: **Validate** (approve → **completed**, open **Report**) or **Reject** (return with reason).
 
-If you cannot see **Bank Reconciliation**, ask an administrator for **akses_koran** (and appropriate Cashier access). If parsing or SAP jobs stay empty, verify the Koran PDF is valid, queue workers are running, and SAP bridge/settings are configured for GL fetch.
+## Reconciliation report
+
+After validator approval, open **Report** from the review page or the green cell icon on the Koran dashboard. The report includes balance summary, outstanding lines, and **Print**.
+
+## Permissions
+
+| Permission | Purpose |
+|------------|---------|
+| **`akses_koran`** | Access **Rekening Koran** and **Bank Reconciliation** |
+| **`upload_koran`** | Upload Koran PDF from the Koran dashboard |
+| **`delete_koran`** | Delete Koran PDF (project-scoped; blocked when reconciliation is locked) |
+| **`validate_bank_reconciliation`** | Approve or reject submitted reconciliations |
+
+## Troubleshooting
+
+- **Menu missing** — ask an administrator for **`akses_koran`**.
+- **Empty parsing / SAP** — check valid PDF, queue workers, SAP bridge settings.
+- **Cannot Submit for validation** — ensure bank vs book difference is balanced.
+- **Cannot delete PDF** — reconciliation may be **pending validation** or **completed**.
+- **Outdated HELP answers** — administrator runs `php artisan help:reindex` after manual updates.

@@ -409,7 +409,7 @@
                         <strong id="br-sel-sap">0.00</strong>
                         <span class="small text-muted mx-2">Difference:</span>
                         <strong id="br-sel-diff">0.00</strong>
-                        <span class="small text-muted d-none d-lg-inline ml-2">(must be &lt; 0.005)</span>
+                        <span class="small text-muted d-none d-lg-inline ml-2">(bank + SAP must be &lt; 0.005)</span>
                     </div>
                     <div class="col-md-6 text-md-right">
                         <button type="submit" id="br-submit-match" class="btn btn-sm btn-primary" disabled>
@@ -569,7 +569,7 @@
 
             const b = sumChecked('.br-cb-bank');
             const s = sumChecked('.br-cb-sap');
-            const d = b - s;
+            const d = b + s;
             bankEl.textContent = b.toFixed(2);
             sapEl.textContent = s.toFixed(2);
             diffEl.textContent = d.toFixed(2);

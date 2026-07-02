@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             RealizationAttachmentPermissionsSeeder::class,
             OverdueExtensionPermissionSeeder::class,
+            DeleteKoranPermissionSeeder::class,
         ]);
     }
 }

@@ -107,6 +107,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/data', [KoranController::class, 'data'])->name('data');
         Route::get('/', [KoranController::class, 'index'])->name('index');
         Route::post('/upload', [KoranController::class, 'upload'])->name('upload');
+        Route::delete('/{dokumen}', [KoranController::class, 'destroy'])->name('destroy');
     });
 
     // TRANSAKSIS

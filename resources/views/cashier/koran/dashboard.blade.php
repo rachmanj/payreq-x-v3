@@ -61,26 +61,21 @@
                             <strong>Rekening Koran Dashboard - {{ $year }}</strong>
                         </h3>
                         <div class="year-selector">
-                            <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => 2026]) }}"
-                                class="year-btn {{ $year == 2026 ? 'active' : '' }}">
-                                2026
-                            </a>
-                            <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => 2025]) }}"
-                                class="year-btn {{ $year == 2025 ? 'active' : '' }}">
-                                2025
-                            </a>
-                            <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => 2024]) }}"
-                                class="year-btn {{ $year == 2024 ? 'active' : '' }}">
-                                2024
-                            </a>
+                            @foreach ([2026, 2025, 2024] as $yearOption)
+                                <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => $yearOption]) }}"
+                                    class="year-btn {{ (int) $year === $yearOption ? 'active' : '' }}">
+                                    {{ $yearOption }}
+                                </a>
+                            @endforeach
                         </div>
                     </div>
                     <div class="koran-recon-legend mt-2 small text-white">
-                        <span class="mr-3" style="opacity:.85" title="Bank reconciliation status"><i
-                                class="fas fa-balance-scale mr-1"></i>Belum</span>
+                        <span class="mr-3" style="opacity:.85"><i class="fas fa-mouse-pointer mr-1"></i>Klik sel untuk detail / upload</span>
+                        <span class="mr-3"><i class="fas fa-times-circle text-danger mr-1"></i>Belum upload</span>
+                        <span class="mr-3"><i class="fas fa-check-circle text-success mr-1"></i>Terupload</span>
+                        <span class="mr-3"><i class="fas fa-balance-scale text-primary mr-1"></i>Belum rekonsiliasi</span>
                         <span class="mr-3"><i class="fas fa-spinner text-warning mr-1"></i>Memproses</span>
                         <span class="mr-3"><i class="fas fa-tasks text-info mr-1"></i>Dalam review</span>
-                        <span class="mr-3"><i class="fas fa-exclamation-triangle text-danger mr-1"></i>Gagal</span>
                         <span><i class="fas fa-check-double text-success mr-1"></i>Selesai</span>
                     </div>
                 </div>
@@ -95,18 +90,9 @@
                                     <th style="min-width: 200px">Account Name</th>
                                     <th style="min-width: 80px">Project</th>
                                     <th class="text-center" style="min-width: 100px">Progress</th>
-                                    <th class="text-center" style="min-width: 50px">Jan</th>
-                                    <th class="text-center" style="min-width: 50px">Feb</th>
-                                    <th class="text-center" style="min-width: 50px">Mar</th>
-                                    <th class="text-center" style="min-width: 50px">Apr</th>
-                                    <th class="text-center" style="min-width: 50px">May</th>
-                                    <th class="text-center" style="min-width: 50px">Jun</th>
-                                    <th class="text-center" style="min-width: 50px">Jul</th>
-                                    <th class="text-center" style="min-width: 50px">Aug</th>
-                                    <th class="text-center" style="min-width: 50px">Sep</th>
-                                    <th class="text-center" style="min-width: 50px">Oct</th>
-                                    <th class="text-center" style="min-width: 50px">Nov</th>
-                                    <th class="text-center" style="min-width: 50px">Dec</th>
+                                    @foreach (['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as $monthLabel)
+                                        <th class="text-center" style="min-width: 56px">{{ $monthLabel }}</th>
+                                    @endforeach
                                 </tr>
                             </thead>
                             <tbody>
@@ -128,16 +114,16 @@
                                             <td class="text-center">
                                                 <div class="progress-wrapper">
                                                     <div class="progress" style="height: 20px;">
-                                                        <div class="progress-bar 
-                                                            @if($giro['completion_percentage'] == 100) bg-success
+                                                        <div class="progress-bar
+                                                            @if ($giro['completion_percentage'] == 100) bg-success
                                                             @elseif($giro['completion_percentage'] >= 75) bg-info
                                                             @elseif($giro['completion_percentage'] >= 50) bg-warning
                                                             @else bg-danger
-                                                            @endif" 
-                                                            role="progressbar" 
+                                                            @endif"
+                                                            role="progressbar"
                                                             style="width: {{ $giro['completion_percentage'] }}%"
-                                                            aria-valuenow="{{ $giro['completion_percentage'] }}" 
-                                                            aria-valuemin="0" 
+                                                            aria-valuenow="{{ $giro['completion_percentage'] }}"
+                                                            aria-valuemin="0"
                                                             aria-valuemax="100">
                                                         </div>
                                                     </div>
@@ -147,108 +133,90 @@
                                                 </div>
                                             </td>
                                             @foreach ($giro['data'] as $month)
+                                                @php
+                                                    $canDeleteCell = $canDeleteKoran && ($hasElevatedKoranAccess || $giro['project'] === auth()->user()->project);
+                                                    $brId = $month['reconciliation_id'] ?? null;
+                                                    $brStatus = $month['reconciliation_status'] ?? null;
+                                                    $brValidation = $month['reconciliation_validation_status'] ?? null;
+                                                    $reconciliationLocked = $brId && (
+                                                        $brStatus === \App\Models\BankReconciliation::STATUS_COMPLETED
+                                                        || $brValidation === \App\Models\BankReconciliation::VALIDATION_PENDING
+                                                    );
+
+                                                    $reconDotClass = 'recon-dot-none';
+                                                    $reconDotIcon = 'fa-balance-scale';
+                                                    if ($month['status']) {
+                                                        if ($brId && $brStatus === \App\Models\BankReconciliation::STATUS_COMPLETED && $brValidation === \App\Models\BankReconciliation::VALIDATION_VALIDATED) {
+                                                            $reconDotClass = 'recon-dot-done';
+                                                            $reconDotIcon = 'fa-check-double';
+                                                        } elseif ($brId && $brValidation === \App\Models\BankReconciliation::VALIDATION_PENDING) {
+                                                            $reconDotClass = 'recon-dot-pending';
+                                                            $reconDotIcon = 'fa-user-check';
+                                                        } elseif ($brId && $brValidation === \App\Models\BankReconciliation::VALIDATION_REJECTED) {
+                                                            $reconDotClass = 'recon-dot-danger';
+                                                            $reconDotIcon = 'fa-undo';
+                                                        } elseif ($brId && $brStatus === \App\Models\BankReconciliation::STATUS_FAILED) {
+                                                            $reconDotClass = 'recon-dot-danger';
+                                                            $reconDotIcon = 'fa-exclamation-triangle';
+                                                        } elseif ($brId && $brStatus === \App\Models\BankReconciliation::STATUS_PROCESSING) {
+                                                            $reconDotClass = 'recon-dot-processing';
+                                                            $reconDotIcon = 'fa-spinner fa-spin';
+                                                        } elseif ($brId && in_array($brStatus, [\App\Models\BankReconciliation::STATUS_IN_REVIEW, \App\Models\BankReconciliation::STATUS_DRAFT], true)) {
+                                                            $reconDotClass = 'recon-dot-review';
+                                                            $reconDotIcon = 'fa-tasks';
+                                                        } elseif ($brId) {
+                                                            $reconDotClass = 'recon-dot-review';
+                                                            $reconDotIcon = 'fa-tasks';
+                                                        } else {
+                                                            $reconDotClass = 'recon-dot-start';
+                                                            $reconDotIcon = 'fa-balance-scale';
+                                                        }
+                                                    }
+
+                                                    $cellTemplateId = 'koran-cell-template-'.$giro['giro_id'].'-'.$month['month'];
+                                                @endphp
                                                 <td class="text-center status-cell">
-                                                    @if ($month['status'] == false)
-                                                        <span class="status-badge status-missing" 
-                                                            data-toggle="tooltip" 
-                                                            data-placement="top" 
-                                                            title="Missing - {{ \Carbon\Carbon::create()->month($month['month'])->format('F') }}">
-                                                            <i class="fas fa-times"></i>
+                                                    <button type="button"
+                                                        class="koran-cell-trigger {{ $month['status'] ? 'koran-cell-uploaded' : 'koran-cell-missing' }}"
+                                                        data-toggle="modal"
+                                                        data-target="#koran-cell-modal"
+                                                        data-has-file="{{ $month['status'] ? '1' : '0' }}"
+                                                        data-giro-id="{{ $giro['giro_id'] }}"
+                                                        data-acc-no="{{ $giro['acc_no'] }}"
+                                                        data-acc-name="{{ $giro['acc_name'] }}"
+                                                        data-bank-name="{{ $giro['bank_name'] }}"
+                                                        data-project="{{ $giro['project'] }}"
+                                                        data-month="{{ $month['month'] }}"
+                                                        data-month-label="{{ $month['month_label'] }}"
+                                                        data-periode="{{ $month['periode'] }}"
+                                                        data-year="{{ $year }}"
+                                                        data-dokumen-id="{{ $month['dokumen_id'] ?? '' }}"
+                                                        data-filename="{{ $month['filename1'] ?? '' }}"
+                                                        data-upload-date="{{ $month['upload_date'] ?? '' }}"
+                                                        data-uploaded-by="{{ $month['uploaded_by'] ?? '' }}"
+                                                        data-can-upload="{{ $canUploadKoran ? '1' : '0' }}"
+                                                        data-can-delete="{{ $canDeleteCell ? '1' : '0' }}"
+                                                        data-reconciliation-locked="{{ $reconciliationLocked ? '1' : '0' }}"
+                                                        data-template-id="{{ $month['status'] ? $cellTemplateId : '' }}"
+                                                        title="{{ $month['status'] ? 'Uploaded — click for details' : 'Missing — click to upload' }}">
+                                                        <span class="koran-cell-main-icon">
+                                                            <i class="fas {{ $month['status'] ? 'fa-check' : 'fa-times' }}"></i>
                                                         </span>
-                                                    @else
-                                                        <span class="d-inline-flex align-items-center justify-content-center flex-wrap"
-                                                            style="gap: 4px;">
-                                                            <a href="{{ $month['filename1'] }}"
-                                                                target="_blank"
-                                                                class="status-badge status-complete"
-                                                                data-toggle="tooltip"
-                                                                data-placement="top"
-                                                                title="Uploaded: {{ $month['upload_date'] ?? 'N/A' }}">
-                                                                <i class="fas fa-check"></i>
-                                                            </a>
-                                                            @if (! empty($month['dokumen_id']))
-                                                                @php
-                                                                    $brId = $month['reconciliation_id'] ?? null;
-                                                                    $brStatus = $month['reconciliation_status'] ?? null;
-                                                                    $brValidation = $month['reconciliation_validation_status'] ?? null;
-                                                                @endphp
-                                                                @if (
-                                                                    $brId &&
-                                                                        $brStatus === \App\Models\BankReconciliation::STATUS_COMPLETED &&
-                                                                        $brValidation === \App\Models\BankReconciliation::VALIDATION_VALIDATED)
-                                                                    <a href="{{ route('cashier.bank-reconciliation.report', $brId) }}"
-                                                                        class="badge badge-light border koran-recon-badge"
-                                                                        data-toggle="tooltip"
-                                                                        data-placement="top"
-                                                                        title="Rekonsiliasi selesai — lihat laporan">
-                                                                        <i class="fas fa-check-double text-success"></i>
-                                                                    </a>
-                                                                @elseif (
-                                                                    $brId &&
-                                                                        $brValidation === \App\Models\BankReconciliation::VALIDATION_PENDING)
-                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
-                                                                        class="badge badge-light border koran-recon-badge"
-                                                                        data-toggle="tooltip"
-                                                                        data-placement="top"
-                                                                        title="Menunggu validasi — menunggu persetujuan admin">
-                                                                        <i class="fas fa-user-check text-purple"></i>
-                                                                    </a>
-                                                                @elseif (
-                                                                    $brId &&
-                                                                        $brValidation === \App\Models\BankReconciliation::VALIDATION_REJECTED)
-                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
-                                                                        class="badge badge-light border koran-recon-badge"
-                                                                        data-toggle="tooltip"
-                                                                        data-placement="top"
-                                                                        title="Rekonsiliasi ditolak — perbaiki dan ajukan ulang">
-                                                                        <i class="fas fa-undo text-danger"></i>
-                                                                    </a>
-                                                                @elseif ($brId && $brStatus === \App\Models\BankReconciliation::STATUS_FAILED)
-                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
-                                                                        class="badge badge-light border koran-recon-badge"
-                                                                        data-toggle="tooltip"
-                                                                        data-placement="top"
-                                                                        title="Rekonsiliasi gagal — buka untuk perbaiki / parse ulang">
-                                                                        <i class="fas fa-exclamation-triangle text-danger"></i>
-                                                                    </a>
-                                                                @elseif (
-                                                                    $brId &&
-                                                                        $brStatus === \App\Models\BankReconciliation::STATUS_PROCESSING)
-                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
-                                                                        class="badge badge-light border koran-recon-badge"
-                                                                        data-toggle="tooltip"
-                                                                        data-placement="top"
-                                                                        title="Rekonsiliasi sedang diproses (antrian)">
-                                                                        <i class="fas fa-spinner fa-spin text-warning"></i>
-                                                                    </a>
-                                                                @elseif (
-                                                                    $brId &&
-                                                                        in_array($brStatus, [
-                                                                            \App\Models\BankReconciliation::STATUS_IN_REVIEW,
-                                                                            \App\Models\BankReconciliation::STATUS_DRAFT,
-                                                                        ], true))
-                                                                    <a href="{{ route('cashier.bank-reconciliation.show', $brId) }}"
-                                                                        class="badge badge-light border koran-recon-badge"
-                                                                        data-toggle="tooltip"
-                                                                        data-placement="top"
-                                                                        title="Rekonsiliasi dalam review — lanjutkan pencocokan">
-                                                                        <i class="fas fa-tasks text-info"></i>
-                                                                    </a>
-                                                                @else
-                                                                    <a href="{{ route('cashier.bank-reconciliation.create', [
-                                                                        'giro_id' => $giro['giro_id'],
-                                                                        'dokumen_id' => $month['dokumen_id'],
-                                                                        'periode' => $year . '-' . $month['month'] . '-01',
-                                                                    ]) }}"
-                                                                        class="badge badge-light border koran-recon-badge"
-                                                                        data-toggle="tooltip"
-                                                                        data-placement="top"
-                                                                        title="Mulai rekonsiliasi bank">
-                                                                        <i class="fas fa-balance-scale text-primary"></i>
-                                                                    </a>
-                                                                @endif
-                                                            @endif
-                                                        </span>
+                                                        @if ($month['status'])
+                                                            <span class="koran-cell-recon-dot {{ $reconDotClass }}">
+                                                                <i class="fas {{ $reconDotIcon }}"></i>
+                                                            </span>
+                                                        @endif
+                                                    </button>
+
+                                                    @if ($month['status'])
+                                                        <template id="{{ $cellTemplateId }}">
+                                                            @include('cashier.koran.partials.cell-reconciliation-block', [
+                                                                'month' => $month,
+                                                                'giro' => $giro,
+                                                                'year' => $year,
+                                                            ])
+                                                        </template>
                                                     @endif
                                                 </td>
                                             @endforeach
@@ -259,12 +227,116 @@
                         </table>
                     </div>
                 </div>
-
             </div>
+        </div>
+    </div>
 
+    <div class="modal fade" id="koran-cell-modal" tabindex="-1" role="dialog" aria-labelledby="koranCellModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-primary text-white">
+                    <h5 class="modal-title" id="koranCellModalLabel">
+                        <i class="fas fa-university mr-2"></i>
+                        <span id="koran-modal-title-text">Rekening Koran</span>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="koran-modal-upload-panel" style="display: none;">
+                        <div class="alert alert-light border mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Account</small>
+                                    <strong id="koran-upload-acc-display"></strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Periode</small>
+                                    <strong id="koran-upload-periode-display"></strong>
+                                </div>
+                            </div>
+                        </div>
 
-        </div> <!-- /.col -->
-    </div> <!-- /.row -->
+                        @if ($canUploadKoran)
+                            <form action="{{ route('cashier.koran.upload') }}" method="POST" enctype="multipart/form-data" id="koran-modal-upload-form">
+                                @csrf
+                                <input type="hidden" name="giro_id" id="koran-upload-giro-id">
+                                <input type="hidden" name="periode" id="koran-upload-periode">
+                                <input type="hidden" name="type" value="koran">
+
+                                <div class="form-group">
+                                    <label for="koran-upload-file">Bank Statement PDF</label>
+                                    <input type="file" name="file_upload" id="koran-upload-file" class="form-control" accept="application/pdf,.pdf" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="koran-upload-remarks">Remarks</label>
+                                    <textarea name="remarks" id="koran-upload-remarks" class="form-control" rows="2"></textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-upload mr-1"></i> Upload Rekening Koran
+                                </button>
+                            </form>
+                        @else
+                            <div class="alert alert-warning mb-0">
+                                <i class="fas fa-lock mr-1"></i> You do not have permission to upload bank statements.
+                            </div>
+                        @endif
+                    </div>
+
+                    <div id="koran-modal-detail-panel" style="display: none;">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Uploaded</small>
+                                <strong id="koran-detail-upload-date">-</strong>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Uploaded by</small>
+                                <strong id="koran-detail-uploaded-by">-</strong>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Project</small>
+                                <strong id="koran-detail-project">-</strong>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <a href="#" id="koran-detail-view-pdf" target="_blank" class="btn btn-info btn-sm">
+                                <i class="fas fa-file-pdf mr-1"></i> View PDF
+                            </a>
+                        </div>
+
+                        <hr>
+
+                        <div id="koran-detail-reconciliation"></div>
+
+                        <div id="koran-modal-delete-section" class="mt-4 pt-3 border-top" style="display: none;">
+                            <h6 class="text-danger"><i class="fas fa-trash-alt mr-1"></i> Delete uploaded statement</h6>
+                            <p class="text-muted small mb-2" id="koran-modal-delete-help">
+                                This removes the PDF file and database record. Reconciliation sessions linked to this file will lose their PDF reference.
+                            </p>
+                            <div class="alert alert-warning small py-2 mb-2" id="koran-modal-delete-locked-notice" style="display: none;">
+                                <i class="fas fa-lock mr-1"></i>
+                                Delete is disabled because bank reconciliation is completed or pending validation.
+                            </div>
+                            <form id="koran-modal-delete-form" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="koran-modal-delete-btn">
+                                    <i class="fas fa-trash mr-1"></i> Delete PDF
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('styles')
@@ -316,13 +388,6 @@
 
         .koran-recon-legend {
             opacity: 0.95;
-        }
-
-        .koran-recon-badge {
-            min-width: 26px;
-            justify-content: center;
-            display: inline-flex;
-            align-items: center;
         }
 
         .info-box {
@@ -412,8 +477,6 @@
 
         .koran-table-row:hover {
             background-color: #e3f2fd !important;
-            transform: scale(1.001);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .koran-table-row td {
@@ -445,10 +508,6 @@
 
         .progress-bar {
             transition: width 0.6s ease;
-            font-size: 0.7rem;
-            line-height: 20px;
-            font-weight: 600;
-            color: white;
         }
 
         .progress-text {
@@ -463,65 +522,84 @@
             padding: 8px 4px !important;
         }
 
-        .status-badge {
+        .koran-cell-trigger {
+            position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
-            text-decoration: none;
-        }
-
-        .status-complete {
-            background-color: #28a745;
-            color: white;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background: transparent;
             cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0;
         }
 
-        .status-complete:hover {
-            background-color: #218838;
-            transform: scale(1.1);
-            box-shadow: 0 2px 6px rgba(40, 167, 69, 0.4);
-            text-decoration: none;
-            color: white;
+        .koran-cell-trigger:hover {
+            transform: scale(1.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
-        .status-missing {
-            background-color: #dc3545;
-            color: white;
+        .koran-cell-missing {
+            background-color: #fdecea;
+            border-color: #f5c6cb;
         }
 
-        .status-missing:hover {
-            background-color: #c82333;
-            transform: scale(1.1);
+        .koran-cell-missing .koran-cell-main-icon {
+            color: #dc3545;
         }
 
-        .badge {
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            font-weight: 600;
+        .koran-cell-uploaded {
+            background-color: #e8f5e9;
+            border-color: #c3e6cb;
         }
 
-        @media (max-width: 1200px) {
-            .koran-table-wrapper {
-                font-size: 0.85rem;
-            }
+        .koran-cell-uploaded .koran-cell-main-icon {
+            color: #28a745;
+        }
 
-            .account-number,
-            .account-name {
-                font-size: 0.8rem;
-            }
+        .koran-cell-main-icon {
+            font-size: 0.95rem;
+        }
 
-            .progress-wrapper {
-                min-width: 80px;
-            }
+        .koran-cell-recon-dot {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.55rem;
+            color: #fff;
+            border: 2px solid #fff;
+        }
 
-            .progress-text {
-                font-size: 0.7rem;
-            }
+        .recon-dot-start { background-color: #007bff; }
+        .recon-dot-processing { background-color: #ffc107; color: #212529; }
+        .recon-dot-review { background-color: #17a2b8; }
+        .recon-dot-pending { background-color: #6f42c1; }
+        .recon-dot-danger { background-color: #dc3545; }
+        .recon-dot-done { background-color: #28a745; }
+
+        .badge-purple {
+            background-color: #6f42c1;
+            color: #fff;
+        }
+
+        .btn-outline-purple {
+            color: #6f42c1;
+            border-color: #6f42c1;
+        }
+
+        .btn-outline-purple:hover {
+            color: #fff;
+            background-color: #6f42c1;
+            border-color: #6f42c1;
         }
 
         @media (max-width: 768px) {
@@ -540,23 +618,9 @@
                 text-align: center;
             }
 
-            .koran-table-wrapper {
-                font-size: 0.75rem;
-            }
-
-            .koran-table-header th,
-            .koran-table-row td {
-                padding: 8px 4px;
-            }
-
-            .status-badge {
-                width: 24px;
-                height: 24px;
-                font-size: 0.75rem;
-            }
-
-            .progress-wrapper {
-                min-width: 60px;
+            .koran-cell-trigger {
+                width: 36px;
+                height: 36px;
             }
         }
     </style>
@@ -565,7 +629,97 @@
 @section('scripts')
     <script>
         $(function() {
-            $('[data-toggle="tooltip"]').tooltip();
+            var deleteBaseUrl = @json(url('/cashier/koran'));
+
+            $('#koran-cell-modal').on('show.bs.modal', function(event) {
+                var $trigger = $(event.relatedTarget);
+                if (!$trigger.hasClass('koran-cell-trigger')) {
+                    return;
+                }
+
+                var hasFile = $trigger.data('has-file') === 1 || $trigger.data('has-file') === '1';
+                var accNo = $trigger.data('acc-no');
+                var accName = $trigger.data('acc-name');
+                var monthLabel = $trigger.data('month-label');
+                var year = $trigger.data('year');
+                var periode = $trigger.data('periode');
+                var giroId = $trigger.data('giro-id');
+                var project = $trigger.data('project');
+                var dokumenId = $trigger.data('dokumen-id');
+                var canDelete = $trigger.data('can-delete') === 1 || $trigger.data('can-delete') === '1';
+                var reconciliationLocked = $trigger.data('reconciliation-locked') === 1 || $trigger.data('reconciliation-locked') === '1';
+
+                $('#koran-modal-title-text').text(accNo + ' — ' + accName + ' · ' + monthLabel + ' ' + year);
+
+                if (!hasFile) {
+                    $('#koran-modal-upload-panel').show();
+                    $('#koran-modal-detail-panel').hide();
+                    $('#koran-upload-acc-display').text(accNo + ' · ' + accName + ' (' + project + ')');
+                    $('#koran-upload-periode-display').text(monthLabel + ' ' + year);
+                    $('#koran-upload-giro-id').val(giroId);
+                    $('#koran-upload-periode').val(periode);
+                    $('#koran-upload-file').val('');
+                    $('#koran-upload-remarks').val('');
+                    return;
+                }
+
+                $('#koran-modal-upload-panel').hide();
+                $('#koran-modal-detail-panel').show();
+
+                $('#koran-detail-upload-date').text($trigger.data('upload-date') || '-');
+                $('#koran-detail-uploaded-by').text($trigger.data('uploaded-by') || '-');
+                $('#koran-detail-project').text(project || '-');
+                $('#koran-detail-view-pdf').attr('href', $trigger.data('filename') || '#');
+
+                var templateId = $trigger.data('template-id');
+                var $reconContainer = $('#koran-detail-reconciliation');
+                $reconContainer.empty();
+
+                if (templateId) {
+                    var template = document.getElementById(templateId);
+                    if (template && template.content) {
+                        $reconContainer.append(document.importNode(template.content, true));
+                    }
+                }
+
+                if (canDelete && dokumenId) {
+                    $('#koran-modal-delete-section').show();
+                    $('#koran-modal-delete-form').attr('action', deleteBaseUrl + '/' + dokumenId);
+
+                    if (reconciliationLocked) {
+                        $('#koran-modal-delete-locked-notice').show();
+                        $('#koran-modal-delete-btn').prop('disabled', true).addClass('disabled');
+                    } else {
+                        $('#koran-modal-delete-locked-notice').hide();
+                        $('#koran-modal-delete-btn').prop('disabled', false).removeClass('disabled');
+                    }
+                } else {
+                    $('#koran-modal-delete-section').hide();
+                    $('#koran-modal-delete-locked-notice').hide();
+                    $('#koran-modal-delete-btn').prop('disabled', false).removeClass('disabled');
+                }
+            });
+
+            $('#koran-modal-delete-btn').on('click', function() {
+                if ($(this).prop('disabled')) {
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Delete bank statement?',
+                    text: 'This action cannot be undone.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it',
+                    cancelButtonText: 'Cancel'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        $('#koran-modal-delete-form').submit();
+                    }
+                });
+            });
         });
     </script>
 @endsection

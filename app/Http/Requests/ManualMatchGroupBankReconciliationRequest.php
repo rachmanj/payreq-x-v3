@@ -82,10 +82,10 @@ class ManualMatchGroupBankReconciliationRequest extends FormRequest
             $bankTotal = $bankLines->sum(fn (BankStatementLine $l) => (float) $l->debit - (float) $l->credit);
             $sapTotal = $sapLines->sum(fn (SapGlLine $l) => (float) $l->debit - (float) $l->credit);
 
-            if (abs($bankTotal - $sapTotal) >= self::TOTAL_TOLERANCE) {
+            if (abs($bankTotal + $sapTotal) >= self::TOTAL_TOLERANCE) {
                 $validator->errors()->add(
                     'sap_gl_line_ids',
-                    'Bank net total ('.number_format($bankTotal, 2).') must equal SAP net total ('.number_format($sapTotal, 2).') within '.self::TOTAL_TOLERANCE.'.'
+                    'Bank net ('.number_format($bankTotal, 2).') and SAP net ('.number_format($sapTotal, 2).') must offset to zero (sum within '.self::TOTAL_TOLERANCE.'). Current sum: '.number_format($bankTotal + $sapTotal, 2).'.'
                 );
             }
         });

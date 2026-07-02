@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\OpenRouterException;
 use App\Models\BankReconciliation;
 use App\Services\BankStatementParserService;
 use Illuminate\Bus\Queueable;
@@ -44,6 +45,7 @@ class ParseBankStatementJob implements ShouldQueue
             Log::error('Bank statement parse failed', [
                 'bank_reconciliation_id' => $this->bankReconciliationId,
                 'exception' => $exception->getMessage(),
+                'openrouter_response' => $exception instanceof OpenRouterException ? $exception->getResponseBody() : null,
             ]);
 
             $reconciliation->update([

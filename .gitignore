@@ -28,3 +28,4 @@ api.rest
 /docs/*
 !/docs/manuals/
 !/docs/manuals/**
+!/docs/help-navigation.json

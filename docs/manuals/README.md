@@ -8,7 +8,7 @@ Markdown files in this directory are indexed by `php artisan help:reindex`.
 - **Always provide both languages:** create a pair of files for every topic, with locale suffixes `*-en.md` (English) and `*-id.md` (Bahasa Indonesia). The HELP retriever boosts the file that matches the user’s locale.
 - Keep English and Indonesian manuals aligned (same sections and menu names as shown in the UI).
 - Describe real menu paths and button labels as they appear in the app — the HELP assistant must not infer UI names.
-- Optionally add `docs/help-navigation.json` at the project root with an `items` array to improve “where in the menu?” answers.
+- Optionally add [`docs/help-navigation.json`](../help-navigation.json) with an `items` array to improve “where in the menu?” answers (menu paths, permissions, keywords). This file is indexed by `help:reindex` alongside manuals.
 
 ## Current manuals
 
@@ -18,6 +18,8 @@ Markdown files in this directory are indexed by `php artisan help:reindex`.
 | Bank reconciliation | `bank-reconciliation-manual-en.md` | `bank-reconciliation-manual-id.md` |
 | RAB / Anggaran | `anggaran-manual-en.md` | `anggaran-manual-id.md` |
 | Realization — scan fuel receipts (AI) | `realization-fuel-receipt-scan-manual-en.md` | `realization-fuel-receipt-scan-manual-id.md` |
+
+Menu navigation hints for HELP: [`docs/help-navigation.json`](../help-navigation.json) (Bank Reconciliation, Rekening Koran, validator queue, Help panel).
 
 ## Technical reference
 

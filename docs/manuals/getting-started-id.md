@@ -14,7 +14,12 @@ Di layar lebar, gunakan kolom **Search Menu here** di bilah atas untuk menyaring
 
 Klik ikon tanda tanya (**?**) di bilah atas untuk membuka panel **Help**. Ajukan pertanyaan cara pakai di tab **How-to** atau kirim laporan bug dan permintaan fitur di tab **Report / request**.
 
-Contoh topik di HELP: **rekonsiliasi bank**, **RAB / Anggaran**, dan **scan nota BBM untuk realisasi** (tombol **Scan Fuel Receipts** di halaman detail realisasi — hanya nota BBM).
+Contoh pertanyaan di tab **How-to**:
+
+- *Bagaimana cara menggunakan fitur Bank Reconciliation?*
+- *Cara upload Rekening Koran dan mulai rekonsiliasi bank*
+- **RAB / Anggaran**
+- **Scan nota BBM untuk realisasi** (tombol **Scan Fuel Receipts** di halaman detail realisasi)
 
 ## Setelah dokumentasi berubah
 

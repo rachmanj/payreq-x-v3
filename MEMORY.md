@@ -1,3 +1,53 @@
+### [054] Koran dashboard redesign — cell upload, delete, richer status (2026-07-02) ✅ COMPLETE
+
+**Challenge:** Rekening Koran **dashboard** only showed upload/reconcile badges; users had to switch to the **Upload** tab to add PDFs, could double-upload the same account/month, and delete used the generic dokumen destroy path (wrong `file_upload/` folder).
+
+**Solution:** Each account/month **cell** opens a unified modal — empty cells show a locked upload form (account + month pre-filled); filled cells show upload metadata, PDF link, bank-reconciliation status/actions, and **delete** (SweetAlert confirm). Server rejects duplicate uploads per giro/month. Stored filenames include account number: `koran_{acc_no}_{rand}.pdf`. New Spatie permission **`delete_koran`** (default: superadmin/admin/cashier); elevated roles delete any project, others only their project. Delete blocked when linked reconciliation is locked (pending validation / completed).
+
+**Implementation:** **`KoranController`** (`upload`, `destroy`, `check_koran_files`), **`dashboard.blade.php`**, **`partials/cell-reconciliation-block.blade.php`**, route **`cashier.koran.destroy`**, **`DeleteKoranPermissionSeeder`**, tests **`KoranDashboardCellUploadTest`**, **`KoranDeleteTest`**.
+
+---
+
+### [053] Bank reconciliation report — floating print button (2026-07-02) ✅ COMPLETE
+
+**Solution:** **`report.blade.php`** — fixed bottom-right **Print** FAB (`window.print()`), print CSS hides sidebar/nav, print-only header with **VALIDATED** badge, sign-off table preserved.
+
+---
+
+### [052] Bank reconciliation validator queue + dashboard card (2026-07-02) ✅ COMPLETE
+
+**Challenge:** Validators had no obvious entry point for **`pending_validation`** sessions — only the flat bank reconciliation index and Koran dashboard badges.
+
+**Solution:** **Pending validation** tab on **`bank-reconciliation/index`** (excludes own submissions via **`excludingPreparer`** scope), **Validate** action button, validator info banner. Dashboard card ( **`validate_bank_reconciliation`** ) links to filtered index — mirrors PCBC / overdue-extension pattern.
+
+**Implementation:** **`BankReconciliation`** scopes, **`BankReconciliationController::index`**, **`DashboardUserController`**, **`index.blade.php`**, **`dashboard/row2.blade.php`**, **`BankReconciliationValidatorDashboardTest`**.
+
+---
+
+### [051] Bank reconciliation match sign convention — bank debit vs SAP credit (2026-07-02) ✅ COMPLETE
+
+**Challenge:** Manual match stayed disabled when bank net **+48,010,000** (debit) and SAP net **−48,010,000** (credit) were selected — UI showed difference **96,020,000** instead of **0**. Root cause: engine used **`bankNet − sapNet`** and same-side debit/credit comparison; correct accounting requires **opposite polarity** (bank statement vs book cash).
+
+**Solution:** **`ReconciliationMatchingService`**, **`ManualMatchGroupBankReconciliationRequest`**, **`ReconciliationBalanceService`**, and **`show.blade.php`** sticky bar now use **`bankNet + sapNet ≈ 0`** and cross-compare debit/credit. Migration recomputes **`reconciliation_match_groups.difference`**. Tests in **`BankReconciliationSignConventionTest`**.
+
+**Key learning:** Auto-match previously paired same-side lines; three historical groups may show non-zero Δ and need manual review.
+
+**Implementation:** **`ReconciliationMatchingService.php`**, **`ReconciliationBalanceService.php`**, **`ManualMatchGroupBankReconciliationRequest.php`**, **`show.blade.php`**, migration **`2026_07_02_035611_recompute_reconciliation_match_group_difference_sign.php`**.
+
+---
+
+### [050] Bank reconciliation PDF re-parse — OpenRouter model + queue sync (2026-07-02) ✅ COMPLETE
+
+**Challenge:** **Re-parse PDF (AI)** failed with **`PDF parse failed: Provider returned error`**. **`php artisan queue:work`** showed no activity. Root causes: **`QUEUE_CONNECTION=sync`** (jobs run inline in the web request), and **`OPENROUTER_MODEL=openai/gpt-4o`** — GPT-4o vision rejects **`data:application/pdf`** MIME (only images).
+
+**Solution:** Dedicated **`OPENROUTER_BANK_STATEMENT_MODEL`** (default **`google/gemini-3-flash-preview`**) used only by **`OpenRouterService::extractBankStatementFromPdfBase64`**. **`resolveApiErrorMessage()`** unwraps OpenRouter **`metadata.raw`** for clearer failures. **`.env.example`** documents **`QUEUE_CONNECTION=database`** for async jobs.
+
+**Key learning:** Keep receipt-scan model (GPT-4o) separate from Koran PDF model (Gemini). Fuel receipt scan uses JPEG; bank statements send PDF bytes.
+
+**Implementation:** **`config/services.php`**, **`OpenRouterService.php`**, **`ParseBankStatementJob.php`**, **`tests/Unit/OpenRouterBankStatementTest.php`**.
+
+---
+
 ### [049] Realization approval badge vs table mismatch — orphan `approval_plans` (2026-06-08) ✅ COMPLETE
 
 **Challenge:** Badge on `/approvals/request/realizations` showed **12** for **wahyuansyar** while the DataTable returned **0 rows** (`Attempt to read property "nomor" on null`). **`approval_plans` id 23046** pointed to deleted realization **12986**.
@@ -74,7 +124,9 @@
 
 **Key learning:** Reindex must run whenever manuals change; keep UI labels in prose identical to app strings so the model does not hallucinate menus. Separate **`HelpOpenRouterClient`** from **`OpenRouterService`** avoids coupling HELP embedding/chat to Koran PDF chat payloads.
 
-**Implementation / file map:** Migrations **`2026_05_09_103043_create_help_embeddings_table`**, **`create_help_feedbacks_table`**, **`insert_akses_help_permission_into_permissions_table`**; **`App\Models\{HelpEmbedding, HelpFeedback}`**; **`App\Http\Controllers\Help\HelpController`**, **`Help\{HelpAskRequest, HelpFeedbackRequest}`**; **`config/help.php`**; **`config/services.php`** (openrouter help/embedding keys); **`docs/manuals/README.md`**, **`getting-started-{en,id}.md`**, **`bank-reconciliation-manual-{en,id}.md`**, **`anggaran-manual-{en,id}.md`**; **`tests/Feature/Help/{HelpAskTest, HelpFeedbackTest}.php`**.
+**Implementation / file map:** Migrations **`2026_05_09_103043_create_help_embeddings_table`**, **`create_help_feedbacks_table`**, **`insert_akses_help_permission_into_permissions_table`**; **`App\Models\{HelpEmbedding, HelpFeedback}`**; **`App\Http\Controllers\Help\HelpController`**, **`Help\{HelpAskRequest, HelpFeedbackRequest}`**; **`config/help.php`**; **`config/services.php`** (openrouter help/embedding keys); **`docs/manuals/README.md`**, **`getting-started-{en,id}.md`**, **`bank-reconciliation-manual-{en,id}.md`**, **`anggaran-manual-{en,id}.md`**, **`docs/help-navigation.json`**; **`tests/Feature/Help/{HelpAskTest, HelpFeedbackTest}.php`**.
+
+**2026-07-02 supplement:** Bank reconciliation manuals expanded (step-by-step **Cara menggunakan fitur Bank Reconciliation**, validator workflow, Koran dashboard upload/delete); **`docs/help-navigation.json`** added for menu-path retrieval. Run **`php artisan help:reindex`** after deploy.
 
 **Docs:** `docs/architecture.md`, `docs/decisions.md` (**ADR-HELP-01**), `README.md` (ADR index).
 

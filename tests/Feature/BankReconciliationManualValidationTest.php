@@ -226,8 +226,8 @@ class BankReconciliationManualValidationTest extends TestCase
 
         SapGlLine::query()->create([
             'bank_reconciliation_id' => $reconciliation->id,
-            'debit' => '100.00',
-            'credit' => '0.00',
+            'debit' => '0.00',
+            'credit' => '100.00',
             'matched_status' => SapGlLine::MATCH_UNMATCHED,
         ]);
 
@@ -274,6 +274,24 @@ class BankReconciliationManualValidationTest extends TestCase
         $this->assertSame(BankReconciliation::VALIDATION_VALIDATED, $reconciliation->validation_status);
         $this->assertSame(BankReconciliation::STATUS_COMPLETED, $reconciliation->status);
         $this->assertSame($validator->id, $reconciliation->validated_by);
+    }
+
+    public function test_validated_report_page_includes_floating_print_button(): void
+    {
+        $preparer = $this->createPreparer();
+        $reconciliation = $this->createReconciliation($preparer);
+        $reconciliation->update([
+            'validation_status' => BankReconciliation::VALIDATION_VALIDATED,
+            'status' => BankReconciliation::STATUS_COMPLETED,
+            'validated_at' => now(),
+        ]);
+
+        $this->actingAs($preparer)
+            ->get(route('cashier.bank-reconciliation.report', $reconciliation))
+            ->assertOk()
+            ->assertSee('floating-buttons-br', false)
+            ->assertSee('onclick="window.print()"', false)
+            ->assertSee('VALIDATED', false);
     }
 
     public function test_validator_can_reject_and_reopen_reconciliation(): void

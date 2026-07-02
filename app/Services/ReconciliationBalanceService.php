@@ -28,7 +28,7 @@ class ReconciliationBalanceService
 
     public function difference(BankReconciliation $reconciliation): float
     {
-        return round($this->bankNet($reconciliation) - $this->bookNet($reconciliation), 2);
+        return round($this->bankNet($reconciliation) + $this->bookNet($reconciliation), 2);
     }
 
     public function isBalanced(BankReconciliation $reconciliation): bool
@@ -43,7 +43,7 @@ class ReconciliationBalanceService
     {
         $bankNet = $this->bankNet($reconciliation);
         $bookNet = $this->bookNet($reconciliation);
-        $difference = round($bankNet - $bookNet, 2);
+        $difference = round($bankNet + $bookNet, 2);
 
         return [
             'bank_net' => $bankNet,

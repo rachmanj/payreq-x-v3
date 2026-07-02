@@ -30,10 +30,15 @@ class BankReconciliationController extends Controller
 {
     protected array $elevatedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo', 'corsec'];
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $view = $request->query('view', 'all');
+        if (! in_array($view, ['all', 'pending_validation'], true)) {
+            $view = 'all';
+        }
+
         $query = BankReconciliation::query()
-            ->with(['giro.bank'])
+            ->with(['giro.bank', 'submittedBy'])
             ->orderByDesc('periode')
             ->orderByDesc('id');
 
@@ -45,9 +50,26 @@ class BankReconciliationController extends Controller
             });
         }
 
+        $canValidate = Auth::user()?->can('validate_bank_reconciliation') ?? false;
+
+        $pendingValidationCountQuery = (clone $query)
+            ->pendingValidation()
+            ->excludingPreparer((int) Auth::id());
+
+        $pendingValidationCount = $canValidate ? $pendingValidationCountQuery->count() : 0;
+
+        if ($view === 'pending_validation' && $canValidate) {
+            $query->pendingValidation()->excludingPreparer((int) Auth::id());
+        }
+
         $reconciliations = $query->paginate(20)->withQueryString();
 
-        return view('cashier.bank-reconciliation.index', compact('reconciliations'));
+        return view('cashier.bank-reconciliation.index', compact(
+            'reconciliations',
+            'view',
+            'canValidate',
+            'pendingValidationCount',
+        ));
     }
 
     public function create(Request $request): View

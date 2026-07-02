@@ -133,4 +133,30 @@ class HelpAskTest extends TestCase
             return str_contains($request->url(), 'chat/completions');
         });
     }
+
+    public function test_indonesian_bank_reconciliation_question_matches_manual_chunk(): void
+    {
+        HelpEmbedding::factory()->create([
+            'embedding' => [1.0, 0.0, 0.0, 0.0],
+            'locale' => 'id',
+            'source_path' => 'docs/manuals/bank-reconciliation-manual-id.md',
+            'heading' => 'Cara menggunakan fitur Bank Reconciliation',
+            'chunk_key' => hash('sha256', 'bank-reconciliation-id-howto'),
+            'content' => '## Cara menggunakan fitur Bank Reconciliation\nUpload Rekening Koran dari Cashier → Rekening Koran. Mulai rekonsiliasi. Submit for validation. Validator Validate.',
+        ]);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('akses_help');
+
+        $this->stubOpenRouter();
+
+        $this->actingAs($user)
+            ->postJson(route('help.ask'), [
+                'message' => 'Bagaimana cara menggunakan fitur Bank Reconciliation?',
+                'locale' => 'id',
+            ])
+            ->assertOk()
+            ->assertJsonPath('not_documented', false)
+            ->assertJsonFragment(['path' => 'docs/manuals/bank-reconciliation-manual-id.md']);
+    }
 }

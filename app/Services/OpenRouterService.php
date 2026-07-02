@@ -12,11 +12,13 @@ class OpenRouterService
         protected ?string $apiKey = null,
         protected ?string $baseUrl = null,
         protected ?string $defaultModel = null,
+        protected ?string $bankStatementModel = null,
         protected ?int $timeout = null,
     ) {
         $this->apiKey = $apiKey ?? config('services.openrouter.api_key');
         $this->baseUrl = rtrim($baseUrl ?? config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
         $this->defaultModel = $defaultModel ?? config('services.openrouter.model', 'google/gemini-2.0-flash-001');
+        $this->bankStatementModel = $bankStatementModel ?? config('services.openrouter.bank_statement_model', 'google/gemini-3-flash-preview');
         $this->timeout = $timeout ?? (int) config('services.openrouter.timeout', 120);
     }
 
@@ -53,10 +55,29 @@ class OpenRouterService
         $payload = $response->json();
 
         throw new OpenRouterException(
-            data_get($payload, 'error.message', 'OpenRouter request failed.'),
+            $this->resolveApiErrorMessage(is_array($payload) ? $payload : null, 'OpenRouter request failed.'),
             $response->status(),
             is_array($payload) ? $payload : null
         );
+    }
+
+    protected function resolveApiErrorMessage(?array $payload, string $fallback): string
+    {
+        $message = (string) data_get($payload, 'error.message', $fallback);
+
+        if ($message !== 'Provider returned error') {
+            return $message;
+        }
+
+        $raw = data_get($payload, 'error.metadata.raw');
+        if (! is_string($raw) || $raw === '') {
+            return $message;
+        }
+
+        $nested = json_decode($raw, true);
+        $nestedMessage = data_get($nested, 'error.message');
+
+        return is_string($nestedMessage) && $nestedMessage !== '' ? $nestedMessage : $message;
     }
 
     /**
@@ -86,7 +107,7 @@ PROMPT;
             ],
         ];
 
-        $json = $this->chat($messages);
+        $json = $this->chat($messages, $this->bankStatementModel);
         $content = data_get($json, 'choices.0.message.content');
         if (! is_string($content)) {
             throw new OpenRouterException('Invalid OpenRouter response: missing message content.', 500, is_array($json) ? $json : null);

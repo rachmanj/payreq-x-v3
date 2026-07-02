@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -102,5 +103,23 @@ class BankReconciliation extends Model
             $this->submitted_by,
             $this->reconciled_by,
         ]), true);
+    }
+
+    public function scopePendingValidation(Builder $query): Builder
+    {
+        return $query->where('validation_status', self::VALIDATION_PENDING);
+    }
+
+    public function scopeExcludingPreparer(Builder $query, int $userId): Builder
+    {
+        return $query->where(function (Builder $query) use ($userId): void {
+            $query->where(function (Builder $query) use ($userId): void {
+                $query->where('created_by', '!=', $userId)->orWhereNull('created_by');
+            })->where(function (Builder $query) use ($userId): void {
+                $query->where('submitted_by', '!=', $userId)->orWhereNull('submitted_by');
+            })->where(function (Builder $query) use ($userId): void {
+                $query->where('reconciled_by', '!=', $userId)->orWhereNull('reconciled_by');
+            });
+        });
     }
 }

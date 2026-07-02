@@ -59,6 +59,31 @@
     </div>
 @endcan
 
+@can('validate_bank_reconciliation')
+    <div class="col-lg-4 col-md-6 col-12">
+        <div
+            class="modern-stat-card {{ $bank_reconciliation_pending_validation_count > 0 ? 'stat-warning' : 'stat-success' }}"
+            data-dashboard-pending-bank-reconciliation="{{ $bank_reconciliation_pending_validation_count }}">
+            <div class="stat-icon">
+                <i class="fas fa-balance-scale"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ $bank_reconciliation_pending_validation_count }}</div>
+                <div class="stat-label">Bank reconciliation pending validation</div>
+                <div class="stat-info">
+                    <i
+                        class="fas {{ $bank_reconciliation_pending_validation_count > 0 ? 'fa-exclamation-circle' : 'fa-check-circle' }}"></i>
+                    {{ $bank_reconciliation_pending_validation_count > 0 ? 'Awaiting your review' : 'Nothing pending' }}
+                </div>
+            </div>
+            <a href="{{ route('cashier.bank-reconciliation.index', ['view' => 'pending_validation']) }}"
+                class="stat-action" title="Open bank reconciliations pending validation">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+@endcan
+
 @can('approve_overdue_extension')
     <div class="col-lg-4 col-md-6 col-12">
         <div

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Models\ApprovalPlan;
+use App\Models\BankReconciliation;
 use App\Models\Dokumen;
 use App\Models\Outgoing;
 use App\Models\OverdueExtension;
@@ -40,6 +41,24 @@ class DashboardUserController extends Controller
             $pending_overdue_extension_count = OverdueExtension::query()->pending()->count();
         }
 
+        $bank_reconciliation_pending_validation_count = 0;
+        if (auth()->user()->can('validate_bank_reconciliation')) {
+            $bankReconciliationQuery = BankReconciliation::query()
+                ->pendingValidation()
+                ->excludingPreparer((int) auth()->id());
+
+            $elevatedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo', 'corsec'];
+            $roles = app(UserController::class)->getUserRoles();
+            if (! array_intersect($elevatedRoles, $roles)) {
+                $project = auth()->user()->project;
+                $bankReconciliationQuery->whereHas('giro', function ($query) use ($project): void {
+                    $query->where('project', $project);
+                });
+            }
+
+            $bank_reconciliation_pending_validation_count = $bankReconciliationQuery->count();
+        }
+
         return view('dashboard.index', compact([
             'wait_approve',
             'user_ongoing_payreqs',
@@ -51,6 +70,7 @@ class DashboardUserController extends Controller
             'your_team',
             'pcbc_pending_validation_count',
             'pending_overdue_extension_count',
+            'bank_reconciliation_pending_validation_count',
         ]));
     }
 

@@ -8,14 +8,16 @@ use App\Models\BankReconciliation;
 use App\Models\Dokumen;
 use App\Models\Giro;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class KoranController extends Controller
 {
-    protected $allowedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo', 'corsec'];
+    protected array $allowedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo', 'corsec'];
 
-    public function index()
+    public function index(): View
     {
         $page = request()->query('page', 'dashboard');
         $userRoles = app(UserController::class)->getUserRoles();
@@ -31,53 +33,120 @@ class KoranController extends Controller
             $year = request()->query('year', date('Y'));
             $korans = $this->check_koran_files($year);
             $statistics = $this->calculateStatistics($korans);
+            $canUploadKoran = auth()->user()->can('upload_koran');
+            $canDeleteKoran = auth()->user()->can('delete_koran');
+            $hasElevatedKoranAccess = (bool) array_intersect($this->allowedRoles, $userRoles);
 
-            return view($views['dashboard'], compact('giros', 'year', 'korans', 'statistics'));
+            return view($views['dashboard'], compact(
+                'giros',
+                'year',
+                'korans',
+                'statistics',
+                'canUploadKoran',
+                'canDeleteKoran',
+                'hasElevatedKoranAccess',
+            ));
         }
 
         return view($views['upload'], compact('giros'));
     }
 
-    public function upload(Request $request)
+    public function upload(Request $request): RedirectResponse
     {
-        $this->validate($request, [
+        $validated = $request->validate([
             'file_upload' => 'required|mimes:pdf',
+            'giro_id' => 'required|integer|exists:giros,id',
+            'periode' => 'required|date_format:Y-m',
+            'remarks' => 'nullable|string|max:1000',
         ]);
 
-        $filename = $this->uploadFile($request->file('file_upload'));
+        $giro = Giro::query()->findOrFail((int) $validated['giro_id']);
+        $this->authorizeGiroAccess($giro);
+
+        $periodeDate = Carbon::createFromFormat('Y-m', $validated['periode'])->startOfMonth();
+
+        $exists = Dokumen::query()
+            ->where('type', 'koran')
+            ->where('giro_id', $giro->id)
+            ->whereYear('periode', $periodeDate->year)
+            ->whereMonth('periode', $periodeDate->month)
+            ->exists();
+
+        if ($exists) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors([
+                    'periode' => 'A statement for this account and month is already uploaded.',
+                ]);
+        }
+
+        $filename = $this->uploadFile($request->file('file_upload'), $giro);
 
         Dokumen::create([
             'filename1' => $filename,
-            'giro_id' => $request->giro_id,
+            'giro_id' => $giro->id,
             'type' => 'koran',
-            'project' => $request->project,
-            'periode' => $request->periode ? $request->periode.'-01' : null,
-            'remarks' => $request->remarks,
+            'project' => $giro->project,
+            'periode' => $periodeDate->format('Y-m-d'),
+            'remarks' => $validated['remarks'] ?? null,
             'created_by' => auth()->user()->id,
         ]);
 
         return redirect()->back()->with('success', 'File uploaded successfully.');
     }
 
-    private function getGiros($userRoles)
+    public function destroy(Dokumen $dokumen): RedirectResponse
+    {
+        abort_unless($dokumen->type === 'koran', 404);
+        abort_unless(auth()->user()->can('delete_koran'), 403);
+
+        $dokumen->loadMissing('giro');
+        $this->authorizeGiroAccess($dokumen->giro);
+
+        $reconciliation = BankReconciliation::query()
+            ->where('dokumen_id', $dokumen->id)
+            ->first();
+
+        if ($reconciliation !== null && $reconciliation->isLockedForEditing()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Cannot delete this statement because its bank reconciliation is locked (pending validation or completed).');
+        }
+
+        $storedFilename = $dokumen->getRawOriginal('filename1');
+        if ($storedFilename) {
+            $filePath = public_path('dokumens/'.$storedFilename);
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+        }
+
+        $dokumen->delete();
+
+        return redirect()->back()->with('success', 'Bank statement deleted successfully.');
+    }
+
+    private function getGiros(array $userRoles)
     {
         if (array_intersect($this->allowedRoles, $userRoles)) {
             return Giro::orderBy('bank_id', 'asc')->get();
-        } else {
-            return Giro::where('project', auth()->user()->project)->orderBy('bank_id', 'asc')->get();
         }
+
+        return Giro::where('project', auth()->user()->project)->orderBy('bank_id', 'asc')->get();
     }
 
-    private function uploadFile($file)
+    private function uploadFile($file, Giro $giro): string
     {
         $extension = $file->getClientOriginalExtension();
-        $filename = 'koran_'.rand().'.'.$extension;
+        $accountNumber = Str::slug($giro->acc_no, '_');
+        $filename = 'koran_'.$accountNumber.'_'.rand().'.'.$extension;
         $file->move(public_path('dokumens'), $filename);
 
         return $filename;
     }
 
-    public function check_koran_files($year)
+    public function check_koran_files($year): array
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
@@ -100,19 +169,20 @@ class KoranController extends Controller
             });
 
         foreach ($giros as $giro) {
-            $korans = Dokumen::where('type', 'koran')
+            $korans = Dokumen::query()
+                ->with('createdBy')
+                ->where('type', 'koran')
                 ->where('giro_id', $giro->id)
                 ->whereYear('periode', $year)
-                ->whereIn(DB::raw('LPAD(MONTH(periode), 2, "0")'), $months)
                 ->get()
                 ->keyBy(function ($item) {
-                    return Carbon::parse($item->periode)->format('m');
+                    return Carbon::parse($item->getRawOriginal('periode'))->format('m');
                 });
 
             $completed_count = 0;
-            $giro_data = array_map(function ($month) use ($korans, &$completed_count, $giro, $reconciliationIndex) {
+            $giro_data = array_map(function ($month) use ($korans, &$completed_count, $giro, $reconciliationIndex, $year) {
                 $koran = $korans->get($month);
-                $has_file = $koran && $koran->filename1 !== null;
+                $has_file = $koran && $koran->getRawOriginal('filename1') !== null;
                 if ($has_file) {
                     $completed_count++;
                 }
@@ -121,10 +191,14 @@ class KoranController extends Controller
 
                 return [
                     'month' => $month,
+                    'month_label' => Carbon::createFromDate((int) $year, (int) $month, 1)->format('F'),
+                    'periode' => $year.'-'.$month,
                     'status' => $has_file,
                     'filename1' => $koran ? $koran->filename1 : null,
                     'upload_date' => $koran && $koran->created_at ? Carbon::parse($koran->created_at)->format('d M Y') : null,
+                    'uploaded_by' => $koran ? $koran->created_by_name : null,
                     'dokumen_id' => $koran ? $koran->id : null,
+                    'giro_project' => $giro->project,
                     'reconciliation_id' => $reconciliation?->id,
                     'reconciliation_status' => $reconciliation?->status,
                     'reconciliation_validation_status' => $reconciliation?->validation_status,
@@ -153,7 +227,7 @@ class KoranController extends Controller
         return $result;
     }
 
-    private function calculateStatistics($korans)
+    private function calculateStatistics(array $korans): array
     {
         $totalAccounts = 0;
         $totalMonths = 0;
@@ -210,5 +284,17 @@ class KoranController extends Controller
             ->addColumn('action', 'cashier.koran.action')
             ->rawColumns(['action', 'account', 'reconciled'])
             ->toJson();
+    }
+
+    protected function authorizeGiroAccess(?Giro $giro): void
+    {
+        abort_if($giro === null, 404);
+
+        $userRoles = app(UserController::class)->getUserRoles();
+        if (array_intersect($this->allowedRoles, $userRoles)) {
+            return;
+        }
+
+        abort_unless($giro->project === auth()->user()->project, 403);
     }
 }

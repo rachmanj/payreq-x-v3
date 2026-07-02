@@ -98,7 +98,7 @@ class ReconciliationMatchingService
                 continue;
             }
 
-            $target = $this->netBank($bankLine);
+            $target = -$this->netBank($bankLine);
 
             $candidates = $sapLines
                 ->filter(fn (SapGlLine $s) => $s->matched_status === SapGlLine::MATCH_UNMATCHED
@@ -142,7 +142,7 @@ class ReconciliationMatchingService
                 continue;
             }
 
-            $target = $this->netSap($sapLine);
+            $target = -$this->netSap($sapLine);
 
             $candidates = $bankLines
                 ->filter(fn (BankStatementLine $b) => $b->matched_status === BankStatementLine::MATCH_UNMATCHED
@@ -330,13 +330,13 @@ class ReconciliationMatchingService
         $bankTotal = array_sum(array_map(fn (BankStatementLine $b) => $this->netBank($b), $bankLines));
         $sapTotal = array_sum(array_map(fn (SapGlLine $s) => $this->netSap($s), $sapLines));
 
-        if (abs($bankTotal - $sapTotal) >= self::AMOUNT_TOLERANCE) {
+        if (abs($bankTotal + $sapTotal) >= self::AMOUNT_TOLERANCE) {
             throw new \InvalidArgumentException(
-                'Bank and SAP net totals must match within '.self::AMOUNT_TOLERANCE.'. Bank: '.$bankTotal.' SAP: '.$sapTotal
+                'Bank and SAP net totals must offset within '.self::AMOUNT_TOLERANCE.'. Bank: '.$bankTotal.' SAP: '.$sapTotal
             );
         }
 
-        $diff = $bankTotal - $sapTotal;
+        $diff = $bankTotal + $sapTotal;
 
         $group = ReconciliationMatchGroup::create([
             'bank_reconciliation_id' => $reconciliation->id,
@@ -485,8 +485,8 @@ class ReconciliationMatchingService
 
     protected function amountsEqual(string|float $bankDebit, string|float $bankCredit, string|float $sapDebit, string|float $sapCredit): bool
     {
-        return abs((float) $bankDebit - (float) $sapDebit) < self::AMOUNT_TOLERANCE
-            && abs((float) $bankCredit - (float) $sapCredit) < self::AMOUNT_TOLERANCE;
+        return abs((float) $bankDebit - (float) $sapCredit) < self::AMOUNT_TOLERANCE
+            && abs((float) $bankCredit - (float) $sapDebit) < self::AMOUNT_TOLERANCE;
     }
 
     protected function datesWithinDays(?string $bankDate, ?string $sapDate, int $days): bool
