@@ -48,6 +48,8 @@ return [
         'model' => env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001'),
         'bank_statement_model' => env('OPENROUTER_BANK_STATEMENT_MODEL', 'google/gemini-3-flash-preview'),
         'help_model' => env('OPENROUTER_HELP_MODEL', env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001')),
+        'notulen_model' => env('OPENROUTER_NOTULEN_MODEL', env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001')),
+        'notulen_ocr_model' => env('OPENROUTER_NOTULEN_OCR_MODEL', env('OPENROUTER_BANK_STATEMENT_MODEL', 'google/gemini-3-flash-preview')),
         'embedding_model' => env('OPENROUTER_EMBEDDING_MODEL', 'openai/text-embedding-3-small'),
         'timeout' => env('OPENROUTER_TIMEOUT', 120),
         'connect_timeout' => env('OPENROUTER_CONNECT_TIMEOUT', 10),

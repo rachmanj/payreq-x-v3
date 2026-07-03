@@ -208,9 +208,13 @@ Route::middleware('auth')->group(function () {
     require __DIR__.'/admin.php';
 
     require __DIR__.'/help.php';
+    require __DIR__.'/notulen.php';
 });
 
 Route::post('/get_account_name', [AccountController::class, 'get_account_name'])->name('get_account_name');
+
+Route::get('notulen/meetings/{meeting}/download', [App\Http\Controllers\Notulen\MeetingController::class, 'download'])
+    ->name('notulen.meetings.download');
 
 // Remove or comment out this line if it exists
 // Route::get('/accounts/list', [AccountController::class, 'getList'])->name('accounts.list');

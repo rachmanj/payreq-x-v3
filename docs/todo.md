@@ -1,48 +1,14 @@
 # Task tracking
 
-## Active
-
-_(none — add items here)_
-
 ## Recently completed
 
-- **2026-05-19** — **Realization fuel receipt AI scan (multi-receipt, bulk Save All, HELP manuals)**  
-  **`OpenRouterService`** **`receipts[]`** JSON; **`scanReceipt`** / **`bulkStoreDetails`**; **Scan Fuel Receipts** + review modal; optional modal scan behind **`features.receipt_scan_in_detail_modal`**. Manuals **`realization-fuel-receipt-scan-manual-{en,id}.md`**; **`help:reindex`**.  
-  - Docs: **`docs/architecture.md`**, **`docs/decisions.md`** (**ADR-REALIZATION-FUEL-SCAN-01**), **`MEMORY.md` [048]**.
+- **Notulen AI module** (2026-07-03): meetings upload/index/show, Ask page, OpenRouter RAG pipeline, API (`/api/notulen/*`), permissions, sidebar + menu search, PHPUnit suite.
 
-- **2026-05-15** — **Overdue extensions — approver UX (pending-only, approve modal, 7-day cap, remarks)**  
-  **`OverdueExtensionController::data()`** **`pending()`** only; **Remarks** column + **`resolveRemarks()`**; **`ApproveOverdueExtensionRequest`** + approve **modal** (editable **`requested_due_date`**); **`StoreOverdueExtensionRequest`** **today+7** cap + modal **`max`**; extension modals **Reason** required marker. Tests extended in **`OverdueExtensionTest`**.  
-  - Docs: **`docs/architecture.md`**, **`docs/decisions.md`** (**ADR-OVERDUE-EXT-02**), **`MEMORY.md` [047]**.
+## In progress
 
-- **2026-05-09** — **Anggaran (RAB) rebuild**  
-  **`anggaran_details`** + user **`details[]`** sync; **`warning_threshold`**, **`fund_status`** / pool timestamps; **`AnggaranDashboardController`** (KPIs, by-department JSON, release DataTable), **`AnggaranConsolidatedController`**, **`AnggaranFundPoolController`** (**`recalculate_release`**); **`anggaran:expire-periodic`** daily (**`App\Console\Kernel`**); **`AnggaranReleaseService`** aggregations + alert helpers; reports/user show lines + banners; **`UserAnggaranDetailController`** line delete. Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-ANGGRAN-02)**, **`MEMORY.md` [043]**, **`README.md`**.
+_(none)_
 
-- **2026-05-08** — **Cashier bank reconciliation — N:M match groups (**`reconciliation_match_groups`** + pivots)**  
-  Koran PDF parse (**`OpenRouterService`** / **`BankStatementParserService`**) + SAP GL fetch (**`SapService`**); **`ReconciliationMatchingService`** persists **groups** (auto exact/fuzzy/split + manual arrays); **`ManualMatchGroupBankReconciliationRequest`**; review UI multi-select + **Unmatch**; **`POST …/unmatch/{reconciliation_match_group}`**; Koran dashboard reconciliation status hints; queued jobs **`afterCommit()`** constructor pattern. Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-BANK-REC-01)**, **`MEMORY.md` [042]**.
+## Backlog
 
-- **2026-05-08** — **Advance payreq multi-row budgets (**`budget_link_mode`** + **`payreq_anggaran_allocations`)**  
-  User advance create/edit (**`rab_select`**): legacy single **`rab_id`** vs multi-row allocation grid with total = sum(rows). Persist mode + **`PayreqAnggaranAllocation`**; **`ProcessAdvancePayreqRequest`** / **`PayreqAdvanceController`**; **`UserPayreqController::show`** + partial **`show_advance_allocation_table`**; advance prints **`print_budget_table_body`** across all Advance PDF skins; realization **`add_details`** per-line **`rab_id`** / warnings / labels (**`rab_no`** when distinct); edit form **`payreq_no`** **`readonly`** (POST-safe). Docs: **`docs/architecture.md`**, **`docs/decisions.md` (ADR-PAYREQ-03)**, **`MEMORY.md` [041]**.
-
-- **2026-05-06** — **Document overdue extensions (request / approve) + dashboard pending card**
-  - Table **`overdue_extensions`**, **`OverdueExtensionController`** (**list**, **store**, **approve**, **reject**), **`StoreOverdueExtensionRequest`** / **`ReviewOverdueExtensionRequest`**, routes under **`document-overdue`**. User listing **`user-payreqs/overdue-documents`** + extension modals; submit eligibility aligned with overdue semantics (**`Carbon::parse($due_date)->lt(now())`**). Spatie **`approve_overdue_extension`** + **`Gate::before`** for **`superadmin`**/**`admin`**. Dashboard **`pending_overdue_extension_count`** card in **`dashboard/row2`** ( **`data-dashboard-pending-extension-requests`** ). **`Announcement::scopeCurrent`** SQLite branch so PHPUnit (**`:memory:`**) can load **`dashboard/index`**. Tests: **`tests/Feature/OverdueExtensionTest.php`**.  
-  - Docs: `docs/architecture.md`, `docs/decisions.md` (**ADR-OVERDUE-EXT-01**), `MEMORY.md` **[040]**.
-
-- **2026-04-29** — **Cashier: Realization Attachments**
-  - Module for uploading/downloading/deleting images & PDFs per **`realizations`** row (`realization_attachments` table, private disk). Spatie permissions **`akses_realization_attachments`**, **`create_realization_attachments`**, **`delete_realization_attachments`**, **`realization_attachments_scope_bo`** (seeder + idempotent migration inserting permission rows + cache reset). **`RealizationAttachmentsAccessService`** scopes lists: HO (**000H**) all projects; **`realization_attachments_scope_bo`** non-HO/non-APS projects **and** **`whereHas('attachments')`** only; others own project. Sidebar menu (`sidebar.blade.php`) — **not** only `menu/cashier.blade.php` (unused in main layout). DataTable filters + Employee Name column + action badge when attachments exist; detail shows remarks.  
-  - Docs: `docs/architecture.md`, `docs/decisions.md` (ADR-REALIZATION-ATTACH-01), `MEMORY.md` [037].
-
-- **2026-04-29** — **Automated Kemenkeu exchange rates (`exchange-rates:update`) hardening + PHPUnit DB safety**
-  - Parser updated for live Kemenkeu HTML (**Tanggal berlaku**, mixed EN/ID month names, flexible day widths). Command **`firstOrCreate`s** missing **`currencies`** (scraped codes + **`IDR`**), resolves **`created_by`** from **`Auth::id()`** or **`User::query()->orderBy('id')->value('id')`** (no assumption that user **`id = 1`** exists). **`phpunit.xml`** forces **`sqlite` `:memory:`** so **`RefreshDatabase`** never targets MySQL dev; **`doctrine/dbal`** (^3.10) in **`require-dev`** for SQLite migrations. Feature test **`tests/Feature/ExchangeRatesUpdateCommandTest.php`** mocks the scraper.  
-  - Docs: `docs/architecture.md`, `docs/decisions.md` (ADR-TEST-01), `MEMORY.md` [036].
-
-- **2026-04-25** — **PCBC PDF validation (official report gate)**
-  - `dokumens`: `validation_status`, `validated_at`, `validated_by`, `rejection_reason`; compliance + monthly dashboard count only **`validated`** rows; upload → **pending**; validate/reject routes; permission `validate_pcbc_report` (seeder + `RoleController`); confirmations on validate/reject; uploader reads **rejection reason** via Status column **View reason** modal and **Edit** modal alert.  
-  - Docs: `docs/architecture.md`, `docs/decisions.md` (ADR-PCBC-04, ADR-PCBC-05), `MEMORY.md` [034].
-
-- **2026-04-24** — **PCBC weekly compliance & UX**  
-  - Service + config for Monday–Sun weeks (`Asia/Makassar`), `dokumen_date` basis, exception projects, two-week sanction, redirect middleware, `see_pcbc_warning` permission, shared view data middleware, bilingual banner, upload page and DataTable fixes.  
-  - Docs: `docs/architecture.md`, `docs/decisions.md`, `MEMORY.md` [033].
-
-## Archive
-
-Move older completed work here or trim when the list grows. Historical detail often lives in `MEMORY.md` and `docs/decisions.md`.
+- OCR for scanned PDF notulen (v2).
+- Optional dedicated queue worker for `ProcessMeeting` when `QUEUE_CONNECTION=database`.

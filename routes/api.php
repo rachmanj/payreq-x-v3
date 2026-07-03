@@ -79,3 +79,8 @@ Route::prefix('payreqs')->middleware('auth.apikey')->group(function () {
     Route::get('/{id}', [App\Http\Controllers\Api\PayreqApiController::class, 'show']);
     Route::post('/{id}/cancel', [App\Http\Controllers\Api\PayreqApiController::class, 'cancel']);
 });
+
+Route::prefix('notulen')->middleware(['auth.apikey', 'throttle:30,1'])->group(function () {
+    Route::post('/ask', [App\Http\Controllers\Api\NotulenApiController::class, 'ask']);
+    Route::get('/meetings', [App\Http\Controllers\Api\NotulenApiController::class, 'meetings']);
+});

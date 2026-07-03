@@ -1,3 +1,13 @@
+### [055] Notulen AI — meeting-minutes Q&A module (2026-07-03) ✅ COMPLETE
+
+**Challenge:** Need an assistant to upload PDF notulen rapat, index content, and answer questions with cited PDF sources — spec in **`docs/notulen-ai.md`** assumed a greenfield Inertia/React stack.
+
+**Solution:** Integrated into existing **Blade + AdminLTE** app: **`meetings`** / **`meeting_chunks`** / **`notulen_questions`** tables; **`ProcessMeeting`** job (pdfparser → chunk → OpenRouter **`embedMany`**); **`AskService`** (cosine retrieval like HELP); web routes **`routes/notulen.php`**; API **`POST/GET /api/notulen/*`** via **`auth.apikey`**. Permissions **`akses_notulen`**, **`upload_notulen`**, **`delete_notulen`**. Private disk **`notulen`**.
+
+**Implementation:** **`App\Services\Notulen\*`**, **`Notulen\MeetingController`**, **`Notulen\AskController`**, **`Api\NotulenApiController`**, views under **`resources/views/notulen/`**, tests **`tests/Feature/Notulen/`**.
+
+---
+
 ### [054] Koran dashboard redesign — cell upload, delete, richer status (2026-07-02) ✅ COMPLETE
 
 **Challenge:** Rekening Koran **dashboard** only showed upload/reconcile badges; users had to switch to the **Upload** tab to add PDFs, could double-upload the same account/month, and delete used the generic dokumen destroy path (wrong `file_upload/` folder).

@@ -24,6 +24,7 @@ class MenuSearchService
         $this->pushAccounting($user, $items);
         $this->pushApprovals($user, $items);
         $this->pushAdmin($user, $items);
+        $this->pushNotulen($user, $items);
         $this->pushSearch($user, $items);
 
         return $items;
@@ -509,6 +510,34 @@ class MenuSearchService
             'far fa-circle',
             $cat,
             ['news', 'banner']
+        );
+    }
+
+    /**
+     * @param  array<int, array{title: string, route: string, icon: string, category: string, breadcrumb: string, keywords: array<int, string>, searchText: string}>  $items
+     */
+    protected function pushNotulen(User $user, array &$items): void
+    {
+        if (! $user->can('akses_notulen')) {
+            return;
+        }
+
+        $cat = 'Notulen AI';
+
+        $items[] = $this->makeItem(
+            'Ask Notulen',
+            route('notulen.ask.index'),
+            'far fa-circle',
+            $cat,
+            ['notulen', 'meeting', 'minutes', 'qa', 'ai']
+        );
+
+        $items[] = $this->makeItem(
+            'Notulen Documents',
+            route('notulen.meetings.index'),
+            'far fa-circle',
+            $cat,
+            ['notulen', 'pdf', 'upload', 'documents']
         );
     }
 

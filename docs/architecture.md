@@ -283,6 +283,53 @@ If the **table** fits on one page but **blocks below** the table (e.g. signature
 
 Task log: **`MEMORY.md` [046]**.
 
+## Notulen AI (meeting-minutes Q&A)
+
+RAG assistant over uploaded **PDF notulen rapat**: extract text → chunk → embed (OpenRouter) → cosine similarity retrieval → grounded chat answer with cited PDF links.
+
+### Data model
+
+- **`meetings`**: title, **`meeting_date`**, **`original_filename`**, **`file_path`** (private disk), **`status`** (`pending` / `processed` / `failed`), **`full_text`**, **`uploaded_by`**.
+- **`meeting_chunks`**: **`meeting_id`**, **`chunk_index`**, **`content`**, **`embedding`** (JSON float array).
+- **`notulen_questions`**: optional **`user_id`**, question, answer, **`sources`** JSON, **`created_at`**.
+
+### Processing pipeline
+
+```mermaid
+flowchart TD
+    upload["Upload PDF"] --> job["ProcessMeeting job"]
+    job --> extract["PdfExtractionService smalot/pdfparser"]
+    extract --> chunk["NotulenChunker"]
+    chunk --> embed["NotulenOpenRouterClient embedMany"]
+    embed --> db["meeting_chunks"]
+    askQ["Web or API question"] --> askSvc["AskService"]
+    askSvc --> qEmbed["embed question"]
+    qEmbed --> retrieve["RetrievalService cosine vs chunks"]
+    db --> retrieve
+    retrieve --> chat["OpenRouter chat grounded answer"]
+    chat --> ui["Blade Ask page + PDF source links"]
+    chat --> apiJson["JSON API response"]
+```
+
+### Routes
+
+- **Web** (`routes/notulen.php`, **`auth`** + Spatie **`permission:*`**): **`notulen/ask`**, **`notulen/meetings`** (DataTables), show, upload, delete.
+- **Download** (`notulen/meetings/{meeting}/download`): outside **`auth`** — session user with **`akses_notulen`** or **valid signed URL** (API sources).
+- **API** (`routes/api.php`, **`auth.apikey`**): **`POST /api/notulen/ask`**, **`GET /api/notulen/meetings`**.
+
+### Services (`App\Services\Notulen\`)
+
+- **`NotulenOpenRouterClient`** — embeddings + chat (mirrors HELP client pattern).
+- **`PdfExtractionService`**, **`NotulenChunker`**, **`RetrievalService`**, **`AskService`**.
+- Config: **`config/notulen.php`**, **`config/filesystems.php`** disk **`notulen`**, **`OPENROUTER_NOTULEN_MODEL`**.
+
+### Permissions
+
+- **`akses_notulen`**, **`upload_notulen`**, **`delete_notulen`** — default grant **`superadmin`** / **`admin`**; assignable via Roles UI (**`Notulen AI`** group in **`RoleController`**).
+- Sidebar treeview + **`MenuSearchService::pushNotulen`**.
+
+See **ADR-NOTULEN-01** (`docs/decisions.md`), spec **`docs/notulen-ai.md`**, task log **`MEMORY.md` [055]**.
+
 ## Related docs
 
-- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-OVERDUE-EXT-02**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**, **ADR-REALIZATION-FUEL-SCAN-01**.
+- `docs/decisions.md` — ADR-ANGGRAN-01 (RAB release consolidation & tooling), ADR-ANGGRAN-02, ADR-PAYREQ-01/02/**03**, ADR-COMPAT-01, **ADR-OVERDUE-EXT-01**, **ADR-OVERDUE-EXT-02**, **ADR-BANK-REC-01**, **ADR-HELP-01**, **ADR-NAV-01**, **ADR-REALIZATION-FUEL-SCAN-01**, **ADR-NOTULEN-01**.

@@ -177,6 +177,11 @@ class RoleController extends Controller
                 'akses_search',
                 'can_search',
             ],
+            'Notulen AI' => [
+                'akses_notulen',
+                'upload_notulen',
+                'delete_notulen',
+            ],
             'Team Management' => [
                 'see_team',
             ],
@@ -264,6 +269,7 @@ class RoleController extends Controller
                     'Giro' => ['akses_giro', 'create_outgoing'],
                     'Tax' => ['akses_wtax23'],
                     'Search' => ['akses_search', 'can_search'],
+                    'Notulen' => ['akses_notulen', 'upload_notulen', 'delete_notulen'],
                     'Team' => ['see_team'],
                 ];
 

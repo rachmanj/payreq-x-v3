@@ -62,6 +62,12 @@ return [
             'throw' => false,
         ],
 
+        'notulen' => [
+            'driver' => 'local',
+            'root' => storage_path('app/notulen'),
+            'throw' => false,
+        ],
+
     ],
 
     /*

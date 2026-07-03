@@ -664,6 +664,35 @@
                     </li>
                 @endcan
 
+                <!-- Notulen AI -->
+                @can('akses_notulen')
+                    <li class="nav-item has-treeview {{ request()->routeIs('notulen.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('notulen.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-robot"></i>
+                            <p>
+                                Notulen AI
+                                <i class="fas fa-angle-left right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('notulen.ask.index') }}"
+                                    class="nav-link {{ request()->routeIs('notulen.ask.*') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Ask</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('notulen.meetings.index') }}"
+                                    class="nav-link {{ request()->routeIs('notulen.meetings.*') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Documents</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                @endcan
+
                 <!-- Search -->
                 @can('can_search')
                     <li class="nav-item">
