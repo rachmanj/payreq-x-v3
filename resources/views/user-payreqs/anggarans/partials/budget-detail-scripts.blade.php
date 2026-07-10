@@ -12,17 +12,27 @@
             return { raw: fixed, display: parts.join('.') };
         }
 
-        function lineAmount($tr) {
-            let amount = parseFloat($tr.find('.detail-amount').val()) || 0;
+        function setLineAmount($tr, amount) {
+            const formatted = formatAmountDisplay(amount);
+            $tr.find('.detail-amount').val(formatted.raw);
+            $tr.find('.detail-amount-display').val(formatted.display);
+        }
+
+        function calculatedLineAmount(qty, unitPrice) {
+            return Math.round(qty * unitPrice * 100) / 100;
+        }
+
+        function syncLineAmountFromQtyAndPrice($tr) {
             const qty = parseFloat($tr.find('.detail-qty').val()) || 0;
             const unitPrice = parseFloat($tr.find('.detail-unit-price').val()) || 0;
-
-            if (amount <= 0 && qty > 0 && unitPrice > 0) {
-                amount = Math.round(qty * unitPrice * 100) / 100;
-                $tr.find('.detail-amount').val(amount);
-            }
+            const amount = calculatedLineAmount(qty, unitPrice);
+            setLineAmount($tr, amount);
 
             return amount;
+        }
+
+        function lineAmount($tr) {
+            return parseFloat($tr.find('.detail-amount').val()) || 0;
         }
 
         function recalcTotalAmount() {
@@ -33,6 +43,13 @@
             const formatted = formatAmountDisplay(sum);
             $amount.val(formatted.raw);
             $amountDisplay.val(formatted.display);
+        }
+
+        function syncAllLineAmountsFromQtyAndPrice() {
+            $body.find('tr.budget-detail-row').each(function () {
+                syncLineAmountFromQtyAndPrice($(this));
+            });
+            recalcTotalAmount();
         }
 
         function nextDetailIndex() {
@@ -71,9 +88,12 @@
             const $tr = $('<tr class="budget-detail-row">' +
                 '<td><input type="text" name="details[' + idx + '][description]" class="form-control form-control-sm"></td>' +
                 '<td><input type="number" step="0.0001" name="details[' + idx + '][qty]" class="form-control form-control-sm detail-qty" value="1"></td>' +
-                '<td><input type="text" name="details[' + idx + '][unit]" class="form-control form-control-sm"></td>' +
+                '<td><input type="text" name="details[' + idx + '][unit]" class="form-control form-control-sm" value="each"></td>' +
                 '<td><input type="number" step="0.01" name="details[' + idx + '][unit_price]" class="form-control form-control-sm detail-unit-price" value="0"></td>' +
-                '<td><input type="number" step="0.01" name="details[' + idx + '][amount]" class="form-control form-control-sm detail-amount" value="0"></td>' +
+                '<td>' +
+                    '<input type="hidden" name="details[' + idx + '][amount]" class="detail-amount" value="0">' +
+                    '<input type="text" class="form-control form-control-sm bg-light text-right detail-amount-display" value="0.00" readonly autocomplete="off">' +
+                '</td>' +
                 '<td class="text-nowrap text-center"><button type="button" class="btn btn-xs btn-danger btn-remove-budget-detail" title="Remove line"><i class="fas fa-trash"></i></button></td>' +
                 '</tr>');
             $body.append($tr);
@@ -89,15 +109,16 @@
             reindexDetailRows();
         });
 
-        $body.on('input', '.detail-qty, .detail-unit-price, .detail-amount', function () {
+        $body.on('input', '.detail-qty, .detail-unit-price', function () {
+            syncLineAmountFromQtyAndPrice($(this).closest('tr'));
             recalcTotalAmount();
         });
 
         $('#form_anggaran').on('submit', function () {
-            recalcTotalAmount();
+            syncAllLineAmountsFromQtyAndPrice();
         });
 
         updateRemoveButtons();
-        recalcTotalAmount();
+        syncAllLineAmountsFromQtyAndPrice();
     })();
 </script>

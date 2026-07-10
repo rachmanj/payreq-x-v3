@@ -44,8 +44,8 @@ class AnggaranFormDetails
         $unitPrice = isset($row['unit_price']) && $row['unit_price'] !== '' ? (float) $row['unit_price'] : 0.0;
         $amount = isset($row['amount']) && $row['amount'] !== '' ? (float) $row['amount'] : 0.0;
 
-        if ($amount <= 0 && $qty > 0 && $unitPrice > 0) {
-            $amount = round($qty * $unitPrice, 2);
+        if ($qty > 0 && $unitPrice > 0) {
+            return max(0, round($qty * $unitPrice, 2));
         }
 
         return max(0, $amount);

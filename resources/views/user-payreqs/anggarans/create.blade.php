@@ -120,28 +120,7 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-12">
-                                <label for="rab_type">Type</label>
-                                <div class="form-group">
-                                    <div class="form-check d-inline mr-4">
-                                        <input class="form-check-input" type="radio" value="periode" name="rab_type"
-                                            {{ old('rab_type', 'periode') === 'periode' ? 'checked' : '' }}>
-                                        <label class="form-check-label">Periode</label>
-                                    </div>
-                                    <div class="form-check d-inline mr-4">
-                                        <input class="form-check-input" type="radio" name="rab_type" value="event"
-                                            {{ old('rab_type') === 'event' ? 'checked' : '' }}>
-                                        <label class="form-check-label">Event</label>
-                                    </div>
-                                    <div class="form-check d-inline">
-                                        <input class="form-check-input" type="radio" name="rab_type" value="buc"
-                                            {{ old('rab_type') === 'buc' ? 'checked' : '' }}>
-                                        <label class="form-check-label">BUC <small>(DNC only)</small></label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        @include('user-payreqs.anggarans.partials.type-usage-fields')
                         {{-- this row will show depent on what radio button input is clicked --}}
                         <hr>
                         <div class="row" id="periode">

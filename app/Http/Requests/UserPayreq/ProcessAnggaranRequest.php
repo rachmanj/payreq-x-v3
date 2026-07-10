@@ -47,6 +47,7 @@ class ProcessAnggaranRequest extends FormRequest
             'description' => ['required', 'string'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'rab_type' => ['required', Rule::in(['periode', 'event', 'buc'])],
+            'usage' => ['required', Rule::in(['user', 'department', 'project'])],
             'periode_anggaran' => [Rule::requiredIf(fn () => $this->input('rab_type') === 'periode'), 'nullable', 'date'],
             'start_date' => [Rule::requiredIf(fn () => in_array($this->input('rab_type'), ['event', 'buc'], true)), 'nullable', 'date'],
             'end_date' => [Rule::requiredIf(fn () => in_array($this->input('rab_type'), ['event', 'buc'], true)), 'nullable', 'date', 'after_or_equal:start_date'],
