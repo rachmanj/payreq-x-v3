@@ -1,3 +1,13 @@
+### [056] ARK-Fleet equipment sync — fetch button + diagnostics (2026-07-10) ✅ COMPLETE
+
+**Challenge:** Production showed "Unable to fetch count from ARK-Fleet API" with no request reaching ARK-Fleet. Root causes: `env('URL_EQUIPMENTS')` returns null when config is cached; page only fetched on full reload with minimal error detail.
+
+**Solution:** Moved URL to **`config/services.php`** (`services.ark_fleet.url_equipments`). Added **`ArkFleetService`** with structured debug payload (configured URL, request URL, HTTP status, duration, response preview, connection errors). Sync page now has **Fetch** button (AJAX `GET equipments/sync/fetch-count`) and collapsible diagnostics panel. Sync button enabled only after successful fetch.
+
+**Production checklist:** Set `URL_EQUIPMENTS` in `.env` to real ARK-Fleet host (not `localhost`), run `php artisan config:clear` then `config:cache`, verify `curl` from prod server to request URL.
+
+---
+
 ### [055] Notulen AI — meeting-minutes Q&A module (2026-07-03) ✅ COMPLETE
 
 **Challenge:** Need an assistant to upload PDF notulen rapat, index content, and answer questions with cited PDF sources — spec in **`docs/notulen-ai.md`** assumed a greenfield Inertia/React stack.

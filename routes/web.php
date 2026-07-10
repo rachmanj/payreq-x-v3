@@ -185,6 +185,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('equipments')->name('equipments.')->group(function () {
         Route::prefix('sync')->name('sync.')->group(function () {
             Route::get('/', [EquipmentSyncController::class, 'index'])->name('index');
+            Route::get('/fetch-count', [EquipmentSyncController::class, 'fetchCount'])->name('fetch_count');
             Route::get('/equipments', [EquipmentSyncController::class, 'sync_equipments'])->name('sync_equipments');
         });
     });
