@@ -43,7 +43,18 @@ class ProcessAnggaranRequest extends FormRequest
             'anggaran_id' => [Rule::requiredIf(fn () => in_array($this->input('button_type'), ['edit', 'edit_submit'], true)), 'nullable', 'exists:anggarans,id'],
             'rab_no' => ['nullable', 'string', 'max:255'],
             'date' => ['nullable', 'date'],
-            'project' => ['required', 'string', 'exists:projects,code'],
+            'project' => [
+                'required',
+                'string',
+                'exists:projects,code',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $user = $this->user();
+                    $unrestricted = ['000H', '001H', 'APS'];
+                    if (! in_array($user->project, $unrestricted, true) && $value !== $user->project) {
+                        $fail('You may only create or edit a RAB for your own project.');
+                    }
+                },
+            ],
             'description' => ['required', 'string'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'rab_type' => ['required', Rule::in(['periode', 'event', 'buc'])],

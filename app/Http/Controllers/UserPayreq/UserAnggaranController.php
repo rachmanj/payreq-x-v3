@@ -12,12 +12,15 @@ use App\Models\AnggaranDetail;
 use App\Models\ApprovalPlan;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
+use App\Models\User;
 use App\Services\AnggaranReleaseService;
 use App\Support\AnggaranFormDetails;
 use Illuminate\Support\Str;
 
 class UserAnggaranController extends Controller
 {
+    private const UNRESTRICTED_PROJECTS = ['000H', '001H', 'APS'];
+
     public function __construct(
         protected AnggaranReleaseService $releaseService
     ) {}
@@ -30,7 +33,7 @@ class UserAnggaranController extends Controller
     public function create()
     {
         $nomor = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
-        $projects = Project::orderBy('code', 'asc')->get();
+        $projects = $this->projectOptionsFor(auth()->user());
         $periode_anggarans = PeriodeAnggaran::orderBy('periode', 'asc')
             ->where('periode_type', 'anggaran')
             ->where('project', auth()->user()->project)
@@ -114,7 +117,7 @@ class UserAnggaranController extends Controller
         $anggaran = Anggaran::query()->with('details')->findOrFail($id);
         $this->authorize('editThroughPayreq', $anggaran);
 
-        $projects = Project::orderBy('code', 'asc')->get();
+        $projects = $this->projectOptionsFor(auth()->user(), $anggaran->rab_project);
 
         $periode_anggarans = PeriodeAnggaran::orderBy('periode', 'asc')
             ->where('periode_type', 'anggaran')
@@ -373,5 +376,23 @@ class UserAnggaranController extends Controller
             ->get();
 
         return $project_rabs->merge($department_rabs)->merge($user_rabs);
+    }
+
+    private function projectOptionsFor(User $user, ?string $currentProjectCode = null): \Illuminate\Support\Collection
+    {
+        if (! in_array($user->project, self::UNRESTRICTED_PROJECTS, true)) {
+            return Project::where('code', $user->project)->get();
+        }
+
+        $projects = Project::active()->selectable()->orderBy('code')->get();
+
+        if ($currentProjectCode !== null && ! $projects->contains('code', $currentProjectCode)) {
+            $current = Project::where('code', $currentProjectCode)->first();
+            if ($current) {
+                $projects->push($current)->sortBy('code')->values();
+            }
+        }
+
+        return $projects;
     }
 }
