@@ -56,6 +56,11 @@ return [
         'embedding_retries' => (int) env('OPENROUTER_EMBEDDING_RETRIES', 2),
     ],
 
+    'ark_fleet' => [
+        'url_equipments' => env('URL_EQUIPMENTS'),
+        'url_api' => env('URL_ARKFLEET'),
+    ],
+
     'lot' => [
         'base_url' => env('LOT_API_BASE_URL'),
         'search_endpoint' => env('LOT_API_SEARCH_ENDPOINT'),

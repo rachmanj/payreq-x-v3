@@ -3,45 +3,53 @@
 namespace App\Http\Controllers;
 
 use App\Models\Equipment;
-use Illuminate\Http\Request;
 
 class EquipmentSyncController extends Controller
 {
     public function index()
     {
-        $url = env('URL_EQUIPMENTS') . '?status=ACTIVE';
-        $client = new \GuzzleHttp\Client();
-        
+        $baseUrl = config('services.ark_fleet.url_equipments');
+
+        if (empty($baseUrl)) {
+            return view('equipments.sync.index', [
+                'api_count' => 0,
+                'local_count' => Equipment::count(),
+            ])->with('error', 'URL_EQUIPMENTS is not configured. Set it in .env (e.g. http://192.168.33.15/ark-fleet/api/equipments), then run php artisan config:cache on production.');
+        }
+
+        $url = $baseUrl.'?status=ACTIVE';
+        $client = new \GuzzleHttp\Client;
+
         try {
             $response = $client->request('GET', $url, [
                 'timeout' => 10,
-                'http_errors' => true
+                'http_errors' => true,
             ]);
-            
+
             $statusCode = $response->getStatusCode();
-            
+
             if ($statusCode !== 200) {
                 throw new \Exception("API returned status code: {$statusCode}");
             }
-            
+
             $data = json_decode($response->getBody()->getContents(), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception("Invalid JSON response from API: " . json_last_error_msg());
+                throw new \Exception('Invalid JSON response from API: '.json_last_error_msg());
             }
 
             $equipments_data = $data['data'] ?? [];
-            
+
             // Use actual count of items in data array for accuracy
             // This ensures we show the exact number of items that will be synced
             $api_count = count($equipments_data);
-            
+
             // If data array is empty but API count exists, use API count
             // This handles cases where API might return count but empty data array
             if ($api_count == 0 && isset($data['count']) && $data['count'] > 0) {
                 $api_count = $data['count'];
             }
-            
+
             $local_count = Equipment::count();
 
             return view('equipments.sync.index', [
@@ -49,40 +57,51 @@ class EquipmentSyncController extends Controller
                 'local_count' => $local_count,
             ]);
         } catch (\GuzzleHttp\Exception\ServerException $e) {
-            $errorMessage = "ARK-Fleet API server error. Please check if the ARK-Fleet server is running and accessible.";
+            $errorMessage = 'ARK-Fleet API server error. Please check if the ARK-Fleet server is running and accessible.';
             if ($e->hasResponse()) {
                 $statusCode = $e->getResponse()->getStatusCode();
                 $errorMessage .= " (HTTP {$statusCode})";
             }
-            
+
             return view('equipments.sync.index', [
                 'api_count' => 0,
                 'local_count' => Equipment::count(),
             ])->with('error', $errorMessage);
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $errorMessage = "ARK-Fleet API client error. Please check the API endpoint configuration.";
+            $errorMessage = 'ARK-Fleet API client error. Please check the API endpoint configuration.';
             if ($e->hasResponse()) {
                 $statusCode = $e->getResponse()->getStatusCode();
                 $errorMessage .= " (HTTP {$statusCode})";
             }
-            
+
             return view('equipments.sync.index', [
                 'api_count' => 0,
                 'local_count' => Equipment::count(),
             ])->with('error', $errorMessage);
+        } catch (\GuzzleHttp\Exception\ConnectException $e) {
+            return view('equipments.sync.index', [
+                'api_count' => 0,
+                'local_count' => Equipment::count(),
+            ])->with('error', 'Unable to connect to ARK-Fleet API at '.$baseUrl.'. Check network access, firewall, and that the ARK-Fleet server is running.');
         } catch (\Exception $e) {
             return view('equipments.sync.index', [
                 'api_count' => 0,
                 'local_count' => Equipment::count(),
-            ])->with('error', 'Failed to fetch equipment data from ARK-Fleet API: ' . $e->getMessage());
+            ])->with('error', 'Failed to fetch equipment data from ARK-Fleet API: '.$e->getMessage());
         }
     }
 
     public function sync_equipments()
     {
-        $url = env('URL_EQUIPMENTS') . '?status=ACTIVE';
-        $client = new \GuzzleHttp\Client();
-        
+        $baseUrl = config('services.ark_fleet.url_equipments');
+
+        if (empty($baseUrl)) {
+            return redirect()->route('equipments.sync.index')->with('error', 'URL_EQUIPMENTS is not configured. Set it in .env, then run php artisan config:cache on production.');
+        }
+
+        $url = $baseUrl.'?status=ACTIVE';
+        $client = new \GuzzleHttp\Client;
+
         try {
             $response = $client->request('GET', $url);
             $data = json_decode($response->getBody()->getContents(), true);
@@ -108,7 +127,7 @@ class EquipmentSyncController extends Controller
 
             return redirect()->route('equipments.sync.index')->with('success', 'Active equipments synchronized successfully.');
         } catch (\Exception $e) {
-            return redirect()->route('equipments.sync.index')->with('error', 'Failed to sync equipment data: ' . $e->getMessage());
+            return redirect()->route('equipments.sync.index')->with('error', 'Failed to sync equipment data: '.$e->getMessage());
         }
     }
 }

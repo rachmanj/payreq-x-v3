@@ -206,7 +206,7 @@ class ToolController extends Controller
 
     public function getEquipments($project = null)
     {
-        $url = env('URL_EQUIPMENTS');
+        $url = config('services.ark_fleet.url_equipments');
 
         $client = new \GuzzleHttp\Client;
 

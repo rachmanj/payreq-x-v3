@@ -2,9 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-
 class EquipmentController extends Controller
 {
     public function index()
@@ -15,9 +12,9 @@ class EquipmentController extends Controller
     // data
     public function data()
     {
-        $url = env('URL_EQUIPMENTS');
+        $url = config('services.ark_fleet.url_equipments');
 
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client;
         $response = $client->request('GET', $url);
         $data = json_decode($response->getBody()->getContents(), true)['data'];
 
