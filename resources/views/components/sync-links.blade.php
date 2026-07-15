@@ -1,17 +1,23 @@
 <div class="card">
     <div class="card-header">
         @php
-            $projects = [
-                'dashboard' => 'Dashboard',
-                '000H' => 'HO & APS',
-                '001H' => 'BO Jkt',
-                '017C' => '017C',
-                '021C' => '021C',
-                '022C' => '022C',
-                '023C' => '023C',
-                '025C' => '025C',
-                '026C' => '026C',
-            ];
+            $fullAccessRoles = ['superadmin', 'admin', 'cashier', 'approver'];
+            $boRoles = ['approver_bo', 'cashier_bo'];
+            $isBoRestricted = auth()->user()->hasAnyRole($boRoles) && ! auth()->user()->hasAnyRole($fullAccessRoles);
+
+            $projects = $isBoRestricted
+                ? ['001H' => 'BO Jkt']
+                : [
+                    'dashboard' => 'Dashboard',
+                    '000H' => 'HO & APS',
+                    '001H' => 'BO Jkt',
+                    '017C' => '017C',
+                    '021C' => '021C',
+                    '022C' => '022C',
+                    '023C' => '023C',
+                    '025C' => '025C',
+                    '026C' => '026C',
+                ];
         @endphp
 
         @foreach ($projects as $key => $label)

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Accounting;
 
 use App\Exports\VerificationJournalExport;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\VerificationJournalController;
 use App\Models\Account;
 use App\Models\Department;
 use App\Models\Realization;
@@ -24,7 +23,12 @@ class SapSyncController extends Controller
 {
     public function index()
     {
+        $user = auth()->user();
         $page = request()->query('page', 'dashboard');
+
+        if ($this->isBoRestrictedUser($user) && $page !== '001H') {
+            return redirect()->route('accounting.sap-sync.index', ['page' => '001H']);
+        }
 
         $views = [
             'dashboard' => 'accounting.sap-sync.dashboard',
@@ -50,13 +54,24 @@ class SapSyncController extends Controller
 
     public function show($id)
     {
+        $user = auth()->user();
         $vj = VerificationJournal::find($id);
+
+        if (! $vj) {
+            abort(404);
+        }
+
+        $this->assertProjectAccessible($user, $vj->project);
+
+        $canSubmitToSap = $this->canSubmitToSap($user, $vj);
+
         $vj_details = VerificationJournalDetail::where('verification_journal_id', $id)
             ->orderBy('id', 'asc')
             ->get()
             ->map(function ($detail) {
                 $account = Account::where('account_number', $detail->account_code)->first();
-                $detail->account_name = $account ? $account->account_name : "not found";
+                $detail->account_name = $account ? $account->account_name : 'not found';
+
                 return $detail;
             });
 
@@ -69,7 +84,8 @@ class SapSyncController extends Controller
         return view('accounting.sap-sync.show', compact([
             'vj',
             'vj_details',
-            'submissionLogs'
+            'submissionLogs',
+            'canSubmitToSap',
         ]));
     }
 
@@ -81,6 +97,7 @@ class SapSyncController extends Controller
 
             // Get the verification journal
             $verification_journal = VerificationJournal::findOrFail($request->verification_journal_id);
+            $this->assertProjectAccessible(auth()->user(), $verification_journal->project);
 
             // Update verification journal SAP info
             $verification_journal->sap_journal_no = $request->sap_journal_no;
@@ -135,7 +152,7 @@ class SapSyncController extends Controller
             DB::rollBack();
 
             // Log the error
-            Log::error('Error updating SAP info: ' . $e->getMessage());
+            Log::error('Error updating SAP info: '.$e->getMessage());
 
             return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)
                 ->with('error', 'Failed to update SAP Info. Please try again.');
@@ -146,6 +163,13 @@ class SapSyncController extends Controller
     {
         // check if user is the one who posted the SAP Info
         $verification_journal = VerificationJournal::find($request->verification_journal_id);
+
+        if (! $verification_journal) {
+            abort(404);
+        }
+
+        $this->assertProjectAccessible(auth()->user(), $verification_journal->project);
+
         if ($verification_journal->posted_by != auth()->user()->id) {
             return redirect()->route('accounting.sap-sync.show', $request->verification_journal_id)->with('error', 'You are not allowed to cancel this SAP Info');
         }
@@ -177,6 +201,7 @@ class SapSyncController extends Controller
 
     public function data()
     {
+        $user = auth()->user();
         $query = request()->query('project');
 
         if ($query === 'HO') {
@@ -184,12 +209,14 @@ class SapSyncController extends Controller
         } else {
             $project = [$query];
         }
+
+        $this->assertProjectAccessible($user, $query);
+
         $verification_journals = VerificationJournal::whereIn('project', $project)
             ->orderByRaw('sap_journal_no IS NULL DESC')
             ->orderBy('date', 'desc')
             ->limit(300)
             ->get();
-
 
         return datatables()->of($verification_journals)
             ->addColumn('select', function ($journal) {
@@ -197,16 +224,18 @@ class SapSyncController extends Controller
                     return '';
                 }
 
-                return '<input type="checkbox" class="bulk-select" value="' . $journal->id . '">';
+                return '<input type="checkbox" class="bulk-select" value="'.$journal->id.'">';
             })
             ->editColumn('date', function ($journal) {
                 $date = new \Carbon\Carbon($journal->date);
+
                 return $date->addHours(8)->format('d-M-Y');
             })
             ->addColumn('status', function ($journal) {
                 if ($journal->sap_journal_no == null) {
                     return '<span class="badge badge-danger">Not Posted Yet</span>';
                 }
+
                 return '<span class="badge badge-success">Posted</span>';
             })
             ->editColumn('amount', function ($journal) {
@@ -217,6 +246,7 @@ class SapSyncController extends Controller
                     return '-';
                 }
                 $date = new \Carbon\Carbon($journal->updated_at);
+
                 return $date->addHours(8)->format('d-M-Y H:i');
             })
             ->addIndexColumn()
@@ -229,6 +259,12 @@ class SapSyncController extends Controller
     {
         $vj_id = request()->query('vj_id');
         $vj = VerificationJournal::find($vj_id);
+
+        if (! $vj) {
+            abort(404);
+        }
+
+        $this->assertProjectAccessible(auth()->user(), $vj->project);
 
         $journal_details = VerificationJournalDetail::select(
             'verification_journal_id',
@@ -245,6 +281,7 @@ class SapSyncController extends Controller
         // Process journal details based on verification journal type
         if ($vj && $vj->type === 'bank') {
             $this->processBankTransactionDetails($journal_details, $vj);
+
             return Excel::download(new \App\Exports\BankTransactionExport($journal_details), 'bank_transaction.xlsx');
         }
 
@@ -264,7 +301,7 @@ class SapSyncController extends Controller
         $vj = VerificationJournal::findOrFail($request->verification_journal_id);
         $user = auth()->user();
 
-        if (!$this->canSubmitToSap($user)) {
+        if (! $this->canSubmitToSap($user, $vj)) {
             return redirect()->route('accounting.sap-sync.show', $vj->id)
                 ->with('error', 'You do not have permission to submit to SAP B1.');
         }
@@ -291,10 +328,6 @@ class SapSyncController extends Controller
 
         $user = auth()->user();
 
-        if (!$this->canSubmitToSap($user)) {
-            return redirect()->back()->with('error', 'You do not have permission to submit to SAP B1.');
-        }
-
         $ids = collect($request->verification_journal_ids)->unique()->values();
         $journals = VerificationJournal::whereIn('id', $ids)->get()->keyBy('id');
 
@@ -305,13 +338,24 @@ class SapSyncController extends Controller
         foreach ($ids as $id) {
             $journal = $journals->get($id);
 
-            if (!$journal) {
+            if (! $journal) {
                 $failed[] = ['nomor' => $id, 'message' => 'Journal not found'];
+
+                continue;
+            }
+
+            if (! $this->canSubmitToSap($user, $journal)) {
+                $failed[] = [
+                    'nomor' => $journal->nomor ?? $journal->id,
+                    'message' => 'You do not have permission to submit this journal to SAP B1.',
+                ];
+
                 continue;
             }
 
             if ($journal->sap_journal_no) {
                 $skipped[] = $journal->nomor ?? $journal->id;
+
                 continue;
             }
 
@@ -331,15 +375,39 @@ class SapSyncController extends Controller
         }
 
         $message = $this->buildBulkSubmissionMessage($success, $failed, $skipped);
-        $flashKey = !empty($failed) ? 'error' : 'success';
+        $flashKey = ! empty($failed) ? 'error' : 'success';
 
         return redirect()->back()->with($flashKey, $message);
     }
 
-    protected function canSubmitToSap($user): bool
+    protected function isBoRestrictedUser($user): bool
+    {
+        $fullAccessRoles = ['superadmin', 'admin', 'cashier', 'approver'];
+        $boRoles = ['approver_bo', 'cashier_bo'];
+
+        return $user->hasAnyRole($boRoles) && ! $user->hasAnyRole($fullAccessRoles);
+    }
+
+    protected function assertProjectAccessible($user, string $project): void
+    {
+        if ($this->isBoRestrictedUser($user) && $project !== '001H') {
+            abort(403, 'You do not have permission to access this project.');
+        }
+    }
+
+    protected function canSubmitToSap($user, ?VerificationJournal $vj = null): bool
     {
         $allowedRoles = ['superadmin', 'admin', 'cashier', 'approver'];
-        return $user->hasAnyRole($allowedRoles);
+
+        if ($user->hasAnyRole($allowedRoles)) {
+            return true;
+        }
+
+        if ($user->hasAnyRole(['approver_bo', 'cashier_bo'])) {
+            return $vj !== null && $vj->project === '001H';
+        }
+
+        return false;
     }
 
     protected function processSapSubmission(VerificationJournal $vj, User $user): array
@@ -347,10 +415,10 @@ class SapSyncController extends Controller
         $builder = new SapJournalEntryBuilder($vj);
         $validationErrors = $builder->validate();
 
-        if (!empty($validationErrors)) {
+        if (! empty($validationErrors)) {
             return [
                 'success' => false,
-                'message' => 'Validation failed: ' . implode(', ', $validationErrors),
+                'message' => 'Validation failed: '.implode(', ', $validationErrors),
             ];
         }
 
@@ -372,18 +440,18 @@ class SapSyncController extends Controller
 
             return [
                 'success' => false,
-                'message' => 'Failed to submit to SAP B1: ' . $e->getMessage() . '. Please check the error and try again.',
+                'message' => 'Failed to submit to SAP B1: '.$e->getMessage().'. Please check the error and try again.',
             ];
         }
 
-        if (!($result['success'] ?? false)) {
+        if (! ($result['success'] ?? false)) {
             $message = $result['message'] ?? 'SAP submission returned unsuccessful result';
 
             $this->recordSubmissionFailure($vj, $user, $attemptNumber, $message);
 
             return [
                 'success' => false,
-                'message' => 'Failed to submit to SAP B1: ' . $message,
+                'message' => 'Failed to submit to SAP B1: '.$message,
             ];
         }
 
@@ -461,7 +529,7 @@ class SapSyncController extends Controller
 
             return [
                 'success' => false,
-                'message' => 'An error occurred while saving SAP submission: ' . $e->getMessage(),
+                'message' => 'An error occurred while saving SAP submission: '.$e->getMessage(),
             ];
         }
 
@@ -474,7 +542,7 @@ class SapSyncController extends Controller
         return [
             'success' => true,
             'sap_journal_no' => $sapJournalNumber,
-            'message' => 'Journal entry successfully submitted to SAP B1. Journal Number: ' . $sapJournalNumber,
+            'message' => 'Journal entry successfully submitted to SAP B1. Journal Number: '.$sapJournalNumber,
         ];
     }
 
@@ -504,24 +572,24 @@ class SapSyncController extends Controller
     {
         $parts = ['Bulk submission completed.'];
 
-        if (!empty($success)) {
+        if (! empty($success)) {
             $summary = collect($success)->map(function ($item) {
-                return ($item['nomor'] ?? 'N/A') . '→' . ($item['sap_journal_no'] ?? 'N/A');
+                return ($item['nomor'] ?? 'N/A').'→'.($item['sap_journal_no'] ?? 'N/A');
             })->implode(', ');
 
-            $parts[] = 'Success: ' . count($success) . ' (' . $summary . ')';
+            $parts[] = 'Success: '.count($success).' ('.$summary.')';
         }
 
-        if (!empty($failed)) {
+        if (! empty($failed)) {
             $summary = collect($failed)->map(function ($item) {
-                return ($item['nomor'] ?? 'N/A') . ' - ' . $item['message'];
+                return ($item['nomor'] ?? 'N/A').' - '.$item['message'];
             })->implode('; ');
 
-            $parts[] = 'Failed: ' . count($failed) . ' (' . $summary . ')';
+            $parts[] = 'Failed: '.count($failed).' ('.$summary.')';
         }
 
-        if (!empty($skipped)) {
-            $parts[] = 'Skipped (already posted): ' . implode(', ', $skipped);
+        if (! empty($skipped)) {
+            $parts[] = 'Skipped (already posted): '.implode(', ', $skipped);
         }
 
         return implode(' ', $parts);
@@ -529,9 +597,9 @@ class SapSyncController extends Controller
 
     /**
      * Process details for bank transaction exports
-     * 
-     * @param \Illuminate\Database\Eloquent\Collection $journal_details
-     * @param \App\Models\VerificationJournal $vj
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $journal_details
+     * @param  \App\Models\VerificationJournal  $vj
      * @return void
      */
     private function processBankTransactionDetails($journal_details, $vj)
@@ -544,8 +612,8 @@ class SapSyncController extends Controller
 
     /**
      * Process details for realization-based exports
-     * 
-     * @param \Illuminate\Database\Eloquent\Collection $journal_details
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $journal_details
      * @return void
      */
     private function processRealizationDetails($journal_details)
@@ -565,8 +633,14 @@ class SapSyncController extends Controller
         $vj_id = request()->query('vj_id');
         $vj = VerificationJournal::find($vj_id);
 
+        if (! $vj) {
+            abort(404);
+        }
+
+        $this->assertProjectAccessible(auth()->user(), $vj->project);
+
         return view('accounting.sap-sync.edit-vjdetail.index', [
-            'vj' => $vj
+            'vj' => $vj,
         ]);
     }
 
@@ -575,9 +649,11 @@ class SapSyncController extends Controller
         $vj_id = request()->query('vj_id');
         $vj = VerificationJournal::find($vj_id);
 
-        if (!$vj) {
+        if (! $vj) {
             return response()->json(['error' => 'Verification Journal not found'], 404);
         }
+
+        $this->assertProjectAccessible(auth()->user(), $vj->project);
 
         $vj_details = VerificationJournalDetail::with('verificationJournal')
             ->where('verification_journal_id', $vj_id)
@@ -585,21 +661,22 @@ class SapSyncController extends Controller
 
         return datatables()->of($vj_details)
             ->addColumn('akun', function ($vj_detail) {
-                return $vj_detail->account_code . ' <br><small><b> ' . Account::where('account_number', $vj_detail->account_code)->first()->account_name . '</b></small>';
+                return $vj_detail->account_code.' <br><small><b> '.Account::where('account_number', $vj_detail->account_code)->first()->account_name.'</b></small>';
             })
             ->addColumn('cost_center', function ($vj_detail) {
-                return $vj_detail->cost_center . ' <br><small><b> ' . Department::where('sap_code', $vj_detail->cost_center)->first()->akronim . '</b></small>';
+                return $vj_detail->cost_center.' <br><small><b> '.Department::where('sap_code', $vj_detail->cost_center)->first()->akronim.'</b></small>';
             })
             ->addColumn('debit_credit_badge', function ($vj_detail) {
                 $badgeClass = $vj_detail->debit_credit === 'debit' ? 'badge-primary' : 'badge-danger';
                 $badgeText = strtoupper($vj_detail->debit_credit);
-                return '<span class="badge ' . $badgeClass . '">' . $badgeText . '</span>';
+
+                return '<span class="badge '.$badgeClass.'">'.$badgeText.'</span>';
             })
             ->addIndexColumn()
             ->addColumn('action', function ($vj_detail) use ($vj) {
                 return view('accounting.sap-sync.edit-vjdetail.action', [
                     'model' => $vj_detail,
-                    'vj' => $vj
+                    'vj' => $vj,
                 ])->render();
             })
             ->rawColumns(['akun', 'action', 'cost_center', 'debit_credit_badge'])
@@ -611,34 +688,36 @@ class SapSyncController extends Controller
         $vj_detail = VerificationJournalDetail::find($request->vj_detail_id);
         $vj = VerificationJournal::find($vj_detail->verification_journal_id);
 
+        $this->assertProjectAccessible(auth()->user(), $vj->project);
+
         if ($vj->sap_journal_no) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot edit. This verification journal has already been posted to SAP.'
+                'message' => 'Cannot edit. This verification journal has already been posted to SAP.',
             ], 422);
         }
 
         if ($vj_detail->debit_credit === 'credit') {
             $account = Account::where('account_number', $request->account_code)->first();
-            
-            if (!$account) {
+
+            if (! $account) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Selected account not found.'
+                    'message' => 'Selected account not found.',
                 ], 422);
             }
 
-            if (!in_array($account->type, ['cash', 'bank'])) {
+            if (! in_array($account->type, ['cash', 'bank'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'For credit entries, only cash or bank accounts can be selected.'
+                    'message' => 'For credit entries, only cash or bank accounts can be selected.',
                 ], 422);
             }
 
             if ($account->project !== $vj->project) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Selected account must belong to the same project as the verification journal.'
+                    'message' => 'Selected account must belong to the same project as the verification journal.',
                 ], 422);
             }
         }
@@ -652,7 +731,7 @@ class SapSyncController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Detail Updated'
+            'message' => 'Detail Updated',
         ]);
     }
 
@@ -668,16 +747,16 @@ class SapSyncController extends Controller
         // personel activities by name
         $activities = VerificationJournal::select(
             'posted_by',
-            DB::raw("(COUNT(*)) as total_count")
+            DB::raw('(COUNT(*)) as total_count')
         )
             ->whereYear('updated_at', Carbon::now())
             ->whereNotNull('sap_journal_no') // Added filter for sap_journal_no not null
-            ->groupBy(DB::raw("posted_by"))
+            ->groupBy(DB::raw('posted_by'))
             ->get();
 
-        //convert user_id to name
+        // convert user_id to name
         foreach ($activities as $activity) {
-            $activity->posted_name = User::find($activity->posted_by) ? User::find($activity->posted_by)->name : "not found";
+            $activity->posted_name = User::find($activity->posted_by) ? User::find($activity->posted_by)->name : 'not found';
         }
 
         $activities_count = $activities->pluck('total_count')->toArray();
@@ -691,10 +770,12 @@ class SapSyncController extends Controller
     public function upload_sap_journal(Request $request)
     {
         $this->validate($request, [
-            'sap_journal_file' => 'required|mimes:pdf,jpg,jpeg,png,gif,bmp,webp|max:10240'
+            'sap_journal_file' => 'required|mimes:pdf,jpg,jpeg,png,gif,bmp,webp|max:10240',
         ]);
 
         $vj = VerificationJournal::findOrFail($request->verification_journal_id);
+
+        $this->assertProjectAccessible(auth()->user(), $vj->project);
 
         // Check if journal has been posted
         if (empty($vj->sap_journal_no)) {
@@ -703,16 +784,16 @@ class SapSyncController extends Controller
 
         $file = $request->file('sap_journal_file');
         $extension = $file->getClientOriginalExtension();
-        $filename = 'sapj_' . $vj->sap_journal_no . '_' . time() . '_' . rand(1000, 9999) . '.' . $extension;
+        $filename = 'sapj_'.$vj->sap_journal_no.'_'.time().'_'.rand(1000, 9999).'.'.$extension;
         $file->move(public_path('file_upload'), $filename);
 
         // Delete old file if exists
-        if ($vj->sap_filename && file_exists(public_path('file_upload/' . $vj->sap_filename))) {
-            @unlink(public_path('file_upload/' . $vj->sap_filename));
+        if ($vj->sap_filename && file_exists(public_path('file_upload/'.$vj->sap_filename))) {
+            @unlink(public_path('file_upload/'.$vj->sap_filename));
         }
 
         $vj->update([
-            'sap_filename' => $filename
+            'sap_filename' => $filename,
         ]);
 
         return back()->with('success', 'Document uploaded successfully.');
@@ -723,8 +804,14 @@ class SapSyncController extends Controller
         $vj_id = request()->query('vj_id');
         $vj = VerificationJournal::find($vj_id);
 
+        if (! $vj) {
+            abort(404);
+        }
+
+        $this->assertProjectAccessible(auth()->user(), $vj->project);
+
         return view('accounting.sap-sync.print-sapj', [
-            'vj' => $vj
+            'vj' => $vj,
         ]);
     }
 
@@ -760,7 +847,7 @@ class SapSyncController extends Controller
             $yearArray = [
                 'year' => $year,
                 'month_data' => [],
-                'user_totals' => [] // Add array for user totals
+                'user_totals' => [], // Add array for user totals
             ];
 
             // Initialize user totals
@@ -768,7 +855,7 @@ class SapSyncController extends Controller
                 $yearArray['user_totals'][$user->id] = [
                     'user_id' => $user->id,
                     'user_name' => $user->name,
-                    'total_count' => 0
+                    'total_count' => 0,
                 ];
             }
 
@@ -777,7 +864,7 @@ class SapSyncController extends Controller
                 $monthData = [
                     'month' => str_pad($month, 2, '0', STR_PAD_LEFT),
                     'month_name' => date('M', mktime(0, 0, 0, $month, 1)),
-                    'users' => []
+                    'users' => [],
                 ];
 
                 // Add all users with zero count by default
@@ -785,7 +872,7 @@ class SapSyncController extends Controller
                     $monthData['users'][] = [
                         'user_id' => $user->id,
                         'user_name' => $user->name,
-                        'count' => 0
+                        'count' => 0,
                     ];
                 }
 
@@ -839,10 +926,11 @@ class SapSyncController extends Controller
         // Get all unique projects from data and merge with predefined list
         $projectsFromData = $counts->pluck('project')->unique()->values()->toArray();
         $mergedProjects = array_unique(array_merge($allProjects, $projectsFromData));
-        
+
         // Sort projects: predefined projects first in their order, then any other projects
         $projects = collect($mergedProjects)->sortBy(function ($project) use ($allProjects) {
             $index = array_search($project, $allProjects);
+
             return $index !== false ? $index : 999 + ord($project[0]);
         })->values();
 
@@ -856,7 +944,7 @@ class SapSyncController extends Controller
             $yearArray = [
                 'year' => $year,
                 'month_data' => [],
-                'project_totals' => [] // Add array for project totals
+                'project_totals' => [], // Add array for project totals
             ];
 
             // Initialize project totals
@@ -864,7 +952,7 @@ class SapSyncController extends Controller
                 $yearArray['project_totals'][$project] = [
                     'project' => $project,
                     'total_count' => 0,
-                    'total_amount' => 0
+                    'total_amount' => 0,
                 ];
             }
 
@@ -873,7 +961,7 @@ class SapSyncController extends Controller
                 $monthData = [
                     'month' => str_pad($month, 2, '0', STR_PAD_LEFT),
                     'month_name' => date('M', mktime(0, 0, 0, $month, 1)),
-                    'projects' => []
+                    'projects' => [],
                 ];
 
                 // Add all projects with zero count by default
@@ -881,7 +969,7 @@ class SapSyncController extends Controller
                     $monthData['projects'][] = [
                         'project' => $project,
                         'count' => 0,
-                        'amount' => 0
+                        'amount' => 0,
                     ];
                 }
 

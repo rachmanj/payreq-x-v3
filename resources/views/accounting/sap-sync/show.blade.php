@@ -215,7 +215,7 @@
                 </div>
                 <div class="card-body">
                     {{-- Primary Actions --}}
-                    @if (empty($vj->sap_journal_no))
+                    @if (empty($vj->sap_journal_no) && $canSubmitToSap)
                         <div class="mb-3">
                             <button type="button" class="btn btn-success btn-lg btn-block" id="submit-to-sap-btn">
                                 <i class="fas fa-paper-plane"></i> Submit to SAP B1
