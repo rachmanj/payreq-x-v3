@@ -50,7 +50,7 @@ class RealizationOverdueController extends Controller
                     return '';
                 }
 
-                return '<input type="checkbox" name="realization_ids[]" class="realization-checkbox" value="'.$realization->id.'">';
+                return '<input type="checkbox" name="realization_ids[]" form="bulk-update-form" class="realization-checkbox" value="'.$realization->id.'">';
             })
             ->addColumn(('employee'), function ($realization) {
                 return $realization->requestor->name;

@@ -1,9 +1,24 @@
 @if ($model->payreq->type === 'reimburse')
     <a href="{{ route('approvals.request.payreqs.show', $model->id) }}" class="btn btn-xs btn-warning">detail</a>
 @else
-    {{-- button call modal to update --}}
-    <button type="button" class="btn btn-xs btn-warning" data-toggle="modal"
-        data-target="#approvals-update-{{ $model->id }}">detail</button>
+    <div class="payreq-action-buttons">
+        <div class="btn-group btn-group-sm decision-btn-group" role="group">
+            <button type="button" class="btn btn-xs btn-success decision-btn" data-id="{{ $model->id }}"
+                data-status="1" title="Approve">
+                <i class="fas fa-check"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-info decision-btn" data-id="{{ $model->id }}"
+                data-status="2" title="Revise">
+                <i class="fas fa-undo"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-danger decision-btn" data-id="{{ $model->id }}"
+                data-status="3" title="Reject">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <button type="button" class="btn btn-xs btn-warning" data-toggle="modal"
+            data-target="#approvals-update-{{ $model->id }}">detail</button>
+    </div>
 
     {{-- modal update --}}
     <div class="modal fade" id="approvals-update-{{ $model->id }}">

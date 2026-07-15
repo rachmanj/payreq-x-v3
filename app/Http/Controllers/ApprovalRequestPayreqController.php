@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\RealizationDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ApprovalRequestPayreqController extends Controller
 {
@@ -82,9 +83,16 @@ class ApprovalRequestPayreqController extends Controller
             ->addColumn('days', function ($approval_request) {
                 return $approval_request->payreq->submit_at->diffInDays(now());
             })
+            ->addColumn('remarks', function ($approval_request) {
+                $remarks = $approval_request->payreq->remarks;
+
+                return $remarks
+                    ? '<small title="'.e($remarks).'">'.e(Str::limit($remarks, 60)).'</small>'
+                    : '—';
+            })
             ->addIndexColumn()
             ->addColumn('action', 'approvals-request.payreqs.action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'remarks'])
             ->toJson();
     }
 

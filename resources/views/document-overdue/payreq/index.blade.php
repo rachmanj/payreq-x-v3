@@ -29,8 +29,8 @@
                             @csrf
                             <div class="row mb-3">
                                 <div class="col-md-2">
-                                    <button id="select-all" class="btn btn-sm btn-outline-primary mr-2">Select All</button>
-                                    <button id="deselect-all" class="btn btn-sm btn-outline-secondary">Deselect All</button>
+                                    <button type="button" id="select-all" class="btn btn-sm btn-outline-primary mr-2">Select All</button>
+                                    <button type="button" id="deselect-all" class="btn btn-sm btn-outline-secondary">Deselect All</button>
                                 </div>
                                 <div id="bulk-actions" class="col-md-10" style="display: none;">
                                     <div class="row">
@@ -186,6 +186,14 @@
                     $('#bulk-actions').hide();
                 }
             }
+
+            $('#bulk-update-form').on('submit', function(e) {
+                if ($('.payreq-checkbox:checked').length === 0) {
+                    e.preventDefault();
+                    toastr.error('Please select at least one payment request.');
+                    return false;
+                }
+            });
         });
     </script>
 @endsection

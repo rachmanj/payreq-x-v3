@@ -1,3 +1,13 @@
+### [057] Document overdue bulk extend — Payreq Ids required (2026-07-15) ✅ FIXED
+
+**Challenge:** Bulk "Update Selected Records" on Document Overdue Payreq failed with **"Payreq Ids field is required"** even when rows were checked.
+
+**Cause:** DataTable checkboxes lived **outside** `#bulk-update-form`, so `payreq_ids[]` never posted.
+
+**Fix:** Set HTML `form="bulk-update-form"` on checkboxes in **`PayreqOverdueController`** / **`RealizationOverdueController`**. Same pattern for realizations. Added client-side empty-selection guard and `type="button"` on Select/Deselect.
+
+---
+
 ### [056] ARK-Fleet equipment sync — fetch button + diagnostics (2026-07-10) ✅ COMPLETE
 
 **Challenge:** Production showed "Unable to fetch count from ARK-Fleet API" with no request reaching ARK-Fleet. Root causes: `env('URL_EQUIPMENTS')` returns null when config is cached; page only fetched on full reload with minimal error detail.

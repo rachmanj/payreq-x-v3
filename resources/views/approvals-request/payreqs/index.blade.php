@@ -44,23 +44,26 @@
                             <i class="fas fa-square"></i> Deselect All
                         </button>
                     </div>
-                    <table id="mypayreqs" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>
-                                    <input type="checkbox" id="select-all-checkbox">
-                                </th>
-                                <th>#</th>
-                                <th>Payreq No</th>
-                                <th>Requestor</th>
-                                <th>Submit at</th>
-                                <th>Type</th>
-                                <th>IDR</th>
-                                <th>Days</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                    </table>
+                    <div class="table-responsive">
+                        <table id="mypayreqs" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="select-all-checkbox">
+                                    </th>
+                                    <th>#</th>
+                                    <th>Payreq No</th>
+                                    <th>Requestor</th>
+                                    <th>Submit at</th>
+                                    <th>Type</th>
+                                    <th>IDR</th>
+                                    <th>Days</th>
+                                    <th>Remarks</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- /.card-body -->
@@ -339,6 +342,20 @@
         .modal-backdrop.show {
             opacity: 0.5;
         }
+
+        #mypayreqs td.remarks-col {
+            font-size: 0.75rem;
+            line-height: 1.35;
+            max-width: 220px;
+            white-space: normal;
+        }
+
+        #mypayreqs .payreq-action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: nowrap;
+        }
     </style>
 @endsection
 
@@ -392,6 +409,9 @@
                         data: 'days'
                     },
                     {
+                        data: 'remarks'
+                    },
+                    {
                         data: 'action',
                         orderable: false,
                         searchable: false
@@ -401,7 +421,10 @@
                 columnDefs: [{
                     "targets": [6, 7],
                     "className": "text-right"
-                }, ]
+                }, {
+                    "targets": [8],
+                    "className": "remarks-col"
+                }]
             });
 
             // Handle select all checkbox
@@ -486,6 +509,62 @@
                         var errorMessage = xhr.responseJSON ? xhr.responseJSON.message :
                             'An error occurred';
                         toastr.error(errorMessage);
+                    }
+                });
+            });
+
+            // Handle quick decision buttons for advance payreqs
+            function submitDecision(url, status, remarks) {
+                $.ajax({
+                    type: 'PUT',
+                    url: url,
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        status: status,
+                        remarks: remarks,
+                    },
+                    success: function(response) {
+                        toastr.success(response.message);
+                        table.ajax.reload(null, false);
+                        updateDocumentCountBadges();
+                    },
+                    error: function(xhr) {
+                        var errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'An error occurred';
+                        toastr.error(errorMessage);
+                    }
+                });
+            }
+
+            $(document).on('click', '.decision-btn', function() {
+                var id = $(this).data('id');
+                var status = $(this).data('status');
+                var url = '{{ url('approvals/plan') }}/' + id + '/update';
+
+                if (status === 1) {
+                    Swal.fire({
+                        title: 'Approve this payment request?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, approve',
+                    }).then(function(result) {
+                        if (result.isConfirmed) {
+                            submitDecision(url, status, '');
+                        }
+                    });
+                    return;
+                }
+
+                var isReject = status === 3;
+                Swal.fire({
+                    title: isReject ? 'Reject this payment request?' : 'Send back for revision?',
+                    icon: 'warning',
+                    input: 'textarea',
+                    inputPlaceholder: 'Remarks (optional)',
+                    showCancelButton: true,
+                    confirmButtonText: isReject ? 'Reject' : 'Send back',
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        submitDecision(url, status, result.value || '');
                     }
                 });
             });

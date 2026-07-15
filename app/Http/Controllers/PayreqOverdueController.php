@@ -51,7 +51,7 @@ class PayreqOverdueController extends Controller
                     return '';
                 }
 
-                return '<input type="checkbox" name="payreq_ids[]" class="payreq-checkbox" value="'.$payreq->id.'">';
+                return '<input type="checkbox" name="payreq_ids[]" form="bulk-update-form" class="payreq-checkbox" value="'.$payreq->id.'">';
             })
             ->addColumn(('employee'), function ($payreq) {
                 return $payreq->requestor->name;
