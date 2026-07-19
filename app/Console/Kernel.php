@@ -27,6 +27,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        $schedule->command('sap:post-unposted-vj')
+            ->dailyAt('23:00')
+            ->withoutOverlapping()
+            ->runInBackground();
+
         $schedule->command('anggaran:sync-release-totals')
             ->hourly()
             ->withoutOverlapping()

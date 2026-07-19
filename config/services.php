@@ -75,6 +75,7 @@ return [
         'db_name' => env('SAP_DB_NAME'),
         'user' => env('SAP_USER'),
         'password' => env('SAP_PASSWORD'),
+        'auto_submit_user_id' => env('SAP_AUTO_SUBMIT_USER_ID'),
         'ar_invoice' => [
             'default_payment_terms' => env('SAP_AR_INVOICE_DEFAULT_PAYMENT_TERMS', 15),
             'default_revenue_account' => env('SAP_AR_INVOICE_DEFAULT_REVENUE_ACCOUNT', '41101'),

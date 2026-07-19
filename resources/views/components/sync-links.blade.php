@@ -26,11 +26,11 @@
             @endphp
             <a href="{{ route('accounting.sap-sync.index', ['page' => $key]) }}"
                 class="{{ request()->get('page') == $key ? 'active' : '' }}">{{ $label }}</a>
-            @if (!$loop->last)
-                <span class="badge badge-danger">{{ $count > 0 ? $count : '' }}</span> |
-            @else
-                <span class="badge badge-danger">{{ $count > 0 ? $count : '' }}</span>
-            @endif
+            <span class="badge badge-danger">{{ $count > 0 ? $count : '' }}</span> |
         @endforeach
+        <a href="{{ route('accounting.sap-sync.index', ['page' => 'reversal-log']) }}"
+            class="{{ request()->get('page') == 'reversal-log' ? 'active' : '' }}">
+            <i class="fas fa-undo"></i> Reversal Log
+        </a>
     </div>
 </div>

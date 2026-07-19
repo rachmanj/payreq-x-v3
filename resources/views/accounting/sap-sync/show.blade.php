@@ -12,14 +12,33 @@
     {{-- Enhanced Header with Status Badge --}}
     <div class="row mb-3">
         <div class="col-12">
-            <div class="card card-outline {{ $vj->sap_journal_no ? 'card-success' : 'card-warning' }}">
-                <div class="card-header bg-gradient-{{ $vj->sap_journal_no ? 'success' : 'warning' }} text-white">
+            @php
+                $headerStatus = $vj->sap_journal_no
+                    ? 'posted'
+                    : ($vj->sap_reversed_at ? 'reversed' : 'pending');
+                $headerCardClass = [
+                    'posted' => 'card-success',
+                    'reversed' => 'card-secondary',
+                    'pending' => 'card-warning',
+                ][$headerStatus];
+                $headerGradient = [
+                    'posted' => 'success',
+                    'reversed' => 'secondary',
+                    'pending' => 'warning',
+                ][$headerStatus];
+            @endphp
+            <div class="card card-outline {{ $headerCardClass }}">
+                <div class="card-header bg-gradient-{{ $headerGradient }} text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
                             <div class="mr-3">
-                                @if ($vj->sap_journal_no)
+                                @if ($headerStatus === 'posted')
                                     <span class="badge badge-light badge-lg">
                                         <i class="fas fa-check-circle"></i> POSTED
+                                    </span>
+                                @elseif ($headerStatus === 'reversed')
+                                    <span class="badge badge-light badge-lg">
+                                        <i class="fas fa-undo"></i> REVERSED
                                     </span>
                                 @else
                                     <span class="badge badge-light badge-lg">
@@ -136,6 +155,29 @@
                             </dd>
                         @endif
                     </dl>
+
+                    @if ($vj->sap_reversed_at)
+                        <div class="alert alert-secondary mt-3 mb-0">
+                            <h6 class="font-weight-bold mb-2">
+                                <i class="fas fa-undo"></i> Reversal History
+                            </h6>
+                            <p class="mb-1">
+                                <strong>Reversed by:</strong> {{ $vj->reversedBy->name }}
+                                on {{ date('d-M-Y H:i', strtotime($vj->sap_reversed_at . '+8 hours')) }} wita
+                            </p>
+                            @if ($vj->sap_reversal_journal_no)
+                                <p class="mb-1">
+                                    <strong>SAP Reversal Journal No:</strong>
+                                    <span class="badge badge-secondary">{{ $vj->sap_reversal_journal_no }}</span>
+                                </p>
+                            @endif
+                            @if ($vj->sap_reversal_reason)
+                                <p class="mb-0">
+                                    <strong>Reason:</strong> {{ $vj->sap_reversal_reason }}
+                                </p>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -220,6 +262,22 @@
                             <button type="button" class="btn btn-success btn-lg btn-block" id="submit-to-sap-btn">
                                 <i class="fas fa-paper-plane"></i> Submit to SAP B1
                             </button>
+                        </div>
+                    @endif
+
+                    @if ($vj->sap_journal_no && $canReverseSap)
+                        <div class="mb-3">
+                            @if ($vj->sap_je_jdt_num)
+                                <button type="button" class="btn btn-danger btn-lg btn-block" id="reverse-to-sap-btn"
+                                    data-toggle="modal" data-target="#reverse-sap-auto">
+                                    <i class="fas fa-undo"></i> Reverse in SAP B1
+                                </button>
+                            @else
+                                <button type="button" class="btn btn-danger btn-lg btn-block"
+                                    data-toggle="modal" data-target="#reverse-sap-manual">
+                                    <i class="fas fa-undo"></i> Record Manual Reversal
+                                </button>
+                            @endif
                         </div>
                     @endif
 
@@ -359,29 +417,52 @@
                     <div class="card-body">
                         <div class="timeline">
                             @foreach ($submissionLogs as $log)
+                                @php
+                                    $isReversal = ($log->action ?? 'submission') === 'reversal';
+                                    $logBadgeClass = $isReversal
+                                        ? ($log->status === 'success' ? 'secondary' : 'danger')
+                                        : ($log->status === 'success' ? 'success' : 'danger');
+                                    $logIcon = $isReversal
+                                        ? ($log->status === 'success' ? 'undo bg-secondary' : 'times-circle bg-danger')
+                                        : ($log->status === 'success' ? 'check-circle bg-success' : 'times-circle bg-danger');
+                                @endphp
                                 <div class="time-label">
-                                    <span class="bg-{{ $log->status === 'success' ? 'success' : 'danger' }}">
+                                    <span class="bg-{{ $logBadgeClass }}">
                                         {{ date('d M Y', strtotime($log->created_at)) }}
                                     </span>
                                 </div>
                                 <div>
-                                    <i
-                                        class="fas fa-{{ $log->status === 'success' ? 'check-circle bg-success' : 'times-circle bg-danger' }}"></i>
+                                    <i class="fas fa-{{ $logIcon }}"></i>
                                     <div class="timeline-item">
                                         <span class="time">
                                             <i class="fas fa-clock"></i> {{ date('H:i', strtotime($log->created_at)) }}
                                         </span>
                                         <h3 class="timeline-header">
-                                            Attempt #{{ $log->attempt_number }} -
-                                            <span
-                                                class="badge badge-{{ $log->status === 'success' ? 'success' : 'danger' }}">
-                                                {{ strtoupper($log->status) }}
-                                            </span>
+                                            @if ($isReversal)
+                                                Reversal -
+                                                <span class="badge badge-{{ $logBadgeClass }}">
+                                                    {{ $log->status === 'success' ? 'REVERSED' : 'FAILED' }}
+                                                </span>
+                                            @else
+                                                Attempt #{{ $log->attempt_number }} -
+                                                <span class="badge badge-{{ $logBadgeClass }}">
+                                                    {{ strtoupper($log->status) }}
+                                                </span>
+                                            @endif
                                             @if ($log->user)
                                                 <small class="text-muted">by {{ $log->user->name }}</small>
                                             @endif
                                         </h3>
-                                        @if ($log->status === 'success')
+                                        @if ($isReversal && $log->status === 'success')
+                                            <div class="timeline-body">
+                                                <p><strong>Original SAP Journal Number:</strong>
+                                                    <span class="badge badge-secondary">{{ $log->sap_journal_number }}</span>
+                                                </p>
+                                                @if ($log->error_message)
+                                                    <p class="mb-0"><strong>Reason:</strong> {{ $log->error_message }}</p>
+                                                @endif
+                                            </div>
+                                        @elseif ($log->status === 'success')
                                             <div class="timeline-body">
                                                 <p><strong>SAP Journal Number:</strong>
                                                     <span class="badge badge-success">{{ $log->sap_journal_number }}</span>
@@ -486,6 +567,114 @@
         @csrf
         <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
     </form>
+
+    {{-- REVERSE SAP AUTO --}}
+    @if ($vj->sap_journal_no && $canReverseSap && $vj->sap_je_jdt_num)
+        <div class="modal fade" id="reverse-sap-auto">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form id="reverse-sap-form" action="{{ route('accounting.sap-sync.reverse_to_sap') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-undo"></i> Reverse Journal in SAP B1
+                            </h5>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <h6 class="font-weight-bold"><i class="fas fa-exclamation-triangle"></i> Important</h6>
+                                <ul class="mb-0 pl-3">
+                                    <li>This will call SAP B1's Cancel action and create a reversing journal entry.</li>
+                                    <li>This app will unlock the journal so it can be edited and resubmitted.</li>
+                                    <li>Linked realizations will return to <strong>verification-complete</strong>.</li>
+                                </ul>
+                            </div>
+                            <dl class="row mb-3">
+                                <dt class="col-sm-4">Journal No</dt>
+                                <dd class="col-sm-8"><strong>{{ $vj->nomor }}</strong></dd>
+                                <dt class="col-sm-4">SAP Journal No</dt>
+                                <dd class="col-sm-8"><strong class="text-success">{{ $vj->sap_journal_no }}</strong></dd>
+                                <dt class="col-sm-4">SAP Internal Key</dt>
+                                <dd class="col-sm-8"><code>{{ $vj->sap_je_jdt_num }}</code></dd>
+                            </dl>
+                            <div class="form-group">
+                                <label for="reverse_reason">Reason for reversal <span class="text-danger">*</span></label>
+                                <textarea name="reason" id="reverse_reason" class="form-control" rows="3"
+                                    required maxlength="1000"
+                                    placeholder="Explain why this journal must be reversed..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between">
+                            <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-sm btn-danger" id="confirm-reverse-btn">
+                                <i class="fas fa-undo"></i> Confirm Reverse in SAP B1
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- REVERSE SAP MANUAL --}}
+    @if ($vj->sap_journal_no && $canReverseSap && ! $vj->sap_je_jdt_num)
+        <div class="modal fade" id="reverse-sap-manual">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form action="{{ route('accounting.sap-sync.record_manual_reversal') }}" method="POST"
+                        id="manual-reverse-form">
+                        @csrf
+                        <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+                        <div class="modal-header bg-warning">
+                            <h5 class="modal-title">
+                                <i class="fas fa-undo"></i> Record Manual Reversal
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                This journal was posted before automatic reversal tracking was available.
+                                Reverse it in the SAP B1 client first, then record the reversal here to unlock
+                                the journal in this app.
+                            </div>
+                            <dl class="row mb-3">
+                                <dt class="col-sm-4">Journal No</dt>
+                                <dd class="col-sm-8"><strong>{{ $vj->nomor }}</strong></dd>
+                                <dt class="col-sm-4">SAP Journal No</dt>
+                                <dd class="col-sm-8"><strong class="text-success">{{ $vj->sap_journal_no }}</strong></dd>
+                            </dl>
+                            <div class="form-group">
+                                <label for="manual_sap_reversal_journal_no">SAP Reversal Journal No (optional)</label>
+                                <input type="text" name="sap_reversal_journal_no" id="manual_sap_reversal_journal_no"
+                                    class="form-control" maxlength="100"
+                                    placeholder="Journal number created by SAP B1 after reverse">
+                            </div>
+                            <div class="form-group">
+                                <label for="manual_reverse_reason">Reason for reversal <span
+                                        class="text-danger">*</span></label>
+                                <textarea name="reason" id="manual_reverse_reason" class="form-control" rows="3"
+                                    required maxlength="1000"
+                                    placeholder="Explain why this journal was reversed..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between">
+                            <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-sm btn-warning">
+                                <i class="fas fa-save"></i> Record Reversal & Unlock
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 
     @push('styles')
         <style>
@@ -723,7 +912,7 @@
                                 <li>The journal will be saved as a <strong>draft</strong> in SAP B1.</li>
                                 <li>Please ensure account codes, projects, and cost centers exist in SAP B1.</li>
                                 <li>If SAP rejects the submission, you can retry after fixing the issue.</li>
-                                <li>Reversals must be performed directly in SAP B1.</li>
+                                <li>If needed later, authorized users can reverse the posted journal from this page.</li>
                             </ul>
                         </div>
                         ${attemptsHtml}
@@ -789,6 +978,83 @@
                         }
                     });
                 });
+
+                const $reverseForm = $('#reverse-sap-form');
+                if ($reverseForm.length) {
+                    $reverseForm.on('submit', function(e) {
+                        e.preventDefault();
+                        const form = this;
+                        const reason = $('#reverse_reason').val().trim();
+
+                        if (!reason) {
+                            Swal.fire({
+                                title: 'Reason required',
+                                text: 'Please provide a reason for the reversal.',
+                                icon: 'warning',
+                            });
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: 'Reverse this journal in SAP B1?',
+                            html: '<p>This will cancel the journal in SAP B1 and unlock it in this app for correction.</p>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, reverse in SAP B1',
+                            cancelButtonText: 'Cancel',
+                            confirmButtonColor: '#dc3545',
+                            reverseButtons: true,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                Swal.fire({
+                                    title: 'Reversing...',
+                                    html: 'Please wait while we cancel this journal in SAP B1.',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false,
+                                    showConfirmButton: false,
+                                    didOpen: () => {
+                                        Swal.showLoading();
+                                        $('#confirm-reverse-btn').prop('disabled', true)
+                                            .html('<i class="fas fa-spinner fa-spin"></i> Reversing...');
+                                        form.submit();
+                                    }
+                                });
+                            }
+                        });
+                    });
+                }
+
+                const $manualReverseForm = $('#manual-reverse-form');
+                if ($manualReverseForm.length) {
+                    $manualReverseForm.on('submit', function(e) {
+                        e.preventDefault();
+                        const form = this;
+                        const reason = $('#manual_reverse_reason').val().trim();
+
+                        if (!reason) {
+                            Swal.fire({
+                                title: 'Reason required',
+                                text: 'Please provide a reason for the reversal.',
+                                icon: 'warning',
+                            });
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: 'Record manual reversal?',
+                            html: '<p>Confirm that you have already reversed this journal in SAP B1. This will unlock the journal in this app.</p>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, record & unlock',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
+                    });
+                }
 
                 @if (session('success'))
                     toastr.success('{{ session('success') }}');

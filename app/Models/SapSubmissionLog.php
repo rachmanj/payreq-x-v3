@@ -16,6 +16,7 @@ class SapSubmissionLog extends Model
         'user_id',
         'submitted_by',
         'status',
+        'action',
         'error_message',
         'sap_error',
         'sap_response',

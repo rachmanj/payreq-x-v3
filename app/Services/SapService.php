@@ -148,20 +148,89 @@ class SapService
                 $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
                 throw new \Exception('Failed to create journal entry. Status: '.$statusCode.'. Error: '.$errorMessage);
             } catch (RequestException $e) {
-                $errorMessage = 'Unknown error';
-                if ($e->getResponse()) {
-                    $errorBody = json_decode($e->getResponse()->getBody()->getContents(), true);
-                    if (isset($errorBody['error']['message']['value'])) {
-                        $errorMessage = $errorBody['error']['message']['value'];
-                    } elseif (isset($errorBody['error']['message'])) {
-                        $errorMessage = is_array($errorBody['error']['message'])
-                            ? ($errorBody['error']['message']['value'] ?? json_encode($errorBody['error']['message']))
-                            : $errorBody['error']['message'];
-                    }
-                }
-                throw new \Exception('SAP B1 Error: '.$errorMessage, 0, $e);
+                throw new \Exception('SAP B1 Error: '.$this->extractErrorMessage($e), 0, $e);
             }
         });
+    }
+
+    public function cancelJournalEntry(string $jdtNum): array
+    {
+        $this->ensureSession();
+
+        return $this->handleSessionExpiration(function () use ($jdtNum) {
+            try {
+                Log::debug('SAP B1 Journal Entry Cancel Request', ['jdt_num' => $jdtNum]);
+
+                $response = $this->client->post('JournalEntries('.$jdtNum.')/Cancel');
+
+                $statusCode = $response->getStatusCode();
+
+                if (! in_array($statusCode, [200, 204], true)) {
+                    $body = json_decode($response->getBody()->getContents(), true);
+                    $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
+                    throw new \Exception('Failed to cancel journal entry. Status: '.$statusCode.'. Error: '.$errorMessage);
+                }
+
+                Log::info('SAP B1 journal entry cancelled successfully', [
+                    'jdt_num' => $jdtNum,
+                ]);
+
+                $reversalJournalNo = $this->findReversalJournalNumber($jdtNum);
+
+                return [
+                    'success' => true,
+                    'jdt_num' => $jdtNum,
+                    'reversal_journal_no' => $reversalJournalNo,
+                ];
+            } catch (RequestException $e) {
+                throw new \Exception('SAP B1 Error: '.$this->extractErrorMessage($e), 0, $e);
+            }
+        });
+    }
+
+    protected function findReversalJournalNumber(string $jdtNum): ?string
+    {
+        try {
+            $response = $this->client->get('JournalEntries', [
+                'query' => [
+                    '$filter' => 'StornoToTr eq '.$jdtNum,
+                    '$top' => 1,
+                    '$select' => 'Number,JdtNum,StornoToTr',
+                ],
+            ]);
+
+            $body = json_decode($response->getBody()->getContents(), true);
+            $items = $body['value'] ?? [];
+
+            if (! empty($items[0])) {
+                return $this->extractJournalNumber($items[0]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Could not look up SAP B1 reversal journal number', [
+                'jdt_num' => $jdtNum,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
+    protected function extractErrorMessage(RequestException $e): string
+    {
+        $errorMessage = 'Unknown error';
+
+        if ($e->getResponse()) {
+            $errorBody = json_decode($e->getResponse()->getBody()->getContents(), true);
+            if (isset($errorBody['error']['message']['value'])) {
+                $errorMessage = $errorBody['error']['message']['value'];
+            } elseif (isset($errorBody['error']['message'])) {
+                $errorMessage = is_array($errorBody['error']['message'])
+                    ? ($errorBody['error']['message']['value'] ?? json_encode($errorBody['error']['message']))
+                    : $errorBody['error']['message'];
+            }
+        }
+
+        return $errorMessage;
     }
 
     public function getProjects(): array

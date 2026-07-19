@@ -7,11 +7,11 @@ use App\Http\Controllers\Accounting\GiroController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Accounting\VatController;
 use App\Http\Controllers\Accounting\Wtax23Controller;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountingPayreqController;
+use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\InstallmentController;
 use App\Http\Controllers\LoanController;
-use App\Http\Controllers\ExchangeRateController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('accounting')->name('accounting.')->group(function () {
     // PAYREQS LIST
@@ -27,6 +27,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
     Route::prefix('sap-sync')->name('sap-sync.')->group(function () {
         Route::get('/', [SapSyncController::class, 'index'])->name('index');
         Route::get('/data', [SapSyncController::class, 'data'])->name('data');
+        Route::get('/reversal-log/data', [SapSyncController::class, 'reversalLogData'])->name('reversal_log_data');
         Route::get('/export', [SapSyncController::class, 'export'])->name('export');
         Route::get('/{id}/show', [SapSyncController::class, 'show'])->name('show');
         Route::get('/edit-vjdetail', [SapSyncController::class, 'edit_vjdetail_display'])->name('edit_vjdetail_display');
@@ -37,6 +38,10 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::post('/update_sap_info', [SapSyncController::class, 'update_sap_info'])->name('update_sap_info');
         Route::post('/submit-to-sap', [SapSyncController::class, 'submitToSap'])->name('submit_to_sap');
         Route::post('/bulk-submit', [SapSyncController::class, 'bulkSubmit'])->name('bulk_submit');
+        Route::middleware('permission:cancel_sap_journal')->group(function () {
+            Route::post('/reverse-to-sap', [SapSyncController::class, 'reverseToSap'])->name('reverse_to_sap');
+            Route::post('/record-manual-reversal', [SapSyncController::class, 'recordManualReversal'])->name('record_manual_reversal');
+        });
         Route::get('/print_sapj', [SapSyncController::class, 'print_sapj'])->name('print_sapj');
     });
 
@@ -83,11 +88,11 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::delete('/{id}', [GiroController::class, 'destroy'])->name('destroy');
     });
 
-    //CUSTOMERS
+    // CUSTOMERS
     Route::resource('customers', CustomerController::class)->except(['show']);
     Route::get('customers/data', [CustomerController::class, 'data'])->name('customers.data');
 
-    //INVOICE CREATION
+    // INVOICE CREATION
     Route::prefix('daily-tx')->name('daily-tx.')->group(function () {
         Route::get('/data', [DailyTxController::class, 'data'])->name('data');
         Route::get('/wtax23-data', [DailyTxController::class, 'wtax23data'])->name('wtax23data');

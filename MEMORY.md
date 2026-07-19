@@ -1,3 +1,33 @@
+### [059] SAP Sync — automated posting of unposted VJs (2026-07-19) ✅ COMPLETE
+
+**Challenge:** Unposted verification journals required manual submission from the SAP Sync UI; no unattended batch path existed for end-of-day catch-up.
+
+**Solution:** Extracted shared **`SapJournalSubmissionService`** from **`SapSyncController::processSapSubmission()`** so HTTP and CLI share one code path. Added **`sap:post-unposted-vj`** Artisan command (options **`--limit`**, **`--dry-run`**) and scheduled it daily at **23:00** in **`app/Console/Kernel.php`**.
+
+**Scope:** Unposted VJs (`sap_journal_no` null) with **`date`** in the last **30 days**; bank-type included. Failed journals are retried until **`sap_submission_attempts` reaches 2**, then skipped for manual submit.
+
+**Config:** **`SAP_AUTO_SUBMIT_USER_ID`** → **`services.sap.auto_submit_user_id`** — must point to a real user for **`posted_by`** / log attribution.
+
+**Tests:** **`tests/Feature/PostUnpostedVerificationJournalsToSapCommandTest.php`** (success, date window, retry cap, dry-run, missing user).
+
+---
+
+### [058] SAP Sync — reverse posted journal to SAP B1 (2026-07-19) ✅ COMPLETE
+
+**Challenge:** Posted verification journals could only be reversed manually in the SAP B1 client; the show page even told users "Reversals must be performed directly in SAP B1," and Cancel SAP Info was disabled once `sap_journal_no` was set.
+
+**Solution:** Added automated reversal via Service Layer `POST JournalEntries({JdtNum})/Cancel`, plus a manual-record fallback for legacy journals that lack the stored internal key. After success the VJ unlocks (clears SAP posting fields; realizations → `verification-complete`; bank type → `submitted`) so it can be corrected and resubmitted. Audit trail kept via `sap_reversed_*` fields and `sap_submission_logs.action = reversal`.
+
+**Key learning:** SAP B1 display journal **Number** (`sap_journal_no`) is not the Cancel entity key — **JdtNum** is. Capture `sap_je_jdt_num` on every successful submission going forward.
+
+**Permission:** New Spatie permission `cancel_sap_journal` (default: superadmin, approver, cashier). Routes gated with `permission:cancel_sap_journal`; also listed under RoleController SAP Integration group.
+
+**Implementation:** `SapService::cancelJournalEntry()`, `SapSyncController::reverseToSap` / `recordManualReversal` / `applyReversalUnlock`, show page Reverse UI, tests `SapSyncReversalTest`.
+
+**Follow-up (same day):** Added a global **Reversal Log** tab (`accounting/sap-sync?page=reversal-log`) listing every reversed journal across projects (date, journal no, original/reversal SAP no, Automated/Manual type, status, reversed by, reason), backed by `SapSyncController::reversalLogData()` querying `sap_submission_logs` where `action=reversal`. Reversal journal number reuses the existing (previously Faktur-only) `sap_doc_num` column instead of a new migration. BO-restricted roles only see `001H` reversals, matching existing project-scoping conventions.
+
+---
+
 ### [057] Document overdue bulk extend — Payreq Ids required (2026-07-15) ✅ FIXED
 
 **Challenge:** Bulk "Update Selected Records" on Document Overdue Payreq failed with **"Payreq Ids field is required"** even when rows were checked.

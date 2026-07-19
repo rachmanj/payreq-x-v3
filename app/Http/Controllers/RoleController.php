@@ -148,6 +148,7 @@ class RoleController extends Controller
             ],
             'SAP Integration' => [
                 'akses_sap_sync',
+                'cancel_sap_journal',
                 'akses_sync_buc',
                 'akses_sync_equipments',
             ],
@@ -264,7 +265,7 @@ class RoleController extends Controller
                     'Reports' => ['akses_reports', 'akses_report_rab', 'akses_loan_report', 'akses_sum_expense_by_equipment', 'see_activities_chart'],
                     'Documents' => ['akses_dokumen_upload', 'akses_delivery', 'upload_dokumen', 'request_faktur', 'update_faktur'],
                     'Upload' => ['upload_koran', 'delete_koran', 'upload_pcbc', 'akses_koran', 'akses_pcbc', 'akses_migrasi', 'see_pcbc_warning', 'validate_pcbc_report'],
-                    'SAP' => ['akses_sap_sync', 'akses_sync_buc', 'akses_sync_equipments'],
+                    'SAP' => ['akses_sap_sync', 'cancel_sap_journal', 'akses_sync_buc', 'akses_sync_equipments'],
                     'Advance' => ['see_rekap_advance_017', 'see_rekap_advance_021', 'see_rekap_advance_022', 'see_rekap_advance_023', 'see_rekap_advance_025', 'see_rekap_advance_bo', 'see_rekap_advance_ho', 'rekap_dokumen_creation_bo', 'rekap_dokumen_creation_ho'],
                     'Giro' => ['akses_giro', 'create_outgoing'],
                     'Tax' => ['akses_wtax23'],

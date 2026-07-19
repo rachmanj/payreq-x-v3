@@ -11,7 +11,7 @@ use App\Models\SapSubmissionLog;
 use App\Models\User;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
-use App\Services\SapJournalEntryBuilder;
+use App\Services\SapJournalSubmissionService;
 use App\Services\SapService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -21,12 +21,16 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SapSyncController extends Controller
 {
+    public function __construct(
+        protected SapJournalSubmissionService $journalSubmissionService
+    ) {}
+
     public function index()
     {
         $user = auth()->user();
         $page = request()->query('page', 'dashboard');
 
-        if ($this->isBoRestrictedUser($user) && $page !== '001H') {
+        if ($this->isBoRestrictedUser($user) && ! in_array($page, ['001H', 'reversal-log'], true)) {
             return redirect()->route('accounting.sap-sync.index', ['page' => '001H']);
         }
 
@@ -40,6 +44,7 @@ class SapSyncController extends Controller
             '023C' => 'accounting.sap-sync.023C',
             '025C' => 'accounting.sap-sync.025C',
             '026C' => 'accounting.sap-sync.026C',
+            'reversal-log' => 'accounting.sap-sync.reversal-log',
         ];
 
         if ($page == 'dashboard') {
@@ -64,6 +69,7 @@ class SapSyncController extends Controller
         $this->assertProjectAccessible($user, $vj->project);
 
         $canSubmitToSap = $this->canSubmitToSap($user, $vj);
+        $canReverseSap = $this->canReverseSap($user);
 
         $vj_details = VerificationJournalDetail::where('verification_journal_id', $id)
             ->orderBy('id', 'asc')
@@ -86,6 +92,7 @@ class SapSyncController extends Controller
             'vj_details',
             'submissionLogs',
             'canSubmitToSap',
+            'canReverseSap',
         ]));
     }
 
@@ -255,6 +262,64 @@ class SapSyncController extends Controller
             ->toJson();
     }
 
+    public function reversalLogData()
+    {
+        $user = auth()->user();
+        $project = request()->query('project');
+
+        $query = SapSubmissionLog::query()
+            ->where('action', 'reversal')
+            ->whereNotNull('verification_journal_id')
+            ->with(['verificationJournal', 'user']);
+
+        if ($this->isBoRestrictedUser($user)) {
+            $query->whereHas('verificationJournal', function ($q) {
+                $q->where('project', '001H');
+            });
+        } elseif ($project) {
+            $query->whereHas('verificationJournal', function ($q) use ($project) {
+                $q->where('project', $project);
+            });
+        }
+
+        $logs = $query->orderBy('created_at', 'desc')->limit(500)->get();
+
+        return datatables()->of($logs)
+            ->addIndexColumn()
+            ->addColumn('journal_no', function ($log) {
+                return $log->verificationJournal->nomor ?? 'N/A';
+            })
+            ->addColumn('project', function ($log) {
+                return $log->verificationJournal->project ?? 'N/A';
+            })
+            ->addColumn('type', function ($log) {
+                return str_starts_with((string) $log->error_message, '[Manual]') ? 'Manual' : 'Automated';
+            })
+            ->editColumn('created_at', function ($log) {
+                return date('d-M-Y H:i', strtotime($log->created_at.'+8 hours')).' wita';
+            })
+            ->editColumn('error_message', function ($log) {
+                return ltrim(str_replace('[Manual]', '', (string) $log->error_message));
+            })
+            ->addColumn('status_badge', function ($log) {
+                return $log->status === 'success'
+                    ? '<span class="badge badge-secondary">REVERSED</span>'
+                    : '<span class="badge badge-danger">FAILED</span>';
+            })
+            ->addColumn('reversed_by', function ($log) {
+                return $log->user->name ?? 'N/A';
+            })
+            ->addColumn('action', function ($log) {
+                if (! $log->verification_journal_id) {
+                    return '';
+                }
+
+                return '<a href="'.route('accounting.sap-sync.show', $log->verification_journal_id).'" class="btn btn-xs btn-info" title="View journal"><i class="fas fa-eye"></i></a>';
+            })
+            ->rawColumns(['status_badge', 'action'])
+            ->toJson();
+    }
+
     public function export()
     {
         $vj_id = request()->query('vj_id');
@@ -410,162 +475,242 @@ class SapSyncController extends Controller
         return false;
     }
 
-    protected function processSapSubmission(VerificationJournal $vj, User $user): array
+    protected function canReverseSap($user): bool
     {
-        $builder = new SapJournalEntryBuilder($vj);
-        $validationErrors = $builder->validate();
+        return $user->can('cancel_sap_journal');
+    }
 
-        if (! empty($validationErrors)) {
-            return [
-                'success' => false,
-                'message' => 'Validation failed: '.implode(', ', $validationErrors),
-            ];
+    public function reverseToSap(Request $request)
+    {
+        $request->validate([
+            'verification_journal_id' => 'required|exists:verification_journals,id',
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $vj = VerificationJournal::findOrFail($request->verification_journal_id);
+        $user = auth()->user();
+
+        if (! $this->canReverseSap($user)) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'You do not have permission to reverse journals in SAP B1.');
         }
 
-        $attemptNumber = ($vj->sap_submission_attempts ?? 0) + 1;
+        $this->assertProjectAccessible($user, $vj->project);
+
+        if (empty($vj->sap_journal_no)) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal has not been posted to SAP B1.');
+        }
+
+        if ($vj->delivery_id) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal is attached to a Delivery batch. Detach it first before reversing.');
+        }
+
+        if (empty($vj->sap_je_jdt_num)) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal was posted before automatic reversal tracking. Please use the manual reversal form.');
+        }
+
+        $originalSapJournalNo = $vj->sap_journal_no;
         $sapService = app(SapService::class);
-        $journalEntryData = $builder->build();
 
         try {
-            $result = $sapService->createJournalEntry($journalEntryData);
+            $result = $sapService->cancelJournalEntry((string) $vj->sap_je_jdt_num);
         } catch (\Exception $e) {
-            $this->recordSubmissionFailure($vj, $user, $attemptNumber, $e->getMessage());
+            $this->recordReversalFailure($vj, $user, $originalSapJournalNo, $e->getMessage());
 
-            Log::error('SAP B1 journal submission failed', [
+            Log::error('SAP B1 journal reversal failed', [
                 'verification_journal_id' => $vj->id,
+                'sap_je_jdt_num' => $vj->sap_je_jdt_num,
                 'error' => $e->getMessage(),
                 'user_id' => $user->id,
-                'attempt_number' => $attemptNumber,
             ]);
 
-            return [
-                'success' => false,
-                'message' => 'Failed to submit to SAP B1: '.$e->getMessage().'. Please check the error and try again.',
-            ];
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'Failed to reverse journal in SAP B1: '.$e->getMessage());
         }
 
         if (! ($result['success'] ?? false)) {
-            $message = $result['message'] ?? 'SAP submission returned unsuccessful result';
+            $message = $result['message'] ?? 'SAP reversal returned unsuccessful result';
+            $this->recordReversalFailure($vj, $user, $originalSapJournalNo, $message);
 
-            $this->recordSubmissionFailure($vj, $user, $attemptNumber, $message);
-
-            return [
-                'success' => false,
-                'message' => 'Failed to submit to SAP B1: '.$message,
-            ];
-        }
-
-        $sapJournalNumber = $result['journal_number'] ?? $result['doc_entry'] ?? null;
-        $sapResponse = $result['data'] ?? null;
-
-        // Extract only essential information from SAP response to avoid database size limits
-        $sapResponseSummary = null;
-        if ($sapResponse && is_array($sapResponse)) {
-            $sapResponseSummary = [
-                'DocEntry' => $sapResponse['DocEntry'] ?? null,
-                'DocNum' => $sapResponse['DocNum'] ?? null,
-                'Number' => $sapResponse['Number'] ?? null,
-                'JdtNum' => $sapResponse['JdtNum'] ?? null,
-                'TransId' => $sapResponse['TransId'] ?? null,
-                'ReferenceDate' => $sapResponse['ReferenceDate'] ?? null,
-                'TaxDate' => $sapResponse['TaxDate'] ?? null,
-                'Memo' => $sapResponse['Memo'] ?? null,
-                'LineCount' => isset($sapResponse['JournalEntryLines']) ? count($sapResponse['JournalEntryLines']) : 0,
-            ];
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'Failed to reverse journal in SAP B1: '.$message);
         }
 
         try {
-            DB::transaction(function () use ($vj, $user, $attemptNumber, $sapJournalNumber, $sapResponseSummary) {
-                $postingDate = Carbon::now()->format('Y-m-d');
-
-                $vj->sap_journal_no = $sapJournalNumber;
-                $vj->sap_posting_date = $postingDate;
-                $vj->posted_by = $user->id;
-                $vj->sap_submission_status = 'success';
-                $vj->sap_submission_attempts = $attemptNumber;
-                $vj->sap_submitted_at = Carbon::now();
-                $vj->sap_submitted_by = $user->id;
-                $vj->sap_submission_error = null;
+            DB::transaction(function () use ($vj, $user, $request, $originalSapJournalNo, $result) {
+                $vj->sap_reversed_at = Carbon::now();
+                $vj->sap_reversed_by = $user->id;
+                $vj->sap_reversal_reason = $request->reason;
+                $vj->sap_reversal_journal_no = $result['reversal_journal_no'] ?? null;
                 $vj->save();
 
-                $vjDetails = VerificationJournalDetail::where('verification_journal_id', $vj->id)->get();
-                foreach ($vjDetails as $detail) {
-                    $detail->sap_journal_no = $sapJournalNumber;
-                    $detail->save();
-                }
+                $this->applyReversalUnlock($vj);
 
                 SapSubmissionLog::create([
                     'verification_journal_id' => $vj->id,
                     'user_id' => $user->id,
                     'status' => 'success',
-                    'error_message' => null,
-                    'sap_response' => $sapResponseSummary ? json_encode($sapResponseSummary) : null,
-                    'sap_journal_number' => $sapJournalNumber,
-                    'attempt_number' => $attemptNumber,
+                    'action' => 'reversal',
+                    'error_message' => $request->reason,
+                    'sap_response' => null,
+                    'sap_journal_number' => $originalSapJournalNo,
+                    'sap_doc_num' => $result['reversal_journal_no'] ?? null,
+                    'attempt_number' => 1,
                 ]);
-
-                if ($vj->type === 'bank') {
-                    $incoming = \App\Models\Incoming::where('nomor', $vj->nomor)->first();
-                    if ($incoming) {
-                        $incoming->sap_journal_no = $sapJournalNumber;
-                        $incoming->save();
-                    }
-                    $vj->status = 'posted';
-                    $vj->save();
-                }
-
-                $realizations = Realization::whereIn('nomor', $vjDetails->pluck('realization_no')->toArray())->get();
-                foreach ($realizations as $realization) {
-                    $realization->status = 'close';
-                    $realization->save();
-                }
             });
         } catch (\Throwable $e) {
-            Log::error('SAP B1 journal submission exception', [
+            Log::error('SAP B1 journal reversal save failed', [
                 'verification_journal_id' => $vj->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
-            return [
-                'success' => false,
-                'message' => 'An error occurred while saving SAP submission: '.$e->getMessage(),
-            ];
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'Journal was cancelled in SAP B1 but failed to update local records: '.$e->getMessage());
         }
 
-        Log::info('SAP B1 journal submission successful', [
+        Log::info('SAP B1 journal reversal successful', [
             'verification_journal_id' => $vj->id,
-            'sap_journal_number' => $sapJournalNumber,
+            'original_sap_journal_no' => $originalSapJournalNo,
+            'reversal_journal_no' => $result['reversal_journal_no'] ?? null,
             'user_id' => $user->id,
         ]);
 
-        return [
-            'success' => true,
-            'sap_journal_no' => $sapJournalNumber,
-            'message' => 'Journal entry successfully submitted to SAP B1. Journal Number: '.$sapJournalNumber,
-        ];
+        return redirect()->route('accounting.sap-sync.show', $vj->id)
+            ->with('success', 'Journal successfully reversed in SAP B1. Original Journal Number: '.$originalSapJournalNo);
+    }
+
+    public function recordManualReversal(Request $request)
+    {
+        $request->validate([
+            'verification_journal_id' => 'required|exists:verification_journals,id',
+            'reason' => 'required|string|max:1000',
+            'sap_reversal_journal_no' => 'nullable|string|max:100',
+        ]);
+
+        $vj = VerificationJournal::findOrFail($request->verification_journal_id);
+        $user = auth()->user();
+
+        if (! $this->canReverseSap($user)) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'You do not have permission to reverse journals in SAP B1.');
+        }
+
+        $this->assertProjectAccessible($user, $vj->project);
+
+        if (empty($vj->sap_journal_no)) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal has not been posted to SAP B1.');
+        }
+
+        if ($vj->delivery_id) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal is attached to a Delivery batch. Detach it first before reversing.');
+        }
+
+        if (! empty($vj->sap_je_jdt_num)) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal supports automatic reversal. Please use the Reverse in SAP B1 button.');
+        }
+
+        $originalSapJournalNo = $vj->sap_journal_no;
+
+        try {
+            DB::transaction(function () use ($vj, $user, $request, $originalSapJournalNo) {
+                $vj->sap_reversed_at = Carbon::now();
+                $vj->sap_reversed_by = $user->id;
+                $vj->sap_reversal_reason = $request->reason;
+                $vj->sap_reversal_journal_no = $request->sap_reversal_journal_no;
+                $vj->save();
+
+                $this->applyReversalUnlock($vj);
+
+                SapSubmissionLog::create([
+                    'verification_journal_id' => $vj->id,
+                    'user_id' => $user->id,
+                    'status' => 'success',
+                    'action' => 'reversal',
+                    'error_message' => '[Manual] '.$request->reason,
+                    'sap_response' => null,
+                    'sap_journal_number' => $originalSapJournalNo,
+                    'sap_doc_num' => $request->sap_reversal_journal_no,
+                    'attempt_number' => 1,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            Log::error('Manual SAP journal reversal failed', [
+                'verification_journal_id' => $vj->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'Failed to record manual reversal: '.$e->getMessage());
+        }
+
+        return redirect()->route('accounting.sap-sync.show', $vj->id)
+            ->with('success', 'Manual reversal recorded. Original Journal Number: '.$originalSapJournalNo);
+    }
+
+    protected function applyReversalUnlock(VerificationJournal $vj): void
+    {
+        $vj->sap_journal_no = null;
+        $vj->sap_posting_date = null;
+        $vj->posted_by = null;
+        $vj->sap_je_jdt_num = null;
+        $vj->sap_submission_status = null;
+        $vj->sap_submission_error = null;
+        $vj->save();
+
+        $vjDetails = VerificationJournalDetail::where('verification_journal_id', $vj->id)->get();
+        foreach ($vjDetails as $detail) {
+            $detail->sap_journal_no = null;
+            $detail->save();
+        }
+
+        if ($vj->type === 'bank') {
+            $incoming = \App\Models\Incoming::where('nomor', $vj->nomor)->first();
+            if ($incoming) {
+                $incoming->sap_journal_no = null;
+                $incoming->save();
+            }
+            $vj->status = 'submitted';
+            $vj->save();
+        }
+
+        $realizationNos = $vjDetails->pluck('realization_no')->filter()->toArray();
+        if (! empty($realizationNos)) {
+            $realizations = Realization::whereIn('nomor', $realizationNos)->get();
+            foreach ($realizations as $realization) {
+                $realization->status = 'verification-complete';
+                $realization->save();
+            }
+        }
+    }
+
+    protected function recordReversalFailure(VerificationJournal $vj, User $user, string $originalSapJournalNo, string $errorMessage): void
+    {
+        SapSubmissionLog::create([
+            'verification_journal_id' => $vj->id,
+            'user_id' => $user->id,
+            'status' => 'failed',
+            'action' => 'reversal',
+            'error_message' => $errorMessage,
+            'sap_response' => null,
+            'sap_journal_number' => $originalSapJournalNo,
+            'attempt_number' => 1,
+        ]);
+    }
+
+    protected function processSapSubmission(VerificationJournal $vj, User $user): array
+    {
+        return $this->journalSubmissionService->submit($vj, $user);
     }
 
     protected function recordSubmissionFailure(VerificationJournal $vj, User $user, int $attemptNumber, string $errorMessage): void
     {
-        DB::transaction(function () use ($vj, $user, $attemptNumber, $errorMessage) {
-            $vj->sap_submission_status = 'failed';
-            $vj->sap_submission_attempts = $attemptNumber;
-            $vj->sap_submission_error = $errorMessage;
-            $vj->sap_submitted_at = Carbon::now();
-            $vj->sap_submitted_by = $user->id;
-            $vj->save();
-
-            SapSubmissionLog::create([
-                'verification_journal_id' => $vj->id,
-                'user_id' => $user->id,
-                'status' => 'failed',
-                'error_message' => $errorMessage,
-                'sap_response' => null,
-                'sap_journal_number' => null,
-                'attempt_number' => $attemptNumber,
-            ]);
-        });
+        $this->journalSubmissionService->recordFailure($vj, $user, $attemptNumber, $errorMessage);
     }
 
     protected function buildBulkSubmissionMessage(array $success, array $failed, array $skipped): string

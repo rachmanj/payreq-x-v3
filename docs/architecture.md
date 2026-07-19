@@ -283,6 +283,26 @@ If the **table** fits on one page but **blocks below** the table (e.g. signature
 
 Task log: **`MEMORY.md` [046]**.
 
+## SAP Sync: automated VJ posting to SAP B1
+
+Nightly (and on-demand) posting of unposted **Verification Journals** to SAP B1 via the Service Layer, reusing the same submission path as the SAP Sync UI.
+
+### Shared service
+
+- **`App\Services\SapJournalSubmissionService`** — **`submit(VerificationJournal, User)`** and **`recordFailure(...)`**; used by **`SapSyncController`** (manual/bulk submit) and **`sap:post-unposted-vj`** (scheduler).
+
+### Artisan command
+
+- **`php artisan sap:post-unposted-vj`** — options **`--limit=100`**, **`--dry-run`**.
+- **Candidates:** `sap_journal_no IS NULL`, **`date`** within last **30 days**, and either never submitted, not in **`failed`** status, or **`sap_submission_attempts < 2`** (max **2** automated attempts before manual intervention).
+- **Actor user:** **`config('services.sap.auto_submit_user_id')`** / env **`SAP_AUTO_SUBMIT_USER_ID`** — attributed as **`posted_by`** / **`sap_submitted_by`** and in **`sap_submission_logs`**.
+
+### Schedule
+
+- **`app/Console/Kernel.php`**: **`sap:post-unposted-vj`** daily at **23:00**, **`withoutOverlapping()`**, **`runInBackground()`**.
+
+Task log: **`MEMORY.md` [059]**.
+
 ## Notulen AI (meeting-minutes Q&A)
 
 RAG assistant over uploaded **PDF notulen rapat**: extract text → chunk → embed (OpenRouter) → cosine similarity retrieval → grounded chat answer with cited PDF links.

@@ -29,7 +29,14 @@ class VerificationJournal extends Model
     public function postedBy()
     {
         return $this->belongsTo(User::class, 'posted_by')->withDefault([
-            'name' => 'N/A'
+            'name' => 'N/A',
+        ]);
+    }
+
+    public function reversedBy()
+    {
+        return $this->belongsTo(User::class, 'sap_reversed_by')->withDefault([
+            'name' => 'N/A',
         ]);
     }
 
