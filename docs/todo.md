@@ -1,14 +1,20 @@
-# Task tracking
+# Todo
 
-## Recently completed
+## Recently Completed
 
-- **Notulen AI module** (2026-07-03): meetings upload/index/show, Ask page, OpenRouter RAG pipeline, API (`/api/notulen/*`), permissions, sidebar + menu search, PHPUnit suite.
+### Notulen AI hardening (2026-07-20)
 
-## In progress
+- [x] Multibyte-safe chunking + preserve paragraph structure
+- [x] ProcessMeeting retries / processing status / error_message
+- [x] Retrieval scoping + chunk cache
+- [x] Ask UX + evidence citations + language-aware not-found
+- [x] OCR page/size guards
+- [x] Embeddings provider switch (OpenRouter verified; OpenAI optional)
+- [x] Observability columns + duplicate file_hash detection
+- [x] Recreate `docs/notulen-ai.md`
 
-_(none)_
+## Next (backlog ideas)
 
-## Backlog
-
-- OCR for scanned PDF notulen (v2).
-- Optional dedicated queue worker for `ProcessMeeting` when `QUEUE_CONNECTION=database`.
+- [ ] Audio-to-minutes (Whisper) if stakeholders want true “AI notulen”
+- [ ] Page-by-page OCR with Imagick/pdftoppm
+- [ ] Vector DB / MySQL VECTOR when chunk count grows

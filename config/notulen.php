@@ -14,4 +14,14 @@ return [
 
     'ocr_fallback_enabled' => (bool) env('NOTULEN_OCR_FALLBACK', true),
 
+    'max_chunks_scanned' => (int) env('NOTULEN_MAX_CHUNKS_SCANNED', 5000),
+
+    'chunk_cache_ttl' => (int) env('NOTULEN_CHUNK_CACHE_TTL', 300),
+
+    'ocr_max_pages' => (int) env('NOTULEN_OCR_MAX_PAGES', 50),
+
+    'ocr_max_mb' => (float) env('NOTULEN_OCR_MAX_MB', 20),
+
+    'streaming_enabled' => (bool) env('NOTULEN_STREAMING_ENABLED', false),
+
 ];

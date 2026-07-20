@@ -9,6 +9,7 @@ use App\Models\NotulenQuestion;
 use App\Services\Notulen\AskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class NotulenApiController extends Controller
 {
@@ -16,24 +17,51 @@ class NotulenApiController extends Controller
     {
         $validated = $request->validate([
             'question' => ['required', 'string', 'max:4000'],
+            'meeting_ids' => ['sometimes', 'array'],
+            'meeting_ids.*' => ['integer', 'exists:meetings,id'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
 
-        try {
-            $result = $askService->ask($validated['question'], signedDownloadUrls: true);
+        $filters = [];
+        if (! empty($validated['meeting_ids'])) {
+            $filters['meeting_ids'] = array_map('intval', $validated['meeting_ids']);
+        }
+        if (! empty($validated['date_from'])) {
+            $filters['date_from'] = $validated['date_from'];
+        }
+        if (! empty($validated['date_to'])) {
+            $filters['date_to'] = $validated['date_to'];
+        }
 
-            NotulenQuestion::query()->create([
+        try {
+            $result = $askService->ask($validated['question'], signedDownloadUrls: true, filters: $filters);
+
+            $attributes = [
                 'user_id' => null,
                 'question' => $validated['question'],
                 'answer' => $result['answer'],
                 'sources' => $result['sources'],
                 'created_at' => now(),
-            ]);
+            ];
+
+            if (Schema::hasColumn('notulen_questions', 'model')) {
+                $attributes['model'] = $result['model'] ?? null;
+                $attributes['top_score'] = $result['top_score'] ?? null;
+                $attributes['latency_ms'] = $result['latency_ms'] ?? null;
+                $attributes['not_found'] = (bool) ($result['not_found'] ?? false);
+            }
+
+            NotulenQuestion::query()->create($attributes);
 
             return response()->json([
                 'success' => true,
                 'answer' => $result['answer'],
                 'sources' => $result['sources'],
                 'not_found' => $result['not_found'],
+                'top_score' => $result['top_score'],
+                'model' => $result['model'],
+                'latency_ms' => $result['latency_ms'],
             ]);
         } catch (OpenRouterException $e) {
             $status = $e->getStatusCode();

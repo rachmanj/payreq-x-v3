@@ -18,11 +18,18 @@ class NotulenQuestion extends Model
         'question',
         'answer',
         'sources',
+        'model',
+        'top_score',
+        'latency_ms',
+        'not_found',
         'created_at',
     ];
 
     protected $casts = [
         'sources' => 'array',
+        'top_score' => 'float',
+        'latency_ms' => 'integer',
+        'not_found' => 'boolean',
         'created_at' => 'datetime',
     ];
 

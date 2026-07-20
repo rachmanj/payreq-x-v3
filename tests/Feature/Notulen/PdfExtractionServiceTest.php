@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Notulen;
 
+use App\Exceptions\NotulenOcrException;
 use App\Services\Notulen\NotulenOpenRouterClient;
 use App\Services\Notulen\PdfExtractionService;
 use Smalot\PdfParser\Parser;
@@ -29,6 +30,7 @@ class PdfExtractionServiceTest extends TestCase
         $parser = $this->createMock(Parser::class);
         $pdf = $this->createMock(\Smalot\PdfParser\Document::class);
         $pdf->method('getText')->willReturn('');
+        $pdf->method('getPages')->willReturn([1, 2]);
         $parser->method('parseFile')->willReturn($pdf);
 
         $temp = tempnam(sys_get_temp_dir(), 'notulen');
@@ -39,7 +41,11 @@ class PdfExtractionServiceTest extends TestCase
             ->method('extractTextFromPdfBase64')
             ->willReturn('Teks hasil OCR dari scan PDF.');
 
-        config(['notulen.ocr_fallback_enabled' => true]);
+        config([
+            'notulen.ocr_fallback_enabled' => true,
+            'notulen.ocr_max_pages' => 50,
+            'notulen.ocr_max_mb' => 20,
+        ]);
 
         $service = new PdfExtractionService($parser, $client);
 
@@ -49,5 +55,103 @@ class PdfExtractionServiceTest extends TestCase
         );
 
         @unlink($temp);
+    }
+
+    public function test_rejects_ocr_when_page_count_exceeds_limit(): void
+    {
+        $parser = $this->createMock(Parser::class);
+        $pdf = $this->createMock(\Smalot\PdfParser\Document::class);
+        $pdf->method('getText')->willReturn('');
+        $pdf->method('getPages')->willReturn(range(1, 60));
+        $parser->method('parseFile')->willReturn($pdf);
+
+        $temp = tempnam(sys_get_temp_dir(), 'notulen');
+        file_put_contents($temp, '%PDF-1.4 fake');
+
+        $client = $this->createMock(NotulenOpenRouterClient::class);
+        $client->expects($this->never())->method('extractTextFromPdfBase64');
+
+        config([
+            'notulen.ocr_fallback_enabled' => true,
+            'notulen.ocr_max_pages' => 50,
+            'notulen.ocr_max_mb' => 20,
+        ]);
+
+        $service = new PdfExtractionService($parser, $client);
+
+        $this->expectException(NotulenOcrException::class);
+        $this->expectExceptionMessage('exceeds OCR limit of 50 pages');
+
+        try {
+            $service->extractFromPath($temp);
+        } finally {
+            @unlink($temp);
+        }
+    }
+
+    public function test_rejects_ocr_when_file_size_exceeds_limit(): void
+    {
+        $parser = $this->createMock(Parser::class);
+        $pdf = $this->createMock(\Smalot\PdfParser\Document::class);
+        $pdf->method('getText')->willReturn('');
+        $pdf->method('getPages')->willReturn([1]);
+        $parser->method('parseFile')->willReturn($pdf);
+
+        $temp = tempnam(sys_get_temp_dir(), 'notulen');
+        file_put_contents($temp, str_repeat('A', 1024 * 1024));
+
+        $client = $this->createMock(NotulenOpenRouterClient::class);
+        $client->expects($this->never())->method('extractTextFromPdfBase64');
+
+        config([
+            'notulen.ocr_fallback_enabled' => true,
+            'notulen.ocr_max_pages' => 50,
+            'notulen.ocr_max_mb' => 0.5,
+        ]);
+
+        $service = new PdfExtractionService($parser, $client);
+
+        $this->expectException(NotulenOcrException::class);
+        $this->expectExceptionMessage('exceeds OCR limit of 0.5 MB');
+
+        try {
+            $service->extractFromPath($temp);
+        } finally {
+            @unlink($temp);
+        }
+    }
+
+    public function test_throws_when_ocr_returns_empty(): void
+    {
+        $parser = $this->createMock(Parser::class);
+        $pdf = $this->createMock(\Smalot\PdfParser\Document::class);
+        $pdf->method('getText')->willReturn('');
+        $pdf->method('getPages')->willReturn([1]);
+        $parser->method('parseFile')->willReturn($pdf);
+
+        $temp = tempnam(sys_get_temp_dir(), 'notulen');
+        file_put_contents($temp, '%PDF-1.4 fake');
+
+        $client = $this->createMock(NotulenOpenRouterClient::class);
+        $client->expects($this->once())
+            ->method('extractTextFromPdfBase64')
+            ->willReturn('   ');
+
+        config([
+            'notulen.ocr_fallback_enabled' => true,
+            'notulen.ocr_max_pages' => 50,
+            'notulen.ocr_max_mb' => 20,
+        ]);
+
+        $service = new PdfExtractionService($parser, $client);
+
+        $this->expectException(NotulenOcrException::class);
+        $this->expectExceptionMessage('OCR fallback returned empty text');
+
+        try {
+            $service->extractFromPath($temp);
+        } finally {
+            @unlink($temp);
+        }
     }
 }

@@ -1,3 +1,13 @@
+### [060] Notulen AI hardening — chunking, jobs, RAG UX (2026-07-20) ✅ COMPLETE
+
+**Challenge:** Notulen AI worked but had silent quality bugs (byte-based UTF-8 chunking, whitespace collapse killing paragraph breaks), fragile jobs (no retries), linear in-PHP retrieval, thin Ask UX, and weak OCR/ops feedback.
+
+**Solution:** Multibyte + structure-preserving `NotulenChunker`; `ProcessMeeting` retries/`processing`/`error_message`; retrieval scoping + cache; evidence citations + language-aware not-found + richer Ask page; OCR page/MB guards; verified OpenRouter embeddings (config switch to OpenAI); `notulen_questions` observability + `meetings.file_hash` duplicate skip. Spec restored at **`docs/notulen-ai.md`**.
+
+**Tests:** `tests/Feature/Notulen/*` (36 passing).
+
+---
+
 ### [059] SAP Sync — automated posting of unposted VJs (2026-07-19) ✅ COMPLETE
 
 **Challenge:** Unposted verification journals required manual submission from the SAP Sync UI; no unattended batch path existed for end-of-day catch-up.

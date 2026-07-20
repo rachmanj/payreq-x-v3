@@ -51,9 +51,17 @@ return [
         'notulen_model' => env('OPENROUTER_NOTULEN_MODEL', env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001')),
         'notulen_ocr_model' => env('OPENROUTER_NOTULEN_OCR_MODEL', env('OPENROUTER_BANK_STATEMENT_MODEL', 'google/gemini-3-flash-preview')),
         'embedding_model' => env('OPENROUTER_EMBEDDING_MODEL', 'openai/text-embedding-3-small'),
+        // openrouter (default) or openai — chat/OCR stay on OpenRouter either way
+        'embedding_provider' => env('NOTULEN_EMBEDDING_PROVIDER', 'openrouter'),
         'timeout' => env('OPENROUTER_TIMEOUT', 120),
         'connect_timeout' => env('OPENROUTER_CONNECT_TIMEOUT', 10),
         'embedding_retries' => (int) env('OPENROUTER_EMBEDDING_RETRIES', 2),
+    ],
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        'embedding_model' => env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
     ],
 
     'ark_fleet' => [

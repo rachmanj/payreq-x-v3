@@ -46,16 +46,18 @@ class NotulenOpenRouterClient
      */
     public function embedMany(array $inputs): array
     {
-        if (blank($this->apiKey)) {
-            throw new OpenRouterException('OpenRouter is not configured.', 500);
+        [$apiKey, $baseUrl, $model] = $this->embeddingEndpoint();
+
+        if (blank($apiKey)) {
+            throw new OpenRouterException('Embeddings provider is not configured.', 500);
         }
 
         $truncated = array_map(function (string $text): string {
-            if (strlen($text) <= self::MAX_EMBEDDING_INPUT_CHARS) {
+            if (mb_strlen($text, 'UTF-8') <= self::MAX_EMBEDDING_INPUT_CHARS) {
                 return $text;
             }
 
-            return substr($text, 0, self::MAX_EMBEDDING_INPUT_CHARS);
+            return mb_substr($text, 0, self::MAX_EMBEDDING_INPUT_CHARS, 'UTF-8');
         }, $inputs);
 
         $attempts = 0;
@@ -63,8 +65,8 @@ class NotulenOpenRouterClient
 
         while ($attempts <= $this->embeddingRetries) {
             try {
-                $response = $this->pendingRequest()->post($this->baseUrl.'/embeddings', [
-                    'model' => $this->embeddingModel,
+                $response = $this->pendingRequest($apiKey)->post($baseUrl.'/embeddings', [
+                    'model' => $model,
                     'input' => $truncated,
                 ]);
 
@@ -75,7 +77,7 @@ class NotulenOpenRouterClient
                 $payload = $response->json();
 
                 throw new OpenRouterException(
-                    data_get($payload, 'error.message', 'OpenRouter embeddings request failed.'),
+                    data_get($payload, 'error.message', 'Embeddings request failed.'),
                     $response->status(),
                     is_array($payload) ? $payload : null
                 );
@@ -85,7 +87,29 @@ class NotulenOpenRouterClient
             }
         }
 
-        throw new OpenRouterException('Unable to reach OpenRouter embeddings API.', 503, null, $lastException);
+        throw new OpenRouterException('Unable to reach embeddings API.', 503, null, $lastException);
+    }
+
+    /**
+     * @return array{0: string|null, 1: string, 2: string|null}
+     */
+    protected function embeddingEndpoint(): array
+    {
+        $provider = strtolower((string) config('services.openrouter.embedding_provider', 'openrouter'));
+
+        if ($provider === 'openai') {
+            return [
+                config('services.openai.api_key') ?: $this->apiKey,
+                rtrim((string) config('services.openai.base_url', 'https://api.openai.com/v1'), '/'),
+                config('services.openai.embedding_model', 'text-embedding-3-small'),
+            ];
+        }
+
+        return [
+            $this->apiKey,
+            $this->baseUrl,
+            $this->embeddingModel,
+        ];
     }
 
     /**
@@ -124,6 +148,77 @@ class NotulenOpenRouterClient
         );
     }
 
+    public function chatModel(): ?string
+    {
+        return $this->notulenModel;
+    }
+
+    /**
+     * Yields incremental text deltas from OpenRouter streaming chat.
+     *
+     * @param  array<int, array<string, mixed>>  $messages
+     * @return \Generator<int, string>
+     */
+    public function chatStream(array $messages, ?string $model = null): \Generator
+    {
+        if (blank($this->apiKey)) {
+            throw new OpenRouterException('OpenRouter is not configured.', 500);
+        }
+
+        try {
+            $response = $this->pendingRequest()
+                ->withOptions(['stream' => true])
+                ->post($this->baseUrl.'/chat/completions', [
+                    'model' => $model ?? $this->notulenModel,
+                    'messages' => $messages,
+                    'stream' => true,
+                ]);
+        } catch (ConnectionException $exception) {
+            throw new OpenRouterException('Unable to reach OpenRouter.', 503, null, $exception);
+        }
+
+        if (! $response->successful()) {
+            $payload = $response->json();
+
+            throw new OpenRouterException(
+                data_get($payload, 'error.message', 'OpenRouter stream request failed.'),
+                $response->status(),
+                is_array($payload) ? $payload : null
+            );
+        }
+
+        $body = $response->toPsrResponse()->getBody();
+        $buffer = '';
+
+        while (! $body->eof()) {
+            $buffer .= $body->read(1024);
+
+            while (($pos = strpos($buffer, "\n")) !== false) {
+                $line = trim(substr($buffer, 0, $pos));
+                $buffer = substr($buffer, $pos + 1);
+
+                if ($line === '' || ! str_starts_with($line, 'data:')) {
+                    continue;
+                }
+
+                $data = trim(substr($line, 5));
+                if ($data === '[DONE]') {
+                    return;
+                }
+
+                $json = json_decode($data, true);
+                if (! is_array($json)) {
+                    continue;
+                }
+
+                $delta = data_get($json, 'choices.0.delta.content');
+                if (is_string($delta) && $delta !== '') {
+                    yield $delta;
+                }
+            }
+        }
+    }
+
     public function extractTextFromPdfBase64(string $base64Pdf): string
     {
         $prompt = <<<'PROMPT'
@@ -149,13 +244,13 @@ PROMPT;
         ], $this->notulenOcrModel));
     }
 
-    protected function pendingRequest()
+    protected function pendingRequest(?string $apiKey = null)
     {
         return Http::acceptJson()
             ->connectTimeout($this->connectTimeout)
             ->timeout($this->timeout)
             ->withHeaders([
-                'Authorization' => 'Bearer '.$this->apiKey,
+                'Authorization' => 'Bearer '.($apiKey ?? $this->apiKey),
                 'HTTP-Referer' => config('app.url'),
                 'X-Title' => config('app.name'),
             ]);

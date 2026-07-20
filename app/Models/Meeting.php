@@ -14,6 +14,8 @@ class Meeting extends Model
 
     public const STATUS_PENDING = 'pending';
 
+    public const STATUS_PROCESSING = 'processing';
+
     public const STATUS_PROCESSED = 'processed';
 
     public const STATUS_FAILED = 'failed';
@@ -23,8 +25,10 @@ class Meeting extends Model
         'meeting_date',
         'original_filename',
         'file_path',
+        'file_hash',
         'status',
         'full_text',
+        'error_message',
         'uploaded_by',
     ];
 

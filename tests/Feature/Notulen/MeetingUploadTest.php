@@ -80,4 +80,38 @@ class MeetingUploadTest extends TestCase
             ->post(route('notulen.meetings.store'), [])
             ->assertSessionHasErrors(['title', 'file']);
     }
+
+    public function test_duplicate_file_hash_skips_reupload(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('upload_notulen');
+
+        $content = '%PDF-1.4 identical notulen content';
+        $first = UploadedFile::fake()->createWithContent('first.pdf', $content);
+        $second = UploadedFile::fake()->createWithContent('second.pdf', $content);
+
+        $this->actingAs($user)
+            ->post(route('notulen.meetings.store'), [
+                'title' => 'Rapat Pertama',
+                'file' => $first,
+            ])
+            ->assertRedirect(route('notulen.meetings.index'));
+
+        $existing = Meeting::query()->first();
+        $this->assertNotNull($existing);
+        $this->assertNotNull($existing->file_hash);
+
+        $this->actingAs($user)
+            ->post(route('notulen.meetings.store'), [
+                'title' => 'Rapat Duplikat',
+                'file' => $second,
+            ])
+            ->assertRedirect(route('notulen.meetings.show', $existing))
+            ->assertSessionHas('warning');
+
+        $this->assertSame(1, Meeting::query()->count());
+        Queue::assertPushed(ProcessMeeting::class, 1);
+    }
 }

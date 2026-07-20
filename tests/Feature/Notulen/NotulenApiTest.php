@@ -78,7 +78,18 @@ class NotulenApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('not_found', false)
-            ->assertJsonFragment(['title' => 'Rapat API']);
+            ->assertJsonFragment(['title' => 'Rapat API'])
+            ->assertJsonStructure([
+                'success',
+                'answer',
+                'sources' => [
+                    ['id', 'title', 'meeting_date', 'url', 'excerpt', 'score', 'chunk_index'],
+                ],
+                'not_found',
+                'top_score',
+                'model',
+                'latency_ms',
+            ]);
     }
 
     public function test_meetings_list_requires_api_key(): void

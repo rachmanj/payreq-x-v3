@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Notulen\StoreMeetingRequest;
 use App\Jobs\ProcessMeeting;
 use App\Models\Meeting;
+use App\Services\Notulen\RetrievalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -39,6 +40,7 @@ class MeetingController extends Controller
                 return match ($m->status) {
                     Meeting::STATUS_PROCESSED => '<span class="badge badge-success">Processed</span>',
                     Meeting::STATUS_FAILED => '<span class="badge badge-danger">Failed</span>',
+                    Meeting::STATUS_PROCESSING => '<span class="badge badge-info">Processing</span>',
                     default => '<span class="badge badge-warning">Pending</span>',
                 };
             })
@@ -64,6 +66,20 @@ class MeetingController extends Controller
     public function store(StoreMeetingRequest $request)
     {
         $file = $request->file('file');
+        $fileHash = hash_file('sha256', $file->getRealPath());
+
+        $duplicate = Meeting::query()
+            ->where('file_hash', $fileHash)
+            ->whereIn('status', [Meeting::STATUS_PROCESSED, Meeting::STATUS_PENDING, Meeting::STATUS_PROCESSING])
+            ->latest('id')
+            ->first();
+
+        if ($duplicate) {
+            return redirect()
+                ->route('notulen.meetings.show', $duplicate)
+                ->with('warning', 'File PDF yang sama sudah pernah diunggah ('.$duplicate->title.'). Upload dibatalkan untuk menghindari re-embedding.');
+        }
+
         $disk = Storage::disk('notulen');
         $storedName = Str::uuid()->toString().'.pdf';
         $relativePath = $disk->putFileAs('', $file, $storedName);
@@ -73,6 +89,7 @@ class MeetingController extends Controller
             'meeting_date' => $request->validated('meeting_date'),
             'original_filename' => $file->getClientOriginalName(),
             'file_path' => $relativePath,
+            'file_hash' => $fileHash,
             'status' => Meeting::STATUS_PENDING,
             'uploaded_by' => Auth::id(),
         ]);
@@ -89,6 +106,7 @@ class MeetingController extends Controller
         $meeting->update([
             'status' => Meeting::STATUS_PENDING,
             'full_text' => null,
+            'error_message' => null,
         ]);
 
         $meeting->chunks()->delete();
@@ -134,6 +152,7 @@ class MeetingController extends Controller
         }
 
         $meeting->delete();
+        RetrievalService::clearChunkCache();
 
         return redirect()
             ->route('notulen.meetings.index')

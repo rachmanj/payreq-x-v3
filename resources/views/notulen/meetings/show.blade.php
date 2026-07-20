@@ -18,6 +18,7 @@
                         $badge = match ($meeting->status) {
                             \App\Models\Meeting::STATUS_PROCESSED => 'success',
                             \App\Models\Meeting::STATUS_FAILED => 'danger',
+                            \App\Models\Meeting::STATUS_PROCESSING => 'info',
                             default => 'warning',
                         };
                     @endphp
@@ -44,10 +45,17 @@
 
                     <h5>Extracted Text</h5>
                     @if ($meeting->status === \App\Models\Meeting::STATUS_PENDING)
-                        <p class="text-muted">Dokumen sedang diproses…</p>
+                        <p class="text-muted"><i class="fas fa-clock mr-1"></i> Dokumen menunggu antrean proses…</p>
+                    @elseif ($meeting->status === \App\Models\Meeting::STATUS_PROCESSING)
+                        <p class="text-info"><i class="fas fa-spinner fa-spin mr-1"></i> Dokumen sedang diproses…</p>
                     @elseif ($meeting->status === \App\Models\Meeting::STATUS_FAILED)
-                        <p class="text-danger">Gagal memproses PDF. PDF scan/gambar akan dicoba via OCR otomatis — pastikan
-                            <code>OPENROUTER_API_KEY</code> sudah dikonfigurasi, lalu klik <strong>Proses ulang</strong>.</p>
+                        <p class="text-danger">Gagal memproses PDF.</p>
+                        @if ($meeting->error_message)
+                            <div class="alert alert-danger small mb-2">{{ $meeting->error_message }}</div>
+                        @else
+                            <p class="text-muted small">PDF scan/gambar akan dicoba via OCR otomatis — pastikan
+                                <code>OPENROUTER_API_KEY</code> sudah dikonfigurasi.</p>
+                        @endif
                         @can('upload_notulen')
                             <form method="POST" action="{{ route('notulen.meetings.reprocess', $meeting) }}" class="mt-2">
                                 @csrf
