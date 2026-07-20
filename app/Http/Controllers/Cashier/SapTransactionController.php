@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers\Cashier;
 
-use App\Exceptions\SapBridgeException;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
-use App\Services\SapBridge\AccountStatementService;
+use App\Services\SapService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class SapTransactionController extends Controller
 {
-    public function __construct(protected AccountStatementService $accountStatementService) {}
+    public function __construct(protected SapService $sapService) {}
 
     public function index()
     {
@@ -37,17 +36,15 @@ class SapTransactionController extends Controller
         $this->ensureDateRangeLimit($validated['start_date'], $validated['end_date']);
 
         try {
-            $statement = $this->accountStatementService->getAccountStatement(
+            $statement = $this->sapService->getAccountStatement(
                 $validated['account_code'],
                 $validated['start_date'],
                 $validated['end_date']
             );
-        } catch (SapBridgeException $exception) {
-            return $this->errorResponse($request, $exception->getMessage(), $exception->getStatusCode());
         } catch (\Throwable $exception) {
             report($exception);
 
-            return $this->errorResponse($request, 'Failed to fetch data', 500);
+            return $this->errorResponse($request, $exception->getMessage() ?: 'Failed to fetch data from SAP B1.', 500);
         }
 
         $transactions = data_get($statement, 'transactions', []);

@@ -1,5 +1,39 @@
 # Architecture notes
 
+## SAP B1 account statements (Service Layer)
+
+```mermaid
+flowchart TD
+    ui[Cashier SAP Transactions] --> ctrl[SapTransactionController]
+    job[FetchSapGlLinesJob] --> svc[SapService getAccountStatement]
+    ctrl --> svc
+    svc -->|mode sql or auto| sql[SQLQueries OJDT JDT1]
+    sql -->|BaseRef DocNum| enrich[OData InventoryGenExits DeliveryNotes]
+    enrich --> unit[unit_no UDF]
+    svc -->|mode odata or auto fallback| odata[JournalEntries with lines]
+    sql --> sl[(SAP B1 Service Layer)]
+    odata --> sl
+    svc --> payload[opening closing running balances]
+    payload --> ui
+    payload --> gl[(sap_gl_lines + book balances)]
+```
+
+**Important files**
+
+- Service: `app/Services/SapService.php` (`getAccountStatement`, `probeSqlQueries`)
+- Controller: `app/Http/Controllers/Cashier/SapTransactionController.php`
+- Job: `app/Jobs/FetchSapGlLinesJob.php`
+- Probe: `php artisan sap:probe-sql-queries`
+- Config: `config/services.php` → `sap.account_statement.*`
+- Reference SQL: `docs/je_daily.sql` (unit_no from OIGE/ODLN)
+- Docs: `docs/api-account-statements.md`
+
+**Notes**
+
+- External SAP-Bridge microservice is no longer used.
+- `unit_no` enriched via OData `InventoryGenExits`/`DeliveryNotes` for TransType 60/15 (SQLQueries cannot access `OIGE`/`ODLN`). Pure OData statement path leaves `unit_no` null.
+- `doc_num` = `BaseRef`; `doc_type` = mapped `JDT1.TransType` labels.
+
 ## Notulen AI (RAG)
 
 ```mermaid

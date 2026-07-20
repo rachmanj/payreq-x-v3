@@ -13,10 +13,6 @@
         <div class="col-12">
             <div class="card card-outline card-primary">
                 <div class="card-header p-2">
-                    <div class="alert alert-info py-2 mb-2">
-                        <i class="fas fa-info-circle"></i> Halaman ini menampilkan transaksi dari tanggal 1 Januari 2025
-                        sampai dengan kemarin.
-                    </div>
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group mb-2">
@@ -34,13 +30,13 @@
                         <div class="col-md-3">
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold">Start Date</label>
-                                <input type="date" class="form-control form-control-sm" id="start_date" min="2025-01-01">
+                                <input type="date" class="form-control form-control-sm" id="start_date">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold">End Date</label>
-                                <input type="date" class="form-control form-control-sm" id="end_date" min="2025-01-01">
+                                <input type="date" class="form-control form-control-sm" id="end_date">
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -167,21 +163,19 @@
 
     <script>
         $(function() {
-            // Set default dates
-            const startDate = new Date('2025-01-01');
+            // Default: first day of current month → yesterday (range still max 6 months)
             const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+            const firstOfMonth = new Date(yesterday.getFullYear(), yesterday.getMonth(), 1);
 
-            // Set start date to Jan 1, 2025
-            $('#start_date').val('2025-01-01');
-
-            // Set end date to yesterday or Jan 1, 2025 if we're before that date
-            if (yesterday >= startDate) {
-                $('#end_date').val(yesterday.toISOString().split('T')[0]);
-            } else {
-                $('#end_date').val('2025-01-01');
-            }
+            const toYmd = (d) => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+            $('#start_date').val(toYmd(firstOfMonth));
+            $('#end_date').val(toYmd(yesterday));
 
             let table;
             const alertBox = $('#sap-alert');
@@ -389,7 +383,7 @@
                         console.error('Error:', error);
                         const message = xhr.responseJSON && xhr.responseJSON.error ?
                             xhr.responseJSON.error :
-                            'Failed to fetch data from SAP Bridge.';
+                            'Failed to fetch data from SAP B1.';
                         alertBox.removeClass('d-none').text(message);
                         table.clear().draw();
                     },

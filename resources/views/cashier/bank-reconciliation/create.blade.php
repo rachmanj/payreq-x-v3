@@ -111,7 +111,7 @@
 
                         <p class="text-muted small mb-0" id="mode-help-ai">
                             Submitting will queue AI parsing of the PDF and SAP GL fetch for this period.
-                            Ensure <code>OPENROUTER_API_KEY</code> and SAP / SAP Bridge are configured.
+                            Ensure <code>OPENROUTER_API_KEY</code> and SAP B1 Service Layer are configured.
                         </p>
                         <p class="text-muted small mb-0 d-none" id="mode-help-manual">
                             Submitting will fetch SAP GL lines only. You will add bank statement lines manually on the review screen.

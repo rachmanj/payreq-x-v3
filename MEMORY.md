@@ -1,3 +1,27 @@
+### [062] Account statement unit_no from OIGE/ODLN (2026-07-20) ✅ COMPLETE
+
+**Challenge:** `U_MIS_UnitNo` does not exist on `JDT1`/`OJDT`, so account statements returned blank Unit. Company report `docs/je_daily.sql` pulls it from source docs.
+
+**Solution:** Keep SQLQueries lines on `OJDT`/`JDT1` (`doc_num`=`BaseRef`, labeled `doc_type`). Enrich `unit_no` via batched OData on `InventoryGenExits` (60) / `DeliveryNotes` (15) using configurable UDF (default `MIS_UnitNo`). SQL joins to `OIGE`/`ODLN` are not possible on this SL.
+
+**Key learning:** Unit No is a marketing-document UDF. SQLQueries cannot access `OIGE`/`ODLN` and rejects `CASE`; OData `InventoryGenExits.U_MIS_UnitNo` works. Blank unit_no for non-60/15 TransTypes is correct.
+
+**Tests:** `tests/Feature/SapAccountStatementTest.php`.
+
+---
+
+### [061] Drop SAP-Bridge — account statements via Service Layer (2026-07-20) ✅ COMPLETE
+
+**Challenge:** Cashier SAP Transactions and Bank Reconciliation depended on an external SAP-Bridge microservice for account statements (opening/closing/running balances, `doc_type`, `unit_no` UDF). That added an extra hop and duplicate SAP connectivity next to the app’s existing Service Layer client.
+
+**Solution:** Implemented `SapService::getAccountStatement()` with SQLQueries primary path (`OJDT`/`JDT1`) and OData `JournalEntries` fallback. Wired `SapTransactionController` and `FetchSapGlLinesJob` to it. Removed `App\Services\SapBridge\*`, `SapBridgeException`, and `SAP_BRIDGE_*` config. Added `sap:probe-sql-queries` and `SAP_ACCOUNT_STATEMENT_*` env keys (`mode`, `unit_udf`, `odata_lookback_start`).
+
+**Key learning:** Prefer Service Layer SQLQueries for historical opening balances; keep an OData fallback when SQLQueries is disabled. Cache SQLQueries availability (`sap.sql_queries_available`) so `auto` mode does not retry a dead path every request. On this B1 SL, SQLQueries rejects `SUM(Debit-Credit)` and quoted identifiers — use `SUM(Debit)`/`SUM(Credit)` separately and unquoted `T0.Col` aliases. OData JournalEntries uses `ReferenceDate` (not `RefDate`); `JournalEntryLines` is a collection property — do **not** `$expand` it. `unit_no` is not on JDT1 — see [062].
+
+**Tests:** `tests/Feature/SapAccountStatementTest.php` (controller data + 6-month validation + job persistence).
+
+---
+
 ### [060] Notulen AI hardening — chunking, jobs, RAG UX (2026-07-20) ✅ COMPLETE
 
 **Challenge:** Notulen AI worked but had silent quality bugs (byte-based UTF-8 chunking, whitespace collapse killing paragraph breaks), fragile jobs (no retries), linear in-PHP retrieval, thin Ask UX, and weak OCR/ops feedback.

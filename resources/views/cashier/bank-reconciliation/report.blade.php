@@ -190,7 +190,7 @@
                         </tbody>
                     </table>
 
-                    <h6 class="text-muted">Balances (AI / SAP Bridge)</h6>
+                    <h6 class="text-muted">Balances (AI / SAP B1)</h6>
                     <table class="table table-sm table-bordered mb-3">
                         <tbody>
                             <tr>

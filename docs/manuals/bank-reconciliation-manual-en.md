@@ -86,7 +86,7 @@ After validator approval, open **Report** from the review page or the green cell
 ## Troubleshooting
 
 - **Menu missing** — ask an administrator for **`akses_koran`**.
-- **Empty parsing / SAP** — check valid PDF, queue workers, SAP bridge settings.
+- **Empty parsing / SAP** — check valid PDF, queue workers, SAP B1 Service Layer settings.
 - **Cannot Submit for validation** — ensure bank vs book difference is balanced.
 - **Cannot delete PDF** — reconciliation may be **pending validation** or **completed**.
 - **Outdated HELP answers** — administrator runs `php artisan help:reindex` after manual updates.

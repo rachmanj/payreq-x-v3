@@ -86,7 +86,7 @@ Setelah validator menyetujui, buka **Report** dari halaman review atau dari ikon
 ## Penanganan masalah
 
 - **Menu tidak tampil** — minta administrator memberi **`akses_koran`**.
-- **Parsing / SAP kosong** — periksa PDF valid, queue worker aktif, pengaturan SAP bridge.
+- **Parsing / SAP kosong** — periksa PDF valid, queue worker aktif, pengaturan SAP B1 Service Layer.
 - **Tidak bisa Submit for validation** — pastikan selisih bank vs buku sudah seimbang dan semua baris relevan sudah dicocokkan atau dikecualikan.
 - **Tidak bisa hapus PDF** — rekonsiliasi mungkin **pending validation** atau **completed**; hubungi validator atau admin.
 - **Jawaban HELP usang** — administrator menjalankan `php artisan help:reindex` setelah manual diperbarui.

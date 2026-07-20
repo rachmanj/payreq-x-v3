@@ -36,12 +36,6 @@ return [
         'api_key' => env('GL_API_KEY'),
     ],
 
-    'sap_bridge' => [
-        'url' => env('SAP_BRIDGE_URL'),
-        'api_key' => env('SAP_BRIDGE_API_KEY'),
-        'timeout' => env('SAP_BRIDGE_TIMEOUT', 30),
-    ],
-
     'openrouter' => [
         'api_key' => env('OPENROUTER_API_KEY'),
         'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
@@ -84,6 +78,14 @@ return [
         'user' => env('SAP_USER'),
         'password' => env('SAP_PASSWORD'),
         'auto_submit_user_id' => env('SAP_AUTO_SUBMIT_USER_ID'),
+        'account_statement' => [
+            // auto = try SQLQueries once and cache capability; sql = force SQLQueries; odata = JournalEntries only
+            'mode' => env('SAP_ACCOUNT_STATEMENT_MODE', 'auto'),
+            // Source-document UDF alias on OIGE/ODLN (e.g. MIS_UnitNo → U_MIS_UnitNo). Not a JDT1 column.
+            'unit_udf' => env('SAP_ACCOUNT_STATEMENT_UNIT_UDF', 'MIS_UnitNo'),
+            // OData opening-balance floor (YYYY-MM-DD). Empty = 1 year before statement start.
+            'odata_lookback_start' => env('SAP_ACCOUNT_STATEMENT_ODATA_LOOKBACK_START', ''),
+        ],
         'ar_invoice' => [
             'default_payment_terms' => env('SAP_AR_INVOICE_DEFAULT_PAYMENT_TERMS', 15),
             'default_revenue_account' => env('SAP_AR_INVOICE_DEFAULT_REVENUE_ACCOUNT', '41101'),
