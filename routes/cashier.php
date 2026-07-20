@@ -196,7 +196,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/data', [SapTransactionController::class, 'data'])->name('data');
     });
 
-    Route::prefix('bank-reconciliation')->name('bank-reconciliation.')->group(function () {
+    Route::prefix('bank-reconciliation')->name('bank-reconciliation.')->middleware('permission:akses_koran')->group(function () {
         Route::get('/', [BankReconciliationController::class, 'index'])->name('index');
         Route::get('/create', [BankReconciliationController::class, 'create'])->name('create');
         Route::post('/', [BankReconciliationController::class, 'store'])->name('store');
@@ -211,11 +211,15 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::put('/{bank_reconciliation}/lines/{bank_statement_line}', [BankReconciliationController::class, 'updateLine'])->name('lines.update');
         Route::delete('/{bank_reconciliation}/lines/{bank_statement_line}', [BankReconciliationController::class, 'destroyLine'])->name('lines.destroy');
         Route::post('/{bank_reconciliation}/lines/{bank_statement_line}/exclude', [BankReconciliationController::class, 'excludeBankLine'])->name('lines.exclude');
+        Route::post('/{bank_reconciliation}/lines/{bank_statement_line}/classify', [BankReconciliationController::class, 'classifyBankLine'])->name('lines.classify');
         Route::post('/{bank_reconciliation}/sap-lines/{sap_gl_line}/exclude', [BankReconciliationController::class, 'excludeSapLine'])->name('sap-lines.exclude');
+        Route::post('/{bank_reconciliation}/sap-lines/{sap_gl_line}/classify', [BankReconciliationController::class, 'classifySapLine'])->name('sap-lines.classify');
+        Route::put('/{bank_reconciliation}/balances', [BankReconciliationController::class, 'updateBalances'])->name('balances.update');
         Route::post('/{bank_reconciliation}/submit', [BankReconciliationController::class, 'submitForValidation'])->name('submit');
         Route::post('/{bank_reconciliation}/validate', [BankReconciliationController::class, 'validateReconciliation'])->name('validate');
         Route::post('/{bank_reconciliation}/reject', [BankReconciliationController::class, 'reject'])->name('reject');
         Route::get('/{bank_reconciliation}/report', [BankReconciliationController::class, 'report'])->name('report');
+        Route::get('/{bank_reconciliation}/export', [BankReconciliationController::class, 'export'])->name('export');
     });
 
     Route::prefix('bank-transactions')->name('bank-transactions.')->group(function () {

@@ -25,6 +25,7 @@ class BankReconciliationManualValidationTest extends TestCase
         parent::setUp();
 
         Permission::firstOrCreate(['name' => 'validate_bank_reconciliation'], ['guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'akses_koran'], ['guard_name' => 'web']);
         Role::query()->firstOrCreate(['name' => 'cashier'], ['guard_name' => 'web']);
         Role::query()->firstOrCreate(['name' => 'admin'], ['guard_name' => 'web']);
     }
@@ -49,6 +50,7 @@ class BankReconciliationManualValidationTest extends TestCase
     {
         $user = User::factory()->create(['project' => '000H']);
         $user->assignRole('cashier');
+        $user->givePermissionTo('akses_koran');
 
         return $user;
     }
@@ -57,7 +59,7 @@ class BankReconciliationManualValidationTest extends TestCase
     {
         $user = User::factory()->create(['project' => '000H']);
         $user->assignRole('admin');
-        $user->givePermissionTo('validate_bank_reconciliation');
+        $user->givePermissionTo(['validate_bank_reconciliation', 'akses_koran']);
 
         return $user;
     }
@@ -193,6 +195,12 @@ class BankReconciliationManualValidationTest extends TestCase
     {
         $preparer = $this->createPreparer();
         $reconciliation = $this->createReconciliation($preparer);
+        $reconciliation->update([
+            'opening_balance_bank' => '1000.00',
+            'closing_balance_bank' => '1100.00',
+            'opening_balance_book' => '1000.00',
+            'closing_balance_book' => '1000.00',
+        ]);
 
         BankStatementLine::query()->create([
             'bank_reconciliation_id' => $reconciliation->id,
@@ -214,12 +222,18 @@ class BankReconciliationManualValidationTest extends TestCase
     {
         $preparer = $this->createPreparer();
         $reconciliation = $this->createReconciliation($preparer);
+        $reconciliation->update([
+            'opening_balance_bank' => '1000.00',
+            'closing_balance_bank' => '1000.00',
+            'opening_balance_book' => '1000.00',
+            'closing_balance_book' => '1000.00',
+        ]);
 
         BankStatementLine::query()->create([
             'bank_reconciliation_id' => $reconciliation->id,
             'debit' => '100.00',
             'credit' => '0.00',
-            'matched_status' => BankStatementLine::MATCH_UNMATCHED,
+            'matched_status' => BankStatementLine::MATCH_MATCHED,
             'line_order' => 1,
             'is_ai_extracted' => false,
         ]);
@@ -228,7 +242,7 @@ class BankReconciliationManualValidationTest extends TestCase
             'bank_reconciliation_id' => $reconciliation->id,
             'debit' => '0.00',
             'credit' => '100.00',
-            'matched_status' => SapGlLine::MATCH_UNMATCHED,
+            'matched_status' => SapGlLine::MATCH_MATCHED,
         ]);
 
         $this->actingAs($preparer)->post(route('cashier.bank-reconciliation.submit', $reconciliation))
@@ -238,6 +252,58 @@ class BankReconciliationManualValidationTest extends TestCase
         $reconciliation->refresh();
         $this->assertSame(BankReconciliation::VALIDATION_PENDING, $reconciliation->validation_status);
         $this->assertSame($preparer->id, $reconciliation->submitted_by);
+    }
+
+    public function test_submit_blocked_when_closing_balances_missing(): void
+    {
+        $preparer = $this->createPreparer();
+        $reconciliation = $this->createReconciliation($preparer);
+
+        $this->actingAs($preparer)->post(route('cashier.bank-reconciliation.submit', $reconciliation))
+            ->assertRedirect()
+            ->assertSessionHasErrors('balance');
+
+        $this->assertNull($reconciliation->fresh()->validation_status);
+    }
+
+    public function test_can_update_opening_and_closing_balances(): void
+    {
+        $preparer = $this->createPreparer();
+        $reconciliation = $this->createReconciliation($preparer);
+
+        $this->actingAs($preparer)->put(route('cashier.bank-reconciliation.balances.update', $reconciliation), [
+            'opening_balance_bank' => 1000,
+            'closing_balance_bank' => 1200,
+            'opening_balance_book' => 1000,
+            'closing_balance_book' => 1150,
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $reconciliation->refresh();
+        $this->assertSame('1000.00', (string) $reconciliation->opening_balance_bank);
+        $this->assertSame('1200.00', (string) $reconciliation->closing_balance_bank);
+        $this->assertSame('1000.00', (string) $reconciliation->opening_balance_book);
+        $this->assertSame('1150.00', (string) $reconciliation->closing_balance_book);
+    }
+
+    public function test_can_classify_unmatched_bank_line(): void
+    {
+        $preparer = $this->createPreparer();
+        $reconciliation = $this->createReconciliation($preparer);
+
+        $line = BankStatementLine::query()->create([
+            'bank_reconciliation_id' => $reconciliation->id,
+            'debit' => '25.00',
+            'credit' => '0.00',
+            'matched_status' => BankStatementLine::MATCH_UNMATCHED,
+            'line_order' => 1,
+            'is_ai_extracted' => false,
+        ]);
+
+        $this->actingAs($preparer)->post(route('cashier.bank-reconciliation.lines.classify', [$reconciliation, $line]), [
+            'reconciling_type' => BankStatementLine::TYPE_CHARGE_NOT_BOOKED,
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame(BankStatementLine::TYPE_CHARGE_NOT_BOOKED, $line->fresh()->reconciling_type);
     }
 
     public function test_preparer_cannot_validate_own_reconciliation(): void

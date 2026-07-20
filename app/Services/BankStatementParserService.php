@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Log;
 
 class BankStatementParserService
 {
-    public function __construct(protected OpenRouterService $openRouter) {}
+    public function __construct(
+        protected OpenRouterService $openRouter,
+        protected ReconciliationMatchingService $matchingService,
+    ) {}
 
     public function parseAndPersist(BankReconciliation $reconciliation): void
     {
@@ -31,6 +34,8 @@ class BankStatementParserService
         $payload = $this->openRouter->extractBankStatementFromPdfBase64($base64);
 
         DB::transaction(function () use ($reconciliation, $payload): void {
+            $this->clearMatchGroupsForBankLines($reconciliation);
+
             $reconciliation->bankStatementLines()->delete();
 
             $opening = $this->nullableFloat(data_get($payload, 'opening_balance'));
@@ -67,6 +72,29 @@ class BankStatementParserService
                 ]);
             }
         });
+    }
+
+    protected function clearMatchGroupsForBankLines(BankReconciliation $reconciliation): void
+    {
+        $bankLineIds = $reconciliation->bankStatementLines()->pluck('id');
+
+        if ($bankLineIds->isEmpty()) {
+            return;
+        }
+
+        $groupIds = \App\Models\MatchGroupBankLine::query()
+            ->whereIn('bank_statement_line_id', $bankLineIds)
+            ->pluck('reconciliation_match_group_id')
+            ->unique()
+            ->values();
+
+        $groups = $reconciliation->matchGroups()
+            ->whereIn('id', $groupIds)
+            ->get();
+
+        foreach ($groups as $group) {
+            $this->matchingService->deleteMatchGroup($group);
+        }
     }
 
     protected function resolveStatementPdfPath(Dokumen $dokumen): string

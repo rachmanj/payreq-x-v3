@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\ReconciliationBalanceService;
 use App\Services\ReconciliationMatchingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -22,6 +23,7 @@ class BankReconciliationSignConventionTest extends TestCase
     {
         parent::setUp();
 
+        Permission::firstOrCreate(['name' => 'akses_koran'], ['guard_name' => 'web']);
         Role::query()->firstOrCreate(['name' => 'cashier'], ['guard_name' => 'web']);
     }
 
@@ -45,6 +47,7 @@ class BankReconciliationSignConventionTest extends TestCase
     {
         $user = User::factory()->create(['project' => '000H']);
         $user->assignRole('cashier');
+        $user->givePermissionTo('akses_koran');
 
         return $user;
     }

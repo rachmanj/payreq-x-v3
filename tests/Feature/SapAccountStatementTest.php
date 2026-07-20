@@ -161,7 +161,10 @@ class SapAccountStatementTest extends TestCase
                 ->andReturn($this->sampleStatement());
         });
 
-        (new FetchSapGlLinesJob($reconciliation->id))->handle(app(SapService::class));
+        (new FetchSapGlLinesJob($reconciliation->id))->handle(
+            app(SapService::class),
+            app(\App\Services\ReconciliationMatchingService::class)
+        );
 
         $reconciliation->refresh();
 

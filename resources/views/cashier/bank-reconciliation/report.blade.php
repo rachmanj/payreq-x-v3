@@ -116,6 +116,24 @@
 @section('content')
     @php
         $isValidated = $bankReconciliation->validation_status === \App\Models\BankReconciliation::VALIDATION_VALIDATED;
+        $categoryLabels = [
+            \App\Models\BankStatementLine::TYPE_CREDIT_NOT_BOOKED => 'Add: credits / interest not booked',
+            \App\Models\BankStatementLine::TYPE_CHARGE_NOT_BOOKED => 'Less: bank charges not booked',
+            \App\Models\BankStatementLine::TYPE_BANK_ERROR => 'Bank error',
+            \App\Models\SapGlLine::TYPE_DEPOSIT_IN_TRANSIT => 'Add: deposits in transit',
+            \App\Models\SapGlLine::TYPE_OUTSTANDING_PAYMENT => 'Less: outstanding payments',
+            \App\Models\SapGlLine::TYPE_BOOK_ERROR => 'Book error',
+        ];
+        $bookSideCategories = [
+            \App\Models\SapGlLine::TYPE_DEPOSIT_IN_TRANSIT,
+            \App\Models\SapGlLine::TYPE_OUTSTANDING_PAYMENT,
+            \App\Models\SapGlLine::TYPE_BOOK_ERROR,
+        ];
+        $bankSideCategories = [
+            \App\Models\BankStatementLine::TYPE_CREDIT_NOT_BOOKED,
+            \App\Models\BankStatementLine::TYPE_CHARGE_NOT_BOOKED,
+            \App\Models\BankStatementLine::TYPE_BANK_ERROR,
+        ];
     @endphp
 
     <div class="floating-buttons-br no-print">
@@ -139,6 +157,8 @@
                     <div>
                         <a href="{{ route('cashier.bank-reconciliation.index') }}"
                             class="btn btn-sm btn-default mr-1">Back to list</a>
+                        <a href="{{ route('cashier.bank-reconciliation.export', $bankReconciliation) }}"
+                            class="btn btn-sm btn-success mr-1">Export Excel</a>
                         <a href="{{ route('cashier.bank-reconciliation.show', $bankReconciliation) }}"
                             class="btn btn-sm btn-default">Back to review</a>
                     </div>
@@ -170,88 +190,152 @@
                         @endif
                     </p>
 
-                    <h6 class="text-muted">Movement totals (non-excluded lines)</h6>
-                    <table class="table table-sm table-bordered mb-3">
-                        <tbody>
-                            <tr>
-                                <td>Bank net (debit − credit)</td>
-                                <td class="text-right">{{ number_format($balanceSummary['bank_net'], 2) }}</td>
-                            </tr>
-                            <tr>
-                                <td>Book net (debit − credit)</td>
-                                <td class="text-right">{{ number_format($balanceSummary['book_net'], 2) }}</td>
-                            </tr>
-                            <tr>
-                                <td>Difference (bank + book)</td>
-                                <td class="text-right {{ $balanceSummary['is_balanced'] ? 'text-success' : 'text-danger' }}">
-                                    {{ number_format($balanceSummary['difference'], 2) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    @if ($statement['opening_discrepancy'] !== null && abs($statement['opening_discrepancy']) >= 0.005)
+                        <div class="alert alert-warning py-2">
+                            Opening balances differ by
+                            <strong>{{ number_format($statement['opening_discrepancy'], 2) }}</strong>
+                            (bank {{ number_format($statement['opening_balance_bank'] ?? 0, 2) }}
+                            vs book {{ number_format($statement['opening_balance_book'] ?? 0, 2) }}).
+                        </div>
+                    @endif
 
-                    <h6 class="text-muted">Balances (AI / SAP B1)</h6>
-                    <table class="table table-sm table-bordered mb-3">
-                        <tbody>
-                            <tr>
-                                <td>Opening — Bank statement</td>
-                                <td class="text-right">
-                                    {{ $bankReconciliation->opening_balance_bank !== null ? number_format((float) $bankReconciliation->opening_balance_bank, 2) : '-' }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Closing — Bank statement</td>
-                                <td class="text-right">
-                                    {{ $bankReconciliation->closing_balance_bank !== null ? number_format((float) $bankReconciliation->closing_balance_bank, 2) : '-' }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Opening — Books (SAP)</td>
-                                <td class="text-right">
-                                    {{ $bankReconciliation->opening_balance_book !== null ? number_format((float) $bankReconciliation->opening_balance_book, 2) : '-' }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Closing — Books (SAP)</td>
-                                <td class="text-right">
-                                    {{ $bankReconciliation->closing_balance_book !== null ? number_format((float) $bankReconciliation->closing_balance_book, 2) : '-' }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <h6 class="text-muted">Outstanding (unmatched net debit − credit)</h6>
-                    <p class="mb-2"><strong>Bank:</strong> {{ number_format($outstandingBankNet, 2) }}</p>
-                    <p class="mb-3"><strong>SAP:</strong> {{ number_format($outstandingSapNet, 2) }}</p>
-
+                    <h6 class="text-muted">Bank reconciliation statement</h6>
                     <div class="row">
                         <div class="col-md-6">
-                            <h6>Unmatched bank lines</h6>
-                            <ul class="small">
-                                @forelse ($unmatchedBank as $line)
-                                    <li>{{ $line->transaction_date?->format('Y-m-d') }} —
-                                        {{ \Illuminate\Support\Str::limit($line->description, 60) }}
-                                        ({{ number_format((float) $line->debit - (float) $line->credit, 2) }})
-                                    </li>
-                                @empty
-                                    <li class="text-muted">None</li>
-                                @endforelse
-                            </ul>
+                            <table class="table table-sm table-bordered mb-3">
+                                <thead>
+                                    <tr>
+                                        <th colspan="2">Balance per bank statement</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Closing balance — Bank</td>
+                                        <td class="text-right">
+                                            {{ $statement['closing_balance_bank'] !== null ? number_format($statement['closing_balance_bank'], 2) : '—' }}
+                                        </td>
+                                    </tr>
+                                    @foreach ($bookSideCategories as $category)
+                                        @php $items = $statement['book_items'][$category] ?? []; @endphp
+                                        @if (count($items))
+                                            <tr class="table-light">
+                                                <td colspan="2"><em>{{ $categoryLabels[$category] ?? $category }}</em></td>
+                                            </tr>
+                                            @foreach ($items as $item)
+                                                <tr>
+                                                    <td class="pl-3 small">
+                                                        {{ $item['date'] ?? '-' }} —
+                                                        {{ \Illuminate\Support\Str::limit($item['description'] ?? '', 50) }}
+                                                    </td>
+                                                    <td class="text-right small">{{ number_format($item['net'], 2) }}</td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                    @endforeach
+                                    <tr class="font-weight-bold">
+                                        <td>Adjusted bank balance</td>
+                                        <td class="text-right {{ ($statement['is_reconciled'] ?? false) ? 'text-success' : 'text-danger' }}">
+                                            {{ $statement['adjusted_bank'] !== null ? number_format($statement['adjusted_bank'], 2) : '—' }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                         <div class="col-md-6">
-                            <h6>Unmatched SAP lines</h6>
-                            <ul class="small">
-                                @forelse ($unmatchedSap as $line)
-                                    <li>{{ $line->posting_date?->format('Y-m-d') }} —
-                                        {{ \Illuminate\Support\Str::limit($line->description, 60) }}
-                                        ({{ number_format((float) $line->debit - (float) $line->credit, 2) }})
-                                    </li>
-                                @empty
-                                    <li class="text-muted">None</li>
-                                @endforelse
-                            </ul>
+                            <table class="table table-sm table-bordered mb-3">
+                                <thead>
+                                    <tr>
+                                        <th colspan="2">Balance per books (SAP)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Closing balance — Books</td>
+                                        <td class="text-right">
+                                            {{ $statement['closing_balance_book'] !== null ? number_format($statement['closing_balance_book'], 2) : '—' }}
+                                        </td>
+                                    </tr>
+                                    @foreach ($bankSideCategories as $category)
+                                        @php $items = $statement['bank_items'][$category] ?? []; @endphp
+                                        @if (count($items))
+                                            <tr class="table-light">
+                                                <td colspan="2"><em>{{ $categoryLabels[$category] ?? $category }}</em></td>
+                                            </tr>
+                                            @foreach ($items as $item)
+                                                <tr>
+                                                    <td class="pl-3 small">
+                                                        {{ $item['date'] ?? '-' }} —
+                                                        {{ \Illuminate\Support\Str::limit($item['description'] ?? '', 50) }}
+                                                    </td>
+                                                    <td class="text-right small">
+                                                        {{-- Book side subtracts bank net, so display the adjusting effect --}}
+                                                        {{ number_format(-1 * $item['net'], 2) }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                    @endforeach
+                                    <tr class="font-weight-bold">
+                                        <td>Adjusted book balance</td>
+                                        <td class="text-right {{ ($statement['is_reconciled'] ?? false) ? 'text-success' : 'text-danger' }}">
+                                            {{ $statement['adjusted_book'] !== null ? number_format($statement['adjusted_book'], 2) : '—' }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+
+                    <table class="table table-sm table-bordered mb-3">
+                        <tbody>
+                            <tr>
+                                <td>Unexplained difference (adjusted bank − adjusted book)</td>
+                                <td class="text-right {{ ($statement['is_reconciled'] ?? false) ? 'text-success' : 'text-danger' }}">
+                                    {{ $statement['unexplained_difference'] !== null ? number_format($statement['unexplained_difference'], 2) : '—' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    @if (! empty($statement['diagnostic']))
+                        <p class="small text-danger">{{ $statement['diagnostic'] }}</p>
+                    @endif
+
+                    @if ($excludedBank->isNotEmpty() || $excludedSap->isNotEmpty())
+                        <h6 class="text-muted mt-3">Excluded lines</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="small">
+                                    @forelse ($excludedBank as $line)
+                                        <li>{{ $line->transaction_date?->format('Y-m-d') }} —
+                                            {{ \Illuminate\Support\Str::limit($line->description, 60) }}
+                                            ({{ number_format($line->net(), 2) }})
+                                            @if ($line->exclude_reason)
+                                                — {{ $line->exclude_reason }}
+                                            @endif
+                                        </li>
+                                    @empty
+                                        <li class="text-muted">None</li>
+                                    @endforelse
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="small">
+                                    @forelse ($excludedSap as $line)
+                                        <li>{{ $line->posting_date?->format('Y-m-d') }} —
+                                            {{ \Illuminate\Support\Str::limit($line->description, 60) }}
+                                            ({{ number_format($line->net(), 2) }})
+                                            @if ($line->exclude_reason)
+                                                — {{ $line->exclude_reason }}
+                                            @endif
+                                        </li>
+                                    @empty
+                                        <li class="text-muted">None</li>
+                                    @endforelse
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
 
                     <h6 class="text-muted mt-4">Sign-off</h6>
                     <table class="table table-sm table-bordered">

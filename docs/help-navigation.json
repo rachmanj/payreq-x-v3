@@ -13,9 +13,17 @@
                 "cocokkan bank SAP",
                 "match bank SAP",
                 "cara menggunakan fitur bank reconciliation",
-                "bagaimana cara menggunakan bank reconciliation"
+                "bagaimana cara menggunakan bank reconciliation",
+                "opening closing balances",
+                "adjusted bank",
+                "adjusted book",
+                "submit for validation",
+                "export excel rekonsiliasi",
+                "auto-match",
+                "deposit in transit",
+                "outstanding payment"
             ],
-            "description": "Match bank statement lines from Rekening Koran PDF to SAP GL lines for a Giro and month. Workflow: upload Koran → Create → Auto-match / manual match → Submit for validation → validator Validate → Report."
+            "description": "Match bank statement lines (AI PDF or manual) to SAP GL for a Giro and month. Set opening/closing balances; reconcile when adjusted bank equals adjusted book. Workflow: Create → Save balances → Auto-match / manual match → Submit for validation → Validate → Report / Export Excel."
         },
         {
             "title": "Bank Reconciliation — Create / Buat rekonsiliasi",
@@ -26,9 +34,11 @@
             "keywords": [
                 "create bank reconciliation",
                 "buat rekonsiliasi",
-                "mulai rekonsiliasi"
+                "mulai rekonsiliasi",
+                "manual bank reconciliation",
+                "AI bank reconciliation"
             ],
-            "description": "Start a new reconciliation session: select Giro, period, and Koran PDF. Queues PDF parsing and SAP GL fetch."
+            "description": "Start a session in AI mode (parse Koran PDF + fetch SAP) or Manual mode (type bank lines + fetch SAP). Select Giro, period, and Koran PDF for AI."
         },
         {
             "title": "Bank Reconciliation — Pending validation",
@@ -40,9 +50,25 @@
                 "pending validation",
                 "menunggu validasi",
                 "validate reconciliation",
-                "validasi rekonsiliasi"
+                "validasi rekonsiliasi",
+                "reject reconciliation"
             ],
-            "description": "Validator queue for reconciliations submitted with Submit for validation. Open a session and use Validate or Reject."
+            "description": "Validator queue for sessions submitted with Submit for validation. Validators are notified on submit. Open a session and use Validate or Reject (preparer notified on reject)."
+        },
+        {
+            "title": "Bank Reconciliation — Report and Excel export",
+            "menu_path": "Cashier → Bank Reconciliation → Report",
+            "route_name": "cashier.bank-reconciliation.report",
+            "url": "/cashier/bank-reconciliation",
+            "permission": "akses_koran",
+            "keywords": [
+                "bank reconciliation report",
+                "laporan rekonsiliasi",
+                "export excel",
+                "export rekonsiliasi",
+                "print reconciliation"
+            ],
+            "description": "Formal reconciliation statement (adjusted bank vs book, reconciling items). Print from Report, or use Export Excel for a downloadable workbook."
         },
         {
             "title": "Rekening Koran / Bank statement dashboard",

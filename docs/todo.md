@@ -2,6 +2,30 @@
 
 ## Recently Completed
 
+### Bank Reconciliation P0 hardening (2026-07-20)
+
+- [x] FetchSapGlLinesJob fetch-before-delete + failed status/notes + match-group cleanup
+- [x] Retries/backoff/failed() on Parse, Fetch SAP, Auto-match jobs
+- [x] Status JSON `notes` + dismissible failure banner on review poll
+- [x] Additive reconciliation statement submit gate + editable opening/closing balances
+- [x] `reconciling_type` classification (annotation) + formal report statement
+- [x] Feature tests + architecture/ADR/MEMORY docs
+
+### Bank Reconciliation P1 — policy + route gate (2026-07-20)
+
+- [x] `BankReconciliationPolicy` (viewAny/view/create/update/submit/validate + project scoping)
+- [x] `permission:akses_koran` middleware on bank-reconciliation route group
+- [x] Controller uses `$this->authorize(...)` instead of inline auth helpers
+- [x] `BankReconciliationAuthorizationTest` (missing permission, cross-project, elevated bypass)
+
+### Bank Reconciliation P2 (2026-07-20)
+
+- [x] Confirm dialogs before re-parse / fetch SAP (clears matches)
+- [x] Matching performance: no N+1 `fresh()`, meet-in-the-middle subset sum, AI top-N fuzzy candidates
+- [x] Notify validators on submit + preparer on reject (mail + database)
+- [x] Excel export of reconciliation statement (`BankReconciliationExport`)
+- [x] Tests: parse failure, split/fuzzy match, notifications, export, confirm UI
+
 ### Fix account statement unit_no from OIGE/ODLN (2026-07-20)
 
 - [x] SQL lines on OJDT/JDT1; enrich unit_no via OData InventoryGenExits/DeliveryNotes (60/15)
@@ -29,6 +53,13 @@
 - [x] Recreate `docs/notulen-ai.md`
 
 ## Next (backlog ideas)
+
+### Bank Reconciliation (P3 deferred)
+
+- [ ] Optional: reduce show-page polling (Echo/backoff once status terminal)
+- [ ] Optional: bulk-accept high AI-confidence bank lines
+
+### Other
 
 - [ ] Audio-to-minutes (Whisper) if stakeholders want true “AI notulen”
 - [ ] Page-by-page OCR with Imagick/pdftoppm

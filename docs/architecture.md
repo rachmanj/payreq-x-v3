@@ -1,5 +1,59 @@
 # Architecture notes
 
+## Bank Reconciliation (Cashier)
+
+```mermaid
+flowchart TD
+    create[Create session AI or manual] --> parse[ParseBankStatementJob]
+    create --> fetch[FetchSapGlLinesJob]
+    parse --> bankLines[bank_statement_lines + closing_balance_bank]
+    fetch --> sapLines[sap_gl_lines + closing_balance_book]
+    bankLines --> match[Opposite-polarity N:M matching]
+    sapLines --> match
+    match --> unmatched[Unmatched = reconciling items]
+    unmatched --> stmt["reconciliationStatement()"]
+    stmt -->|"unexplained ~ 0"| submit[Submit pending_validation]
+    stmt -->|"missing balances or gap"| diag[Diagnostic on review page]
+    submit --> validate[Validator approve or reject]
+    validate --> report[Formal statement report]
+```
+
+**Statement math** (`ReconciliationBalanceService::reconciliationStatement`):
+
+- `adjusted_bank = closing_balance_bank + SUM(unmatched book net)`
+- `adjusted_book = closing_balance_book − SUM(unmatched bank net)`
+- Submit requires `abs(adjusted_bank − adjusted_book) < 0.005` and both closing balances present
+- Unmatched lines categorized (deposit in transit, outstanding payment, charge/credit not booked, errors); optional `reconciling_type` override is annotation-only
+
+**Job reliability**
+
+- `FetchSapGlLinesJob` fetches first, then replaces lines transactionally; never wipes on failure
+- Failures set `status=failed` + `notes`; UI polls `status` JSON (includes `notes`) and shows a dismissible banner
+- All three jobs (`ParseBankStatementJob`, `FetchSapGlLinesJob`, `AutoMatchReconciliationJob`) use `$tries=3`, backoff, and `failed()`
+
+**Authorization**
+
+- Route group middleware: `permission:akses_koran`
+- Policy: `app/Policies/BankReconciliationPolicy.php` (`viewAny`, `view`, `create`, `update`, `submit`, `validate`)
+- Elevated roles see all projects; others scoped to their giro project
+- Validate requires `validate_bank_reconciliation` and preparer ≠ validator
+
+**P2 additions**
+
+- Confirm before re-parse / fetch SAP (UI); parser clears match groups before replacing bank lines
+- Matching: in-memory status tracking, meet-in-the-middle subset sum, fuzzy AI top-N candidates
+- Notifications: submit → users with `validate_bank_reconciliation`; reject → preparer (`BankReconciliationSubmittedNotification` / `RejectedNotification`)
+- Excel: `GET .../export` → `BankReconciliationExport` (FromView)
+
+**Important files**
+
+- Controller: `app/Http/Controllers/Cashier/BankReconciliationController.php`
+- Services: `ReconciliationBalanceService`, `ReconciliationMatchingService`, `BankStatementParserService`
+- Jobs: `ParseBankStatementJob`, `FetchSapGlLinesJob`, `AutoMatchReconciliationJob`
+- Views: `resources/views/cashier/bank-reconciliation/*`
+- Routes: `routes/cashier.php` (`cashier.bank-reconciliation.*`)
+- Manuals: `docs/manuals/bank-reconciliation-manual-en.md`, `docs/manuals/bank-reconciliation-manual-id.md`
+
 ## SAP B1 account statements (Service Layer)
 
 ```mermaid

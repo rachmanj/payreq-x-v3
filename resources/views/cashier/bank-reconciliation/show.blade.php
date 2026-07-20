@@ -8,6 +8,34 @@
     cashier / bank-reconciliation / {{ $bankReconciliation->id }}
 @endsection
 
+@push('styles')
+    <style>
+        .br-match-bar {
+            left: 250px;
+            right: 0;
+            width: auto;
+            z-index: 1030;
+        }
+
+        .br-match-bar .br-match-bar-inner {
+            max-width: 1100px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        body.sidebar-collapse .br-match-bar {
+            left: 4.6rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .br-match-bar,
+            body.sidebar-collapse .br-match-bar {
+                left: 0;
+            }
+        }
+    </style>
+@endpush
+
 @section('content')
     @php
         $bankUnmatched = $bankReconciliation->bankStatementLines->where(
@@ -31,7 +59,16 @@
         $canEditMatch = ! $bankReconciliation->isLockedForEditing();
         $canValidate = auth()->user()?->can('validate_bank_reconciliation')
             && ! $bankReconciliation->isPreparer((int) auth()->id());
-        $isBalanced = $balanceSummary['is_balanced'] ?? false;
+        $isReconciled = $statement['is_reconciled'] ?? false;
+        $isIncomplete = $statement['incomplete'] ?? false;
+        $categoryLabels = [
+            \App\Models\BankStatementLine::TYPE_CREDIT_NOT_BOOKED => 'Credit / interest not booked',
+            \App\Models\BankStatementLine::TYPE_CHARGE_NOT_BOOKED => 'Bank charge not booked',
+            \App\Models\BankStatementLine::TYPE_BANK_ERROR => 'Bank error',
+            \App\Models\SapGlLine::TYPE_DEPOSIT_IN_TRANSIT => 'Deposit in transit',
+            \App\Models\SapGlLine::TYPE_OUTSTANDING_PAYMENT => 'Outstanding payment',
+            \App\Models\SapGlLine::TYPE_BOOK_ERROR => 'Book error',
+        ];
     @endphp
 
     <div class="row pb-5 mb-5">
@@ -52,14 +89,17 @@
                 </div>
             @endif
 
-            @if ($bankReconciliation->status === \App\Models\BankReconciliation::STATUS_FAILED && filled($bankReconciliation->notes))
-                <div class="alert alert-danger">
-                    <strong>Last error:</strong> {{ $bankReconciliation->notes }}
-                    @if (! $bankReconciliation->dokumen_id)
-                        <br><small class="mt-1 d-block">No koran PDF is linked to this reconciliation — select one below and click Parse PDF.</small>
-                    @endif
-                </div>
-            @endif
+            <div id="br-failure-banner"
+                class="alert alert-danger alert-dismissible {{ $bankReconciliation->status === \App\Models\BankReconciliation::STATUS_FAILED && filled($bankReconciliation->notes) ? '' : 'd-none' }}"
+                role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <strong>Last error:</strong> <span id="br-failure-notes">{{ $bankReconciliation->notes }}</span>
+                @if (! $bankReconciliation->dokumen_id)
+                    <br><small class="mt-1 d-block">No koran PDF is linked to this reconciliation — select one below and click Parse PDF.</small>
+                @endif
+            </div>
 
             <div class="card card-outline card-secondary mb-2">
                 <div class="card-body py-2 d-flex flex-wrap justify-content-between align-items-center">
@@ -83,30 +123,89 @@
             </div>
 
             <div class="card card-outline card-warning mb-2">
-                <div class="card-body py-2 d-flex flex-wrap align-items-center">
-                    <span class="mr-3"><strong>Reconciliation totals</strong> (non-excluded lines):</span>
-                    <span class="mr-3">Bank net: <strong id="br-bank-net">{{ number_format($balanceSummary['bank_net'], 2) }}</strong></span>
-                    <span class="mr-3">Book net: <strong id="br-book-net">{{ number_format($balanceSummary['book_net'], 2) }}</strong></span>
-                    <span class="mr-3">Difference: <strong id="br-diff" class="{{ $isBalanced ? 'text-success' : 'text-danger' }}">{{ number_format($balanceSummary['difference'], 2) }}</strong></span>
-                    @if ($isBalanced)
-                        <span class="badge badge-success">Balanced</span>
+                <div class="card-body py-2">
+                    <div class="d-flex flex-wrap align-items-center mb-1">
+                        <span class="mr-3"><strong>Reconciliation statement</strong></span>
+                        @if ($isIncomplete)
+                            <span class="badge badge-secondary">Incomplete — enter closing balances</span>
+                        @elseif ($isReconciled)
+                            <span class="badge badge-success" id="br-reconciled-badge">Reconciled</span>
+                        @else
+                            <span class="badge badge-danger" id="br-reconciled-badge">Not reconciled</span>
+                        @endif
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center small">
+                        <span class="mr-3">Closing bank: <strong id="br-closing-bank">{{ $statement['closing_balance_bank'] !== null ? number_format($statement['closing_balance_bank'], 2) : '—' }}</strong></span>
+                        <span class="mr-3">Closing book: <strong id="br-closing-book">{{ $statement['closing_balance_book'] !== null ? number_format($statement['closing_balance_book'], 2) : '—' }}</strong></span>
+                        <span class="mr-3">Adjusted bank: <strong id="br-adjusted-bank">{{ $statement['adjusted_bank'] !== null ? number_format($statement['adjusted_bank'], 2) : '—' }}</strong></span>
+                        <span class="mr-3">Adjusted book: <strong id="br-adjusted-book">{{ $statement['adjusted_book'] !== null ? number_format($statement['adjusted_book'], 2) : '—' }}</strong></span>
+                        <span class="mr-3">Unexplained: <strong id="br-unexplained" class="{{ $isReconciled ? 'text-success' : 'text-danger' }}">{{ $statement['unexplained_difference'] !== null ? number_format($statement['unexplained_difference'], 2) : '—' }}</strong></span>
+                    </div>
+                    @if (! empty($statement['diagnostic']))
+                        <div class="small text-danger mt-1" id="br-diagnostic">{{ $statement['diagnostic'] }}</div>
                     @else
-                        <span class="badge badge-danger">Not balanced — match or exclude lines until difference is 0</span>
+                        <div class="small text-danger mt-1 d-none" id="br-diagnostic"></div>
                     @endif
+                    <div class="small text-muted mt-1">
+                        Movement totals (legacy): Bank net <span id="br-bank-net">{{ number_format($balanceSummary['bank_net'], 2) }}</span>
+                        | Book net <span id="br-book-net">{{ number_format($balanceSummary['book_net'], 2) }}</span>
+                        | Diff <span id="br-diff">{{ number_format($balanceSummary['difference'], 2) }}</span>
+                    </div>
                 </div>
             </div>
+
+            @if ($canEditMatch)
+                <div class="card card-outline card-info mb-2">
+                    <div class="card-header py-2">
+                        <strong>Opening / closing balances</strong>
+                        <small class="text-muted ml-2">Required for submit. AI parse / SAP fetch fill these when available.</small>
+                    </div>
+                    <div class="card-body py-2">
+                        <form action="{{ route('cashier.bank-reconciliation.balances.update', $bankReconciliation) }}" method="post"
+                            class="form-row align-items-end">
+                            @csrf
+                            @method('PUT')
+                            <div class="form-group col-md-3 mb-2">
+                                <label class="small mb-0">Opening — Bank</label>
+                                <input type="number" step="0.01" name="opening_balance_bank" class="form-control form-control-sm"
+                                    value="{{ old('opening_balance_bank', $bankReconciliation->opening_balance_bank) }}">
+                            </div>
+                            <div class="form-group col-md-3 mb-2">
+                                <label class="small mb-0">Closing — Bank</label>
+                                <input type="number" step="0.01" name="closing_balance_bank" class="form-control form-control-sm"
+                                    value="{{ old('closing_balance_bank', $bankReconciliation->closing_balance_bank) }}">
+                            </div>
+                            <div class="form-group col-md-3 mb-2">
+                                <label class="small mb-0">Opening — Book</label>
+                                <input type="number" step="0.01" name="opening_balance_book" class="form-control form-control-sm"
+                                    value="{{ old('opening_balance_book', $bankReconciliation->opening_balance_book) }}">
+                            </div>
+                            <div class="form-group col-md-3 mb-2">
+                                <label class="small mb-0">Closing — Book</label>
+                                <input type="number" step="0.01" name="closing_balance_book" class="form-control form-control-sm"
+                                    value="{{ old('closing_balance_book', $bankReconciliation->closing_balance_book) }}">
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-sm btn-info">Save balances</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @endif
 
             @if ($canEditMatch)
                 <div class="btn-toolbar mb-2 flex-wrap" role="toolbar">
                     @if ($bankReconciliation->dokumen_id)
                         <form action="{{ route('cashier.bank-reconciliation.parse', $bankReconciliation) }}" method="post"
-                            class="d-inline mr-1 mb-1">
+                            class="d-inline mr-1 mb-1"
+                            onsubmit="return confirm('Re-parse will replace all bank statement lines and clear related match groups. Continue?');">
                             @csrf
                             <button type="submit" class="btn btn-sm btn-outline-primary">Re-parse PDF (AI)</button>
                         </form>
                     @elseif ($bankReconciliation->source_mode === \App\Models\BankReconciliation::SOURCE_AI && $koranDokumens->isNotEmpty())
                         <form action="{{ route('cashier.bank-reconciliation.parse', $bankReconciliation) }}" method="post"
-                            class="d-inline-flex align-items-center flex-wrap mr-1 mb-1">
+                            class="d-inline-flex align-items-center flex-wrap mr-1 mb-1"
+                            onsubmit="return confirm('Parse will replace all bank statement lines and clear related match groups. Continue?');">
                             @csrf
                             <select name="dokumen_id" class="form-control form-control-sm mr-1 mb-1" style="min-width:220px" required>
                                 <option value="">-- select koran PDF --</option>
@@ -125,7 +224,8 @@
                         <span class="text-muted small mr-2 mb-1">No koran PDF uploaded for this giro/period — upload on Koran page first.</span>
                     @endif
                     <form action="{{ route('cashier.bank-reconciliation.fetch-sap', $bankReconciliation) }}" method="post"
-                        class="d-inline mr-1 mb-1">
+                        class="d-inline mr-1 mb-1"
+                        onsubmit="return confirm('Fetch SAP will replace all SAP lines and clear related match groups. Continue?');">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-outline-secondary">Fetch SAP lines</button>
                     </form>
@@ -140,7 +240,7 @@
                         class="d-inline mr-1 mb-1"
                         onsubmit="return confirm('Submit this reconciliation for validation? Editing will be locked.');">
                         @csrf
-                        <button type="submit" class="btn btn-sm btn-primary" id="br-submit-btn" @disabled(! $isBalanced)>
+                        <button type="submit" class="btn btn-sm btn-primary" id="br-submit-btn" @disabled(! $isReconciled)>
                             Submit for validation
                         </button>
                     </form>
@@ -281,6 +381,9 @@
                                                         </form>
                                                         <button type="button" class="btn btn-xs btn-outline-warning exclude-bank-btn"
                                                             data-line-id="{{ $line->id }}">Excl</button>
+                                                        <button type="button" class="btn btn-xs btn-outline-primary classify-bank-btn"
+                                                            data-line-id="{{ $line->id }}"
+                                                            data-type="{{ $line->reconciling_type }}">Type</button>
                                                     @elseif ($line->matched_status === \App\Models\BankStatementLine::MATCH_EXCLUDED)
                                                         <form method="post"
                                                             action="{{ route('cashier.bank-reconciliation.lines.exclude', [$bankReconciliation, $line]) }}"
@@ -306,6 +409,9 @@
                                                 @endif
                                                 @if ($line->exclude_reason)
                                                     <br><small class="text-muted">Excl: {{ $line->exclude_reason }}</small>
+                                                @endif
+                                                @if ($unmatched)
+                                                    <br><small class="text-info">{{ $categoryLabels[$line->reconcilingCategory()] ?? $line->reconcilingCategory() }}</small>
                                                 @endif
                                             </td>
                                             <td class="text-right small">{{ number_format((float) $line->debit, 2) }}</td>
@@ -352,10 +458,13 @@
                                                             data-net="{{ $net }}">
                                                     @endif
                                                 </td>
-                                                <td class="align-middle">
+                                                <td class="align-middle text-nowrap">
                                                     @if ($unmatched)
                                                         <button type="button" class="btn btn-xs btn-outline-warning exclude-sap-btn"
                                                             data-line-id="{{ $line->id }}">Excl</button>
+                                                        <button type="button" class="btn btn-xs btn-outline-primary classify-sap-btn"
+                                                            data-line-id="{{ $line->id }}"
+                                                            data-type="{{ $line->reconciling_type }}">Type</button>
                                                     @elseif ($line->matched_status === \App\Models\SapGlLine::MATCH_EXCLUDED)
                                                         <form method="post"
                                                             action="{{ route('cashier.bank-reconciliation.sap-lines.exclude', [$bankReconciliation, $line]) }}"
@@ -379,6 +488,9 @@
                                                 @if ($line->exclude_reason)
                                                     <br><small class="text-muted">Excl: {{ $line->exclude_reason }}</small>
                                                 @endif
+                                                @if ($unmatched)
+                                                    <br><small class="text-info">{{ $categoryLabels[$line->reconcilingCategory()] ?? $line->reconcilingCategory() }}</small>
+                                                @endif
                                             </td>
                                             <td class="text-right small">{{ number_format((float) $line->debit, 2) }}</td>
                                             <td class="text-right small">{{ number_format((float) $line->credit, 2) }}</td>
@@ -395,14 +507,14 @@
     </div>
 
     @if ($canEditMatch)
-        <div class="fixed-bottom bg-light border-top shadow-sm py-2 px-3" style="z-index: 1030;">
-            <div class="container-fluid">
+        <div class="fixed-bottom bg-light border-top shadow-sm py-2 px-3 br-match-bar">
+            <div class="br-match-bar-inner">
                 <form id="br-manual-match-form"
                     action="{{ route('cashier.bank-reconciliation.match', $bankReconciliation) }}" method="post"
-                    class="row align-items-center">
+                    class="row align-items-center justify-content-center">
                     @csrf
                     <div id="br-hidden-fields"></div>
-                    <div class="col-md-6 mb-2 mb-md-0">
+                    <div class="col-lg-7 col-md-8 mb-2 mb-md-0 text-center text-md-left">
                         <span class="small text-muted mr-2">Selection — Bank net:</span>
                         <strong id="br-sel-bank">0.00</strong>
                         <span class="small text-muted mx-2">SAP net:</span>
@@ -411,7 +523,7 @@
                         <strong id="br-sel-diff">0.00</strong>
                         <span class="small text-muted d-none d-lg-inline ml-2">(bank + SAP must be &lt; 0.005)</span>
                     </div>
-                    <div class="col-md-6 text-md-right">
+                    <div class="col-lg-3 col-md-4 text-center text-md-right">
                         <button type="submit" id="br-submit-match" class="btn btn-sm btn-primary" disabled>
                             Match selected as group
                         </button>
@@ -481,6 +593,31 @@
                 </form>
             </div>
         </div>
+
+        <div class="modal fade" id="classify-line-modal" tabindex="-1">
+            <div class="modal-dialog">
+                <form method="post" id="classify-line-form" class="modal-content">
+                    @csrf
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title">Classify reconciling item</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group mb-0">
+                            <label>Reconciling type</label>
+                            <select name="reconciling_type" id="classify-type-select" class="form-control form-control-sm">
+                                <option value="">Auto (from amount sign)</option>
+                            </select>
+                            <small class="form-text text-muted">Annotation only — does not change adjusted balances.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     @endif
 
     @if ($canValidate)
@@ -515,6 +652,22 @@
         const updateLineUrlTemplate = @json(route('cashier.bank-reconciliation.lines.update', [$bankReconciliation, '__LINE__']));
         const excludeBankUrlTemplate = @json(route('cashier.bank-reconciliation.lines.exclude', [$bankReconciliation, '__LINE__']));
         const excludeSapUrlTemplate = @json(route('cashier.bank-reconciliation.sap-lines.exclude', [$bankReconciliation, '__LINE__']));
+        const classifyBankUrlTemplate = @json(route('cashier.bank-reconciliation.lines.classify', [$bankReconciliation, '__LINE__']));
+        const classifySapUrlTemplate = @json(route('cashier.bank-reconciliation.sap-lines.classify', [$bankReconciliation, '__LINE__']));
+        @php
+            $bankTypeOptions = [
+                ['value' => \App\Models\BankStatementLine::TYPE_CREDIT_NOT_BOOKED, 'label' => 'Credit / interest not booked'],
+                ['value' => \App\Models\BankStatementLine::TYPE_CHARGE_NOT_BOOKED, 'label' => 'Bank charge not booked'],
+                ['value' => \App\Models\BankStatementLine::TYPE_BANK_ERROR, 'label' => 'Bank error'],
+            ];
+            $sapTypeOptions = [
+                ['value' => \App\Models\SapGlLine::TYPE_DEPOSIT_IN_TRANSIT, 'label' => 'Deposit in transit'],
+                ['value' => \App\Models\SapGlLine::TYPE_OUTSTANDING_PAYMENT, 'label' => 'Outstanding payment'],
+                ['value' => \App\Models\SapGlLine::TYPE_BOOK_ERROR, 'label' => 'Book error'],
+            ];
+        @endphp
+        const bankTypeOptions = @json($bankTypeOptions);
+        const sapTypeOptions = @json($sapTypeOptions);
         const MANUAL_TOL = 0.005;
 
         function pollStatus() {
@@ -540,11 +693,57 @@
                         document.getElementById('br-bank-net').textContent = Number(data.bank_net).toFixed(2);
                         document.getElementById('br-book-net').textContent = Number(data.book_net).toFixed(2);
                         const diffEl = document.getElementById('br-diff');
-                        diffEl.textContent = Number(data.difference).toFixed(2);
-                        diffEl.classList.toggle('text-success', data.is_balanced);
-                        diffEl.classList.toggle('text-danger', !data.is_balanced);
+                        if (diffEl) diffEl.textContent = Number(data.difference).toFixed(2);
+                    }
+                    if (data.adjusted_bank !== undefined) {
+                        const fmt = (v) => (v === null || v === undefined) ? '—' : Number(v).toFixed(2);
+                        const setText = (id, val) => {
+                            const node = document.getElementById(id);
+                            if (node) node.textContent = val;
+                        };
+                        setText('br-adjusted-bank', fmt(data.adjusted_bank));
+                        setText('br-adjusted-book', fmt(data.adjusted_book));
+                        const unexplainedEl = document.getElementById('br-unexplained');
+                        if (unexplainedEl) {
+                            unexplainedEl.textContent = fmt(data.unexplained_difference);
+                            unexplainedEl.classList.toggle('text-success', !!data.is_reconciled);
+                            unexplainedEl.classList.toggle('text-danger', !data.is_reconciled);
+                        }
+                        const badge = document.getElementById('br-reconciled-badge');
+                        if (badge) {
+                            if (data.incomplete) {
+                                badge.className = 'badge badge-secondary';
+                                badge.textContent = 'Incomplete — enter closing balances';
+                            } else if (data.is_reconciled) {
+                                badge.className = 'badge badge-success';
+                                badge.textContent = 'Reconciled';
+                            } else {
+                                badge.className = 'badge badge-danger';
+                                badge.textContent = 'Not reconciled';
+                            }
+                        }
+                        const diagnostic = document.getElementById('br-diagnostic');
+                        if (diagnostic) {
+                            if (data.diagnostic) {
+                                diagnostic.textContent = data.diagnostic;
+                                diagnostic.classList.remove('d-none');
+                            } else {
+                                diagnostic.textContent = '';
+                                diagnostic.classList.add('d-none');
+                            }
+                        }
                         const submitBtn = document.getElementById('br-submit-btn');
-                        if (submitBtn) submitBtn.disabled = !data.is_balanced;
+                        if (submitBtn) submitBtn.disabled = !data.is_reconciled;
+                    }
+                    const failureBanner = document.getElementById('br-failure-banner');
+                    const failureNotes = document.getElementById('br-failure-notes');
+                    if (failureBanner && failureNotes) {
+                        if (data.status === 'failed' && data.notes) {
+                            failureNotes.textContent = data.notes;
+                            failureBanner.classList.remove('d-none');
+                        } else if (data.status && data.status !== 'failed') {
+                            failureBanner.classList.add('d-none');
+                        }
                     }
                 })
                 .catch(() => {});
@@ -631,6 +830,37 @@
         });
         document.querySelectorAll('.exclude-sap-btn').forEach(btn => {
             btn.addEventListener('click', () => openExcludeModal(excludeSapUrlTemplate.replace('__LINE__', btn.dataset.lineId)));
+        });
+
+        function openClassifyModal(url, options, currentType) {
+            const form = document.getElementById('classify-line-form');
+            const select = document.getElementById('classify-type-select');
+            if (!form || !select) return;
+            form.action = url;
+            select.innerHTML = '<option value="">Auto (from amount sign)</option>';
+            options.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt.value;
+                o.textContent = opt.label;
+                if (currentType && currentType === opt.value) o.selected = true;
+                select.appendChild(o);
+            });
+            $('#classify-line-modal').modal('show');
+        }
+
+        document.querySelectorAll('.classify-bank-btn').forEach(btn => {
+            btn.addEventListener('click', () => openClassifyModal(
+                classifyBankUrlTemplate.replace('__LINE__', btn.dataset.lineId),
+                bankTypeOptions,
+                btn.dataset.type || ''
+            ));
+        });
+        document.querySelectorAll('.classify-sap-btn').forEach(btn => {
+            btn.addEventListener('click', () => openClassifyModal(
+                classifySapUrlTemplate.replace('__LINE__', btn.dataset.lineId),
+                sapTypeOptions,
+                btn.dataset.type || ''
+            ));
         });
     </script>
 @endsection

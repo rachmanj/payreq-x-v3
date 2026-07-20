@@ -1,5 +1,24 @@
 # Architecture decisions
 
+## ADR-BR-01 — Additive reconciliation statement submit gate (2026-07-20)
+
+**Context:** Submit previously required `bank_net + book_net ≈ 0` across all non-excluded lines. Timing differences (deposits in transit, outstanding payments, bank charges) could only pass the gate by excluding lines — which hid legitimate reconciling items from the report.
+
+**Decision:** Keep opposite-polarity N:M matching unchanged. Replace the submit gate with a formal statement:
+
+1. `adjusted_bank = closing_bank + SUM(unmatched book net)`
+2. `adjusted_book = closing_book − SUM(unmatched bank net)`
+3. Submit when unexplained difference ≈ 0 and both closing balances are set
+4. Classify unmatched lines into reconciling categories (`reconciling_type` optional override; annotation only)
+
+Also harden SAP fetch: fetch-before-delete, surface failures via `status=failed`/`notes`, retries on all BR jobs.
+
+**Alternatives considered:** Full redesign driven only by opening/closing with reworked matching UI (deferred — larger UX change); reliability-only without statement change (rejected — accounting model still wrong).
+
+**Consequences:** Manual/AI sessions need closing balances (editable on review; SAP/AI populate when available). Legacy movement `summary()`/`isBalanced()` remain for diagnostics but no longer gate submit.
+
+**Review:** After first month of production use, consider notifications for validators and Excel export (P2 backlog).
+
 ## ADR-SAP-01 — Drop SAP-Bridge; use Service Layer for account statements (2026-07-20)
 
 **Context:** Account statements for Cashier SAP Transactions and Bank Reconciliation were fetched from an external SAP-Bridge HTTP API, while the app already had a working Service Layer client (`SapService`) for journals, invoices, and master data.

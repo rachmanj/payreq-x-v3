@@ -19,6 +19,7 @@ class BankReconciliationValidatorDashboardTest extends TestCase
         parent::setUp();
 
         Permission::firstOrCreate(['name' => 'validate_bank_reconciliation'], ['guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'akses_koran'], ['guard_name' => 'web']);
         Role::query()->firstOrCreate(['name' => 'cashier'], ['guard_name' => 'web']);
         Role::query()->firstOrCreate(['name' => 'admin'], ['guard_name' => 'web']);
     }
@@ -43,6 +44,7 @@ class BankReconciliationValidatorDashboardTest extends TestCase
     {
         $user = User::factory()->create(['project' => '000H']);
         $user->assignRole('cashier');
+        $user->givePermissionTo('akses_koran');
 
         return $user;
     }
@@ -51,7 +53,7 @@ class BankReconciliationValidatorDashboardTest extends TestCase
     {
         $user = User::factory()->create(['project' => '000H']);
         $user->assignRole('admin');
-        $user->givePermissionTo('validate_bank_reconciliation');
+        $user->givePermissionTo(['validate_bank_reconciliation', 'akses_koran']);
 
         return $user;
     }

@@ -1,3 +1,37 @@
+### [065] Bank Reconciliation P2 — matching, notify, export (2026-07-20) ✅ COMPLETE
+
+**Challenge:** P2 backlog: silent destructive re-parse/fetch UX, slow/fragile auto-match, no validator/preparer alerts, print-only report.
+
+**Solution:** Confirm dialogs on re-parse/fetch; `ReconciliationMatchingService` in-memory status (no `fresh()` N+1), meet-in-the-middle subset matching, ranked fuzzy + AI top-N; `BankReconciliationSubmittedNotification` / `RejectedNotification` (mail+database) via Spatie permission discovery; Excel export (`BankReconciliationExport` + report button); notifications table migration; parse job clears match groups before replacing bank lines.
+
+**Tests:** `ParseBankStatementJobReliabilityTest`, `ReconciliationMatchingPerformanceTest`, `BankReconciliationNotificationTest`, `BankReconciliationExportTest`.
+
+---
+
+### [064] Bank Reconciliation P1 — policy + akses_koran gate (2026-07-20) ✅ COMPLETE
+
+**Challenge:** Bank reconciliation routes had no `akses_koran` middleware (menu-only), and authorization was duplicated inline in the controller.
+
+**Solution:** Added `BankReconciliationPolicy` (project scoping via `ELEVATED_ROLES`, validator segregation on `validate`), registered it in `AuthServiceProvider`, applied `permission:akses_koran` to the route group, and switched the controller to `$this->authorize()`. Fixed Blade `@json([...])` compile error on the classify options by moving arrays into `@php`.
+
+**Key learning:** Spatie `UnauthorizedException` is rendered as redirect-back + SweetAlert flash (not HTTP 403) for web requests in this app’s `Handler`.
+
+**Tests:** `BankReconciliationAuthorizationTest` + existing BR suites updated to grant `akses_koran`.
+
+---
+
+### [063] Bank Reconciliation P0 — statement gate + job reliability (2026-07-20) ✅ COMPLETE
+
+**Challenge:** Submit forced net-zero movements (excluding timing items), and `FetchSapGlLinesJob` deleted SAP lines before fetch — silent failures wiped data and left users with empty book sides.
+
+**Solution:** Additive reconciliation statement (`adjusted_bank` vs `adjusted_book` from closing balances + unmatched reconciling items). Fetch-before-delete with match-group cleanup; failures set `status=failed` + `notes`; retries on parse/fetch/auto-match jobs; review UI polls notes and shows failure banner; editable balances + reconciling-type classification; formal report statement.
+
+**Key learning:** With opposite-polarity matching already enforcing matched pairs offset to zero, the statement identity reduces to closing balances plus unmatched nets. Bank statement debit = outflow (matches SAP credit); classify positive bank net as charge_not_booked.
+
+**Tests:** `FetchSapGlLinesJobReliabilityTest`, `ReconciliationStatementTest`, updated `BankReconciliationManualValidationTest`, `SapAccountStatementTest`.
+
+---
+
 ### [062] Account statement unit_no from OIGE/ODLN (2026-07-20) ✅ COMPLETE
 
 **Challenge:** `U_MIS_UnitNo` does not exist on `JDT1`/`OJDT`, so account statements returned blank Unit. Company report `docs/je_daily.sql` pulls it from source docs.

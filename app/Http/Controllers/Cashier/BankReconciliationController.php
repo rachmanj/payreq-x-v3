@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Cashier;
 
+use App\Exports\BankReconciliationExport;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\UserController;
 use App\Http\Requests\ManualMatchGroupBankReconciliationRequest;
 use App\Http\Requests\RejectBankReconciliationRequest;
 use App\Http\Requests\StoreBankReconciliationRequest;
@@ -17,6 +17,10 @@ use App\Models\Dokumen;
 use App\Models\Giro;
 use App\Models\ReconciliationMatchGroup;
 use App\Models\SapGlLine;
+use App\Models\User;
+use App\Notifications\BankReconciliationRejectedNotification;
+use App\Notifications\BankReconciliationSubmittedNotification;
+use App\Policies\BankReconciliationPolicy;
 use App\Services\ReconciliationBalanceService;
 use App\Services\ReconciliationMatchingService;
 use Carbon\Carbon;
@@ -24,14 +28,17 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BankReconciliationController extends Controller
 {
-    protected array $elevatedRoles = ['admin', 'superadmin', 'cashier', 'approver_bo', 'cashier_bo', 'corsec'];
-
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', BankReconciliation::class);
+
         $view = $request->query('view', 'all');
         if (! in_array($view, ['all', 'pending_validation'], true)) {
             $view = 'all';
@@ -42,9 +49,9 @@ class BankReconciliationController extends Controller
             ->orderByDesc('periode')
             ->orderByDesc('id');
 
-        $roles = app(UserController::class)->getUserRoles();
-        if (! array_intersect($this->elevatedRoles, $roles)) {
-            $project = Auth::user()->project;
+        $user = Auth::user();
+        if (! $user->hasAnyRole(BankReconciliationPolicy::ELEVATED_ROLES)) {
+            $project = $user->project;
             $query->whereHas('giro', function ($q) use ($project): void {
                 $q->where('project', $project);
             });
@@ -74,6 +81,8 @@ class BankReconciliationController extends Controller
 
     public function create(Request $request): View
     {
+        $this->authorize('create', BankReconciliation::class);
+
         $giros = $this->accessibleGiros();
 
         $prefill = [
@@ -110,6 +119,8 @@ class BankReconciliationController extends Controller
 
     public function store(StoreBankReconciliationRequest $request): RedirectResponse
     {
+        $this->authorize('create', BankReconciliation::class);
+
         $validated = $request->validated();
 
         $giro = Giro::query()->findOrFail((int) $validated['giro_id']);
@@ -146,7 +157,7 @@ class BankReconciliationController extends Controller
 
     public function show(BankReconciliation $bankReconciliation, ReconciliationBalanceService $balanceService): View
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('view', $bankReconciliation);
 
         $bankReconciliation->load([
             'giro.bank',
@@ -163,6 +174,7 @@ class BankReconciliationController extends Controller
         ]);
 
         $balanceSummary = $balanceService->summary($bankReconciliation);
+        $statement = $balanceService->reconciliationStatement($bankReconciliation);
 
         $koranDokumens = collect();
         if ($bankReconciliation->giro_id && ! $bankReconciliation->isLockedForEditing()) {
@@ -178,19 +190,27 @@ class BankReconciliationController extends Controller
                 ->get();
         }
 
-        return view('cashier.bank-reconciliation.show', compact('bankReconciliation', 'balanceSummary', 'koranDokumens'));
+        return view('cashier.bank-reconciliation.show', compact(
+            'bankReconciliation',
+            'balanceSummary',
+            'statement',
+            'koranDokumens'
+        ));
     }
 
     public function status(BankReconciliation $bankReconciliation, ReconciliationBalanceService $balanceService): JsonResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('view', $bankReconciliation);
 
         $groupCount = $bankReconciliation->matchGroups()->count();
         $summary = $balanceService->summary($bankReconciliation);
 
+        $statement = $balanceService->reconciliationStatement($bankReconciliation);
+
         return response()->json([
             'status' => $bankReconciliation->status,
             'validation_status' => $bankReconciliation->validation_status,
+            'notes' => $bankReconciliation->notes,
             'bank_lines_count' => $bankReconciliation->bankStatementLines()->count(),
             'sap_lines_count' => $bankReconciliation->sapGlLines()->count(),
             'match_groups_count' => $groupCount,
@@ -199,12 +219,48 @@ class BankReconciliationController extends Controller
             'book_net' => $summary['book_net'],
             'difference' => $summary['difference'],
             'is_balanced' => $summary['is_balanced'],
+            'is_reconciled' => $statement['is_reconciled'],
+            'incomplete' => $statement['incomplete'],
+            'unexplained_difference' => $statement['unexplained_difference'],
+            'adjusted_bank' => $statement['adjusted_bank'],
+            'adjusted_book' => $statement['adjusted_book'],
+            'diagnostic' => $statement['diagnostic'],
         ]);
+    }
+
+    public function updateBalances(Request $request, BankReconciliation $bankReconciliation): RedirectResponse
+    {
+        $this->authorize('update', $bankReconciliation);
+        $this->assertEditable($bankReconciliation);
+
+        $validated = $request->validate([
+            'opening_balance_bank' => ['nullable', 'numeric'],
+            'closing_balance_bank' => ['nullable', 'numeric'],
+            'opening_balance_book' => ['nullable', 'numeric'],
+            'closing_balance_book' => ['nullable', 'numeric'],
+        ]);
+
+        $format = static function (mixed $value): ?string {
+            if ($value === null || $value === '') {
+                return null;
+            }
+
+            return number_format((float) $value, 2, '.', '');
+        };
+
+        $bankReconciliation->update([
+            'opening_balance_bank' => $format($validated['opening_balance_bank'] ?? null),
+            'closing_balance_bank' => $format($validated['closing_balance_bank'] ?? null),
+            'opening_balance_book' => $format($validated['opening_balance_book'] ?? null),
+            'closing_balance_book' => $format($validated['closing_balance_book'] ?? null),
+        ]);
+
+        return back()->with('success', 'Opening and closing balances updated.');
     }
 
     public function parseStatement(Request $request, BankReconciliation $bankReconciliation): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         if ($bankReconciliation->dokumen_id === null) {
@@ -238,7 +294,7 @@ class BankReconciliationController extends Controller
 
     public function fetchSapLines(BankReconciliation $bankReconciliation): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         FetchSapGlLinesJob::dispatch($bankReconciliation->id);
@@ -248,7 +304,7 @@ class BankReconciliationController extends Controller
 
     public function autoMatch(BankReconciliation $bankReconciliation): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         AutoMatchReconciliationJob::dispatch($bankReconciliation->id);
@@ -258,7 +314,7 @@ class BankReconciliationController extends Controller
 
     public function manualMatch(ManualMatchGroupBankReconciliationRequest $request, BankReconciliation $bankReconciliation, ReconciliationMatchingService $matchingService): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         $validated = $request->validated();
@@ -282,7 +338,7 @@ class BankReconciliationController extends Controller
 
     public function unmatch(BankReconciliation $bankReconciliation, ReconciliationMatchGroup $reconciliationMatchGroup, ReconciliationMatchingService $matchingService): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         abort_unless((int) $reconciliationMatchGroup->bank_reconciliation_id === (int) $bankReconciliation->id, 404);
@@ -294,7 +350,7 @@ class BankReconciliationController extends Controller
 
     public function storeLine(StoreBankStatementLineRequest $request, BankReconciliation $bankReconciliation): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         $validated = $request->validated();
@@ -320,7 +376,7 @@ class BankReconciliationController extends Controller
 
     public function updateLine(StoreBankStatementLineRequest $request, BankReconciliation $bankReconciliation, BankStatementLine $bankStatementLine): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         abort_unless((int) $bankStatementLine->bank_reconciliation_id === (int) $bankReconciliation->id, 404);
@@ -345,7 +401,7 @@ class BankReconciliationController extends Controller
 
     public function destroyLine(BankReconciliation $bankReconciliation, BankStatementLine $bankStatementLine): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         abort_unless((int) $bankStatementLine->bank_reconciliation_id === (int) $bankReconciliation->id, 404);
@@ -358,7 +414,7 @@ class BankReconciliationController extends Controller
 
     public function excludeBankLine(Request $request, BankReconciliation $bankReconciliation, BankStatementLine $bankStatementLine): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         abort_unless((int) $bankStatementLine->bank_reconciliation_id === (int) $bankReconciliation->id, 404);
@@ -392,7 +448,7 @@ class BankReconciliationController extends Controller
 
     public function excludeSapLine(Request $request, BankReconciliation $bankReconciliation, SapGlLine $sapGlLine): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('update', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         abort_unless((int) $sapGlLine->bank_reconciliation_id === (int) $bankReconciliation->id, 404);
@@ -424,9 +480,55 @@ class BankReconciliationController extends Controller
         return back()->with('success', 'SAP line excluded from reconciliation totals.');
     }
 
+    public function classifyBankLine(Request $request, BankReconciliation $bankReconciliation, BankStatementLine $bankStatementLine): RedirectResponse
+    {
+        $this->authorize('update', $bankReconciliation);
+        $this->assertEditable($bankReconciliation);
+
+        abort_unless((int) $bankStatementLine->bank_reconciliation_id === (int) $bankReconciliation->id, 404);
+        abort_unless(
+            $bankStatementLine->matched_status === BankStatementLine::MATCH_UNMATCHED,
+            422,
+            'Only unmatched lines can be classified.'
+        );
+
+        $validated = $request->validate([
+            'reconciling_type' => ['nullable', 'string', 'in:'.implode(',', BankStatementLine::RECONCILING_TYPES)],
+        ]);
+
+        $bankStatementLine->update([
+            'reconciling_type' => $validated['reconciling_type'] ?: null,
+        ]);
+
+        return back()->with('success', 'Bank line reconciling type updated.');
+    }
+
+    public function classifySapLine(Request $request, BankReconciliation $bankReconciliation, SapGlLine $sapGlLine): RedirectResponse
+    {
+        $this->authorize('update', $bankReconciliation);
+        $this->assertEditable($bankReconciliation);
+
+        abort_unless((int) $sapGlLine->bank_reconciliation_id === (int) $bankReconciliation->id, 404);
+        abort_unless(
+            $sapGlLine->matched_status === SapGlLine::MATCH_UNMATCHED,
+            422,
+            'Only unmatched lines can be classified.'
+        );
+
+        $validated = $request->validate([
+            'reconciling_type' => ['nullable', 'string', 'in:'.implode(',', SapGlLine::RECONCILING_TYPES)],
+        ]);
+
+        $sapGlLine->update([
+            'reconciling_type' => $validated['reconciling_type'] ?: null,
+        ]);
+
+        return back()->with('success', 'SAP line reconciling type updated.');
+    }
+
     public function submitForValidation(BankReconciliation $bankReconciliation, ReconciliationBalanceService $balanceService): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('submit', $bankReconciliation);
         $this->assertEditable($bankReconciliation);
 
         abort_if(
@@ -435,13 +537,12 @@ class BankReconciliationController extends Controller
             'Reconciliation is already pending validation.'
         );
 
-        if (! $balanceService->isBalanced($bankReconciliation)) {
-            $summary = $balanceService->summary($bankReconciliation);
+        $statement = $balanceService->reconciliationStatement($bankReconciliation);
 
+        if (! $statement['is_reconciled']) {
             return back()->withErrors([
-                'balance' => 'Cannot submit: bank net ('.number_format($summary['bank_net'], 2)
-                    .') must equal book net ('.number_format($summary['book_net'], 2)
-                    .'). Difference: '.number_format($summary['difference'], 2),
+                'balance' => $statement['diagnostic']
+                    ?? 'Cannot submit: adjusted bank and adjusted book balances do not agree.',
             ]);
         }
 
@@ -453,13 +554,14 @@ class BankReconciliationController extends Controller
             'status' => BankReconciliation::STATUS_IN_REVIEW,
         ]);
 
+        $this->notifyValidatorsOfSubmission($bankReconciliation);
+
         return back()->with('success', 'Reconciliation submitted for validation.');
     }
 
     public function validateReconciliation(BankReconciliation $bankReconciliation): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
-        $this->assertCanValidate($bankReconciliation);
+        $this->authorize('validate', $bankReconciliation);
 
         abort_unless(
             $bankReconciliation->validation_status === BankReconciliation::VALIDATION_PENDING,
@@ -484,8 +586,7 @@ class BankReconciliationController extends Controller
 
     public function reject(RejectBankReconciliationRequest $request, BankReconciliation $bankReconciliation): RedirectResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
-        $this->assertCanValidate($bankReconciliation);
+        $this->authorize('validate', $bankReconciliation);
 
         abort_unless(
             $bankReconciliation->validation_status === BankReconciliation::VALIDATION_PENDING,
@@ -493,22 +594,30 @@ class BankReconciliationController extends Controller
             'Reconciliation is not pending validation.'
         );
 
+        $rejectionReason = (string) $request->validated('rejection_reason');
+        $preparerIds = array_values(array_unique(array_filter([
+            $bankReconciliation->created_by,
+            $bankReconciliation->submitted_by,
+        ])));
+
         $bankReconciliation->update([
             'validation_status' => BankReconciliation::VALIDATION_REJECTED,
             'status' => BankReconciliation::STATUS_IN_REVIEW,
-            'rejection_reason' => $request->validated('rejection_reason'),
+            'rejection_reason' => $rejectionReason,
             'validated_by' => Auth::id(),
             'validated_at' => now(),
             'submitted_by' => null,
             'submitted_at' => null,
         ]);
 
+        $this->notifyPreparerOfRejection($bankReconciliation, $rejectionReason, $preparerIds);
+
         return back()->with('success', 'Reconciliation rejected and returned for revision.');
     }
 
-    public function report(BankReconciliation $bankReconciliation, ReconciliationBalanceService $balanceService): View
+    public function export(BankReconciliation $bankReconciliation, ReconciliationBalanceService $balanceService): BinaryFileResponse
     {
-        $this->authorizeReconciliationAccess($bankReconciliation);
+        $this->authorize('view', $bankReconciliation);
 
         $bankReconciliation->load([
             'giro.bank',
@@ -519,21 +628,41 @@ class BankReconciliationController extends Controller
             'creator',
         ]);
 
-        $unmatchedBank = $bankReconciliation->bankStatementLines->where('matched_status', BankStatementLine::MATCH_UNMATCHED);
-        $unmatchedSap = $bankReconciliation->sapGlLines->where('matched_status', SapGlLine::MATCH_UNMATCHED);
+        $statement = $balanceService->reconciliationStatement($bankReconciliation);
+        $period = $bankReconciliation->periode?->format('Y-m') ?? 'period';
+        $filename = 'bank-reconciliation-'.$bankReconciliation->id.'-'.$period.'.xlsx';
 
-        $outstandingBankNet = $unmatchedBank->sum(fn ($line) => (float) $line->debit - (float) $line->credit);
-        $outstandingSapNet = $unmatchedSap->sum(fn ($line) => (float) $line->debit - (float) $line->credit);
+        return Excel::download(
+            new BankReconciliationExport($bankReconciliation, $statement),
+            $filename
+        );
+    }
 
+    public function report(BankReconciliation $bankReconciliation, ReconciliationBalanceService $balanceService): View
+    {
+        $this->authorize('view', $bankReconciliation);
+
+        $bankReconciliation->load([
+            'giro.bank',
+            'bankStatementLines',
+            'sapGlLines',
+            'submittedBy',
+            'validatedBy',
+            'creator',
+        ]);
+
+        $statement = $balanceService->reconciliationStatement($bankReconciliation);
         $balanceSummary = $balanceService->summary($bankReconciliation);
+
+        $excludedBank = $bankReconciliation->bankStatementLines->where('matched_status', BankStatementLine::MATCH_EXCLUDED);
+        $excludedSap = $bankReconciliation->sapGlLines->where('matched_status', SapGlLine::MATCH_EXCLUDED);
 
         return view('cashier.bank-reconciliation.report', compact(
             'bankReconciliation',
-            'unmatchedBank',
-            'unmatchedSap',
-            'outstandingBankNet',
-            'outstandingSapNet',
-            'balanceSummary'
+            'statement',
+            'balanceSummary',
+            'excludedBank',
+            'excludedSap',
         ));
     }
 
@@ -542,9 +671,7 @@ class BankReconciliationController extends Controller
      */
     protected function accessibleGiros()
     {
-        $roles = app(UserController::class)->getUserRoles();
-
-        if (array_intersect($this->elevatedRoles, $roles)) {
+        if (Auth::user()->hasAnyRole(BankReconciliationPolicy::ELEVATED_ROLES)) {
             return Giro::query()->with('bank')->orderBy('bank_id')->orderBy('acc_no')->get();
         }
 
@@ -553,22 +680,10 @@ class BankReconciliationController extends Controller
 
     protected function authorizeGiroAccess(Giro $giro): void
     {
-        $roles = app(UserController::class)->getUserRoles();
-        if (array_intersect($this->elevatedRoles, $roles)) {
-            return;
-        }
-
-        abort_unless($giro->project === Auth::user()->project, 403);
-    }
-
-    protected function authorizeReconciliationAccess(BankReconciliation $bankReconciliation): void
-    {
-        $bankReconciliation->loadMissing('giro');
-        if ($bankReconciliation->giro === null) {
-            abort(404);
-        }
-
-        $this->authorizeGiroAccess($bankReconciliation->giro);
+        abort_unless(
+            app(BankReconciliationPolicy::class)->accessGiro(Auth::user(), $giro),
+            403
+        );
     }
 
     protected function assertEditable(BankReconciliation $bankReconciliation): void
@@ -576,14 +691,53 @@ class BankReconciliationController extends Controller
         abort_if($bankReconciliation->isLockedForEditing(), 422, 'Reconciliation is locked and cannot be edited.');
     }
 
-    protected function assertCanValidate(BankReconciliation $bankReconciliation): void
+    protected function notifyValidatorsOfSubmission(BankReconciliation $reconciliation): void
     {
-        abort_unless(Auth::user()?->can('validate_bank_reconciliation'), 403);
+        $submitter = Auth::user();
+        if ($submitter === null) {
+            return;
+        }
 
-        abort_if(
-            $bankReconciliation->isPreparer((int) Auth::id()),
-            403,
-            'You cannot validate a reconciliation you prepared or submitted.'
+        $validators = User::permission('validate_bank_reconciliation')
+            ->where('id', '!=', $submitter->id)
+            ->get()
+            ->filter(fn (User $user) => ! $reconciliation->isPreparer((int) $user->id));
+
+        if ($validators->isEmpty()) {
+            return;
+        }
+
+        Notification::send(
+            $validators,
+            new BankReconciliationSubmittedNotification($reconciliation, $submitter)
+        );
+    }
+
+    /**
+     * @param  list<int>  $preparerIds
+     */
+    protected function notifyPreparerOfRejection(
+        BankReconciliation $reconciliation,
+        string $reason,
+        array $preparerIds
+    ): void {
+        $rejector = Auth::user();
+        if ($rejector === null || $preparerIds === []) {
+            return;
+        }
+
+        $recipients = User::query()
+            ->whereIn('id', $preparerIds)
+            ->where('id', '!=', $rejector->id)
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        Notification::send(
+            $recipients,
+            new BankReconciliationRejectedNotification($reconciliation, $rejector, $reason)
         );
     }
 }

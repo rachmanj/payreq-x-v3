@@ -23,6 +23,8 @@ class ReconciliationMatchingService
 
     private const SPLIT_MAX_CANDIDATES = 20;
 
+    private const FUZZY_AI_TOP_N = 3;
+
     public function __construct(protected OpenRouterService $openRouter) {}
 
     public function autoMatch(BankReconciliation $reconciliation): int
@@ -45,7 +47,7 @@ class ReconciliationMatchingService
             $matched = 0;
 
             foreach ($bankLines as $bankLine) {
-                if ($bankLine->fresh()->matched_status !== BankStatementLine::MATCH_UNMATCHED) {
+                if ($bankLine->matched_status !== BankStatementLine::MATCH_UNMATCHED) {
                     continue;
                 }
 
@@ -94,7 +96,7 @@ class ReconciliationMatchingService
         $count = 0;
 
         foreach ($bankLines as $bankLine) {
-            if ($bankLine->fresh()->matched_status !== BankStatementLine::MATCH_UNMATCHED) {
+            if ($bankLine->matched_status !== BankStatementLine::MATCH_UNMATCHED) {
                 continue;
             }
 
@@ -138,7 +140,7 @@ class ReconciliationMatchingService
         $count = 0;
 
         foreach ($sapLines as $sapLine) {
-            if ($sapLine->fresh()->matched_status !== SapGlLine::MATCH_UNMATCHED) {
+            if ($sapLine->matched_status !== SapGlLine::MATCH_UNMATCHED) {
                 continue;
             }
 
@@ -184,20 +186,13 @@ class ReconciliationMatchingService
     protected function findSubsetMatchingNet(float $target, array $candidates, int $maxSize): ?array
     {
         $nets = array_map(fn (SapGlLine $s) => $this->netSap($s), $candidates);
+        $indices = $this->findSubsetIndices($target, $nets, $maxSize);
 
-        for ($size = 2; $size <= min($maxSize, count($candidates)); $size++) {
-            foreach ($this->combinationsIndices(count($candidates), $size) as $indices) {
-                $sum = 0.0;
-                foreach ($indices as $i) {
-                    $sum += $nets[$i];
-                }
-                if (abs($sum - $target) < self::AMOUNT_TOLERANCE) {
-                    return array_map(fn ($i) => $candidates[$i], $indices);
-                }
-            }
+        if ($indices === null) {
+            return null;
         }
 
-        return null;
+        return array_map(fn ($i) => $candidates[$i], $indices);
     }
 
     /**
@@ -207,15 +202,66 @@ class ReconciliationMatchingService
     protected function findSubsetMatchingNetBankLines(float $target, array $candidates, int $maxSize): ?array
     {
         $nets = array_map(fn (BankStatementLine $b) => $this->netBank($b), $candidates);
+        $indices = $this->findSubsetIndices($target, $nets, $maxSize);
 
-        for ($size = 2; $size <= min($maxSize, count($candidates)); $size++) {
-            foreach ($this->combinationsIndices(count($candidates), $size) as $indices) {
-                $sum = 0.0;
-                foreach ($indices as $i) {
-                    $sum += $nets[$i];
+        if ($indices === null) {
+            return null;
+        }
+
+        return array_map(fn ($i) => $candidates[$i], $indices);
+    }
+
+    /**
+     * Meet-in-the-middle subset search on cent-scaled nets (size 2..maxSize).
+     *
+     * @param  array<int, float>  $nets
+     * @return array<int, int>|null
+     */
+    protected function findSubsetIndices(float $target, array $nets, int $maxSize): ?array
+    {
+        $n = count($nets);
+        if ($n < 2) {
+            return null;
+        }
+
+        $maxSize = min($maxSize, $n);
+        $targetCents = (int) round($target * 100);
+        $centNets = array_map(fn (float $net) => (int) round($net * 100), $nets);
+
+        $mid = intdiv($n, 2);
+        $left = $this->enumerateSubsets(array_slice($centNets, 0, $mid), 0, $maxSize);
+        $right = $this->enumerateSubsets(array_slice($centNets, $mid), $mid, $maxSize);
+
+        /** @var array<int, array<int, list<array<int, int>>>> $rightBySum */
+        $rightBySum = [];
+        foreach ($right as [$sum, $size, $indices]) {
+            if ($size < 1) {
+                continue;
+            }
+            $rightBySum[$sum][$size][] = $indices;
+        }
+
+        foreach ($left as [$sum, $size, $indices]) {
+            $need = $targetCents - $sum;
+            if (! isset($rightBySum[$need])) {
+                continue;
+            }
+
+            foreach ($rightBySum[$need] as $rightSize => $combos) {
+                $totalSize = $size + $rightSize;
+                if ($totalSize < 2 || $totalSize > $maxSize) {
+                    continue;
                 }
-                if (abs($sum - $target) < self::AMOUNT_TOLERANCE) {
-                    return array_map(fn ($i) => $candidates[$i], $indices);
+
+                return array_merge($indices, $combos[0]);
+            }
+        }
+
+        // Fallback: combinations entirely on one half (rare for n>=4, needed for tiny sets)
+        foreach ([$left, $right] as $side) {
+            foreach ($side as [$sum, $size, $indices]) {
+                if ($size >= 2 && $size <= $maxSize && $sum === $targetCents) {
+                    return $indices;
                 }
             }
         }
@@ -224,34 +270,31 @@ class ReconciliationMatchingService
     }
 
     /**
-     * @return \Generator<array<int, int>>
+     * @param  array<int, int>  $centNets
+     * @return list<array{0: int, 1: int, 2: array<int, int>}>
      */
-    protected function combinationsIndices(int $n, int $k): \Generator
+    protected function enumerateSubsets(array $centNets, int $indexOffset, int $maxSize): array
     {
-        if ($k < 1 || $k > $n) {
-            return;
+        $results = [[0, 0, []]];
+        $count = count($centNets);
+
+        for ($i = 0; $i < $count; $i++) {
+            $currentCount = count($results);
+            for ($r = 0; $r < $currentCount; $r++) {
+                [$sum, $size, $indices] = $results[$r];
+                if ($size >= $maxSize) {
+                    continue;
+                }
+
+                $results[] = [
+                    $sum + $centNets[$i],
+                    $size + 1,
+                    array_merge($indices, [$indexOffset + $i]),
+                ];
+            }
         }
 
-        $indices = range(0, $k - 1);
-        yield $indices;
-
-        while (true) {
-            $i = $k - 1;
-            while ($i >= 0 && $indices[$i] === $i + $n - $k) {
-                $i--;
-            }
-
-            if ($i < 0) {
-                return;
-            }
-
-            $indices[$i]++;
-            for ($j = $i + 1; $j < $k; $j++) {
-                $indices[$j] = $indices[$j - 1] + 1;
-            }
-
-            yield $indices;
-        }
+        return $results;
     }
 
     protected function dateDistanceDays(?Carbon $bankDate, ?Carbon $sapDate): int
@@ -412,7 +455,7 @@ class ReconciliationMatchingService
      */
     protected function findFuzzySapMatch(BankReconciliation $reconciliation, BankStatementLine $bankLine, $sapLines): ?array
     {
-        $candidates = [];
+        $scored = [];
         foreach ($sapLines as $sapLine) {
             if ($sapLine->matched_status !== SapGlLine::MATCH_UNMATCHED) {
                 continue;
@@ -426,26 +469,40 @@ class ReconciliationMatchingService
                 continue;
             }
 
-            $candidates[] = $sapLine;
-        }
-
-        if ($candidates === []) {
-            return null;
-        }
-
-        foreach ($candidates as $sapLine) {
             $bankDesc = (string) ($bankLine->description ?? '');
             $sapDesc = (string) ($sapLine->description ?? '');
             similar_text(Str::lower($bankDesc), Str::lower($sapDesc), $percent);
-            if ($percent >= 40.0) {
-                return ['line' => $sapLine, 'confidence' => min(0.95, 0.5 + ($percent / 200))];
+            $dateDistance = $this->dateDistanceDays($bankLine->transaction_date, $sapLine->posting_date);
+            $score = $percent - ($dateDistance * 2);
+
+            $scored[] = [
+                'line' => $sapLine,
+                'percent' => $percent,
+                'score' => $score,
+            ];
+        }
+
+        if ($scored === []) {
+            return null;
+        }
+
+        usort($scored, fn (array $a, array $b) => $b['score'] <=> $a['score']);
+
+        foreach ($scored as $candidate) {
+            if ($candidate['percent'] >= 40.0) {
+                return [
+                    'line' => $candidate['line'],
+                    'confidence' => min(0.95, 0.5 + ($candidate['percent'] / 200)),
+                ];
             }
         }
 
-        $best = $candidates[0];
-        $confirmed = $this->confirmFuzzyWithAi($bankLine, $best);
-        if ($confirmed > 0.6) {
-            return ['line' => $best, 'confidence' => $confirmed];
+        $top = array_slice($scored, 0, self::FUZZY_AI_TOP_N);
+        foreach ($top as $candidate) {
+            $confirmed = $this->confirmFuzzyWithAi($bankLine, $candidate['line']);
+            if ($confirmed > 0.6) {
+                return ['line' => $candidate['line'], 'confidence' => $confirmed];
+            }
         }
 
         return null;
