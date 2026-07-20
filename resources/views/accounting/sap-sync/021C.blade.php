@@ -68,6 +68,7 @@
                                 <th>Status</th>
                                 <th>IDR</th>
                                 <th>SAPJ No</th>
+                                <th>Submitted By</th>
                                 <th>Sync at</th>
                                 <th></th>
                             </tr>

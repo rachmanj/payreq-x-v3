@@ -220,6 +220,7 @@ class SapSyncController extends Controller
         $this->assertProjectAccessible($user, $query);
 
         $verification_journals = VerificationJournal::whereIn('project', $project)
+            ->with('postedBy')
             ->orderByRaw('sap_journal_no IS NULL DESC')
             ->orderBy('date', 'desc')
             ->limit(300)
@@ -248,6 +249,13 @@ class SapSyncController extends Controller
             ->editColumn('amount', function ($journal) {
                 return number_format($journal->amount, 2);
             })
+            ->addColumn('submitted_by', function ($journal) {
+                if (! $journal->posted_by) {
+                    return '<span class="text-muted">-</span>';
+                }
+
+                return e($journal->postedBy->name);
+            })
             ->editColumn('sap_posting_date', function ($journal) {
                 if ($journal->sap_posting_date == null) {
                     return '-';
@@ -258,7 +266,7 @@ class SapSyncController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.sap-sync.action')
-            ->rawColumns(['select', 'status', 'action'])
+            ->rawColumns(['select', 'status', 'submitted_by', 'action'])
             ->toJson();
     }
 

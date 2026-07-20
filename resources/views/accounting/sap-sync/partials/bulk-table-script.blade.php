@@ -22,6 +22,7 @@
                 { data: 'status' },
                 { data: 'amount' },
                 { data: 'sap_journal_no' },
+                { data: 'submitted_by' },
                 { data: 'sap_posting_date' },
                 { data: 'action', orderable: false, searchable: false },
             ],
