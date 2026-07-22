@@ -100,80 +100,82 @@
             }
         })
 
-        // activities chart
-        let activities = {!! json_encode($chart_activites['activities']) !!};
-        var username = activities.map(function(obj) {
-            return obj.posted_name;
-        });
-
-        var total_counts = activities.map(function(obj) {
-            return obj.total_count;
-        });
-
+        // activities chart (only when canvas is present for permitted users)
         var $activitiesChart = $('#activities-chart')
-        var activitiesChart = new Chart($activitiesChart, {
-            type: 'doughnut',
-            data: {
-                labels: username,
-                datasets: [{
-                    data: total_counts,
-                    backgroundColor: [
-                        '#667eea',
-                        '#764ba2',
-                        '#f093fb',
-                        '#4facfe',
-                        '#43e97b',
-                        '#fa709a'
-                    ],
-                    borderWidth: 3,
-                    borderColor: '#fff',
-                    hoverBorderColor: '#fff',
-                    hoverBorderWidth: 4
-                }]
-            },
-            options: {
-                maintainAspectRatio: true,
-                responsive: true,
-                animation: {
-                    animateScale: true,
-                    animateRotate: true,
-                    duration: 1000,
-                    easing: 'easeInOutQuart'
+        if ($activitiesChart.length) {
+            let activities = {!! json_encode($chart_activites['activities'] ?? []) !!};
+            var username = activities.map(function(obj) {
+                return obj.posted_name;
+            });
+
+            var total_counts = activities.map(function(obj) {
+                return obj.total_count;
+            });
+
+            var activitiesChart = new Chart($activitiesChart, {
+                type: 'doughnut',
+                data: {
+                    labels: username,
+                    datasets: [{
+                        data: total_counts,
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#f093fb',
+                            '#4facfe',
+                            '#43e97b',
+                            '#fa709a'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff',
+                        hoverBorderColor: '#fff',
+                        hoverBorderWidth: 4
+                    }]
                 },
-                tooltips: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleFontSize: 14,
-                    bodyFontSize: 13,
-                    xPadding: 12,
-                    yPadding: 12,
-                    cornerRadius: 8,
-                    displayColors: true,
-                    callbacks: {
-                        label: function(tooltipItem, data) {
-                            var dataset = data.datasets[tooltipItem.datasetIndex];
-                            var total = dataset.data.reduce(function(prev, current) {
-                                return prev + current;
-                            });
-                            var currentValue = dataset.data[tooltipItem.index];
-                            var percentage = Math.round((currentValue / total) * 100);
-                            return ' ' + data.labels[tooltipItem.index] + ': ' + currentValue +
-                                ' (' + percentage + '%)';
+                options: {
+                    maintainAspectRatio: true,
+                    responsive: true,
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    },
+                    tooltips: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFontSize: 14,
+                        bodyFontSize: 13,
+                        xPadding: 12,
+                        yPadding: 12,
+                        cornerRadius: 8,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(tooltipItem, data) {
+                                var dataset = data.datasets[tooltipItem.datasetIndex];
+                                var total = dataset.data.reduce(function(prev, current) {
+                                    return prev + current;
+                                });
+                                var currentValue = dataset.data[tooltipItem.index];
+                                var percentage = Math.round((currentValue / total) * 100);
+                                return ' ' + data.labels[tooltipItem.index] + ': ' + currentValue +
+                                    ' (' + percentage + '%)';
+                            }
                         }
-                    }
-                },
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        boxWidth: 15,
-                        fontColor: '#6c757d',
-                        fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
-                        fontSize: 12
-                    }
-                },
-                cutoutPercentage: 65
-            }
-        })
+                    },
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            boxWidth: 15,
+                            fontColor: '#6c757d',
+                            fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+                            fontSize: 12
+                        }
+                    },
+                    cutoutPercentage: 65
+                }
+            })
+        }
     })
 </script>

@@ -1,5 +1,13 @@
 # Architecture notes
 
+## User Dashboard (frontend)
+
+- Shell remains **AdminLTE 3 / Bootstrap 4** (`templates.main`).
+- Dashboard page styles via **Tailwind CSS v3.4** (`resources/css/dashboard.css`), Vite-built, loaded only on `/dashboard` with `prefix: tw-` and preflight disabled (see ADR-UI-01).
+- Layout: action-first bento — Action Center → KPI tiles → My Work (payreqs/realizations) + side rail (charts/team) → monthly chart.
+- Shared Blade components: `resources/views/components/dashboard/{kpi-card,panel,status-row,empty-state}.blade.php`.
+- Controller unchanged: `DashboardUserController@index`.
+
 ## Bank Reconciliation (Cashier)
 
 ```mermaid

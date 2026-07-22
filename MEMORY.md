@@ -1,3 +1,13 @@
+### [066] User Dashboard Tailwind Redesign (2026-07-21) ✅ COMPLETE
+
+**Challenge:** Dashboard was a long single-column stack with duplicated inline CSS per partial; Vite/Tailwind unused; action items buried below the fold.
+
+**Solution:** Introduced Tailwind v3.4 via Vite with `prefix: 'tw-'` and `preflight: false`, loaded only on the dashboard. Rebuilt into an action-first bento grid with shared Blade components (`x-dashboard.kpi-card`, `panel`, `status-row`, `empty-state`). AdminLTE shell kept; two-app split rejected due to permission overlap. Login page also redesigned with dark slate background via scoped `resources/css/login.css`.
+
+**Key learning:** Prefix + no-preflight + page-scoped `@vite` lets Tailwind coexist with Bootstrap 4/AdminLTE without restyling other pages.
+
+---
+
 ### [065] Bank Reconciliation P2 — matching, notify, export (2026-07-20) ✅ COMPLETE
 
 **Challenge:** P2 backlog: silent destructive re-parse/fetch UX, slow/fragile auto-match, no validator/preparer alerts, print-only report.

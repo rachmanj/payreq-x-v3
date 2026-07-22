@@ -8,39 +8,50 @@
     dashboard
 @endsection
 
+@push('styles')
+    @vite('resources/css/dashboard.css')
+@endpush
+
 @section('content')
-    <div class="row">
-        {{-- <h3>Welcome to Payreq Sytem, {{ auth()->user()->name }} ... </h3> --}}
-        @include('dashboard.run-text')
-    </div>
+    <div class="tw-dashboard-page">
+        {{-- Welcome + compact USD ticker --}}
+        <div class="tw-flex tw-flex-col md:tw-flex-row md:tw-items-center md:tw-justify-between tw-gap-3 tw-mb-5">
+            <div>
+                <h2 class="tw-text-xl tw-font-semibold tw-text-gray-800 tw-mb-1 tw-mt-0">
+                    Welcome, {{ auth()->user()->name }}
+                </h2>
+                <p class="tw-text-sm tw-text-gray-500 tw-mb-0">Here's what needs your attention today.</p>
+            </div>
+            @include('dashboard.run-text')
+        </div>
 
-    {{-- ANNOUNCEMENTS (Replacing dashboard/pengumuman.blade.php) --}}
-    @include('dashboard.announcements')
+        {{-- Announcements --}}
+        @include('dashboard.announcements')
 
-    <div class="row">
-        @can('akses_approvals')
-            @include('dashboard.row1')
-        @endcan
-    </div>
+        {{-- Action Center: only items needing THIS user's action --}}
+        @include('dashboard.action-center')
 
-    <div class="row">
-        @include('dashboard.row2')
-    </div>
+        {{-- KPI tiles (informational) --}}
+        @include('dashboard.kpi-tiles')
 
-    <div class="row">
-        @include('dashboard.user-payreqs')
-    </div>
+        {{-- Main bento grid --}}
+        <div class="tw-grid tw-grid-cols-1 xl:tw-grid-cols-3 tw-gap-5">
+            {{-- My Work: payreqs + realizations (2 cols) --}}
+            <div class="xl:tw-col-span-2">
+                @include('dashboard.user-payreqs')
+            </div>
 
-    <div class="row">
-        @include('dashboard.chart2')
-    </div>
+            {{-- Side rail --}}
+            <div class="xl:tw-col-span-1 tw-space-y-0">
+                @include('dashboard.chart2')
+                @include('dashboard.team')
+            </div>
+        </div>
 
-    <div class="row">
-        @include('dashboard.team')
-    </div>
-
-    <div class="row">
-        @include('dashboard.chart')
+        {{-- Full-width monthly chart --}}
+        <div class="tw-mt-0">
+            @include('dashboard.chart')
+        </div>
     </div>
 @endsection
 

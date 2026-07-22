@@ -2,6 +2,15 @@
 
 ## Recently Completed
 
+### User Dashboard Tailwind Redesign (2026-07-21)
+
+- [x] Wire Tailwind CSS v3.4 via Vite (`prefix: tw-`, preflight off) + `resources/css/dashboard.css`
+- [x] Scope Tailwind load to dashboard only (`@push('styles')` / `@vite`)
+- [x] Blade components: `kpi-card`, `panel`, `status-row`, `empty-state`
+- [x] Action-first bento layout (Action Center, KPI tiles, My Work, side rail)
+- [x] Rewrite dashboard partials; remove duplicated inline `<style>` blocks
+- [x] Browser-tested desktop/tablet/mobile; confirmed non-dashboard pages unchanged
+
 ### Bank Reconciliation P0 hardening (2026-07-20)
 
 - [x] FetchSapGlLinesJob fetch-before-delete + failed status/notes + match-group cleanup

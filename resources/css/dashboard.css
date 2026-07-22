@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .tw-dashboard-page {
+        font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    @keyframes tw-scroll-left {
+        0% {
+            transform: translateX(0);
+        }
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
+    @keyframes tw-rotate-slow {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .tw-ticker-scroll {
+        animation: tw-scroll-left 30s linear infinite;
+    }
+
+    .tw-ticker-icon-spin {
+        animation: tw-rotate-slow 3s linear infinite;
+    }
+}

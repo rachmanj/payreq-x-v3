@@ -1,5 +1,17 @@
 # Architecture decisions
 
+## ADR-UI-01 — Tailwind on AdminLTE for dashboard only (2026-07-21)
+
+**Context:** User dashboard needed a modern UX overhaul. Options considered: (1) two separate frontends for requestor vs accounting, (2) replace AdminLTE entirely with Tailwind, (3) layer Tailwind onto AdminLTE for the dashboard first.
+
+**Decision:** Keep the single AdminLTE 3 app. Add Tailwind CSS v3.4 via Vite with `prefix: 'tw-'`, `corePlugins.preflight: false`, and CSS loaded only on the dashboard via `@push('styles')`/`@vite('resources/css/dashboard.css')`. Reject splitting into two apps — permissions overlap heavily (cashiers/admins are also requestors).
+
+**Alternatives considered:** Full two-app/workspace split (rejected — high cost, permission overlap); Tailwind without prefix/preflight-off (rejected — breaks Bootstrap); Tailwind v4 (deferred — less predictable coexistence with Bootstrap 4).
+
+**Consequences:** Dashboard uses `tw-*` utilities + `resources/views/components/dashboard/*`. Same pattern can roll out page-by-page later. Developers must run `npm run build` (or `npm run dev`) after Tailwind class changes.
+
+**Review:** After more pages adopt Tailwind, reconsider whether a shared `app.css` with scoped layers is cleaner than per-page Vite entries.
+
 ## ADR-BR-01 — Additive reconciliation statement submit gate (2026-07-20)
 
 **Context:** Submit previously required `bank_net + book_net ≈ 0` across all non-excluded lines. Timing differences (deposits in transit, outstanding payments, bank charges) could only pass the gate by excluding lines — which hid legitimate reconciling items from the report.

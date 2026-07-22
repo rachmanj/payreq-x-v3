@@ -1,17 +1,13 @@
-<div class="col-md-12">
-    <div class="card modern-ticker-card">
-        <div class="card-body p-0">
-            <div class="currency-ticker">
-                <div class="ticker-icon">
-                    <i class="fas fa-exchange-alt"></i>
-                </div>
-                <div class="ticker-content">
-                    <div class="ticker-wrapper">
-                        <div class="ticker-text" id="currency-ticker-text">
-                            Loading exchange rate...
-                        </div>
-                    </div>
-                </div>
+<div class="tw-bg-gradient-to-br tw-from-brand-500 tw-to-brand-700 tw-rounded-xl tw-shadow-card tw-overflow-hidden tw-px-4 tw-py-3 tw-flex tw-items-center tw-gap-3 tw-min-w-0 md:tw-max-w-xl md:tw-ml-auto">
+    <div class="tw-bg-white/20 tw-w-10 tw-h-10 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-shrink-0">
+        <i class="fas fa-exchange-alt tw-text-white tw-ticker-icon-spin"></i>
+    </div>
+    <div class="tw-flex-1 tw-overflow-hidden tw-min-w-0">
+        <div class="tw-overflow-hidden tw-whitespace-nowrap">
+            <div class="tw-inline-block tw-text-white tw-font-semibold tw-text-sm tw-ticker-scroll tw-pl-full"
+                id="currency-ticker-text"
+                style="padding-left: 100%;">
+                Loading exchange rate...
             </div>
         </div>
     </div>
@@ -52,78 +48,3 @@
     fetchExchangeRate();
     setInterval(fetchExchangeRate, 300000);
 </script>
-
-<style>
-    .modern-ticker-card {
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
-        border: none;
-        margin-bottom: 20px;
-    }
-
-    .currency-ticker {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 15px 20px;
-        display: flex;
-        align-items: center;
-        overflow: hidden;
-    }
-
-    .ticker-icon {
-        background: rgba(255, 255, 255, 0.2);
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 20px;
-        flex-shrink: 0;
-    }
-
-    .ticker-icon i {
-        font-size: 24px;
-        color: #fff;
-        animation: rotate 3s linear infinite;
-    }
-
-    @keyframes rotate {
-        from {
-            transform: rotate(0deg);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .ticker-content {
-        flex: 1;
-        overflow: hidden;
-    }
-
-    .ticker-wrapper {
-        overflow: hidden;
-        white-space: nowrap;
-    }
-
-    .ticker-text {
-        display: inline-block;
-        color: #fff;
-        font-weight: 600;
-        font-size: 16px;
-        animation: scroll-left 30s linear infinite;
-        padding-left: 100%;
-    }
-
-    @keyframes scroll-left {
-        0% {
-            transform: translateX(0);
-        }
-
-        100% {
-            transform: translateX(-50%);
-        }
-    }
-</style>
