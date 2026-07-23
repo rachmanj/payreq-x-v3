@@ -235,9 +235,7 @@ class SapSyncController extends Controller
                 return '<input type="checkbox" class="bulk-select" value="'.$journal->id.'">';
             })
             ->editColumn('date', function ($journal) {
-                $date = new \Carbon\Carbon($journal->date);
-
-                return $date->addHours(8)->format('d-M-Y');
+                return $journal->date?->format('d-M-Y') ?? '-';
             })
             ->addColumn('status', function ($journal) {
                 if ($journal->sap_journal_no == null) {
@@ -256,13 +254,22 @@ class SapSyncController extends Controller
 
                 return e($journal->postedBy->name);
             })
-            ->editColumn('sap_posting_date', function ($journal) {
-                if ($journal->sap_posting_date == null) {
+            ->addColumn('sap_submitted_at', function ($journal) {
+                $rawSyncedAt = $journal->getRawOriginal('sap_submitted_at');
+
+                if ($rawSyncedAt) {
+                    return Carbon::parse($rawSyncedAt, 'UTC')
+                        ->timezone(config('app.timezone'))
+                        ->format('d-M-Y H:i').' wita';
+                }
+
+                if (! $journal->sap_journal_no) {
                     return '-';
                 }
-                $date = new \Carbon\Carbon($journal->updated_at);
 
-                return $date->addHours(8)->format('d-M-Y H:i');
+                return Carbon::parse($journal->getRawOriginal('updated_at'), 'UTC')
+                    ->timezone(config('app.timezone'))
+                    ->format('d-M-Y H:i').' wita';
             })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.sap-sync.action')

@@ -36,6 +36,17 @@
             </div>
         </div>
     </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="description-block border-top pt-3 mt-2 text-left">
+                @php
+                    $remarks = filled($realization->remarks) ? $realization->remarks : $realization->payreq->remarks;
+                @endphp
+                <h5 class="description-header">Remarks</h5>
+                <span class="description-text text-break d-block">{!! $remarks ? nl2br(e($remarks)) : '—' !!}</span>
+            </div>
+        </div>
+    </div>
     <!-- /.row -->
 
     @include('verifications.edit_details_table')
@@ -51,10 +62,6 @@
 @endsection
 
 @section('scripts')
-    <!-- jQuery -->
-    <script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
-    <!-- Bootstrap -->
-    <script src="{{ asset('adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- Select2 -->
     <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
     <!-- DataTables -->

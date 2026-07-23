@@ -11,6 +11,13 @@ class VerificationJournal extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'date' => 'date',
+        'sap_posting_date' => 'date',
+        'sap_submitted_at' => 'datetime',
+        'sap_reversed_at' => 'datetime',
+    ];
+
     public function realization_details()
     {
         return $this->hasMany(RealizationDetail::class);
