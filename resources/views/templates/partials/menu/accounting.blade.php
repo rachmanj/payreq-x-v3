@@ -8,6 +8,10 @@
                     Sync</a>
             </li>
         @endcan
+        @can('create_manual_journal_entry')
+            <li><a href="{{ route('accounting.journal-entries.index') }}" class="dropdown-item">Journal Entries</a></li>
+            <li><a href="{{ route('accounting.journal-entries.templates.index') }}" class="dropdown-item">JE Templates</a></li>
+        @endcan
         <li class="dropdown-divider"></li>
         @can('akses_coa')
             <li><a href="{{ route('accounts.index') }}" class="dropdown-item">Available Accounts</a></li>

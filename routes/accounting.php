@@ -4,6 +4,8 @@ use App\Http\Controllers\Accounting\CustomerController;
 use App\Http\Controllers\Accounting\DailyTxController;
 use App\Http\Controllers\Accounting\DeliveryController;
 use App\Http\Controllers\Accounting\GiroController;
+use App\Http\Controllers\Accounting\JournalEntryController;
+use App\Http\Controllers\Accounting\JournalEntryTemplateController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Accounting\VatController;
 use App\Http\Controllers\Accounting\Wtax23Controller;
@@ -43,6 +45,34 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
             Route::post('/record-manual-reversal', [SapSyncController::class, 'recordManualReversal'])->name('record_manual_reversal');
         });
         Route::get('/print_sapj', [SapSyncController::class, 'print_sapj'])->name('print_sapj');
+    });
+
+    // Manual Journal Entries
+    Route::prefix('journal-entries')->name('journal-entries.')->middleware('permission:create_manual_journal_entry')->group(function () {
+        Route::get('/', [JournalEntryController::class, 'index'])->name('index');
+        Route::get('/data', [JournalEntryController::class, 'data'])->name('data');
+        Route::get('/create', [JournalEntryController::class, 'create'])->name('create');
+        Route::post('/', [JournalEntryController::class, 'store'])->name('store');
+
+        Route::prefix('templates')->name('templates.')->group(function () {
+            Route::get('/', [JournalEntryTemplateController::class, 'index'])->name('index');
+            Route::get('/create', [JournalEntryTemplateController::class, 'create'])->name('create');
+            Route::post('/', [JournalEntryTemplateController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [JournalEntryTemplateController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [JournalEntryTemplateController::class, 'update'])->name('update');
+            Route::delete('/{id}', [JournalEntryTemplateController::class, 'destroy'])->name('destroy');
+            Route::get('/{id}/lines', [JournalEntryTemplateController::class, 'lines'])->name('lines');
+        });
+
+        Route::get('/{id}', [JournalEntryController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [JournalEntryController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [JournalEntryController::class, 'update'])->name('update');
+        Route::delete('/{id}', [JournalEntryController::class, 'destroy'])->name('destroy');
+        Route::get('/{id}/print', [JournalEntryController::class, 'print'])->name('print');
+        Route::post('/{id}/submit-to-sap', [JournalEntryController::class, 'submitToSap'])->name('submit_to_sap');
+        Route::post('/{id}/reverse-to-sap', [JournalEntryController::class, 'reverseToSap'])
+            ->middleware('permission:cancel_sap_journal')
+            ->name('reverse_to_sap');
     });
 
     // ANGSURAN

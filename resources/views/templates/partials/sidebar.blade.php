@@ -310,6 +310,22 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('create_manual_journal_entry')
+                                <li class="nav-item">
+                                    <a href="{{ route('accounting.journal-entries.index') }}"
+                                        class="nav-link {{ request()->routeIs('accounting.journal-entries.*') && ! request()->routeIs('accounting.journal-entries.templates.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Journal Entries</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('accounting.journal-entries.templates.index') }}"
+                                        class="nav-link {{ request()->routeIs('accounting.journal-entries.templates.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>JE Templates</p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('akses_coa')
                                 <li class="nav-item">
                                     <a href="{{ route('accounts.index') }}"

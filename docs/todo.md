@@ -2,6 +2,15 @@
 
 ## Recently Completed
 
+### Manual Journal Entries + SAP B1 submission + templates (2026-07-23)
+
+- [x] New tables: `journal_entries`, `journal_entry_lines`, `journal_entry_templates`, `journal_entry_template_lines`
+- [x] `journal_entry_id` on `sap_submission_logs`; permission `create_manual_journal_entry`
+- [x] CRUD UI with dynamic line grid, account autocomplete, debit/credit balance validation
+- [x] Shared JE templates (save layout, load into create form via AJAX)
+- [x] Submit to SAP B1 + reverse via `JournalEntrySubmissionService` / `SapService`
+- [x] Feature tests (15) + architecture/MEMORY docs
+
 ### User Dashboard Tailwind Redesign (2026-07-21)
 
 - [x] Wire Tailwind CSS v3.4 via Vite (`prefix: tw-`, preflight off) + `resources/css/dashboard.css`

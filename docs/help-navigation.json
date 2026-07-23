@@ -96,6 +96,70 @@
                 "how to"
             ],
             "description": "Click the ? icon in the top bar. Ask how-to questions in the How-to tab. Answers come from docs/manuals indexed by php artisan help:reindex."
+        },
+        {
+            "title": "Manual Journal Entry / Jurnal umum manual",
+            "menu_path": "Accounting → Journal Entries",
+            "route_name": "accounting.journal-entries.index",
+            "url": "/accounting/journal-entries",
+            "permission": "create_manual_journal_entry",
+            "keywords": [
+                "manual journal entry",
+                "journal entry",
+                "jurnal umum",
+                "jurnal manual",
+                "JE",
+                "create journal entry",
+                "buat jurnal",
+                "submit to SAP B1",
+                "submit journal SAP",
+                "posting jurnal SAP"
+            ],
+            "description": "List and create manual journal entries (JE-000001 format). Balanced debit/credit lines, optional load from JE Template, Save Journal Entry, then Submit to SAP B1 from show page. Print voucher available."
+        },
+        {
+            "title": "Manual Journal Entry — Create",
+            "menu_path": "Accounting → Journal Entries → New Journal Entry",
+            "route_name": "accounting.journal-entries.create",
+            "url": "/accounting/journal-entries/create",
+            "permission": "create_manual_journal_entry",
+            "keywords": [
+                "new journal entry",
+                "buat jurnal baru",
+                "load from template",
+                "journal lines",
+                "balance debit credit",
+                "add line"
+            ],
+            "description": "Form: Date, Reference, Memo, Load from Template dropdown, dynamic Journal Lines grid (account autocomplete, Dr/Cr, amount, project, cost center). Totals must balance before Save Journal Entry."
+        },
+        {
+            "title": "JE Templates / Template jurnal",
+            "menu_path": "Accounting → JE Templates",
+            "route_name": "accounting.journal-entries.templates.index",
+            "url": "/accounting/journal-entries/templates",
+            "permission": "create_manual_journal_entry",
+            "keywords": [
+                "JE template",
+                "journal entry template",
+                "template jurnal",
+                "reusable journal",
+                "default amount"
+            ],
+            "description": "Shared templates for recurring journal layouts. New Template: name, description, line grid with optional default amounts. Use Load from Template when creating a JE."
+        },
+        {
+            "title": "Manual Journal Entry — Reverse in SAP B1",
+            "menu_path": "Accounting → Journal Entries → (open posted JE) → Reverse in SAP B1",
+            "route_name": "accounting.journal-entries.reverse_to_sap",
+            "permission": "cancel_sap_journal",
+            "keywords": [
+                "reverse journal",
+                "cancel SAP journal",
+                "batalkan jurnal SAP",
+                "reverse in SAP B1"
+            ],
+            "description": "On a posted manual JE show page, users with cancel_sap_journal can reverse the SAP journal with a required reason."
         }
     ]
 }

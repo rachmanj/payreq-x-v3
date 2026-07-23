@@ -96,6 +96,43 @@ flowchart TD
 - `unit_no` enriched via OData `InventoryGenExits`/`DeliveryNotes` for TransType 60/15 (SQLQueries cannot access `OIGE`/`ODLN`). Pure OData statement path leaves `unit_no` null.
 - `doc_num` = `BaseRef`; `doc_type` = mapped `JDT1.TransType` labels.
 
+## Manual Journal Entries (Accounting)
+
+```mermaid
+flowchart TD
+    create[User creates JE with line grid] --> draft[(journal_entries + journal_entry_lines)]
+    template[Load JE template] --> create
+    draft --> validate[JournalEntryBuilder validate balance]
+    validate --> submit[JournalEntrySubmissionService]
+    submit --> sap[SapService createJournalEntry]
+    sap --> log[(sap_submission_logs document_type=manual_journal_entry)]
+    sap --> posted[Stamp sap_journal_no sap_je_jdt_num]
+    posted --> reverse[Optional cancelJournalEntry via cancel_sap_journal permission]
+```
+
+**Domain model (separate from VerificationJournal / Realization workflow)**
+
+- `journal_entries` — header (number, date, memo, reference, SAP submission/reversal fields)
+- `journal_entry_lines` — debit/credit lines (account_code, project, cost_center, amount)
+- `journal_entry_templates` + `journal_entry_template_lines` — shared reusable layouts (optional default_amount)
+
+**Important files**
+
+- Controllers: `app/Http/Controllers/Accounting/JournalEntryController.php`, `JournalEntryTemplateController.php`
+- Services: `app/Services/JournalEntryBuilder.php`, `JournalEntrySubmissionService.php`
+- Requests: `StoreJournalEntryRequest`, `StoreJournalEntryTemplateRequest`
+- Views: `resources/views/accounting/journal-entries/*`
+- Routes: `routes/accounting.php` → `accounting.journal-entries.*`
+- Permission: `create_manual_journal_entry` (feature gate); SAP reversal uses existing `cancel_sap_journal`
+- Tests: `tests/Feature/JournalEntryTest.php`, `JournalEntrySapSubmissionTest.php`, `JournalEntryTemplateTest.php`
+- HELP manuals: `docs/manuals/manual-journal-entry-manual-en.md`, `manual-journal-entry-manual-id.md`; navigation hints in `docs/help-navigation.json`
+
+**Notes**
+
+- Templates are global/shared; any user with `create_manual_journal_entry` can use any template.
+- Account picker reuses `accounts.autocomplete` / browse modal pattern from verifications.
+- Client-side and server-side debit=credit balance validation before save/submit.
+
 ## Notulen AI (RAG)
 
 ```mermaid

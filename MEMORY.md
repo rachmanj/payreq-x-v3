@@ -1,3 +1,17 @@
+### [067] Manual Journal Entries + SAP B1 + templates (2026-07-23) ✅ COMPLETE
+
+**Challenge:** Users could only post journal entries to SAP via the Realization → VerificationJournal cart workflow. No way to type arbitrary GL lines or reuse recurring entry layouts.
+
+**Solution:** New standalone module (`journal_entries` / `journal_entry_lines`) decoupled from `VerificationJournal`. Shared templates (`journal_entry_templates`). `JournalEntryBuilder` + `JournalEntrySubmissionService` mirror the existing VJ SAP pipeline. Permission `create_manual_journal_entry` gates the feature; reversal reuses `cancel_sap_journal`. UI under Accounting menu with dynamic line grid, template loader, and balance validation.
+
+**Key learning:** Reusing `SapService::createJournalEntry()` and `SapSubmissionLog` with `document_type=manual_journal_entry` keeps audit parity without coupling to Realization status cascades.
+
+**Tests:** `JournalEntryTest`, `JournalEntrySapSubmissionTest`, `JournalEntryTemplateTest` (15 tests).
+
+**HELP:** Bilingual manuals `docs/manuals/manual-journal-entry-manual-{en,id}.md` + `docs/help-navigation.json` entries; run `php artisan help:reindex` after manual edits.
+
+---
+
 ### [066] User Dashboard Tailwind Redesign (2026-07-21) ✅ COMPLETE
 
 **Challenge:** Dashboard was a long single-column stack with duplicated inline CSS per partial; Vite/Tailwind unused; action items buried below the fold.

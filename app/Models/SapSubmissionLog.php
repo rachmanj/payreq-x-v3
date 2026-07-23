@@ -11,6 +11,7 @@ class SapSubmissionLog extends Model
 
     protected $fillable = [
         'verification_journal_id',
+        'journal_entry_id',
         'faktur_id',
         'document_type',
         'user_id',
@@ -33,6 +34,11 @@ class SapSubmissionLog extends Model
     public function verificationJournal()
     {
         return $this->belongsTo(VerificationJournal::class);
+    }
+
+    public function journalEntry()
+    {
+        return $this->belongsTo(JournalEntry::class);
     }
 
     public function faktur()
