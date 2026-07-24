@@ -76,6 +76,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [PeriodeAnggaranController::class, 'index'])->name('index');
         Route::get('/data', [PeriodeAnggaranController::class, 'data'])->name('data');
         Route::post('/store', [PeriodeAnggaranController::class, 'store'])->name('store');
+        Route::post('/bulk-generate', [PeriodeAnggaranController::class, 'bulkGenerate'])->name('bulk-generate');
         Route::put('/{id}/update', [PeriodeAnggaranController::class, 'update'])->name('update');
         Route::delete('/{id}/delete', [PeriodeAnggaranController::class, 'delete'])->name('delete');
     });

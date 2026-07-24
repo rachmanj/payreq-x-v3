@@ -42,6 +42,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        $schedule->command('periode-anggaran:generate-monthly')
+            ->monthlyOn(1, '00:05')
+            ->withoutOverlapping()
+            ->runInBackground();
+
         $schedule->command('anggaran:expire-periodic')
             ->dailyAt('01:00')
             ->withoutOverlapping()

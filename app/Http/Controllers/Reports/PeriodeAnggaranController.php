@@ -5,15 +5,22 @@ namespace App\Http\Controllers\Reports;
 use App\Http\Controllers\Controller;
 use App\Models\PeriodeAnggaran;
 use App\Models\Project;
+use App\Services\PeriodeAnggaranGeneratorService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PeriodeAnggaranController extends Controller
 {
+    public function __construct(
+        protected PeriodeAnggaranGeneratorService $generator
+    ) {}
+
     public function index()
     {
         $projects = Project::orderBy('code', 'asc')->get();
+        $activeSelectableProjects = Project::active()->selectable()->orderBy('code', 'asc')->get();
 
-        return view('reports.periode-anggaran.index', compact('projects'));
+        return view('reports.periode-anggaran.index', compact('projects', 'activeSelectableProjects'));
     }
 
     public function store(Request $request)
@@ -24,7 +31,7 @@ class PeriodeAnggaranController extends Controller
         ]);
 
         PeriodeAnggaran::create([
-            'periode' => $request->periode . '-01',
+            'periode' => $request->periode.'-01',
             'project' => $request->project,
             'periode_type' => $request->periode_type,
             'is_active' => $request->is_active == 'yes' ? 1 : 0,
@@ -32,6 +39,56 @@ class PeriodeAnggaranController extends Controller
         ]);
 
         return redirect()->route('reports.periode-anggaran.index')->with('success', 'Periode anggaran berhasil ditambahkan');
+    }
+
+    public function bulkGenerate(Request $request)
+    {
+        $validated = $request->validate([
+            'periode' => ['required', 'date_format:Y-m'],
+            'types' => ['required', 'array', 'min:1'],
+            'types.*' => ['required', 'in:anggaran,ofr'],
+            'projects' => ['required', 'array', 'min:1'],
+            'projects.*' => ['required', 'string'],
+            'is_active' => ['required', 'in:yes,no'],
+            'description' => ['nullable', 'string'],
+            'deactivate_previous' => ['nullable', 'boolean'],
+        ]);
+
+        $projectCodes = $this->resolveProjectCodes($validated['projects']);
+        $periode = Carbon::createFromFormat('Y-m', $validated['periode'])->startOfMonth();
+        $isActive = $validated['is_active'] === 'yes';
+        $deactivatePrevious = $request->boolean('deactivate_previous');
+
+        $result = $this->generator->generate(
+            $periode,
+            $validated['types'],
+            $projectCodes,
+            $isActive,
+            $validated['description'] ?? null,
+            $deactivatePrevious,
+        );
+
+        $message = sprintf(
+            'Bulk generate selesai: %d dibuat, %d dilewati (sudah ada), %d periode lama dinonaktifkan.',
+            $result['created'],
+            $result['skipped'],
+            $result['deactivated'],
+        );
+
+        return redirect()->route('reports.periode-anggaran.index')->with('success', $message);
+    }
+
+    /**
+     * @param  array<int, string>  $projects
+     * @return array<int, string>
+     */
+    private function resolveProjectCodes(array $projects): array
+    {
+        if (in_array('all', $projects, true)) {
+            return Project::active()->selectable()->orderBy('code')->pluck('code')->all();
+        }
+
+        return array_values(array_unique($projects));
     }
 
     public function update(Request $request, $id)
@@ -43,7 +100,7 @@ class PeriodeAnggaranController extends Controller
 
         $periode = PeriodeAnggaran::find($id);
         $periode->update([
-            'periode' => $request->periode . '-01',
+            'periode' => $request->periode.'-01',
             'project' => $request->project,
             'periode_type' => $request->periode_type,
             'is_active' => $request->is_active == 'yes' ? 1 : 0,
@@ -64,10 +121,11 @@ class PeriodeAnggaranController extends Controller
             ->editColumn('is_active', function ($parameter) {
                 $active = '<span class="badge badge-success">Active</span>';
                 $inactive = '<span class="badge badge-danger">Inactive</span>';
+
                 return $parameter->is_active == 1 ? $active : $inactive;
             })
             ->editColumn('description', function ($parameter) {
-                return '<small>' . $parameter->description . '</small>';
+                return '<small>'.$parameter->description.'</small>';
             })
             ->editColumn('periode_type', function ($parameter) {
                 return $parameter->periode_type == 'anggaran' ? 'Anggaran' : 'OFR';
