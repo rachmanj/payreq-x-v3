@@ -22,7 +22,7 @@
         <dd class="col-sm-8">: -</dd>
     @endif
     <dt class="col-sm-4">Verification Journal No</dt>
-    <dd class="col-sm-8">: {{ $payreq->realization->verificationJournal->nomor }}</dd>
+    <dd class="col-sm-8">: {{ $payreq->realization->verificationJournal->exists ? $payreq->realization->verificationJournal->nomor : 'n/a' }}</dd>
     <dt class="col-sm-4">SAP Journal No</dt>
-    <dd class="col-sm-8">: {{ $payreq->realization->verificationJournal->sap_journal_no }}</dd>
+    <dd class="col-sm-8">: {{ $payreq->realization->verificationJournal->exists ? ($payreq->realization->verificationJournal->sap_journal_no ?: 'n/a') : 'n/a' }}</dd>
 </dl>

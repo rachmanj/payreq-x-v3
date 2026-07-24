@@ -56,9 +56,8 @@ class Realization extends Model
     public function verificationJournal()
     {
         return $this->belongsTo(VerificationJournal::class)->withDefault([
+            'nomor' => 'n/a',
             'sap_journal_no' => 'n/a',
-            'sap_posting_date' => 'n/a',
-            'udpated_at' => 'n/a',
         ]);
     }
 
