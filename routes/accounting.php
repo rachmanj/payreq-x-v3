@@ -40,6 +40,8 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::post('/update_sap_info', [SapSyncController::class, 'update_sap_info'])->name('update_sap_info');
         Route::post('/submit-to-sap', [SapSyncController::class, 'submitToSap'])->name('submit_to_sap');
         Route::post('/bulk-submit', [SapSyncController::class, 'bulkSubmit'])->name('bulk_submit');
+        Route::post('/validate', [SapSyncController::class, 'validateJournal'])->name('validate');
+        Route::post('/reject', [SapSyncController::class, 'rejectJournal'])->name('reject');
         Route::middleware('permission:cancel_sap_journal')->group(function () {
             Route::post('/reverse-to-sap', [SapSyncController::class, 'reverseToSap'])->name('reverse_to_sap');
             Route::post('/record-manual-reversal', [SapSyncController::class, 'recordManualReversal'])->name('record_manual_reversal');

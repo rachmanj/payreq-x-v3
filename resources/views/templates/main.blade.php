@@ -76,6 +76,7 @@
                 <div class="content">
                     <div class="container-fluid">
                         <x-pcbc-compliance-banner :compliance="$pcbcCompliance ?? null" />
+                        <x-vj-rejection-alert-banner :alerts="$rejectedVjAlerts ?? collect()" />
 
                         @yield('content')
 

@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 
 class BankTransactionController extends Controller
@@ -22,7 +22,7 @@ class BankTransactionController extends Controller
         $journals = VerificationJournal::with('createdBy', 'postedBy')
             ->where('type', 'bank')
             ->select('verification_journals.*');
-            
+
         return DataTables::of($journals)
             ->addIndexColumn()
             ->addColumn('date', function ($journal) {
@@ -35,25 +35,25 @@ class BankTransactionController extends Controller
                 return $journal->bank_account ?? '-';
             })
             ->addColumn('action', function ($journal) {
-                $viewBtn = '<a href="' . route('cashier.bank-transactions.show', $journal->id) . '" class="btn btn-info btn-xs mr-1" title="View transaction details"><i class="fas fa-eye"></i></a>';
+                $viewBtn = '<a href="'.route('cashier.bank-transactions.show', $journal->id).'" class="btn btn-info btn-xs mr-1" title="View transaction details"><i class="fas fa-eye"></i></a>';
                 $editBtn = '';
                 $deleteBtn = '';
                 $submitBtn = '';
-                
+
                 if ($journal->status == 'draft') {
-                    $editBtn = '<a href="' . route('cashier.bank-transactions.edit', $journal->id) . '" class="btn btn-warning btn-xs mr-1" title="Edit transaction"><i class="fas fa-edit"></i></a>';
-                    $deleteBtn = '<form action="' . route('cashier.bank-transactions.destroy', $journal->id) . '" method="POST" style="display: inline;">
-                                ' . csrf_field() . '
-                                ' . method_field('DELETE') . '
+                    $editBtn = '<a href="'.route('cashier.bank-transactions.edit', $journal->id).'" class="btn btn-warning btn-xs mr-1" title="Edit transaction"><i class="fas fa-edit"></i></a>';
+                    $deleteBtn = '<form action="'.route('cashier.bank-transactions.destroy', $journal->id).'" method="POST" style="display: inline;">
+                                '.csrf_field().'
+                                '.method_field('DELETE').'
                                 <button type="submit" class="btn btn-danger btn-xs mr-1 delete-transaction" title="Delete transaction"><i class="fas fa-trash"></i></button>
                             </form>';
-                    $submitBtn = '<form action="' . route('cashier.bank-transactions.submit', $journal->id) . '" method="POST" style="display: inline;">
-                                ' . csrf_field() . '
+                    $submitBtn = '<form action="'.route('cashier.bank-transactions.submit', $journal->id).'" method="POST" style="display: inline;">
+                                '.csrf_field().'
                                 <button type="submit" class="btn btn-success btn-xs submit-transaction" title="Submit transaction"><i class="fas fa-paper-plane"></i></button>
                             </form>';
                 }
-                
-                return '<div class="btn-group">' . $viewBtn . $editBtn . $deleteBtn . $submitBtn . '</div>';
+
+                return '<div class="btn-group">'.$viewBtn.$editBtn.$deleteBtn.$submitBtn.'</div>';
             })
             ->rawColumns(['action', 'status'])
             ->make(true);
@@ -68,9 +68,9 @@ class BankTransactionController extends Controller
     {
         // Ensure project is a string
         $project = is_array($request->project) ? strval($request->project[0]) : strval($request->project);
-        
+
         $document_number = app('App\Http\Controllers\DocumentNumberController')->generate_document_number('verification-journal', $project);
-        
+
         $request->validate([
             'date' => 'required|date',
             'project' => 'required',
@@ -88,7 +88,7 @@ class BankTransactionController extends Controller
         try {
             // Convert bank_account to string if it's not already
             $bankAccount = is_array($request->bank_account) ? strval($request->bank_account[0]) : strval($request->bank_account);
-            
+
             $journal = VerificationJournal::create([
                 'nomor' => $document_number,
                 'date' => $request->date,
@@ -129,12 +129,14 @@ class BankTransactionController extends Controller
             }
 
             DB::commit();
+
             return redirect()->route('cashier.bank-transactions.index')
                 ->with('success', 'Bank transaction created successfully');
         } catch (\Exception $e) {
             DB::rollback();
+
             return redirect()->back()
-                ->with('error', 'Error occurred: ' . $e->getMessage())
+                ->with('error', 'Error occurred: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -143,15 +145,15 @@ class BankTransactionController extends Controller
     {
         $journal = VerificationJournal::with(['verificationJournalDetails', 'createdBy', 'postedBy'])
             ->findOrFail($id);
-            
+
         // Check if there's a related incoming record (for submitted transactions)
         $incoming = null;
         if ($journal->status == 'submitted') {
-            $incoming = \App\Models\Incoming::where('description', 'like', '%Bank Transaction: ' . $journal->nomor . '%')
+            $incoming = \App\Models\Incoming::where('description', 'like', '%Bank Transaction: '.$journal->nomor.'%')
                 ->latest()
                 ->first();
         }
-            
+
         return view('cashier.bank-transactions.show', compact('journal', 'incoming'));
     }
 
@@ -159,17 +161,17 @@ class BankTransactionController extends Controller
     {
         $journal = VerificationJournal::with('verificationJournalDetails')
             ->findOrFail($id);
-            
+
         if ($journal->status != 'draft') {
             return redirect()->route('cashier.bank-transactions.index')
                 ->with('error', 'Cannot edit a transaction that is not in draft status');
         }
-            
+
         return view('cashier.bank-transactions.edit', compact('journal'));
     }
 
     public function update(Request $request, $id)
-    {        
+    {
         $request->validate([
             'date' => 'required|date',
             'project' => 'required',
@@ -184,7 +186,7 @@ class BankTransactionController extends Controller
         ]);
 
         $journal = VerificationJournal::findOrFail($id);
-        
+
         if ($journal->status != 'draft') {
             return redirect()->route('cashier.bank-transactions.index')
                 ->with('error', 'Cannot update a transaction that is not in draft status');
@@ -196,7 +198,7 @@ class BankTransactionController extends Controller
             $bankAccount = is_array($request->bank_account) ? strval($request->bank_account[0]) : strval($request->bank_account);
             // Convert project to string if it's not already
             $project = is_array($request->project) ? strval($request->project[0]) : strval($request->project);
-            
+
             $journal->update([
                 'date' => $request->date,
                 'type' => 'bank',
@@ -224,12 +226,14 @@ class BankTransactionController extends Controller
             }
 
             DB::commit();
+
             return redirect()->route('cashier.bank-transactions.index')
                 ->with('success', 'Bank transaction updated successfully');
         } catch (\Exception $e) {
             DB::rollback();
+
             return redirect()->back()
-                ->with('error', 'Error occurred: ' . $e->getMessage())
+                ->with('error', 'Error occurred: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -237,7 +241,7 @@ class BankTransactionController extends Controller
     public function destroy($id)
     {
         $journal = VerificationJournal::findOrFail($id);
-        
+
         if ($journal->status != 'draft') {
             return redirect()->route('cashier.bank-transactions.index')
                 ->with('error', 'Cannot delete a transaction that is not in draft status');
@@ -249,20 +253,22 @@ class BankTransactionController extends Controller
             $journal->verificationJournalDetails()->delete();
             // Then delete the journal
             $journal->delete();
-            
+
             DB::commit();
+
             return redirect()->route('cashier.bank-transactions.index')
                 ->with('success', 'Bank transaction deleted successfully');
         } catch (\Exception $e) {
             DB::rollback();
-            return redirect()->back()->with('error', 'Error occurred: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Error occurred: '.$e->getMessage());
         }
     }
 
     public function submit($id)
     {
         $journal = VerificationJournal::findOrFail($id);
-        
+
         // Check if journal is in draft status
         if ($journal->status != 'draft') {
             return redirect()->route('cashier.bank-transactions.index')
@@ -273,14 +279,18 @@ class BankTransactionController extends Controller
         try {
             // 1. Update journal status to 'submitted'
             $journal->update([
-                'status' => 'submitted'
+                'status' => 'submitted',
+                'validation_status' => VerificationJournal::VALIDATION_PENDING,
+                'validated_at' => null,
+                'validated_by' => null,
+                'rejection_reason' => null,
             ]);
 
             // 2. Create an incoming record
-            $incoming = new \App\Models\Incoming();
+            $incoming = new \App\Models\Incoming;
             $incoming->nomor = $journal->nomor;
             $incoming->cashier_id = Auth::id();
-            $incoming->description = 'Bank Transaction: ' . $journal->nomor . ' - ' . $journal->description;
+            $incoming->description = 'Bank Transaction: '.$journal->nomor.' - '.$journal->description;
             $incoming->amount = $journal->amount;
             $incoming->project = $journal->project;
             $incoming->receive_date = now(); // Mark as received immediately
@@ -291,20 +301,22 @@ class BankTransactionController extends Controller
             \Log::info('Bank transaction submitted and incoming created', [
                 'bank_transaction_id' => $journal->id,
                 'incoming_id' => $incoming->id,
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
             ]);
 
             DB::commit();
+
             return redirect()->route('cashier.bank-transactions.index')
                 ->with('success', 'Bank transaction submitted successfully and incoming record created');
         } catch (\Exception $e) {
             DB::rollback();
             \Log::error('Error submitting bank transaction', [
                 'bank_transaction_id' => $id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return redirect()->back()
-                ->with('error', 'Error occurred: ' . $e->getMessage());
+                ->with('error', 'Error occurred: '.$e->getMessage());
         }
     }
 }

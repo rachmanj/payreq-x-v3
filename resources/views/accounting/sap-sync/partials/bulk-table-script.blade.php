@@ -20,6 +20,7 @@
                 { data: 'nomor' },
                 { data: 'date' },
                 { data: 'status' },
+                { data: 'validation_status' },
                 { data: 'amount' },
                 { data: 'sap_journal_no' },
                 { data: 'submitted_by' },
@@ -29,7 +30,7 @@
             fixedHeader: true,
             columnDefs: [
                 {
-                    targets: [5],
+                    targets: [6],
                     className: 'text-right'
                 }
             ]

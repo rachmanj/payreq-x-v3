@@ -84,6 +84,31 @@
     </div>
 @endcan
 
+@can('validate_vj')
+    <div class="col-lg-4 col-md-6 col-12">
+        <div
+            class="modern-stat-card {{ $vj_pending_validation_count > 0 ? 'stat-warning' : 'stat-success' }}"
+            data-dashboard-pending-vj-validation="{{ $vj_pending_validation_count }}">
+            <div class="stat-icon">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ $vj_pending_validation_count }}</div>
+                <div class="stat-label">VJ pending validation</div>
+                <div class="stat-info">
+                    <i
+                        class="fas {{ $vj_pending_validation_count > 0 ? 'fa-exclamation-circle' : 'fa-check-circle' }}"></i>
+                    {{ $vj_pending_validation_count > 0 ? 'Awaiting your review' : 'Nothing pending' }}
+                </div>
+            </div>
+            <a href="{{ route('accounting.sap-sync.index', ['page' => 'dashboard']) }}"
+                class="stat-action" title="Open SAP sync dashboard">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+@endcan
+
 @can('approve_overdue_extension')
     <div class="col-lg-4 col-md-6 col-12">
         <div

@@ -9,6 +9,12 @@ class VerificationJournal extends Model
 {
     use HasFactory;
 
+    public const VALIDATION_PENDING = 'pending';
+
+    public const VALIDATION_VALIDATED = 'validated';
+
+    public const VALIDATION_REJECTED = 'rejected';
+
     protected $guarded = [];
 
     protected $casts = [
@@ -16,6 +22,7 @@ class VerificationJournal extends Model
         'sap_posting_date' => 'date',
         'sap_submitted_at' => 'datetime',
         'sap_reversed_at' => 'datetime',
+        'validated_at' => 'datetime',
     ];
 
     public function realization_details()
@@ -43,6 +50,13 @@ class VerificationJournal extends Model
     public function reversedBy()
     {
         return $this->belongsTo(User::class, 'sap_reversed_by')->withDefault([
+            'name' => 'N/A',
+        ]);
+    }
+
+    public function validatedBy()
+    {
+        return $this->belongsTo(User::class, 'validated_by')->withDefault([
             'name' => 'N/A',
         ]);
     }

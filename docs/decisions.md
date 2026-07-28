@@ -1,5 +1,17 @@
 # Architecture decisions
 
+## ADR-UI-02 — VJ Soft UI for SAP Sync show (scoped CSS, not Tailwind) (2026-07-28)
+
+**Context:** SAP Sync verification journal show page needed a cleaner UX than AdminLTE `btn-block` action cards and solid Bootstrap badges. Options: (1) extend dashboard Tailwind to this page, (2) global AdminLTE theme override, (3) page-scoped custom CSS with a named design system.
+
+**Decision:** Introduce **VJ Soft UI** — a `vj-` prefixed class set scoped under `.vj-show`, loaded via `@push('styles')` on `accounting/sap-sync/show.blade.php`. Pastel chips (`.vj-chip`), stat tiles (`.vj-stat`), soft alerts (`.vj-alert`), and a two-tier action panel (`.vj-actions` + `.vj-btn` / `.vj-action-item`). Do not add Tailwind to this page yet; keep styles co-located until a second consumer justifies extraction to `resources/css/vj-soft-ui.css` or a Blade partial.
+
+**Alternatives considered:** Tailwind with `tw-` prefix (deferred — dashboard-only pattern not yet repeated); shared global badge overrides (rejected — would affect all AdminLTE pages); leaving AdminLTE defaults (rejected — poor action hierarchy).
+
+**Consequences:** Developers can request **“VJ Soft UI”** by name. Full class catalog in `docs/VJ-SOFT-UI.md`. Duplication risk if multiple pages adopt before extraction — track in backlog.
+
+**Review:** After 2+ pages use VJ Soft UI, extract CSS to Vite entry or `@include` partial and document load pattern.
+
 ## ADR-UI-01 — Tailwind on AdminLTE for dashboard only (2026-07-21)
 
 **Context:** User dashboard needed a modern UX overhaul. Options considered: (1) two separate frontends for requestor vs accounting, (2) replace AdminLTE entirely with Tailwind, (3) layer Tailwind onto AdminLTE for the dashboard first.

@@ -36,6 +36,11 @@ class DashboardUserController extends Controller
                 ->count();
         }
 
+        $vj_pending_validation_count = 0;
+        if (auth()->user()->can('validate_vj')) {
+            $vj_pending_validation_count = app(SapSyncController::class)->vjPendingValidationCount(auth()->user());
+        }
+
         $pending_overdue_extension_count = 0;
         if (auth()->user()->can('approve_overdue_extension')) {
             $pending_overdue_extension_count = OverdueExtension::query()->pending()->count();
@@ -71,6 +76,7 @@ class DashboardUserController extends Controller
             'pcbc_pending_validation_count',
             'pending_overdue_extension_count',
             'bank_reconciliation_pending_validation_count',
+            'vj_pending_validation_count',
         ]));
     }
 

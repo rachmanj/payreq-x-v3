@@ -96,6 +96,42 @@ flowchart TD
 - `unit_no` enriched via OData `InventoryGenExits`/`DeliveryNotes` for TransType 60/15 (SQLQueries cannot access `OIGE`/`ODLN`). Pure OData statement path leaves `unit_no` null.
 - `doc_num` = `BaseRef`; `doc_type` = mapped `JDT1.TransType` labels.
 
+## SAP Sync — Verification Journal show (VJ Soft UI)
+
+```mermaid
+flowchart TD
+    index[SAP Sync index tabs] --> show["/accounting/sap-sync/{id}/show"]
+    show --> validate[validate_vj: Validate / Reject]
+    show --> submit[submit_to_sap after VALIDATION_VALIDATED]
+    show --> reverse[cancel_sap_journal: Reverse in SAP B1]
+    show --> details[Edit VJ details / Export / Print]
+    submit --> sap[SapService createJournalEntry]
+    sap --> log[(sap_submission_logs)]
+    reject[VjRejectionAlertService] --> banner["x-vj-rejection-alert-banner on templates.main"]
+```
+
+**UI — VJ Soft UI** (`docs/VJ-SOFT-UI.md`)
+
+- Page wrapper `.vj-show`; pastel `.vj-chip` badges; `.vj-stat` financial grid; `.vj-actions` two-tier action bar
+- Styles page-scoped in `@push('styles')` on `resources/views/accounting/sap-sync/show.blade.php` (not global AdminLTE override)
+- Reference name for future pages: **VJ Soft UI**
+
+**Validation workflow**
+
+- `verification_journals.validation_status`: `pending` → `validated` | `rejected`
+- Permission `validate_vj` for Validate/Reject on show page
+- Submit to SAP requires `validation_status = validated` (when user has submit permission)
+- Rejected journals: reason on show page + in-app banner for `created_by` via `ShareVjRejectionAlertForViews` middleware
+
+**Important files**
+
+- Controller: `app/Http/Controllers/Accounting/SapSyncController.php`
+- Model: `app/Models/VerificationJournal.php` (`VALIDATION_*` constants)
+- Rejection alert: `app/Services/VjRejectionAlertService.php`, `app/Http/Middleware/ShareVjRejectionAlertForViews.php`, `resources/views/components/vj-rejection-alert-banner.blade.php`
+- View: `resources/views/accounting/sap-sync/show.blade.php`
+- Routes: `routes/accounting.php` → `accounting.sap-sync.*`
+- Tests: `tests/Feature/SapSyncVjValidationTest.php`, `SapSyncBoAccessTest.php`, `SapSyncReversalTest.php`, `VjRejectionAlertTest.php`, `DashboardVjPendingValidationTest.php`
+
 ## Manual Journal Entries (Accounting)
 
 ```mermaid

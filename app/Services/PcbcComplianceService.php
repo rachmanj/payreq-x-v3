@@ -106,7 +106,7 @@ class PcbcComplianceService
                 'title_id' => 'PCBC untuk minggu ini',
                 'message' => 'At least one validated PCBC PDF per week is required. Upload a report, set the document date within this week, and have it validated.',
                 'message_id' => 'Wajib minimal satu file PDF PCBC tervalidasi per minggu. Unggah laporan, atur tanggal dokumen di minggu ini, dan selesaikan validasi.',
-                'show_banner' => true,
+                'show_banner' => false,
                 'current_week_label' => $w0Start->translatedFormat('d M Y').' – '.$w0End->translatedFormat('d M Y'),
                 'weeks' => $weeks,
             ];

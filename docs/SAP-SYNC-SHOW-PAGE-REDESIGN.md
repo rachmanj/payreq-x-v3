@@ -1,10 +1,31 @@
-# SAP Sync Show Page Redesign Recommendations
+# SAP Sync Show Page Redesign
 
-**Date**: 2025-11-20  
+**Original brief:** 2025-11-20  
+**VJ Soft UI implementation:** 2026-07-28 ✅  
 **Page**: `/accounting/sap-sync/{id}/show`  
-**Current File**: `resources/views/accounting/sap-sync/show.blade.php`
+**View**: `resources/views/accounting/sap-sync/show.blade.php`  
+**Style guide:** [`docs/VJ-SOFT-UI.md`](./VJ-SOFT-UI.md) — ask for **VJ Soft UI** by name for the same look on other pages.
 
-## Current State Analysis
+## Implementation status (2026-07-28)
+
+| Area | Status | VJ Soft UI class / notes |
+|------|--------|--------------------------|
+| Status header (POSTED/PENDING) | ✅ | `.vj-chip-on-dark` on gradient header |
+| Info cards (Journal / SAP / Validation) | ✅ | `.vj-show` card styling + `.vj-chip` |
+| Financial summary | ✅ | `.vj-stat-grid` / `.vj-stat` (replaced AdminLTE `info-box`) |
+| Action bar | ✅ | `.vj-actions` two-tier (`.vj-btn` + `.vj-action-item`) |
+| Journal lines table | ✅ | `.vj-chip` for project/cost center |
+| Submission history timeline | ✅ | `.vj-timeline-*`, `.vj-alert-danger` for errors |
+| VJ validation workflow | ✅ | Validate/Reject + validation card |
+| Modals | ⏸️ | Still AdminLTE `btn btn-*` (unchanged) |
+
+**Related:** VJ rejection banner for creators (`VjRejectionAlertService`) — documented in `docs/architecture.md`.
+
+---
+
+## Original analysis (2025-11-20)
+
+## Current State Analysis (historical — pre-redesign)
 
 ### Issues Identified
 
@@ -691,4 +712,5 @@
 - Backward compatible with existing data structure
 - No breaking changes to controller logic
 - Progressive enhancement approach
+- **2026-07-28:** Visual styling superseded by **VJ Soft UI** — see [`docs/VJ-SOFT-UI.md`](./VJ-SOFT-UI.md). Original recommendations below are kept for historical context; implementation details may differ (e.g. `vj-stat` instead of `info-box`, `vj-chip` instead of `badge`).
 

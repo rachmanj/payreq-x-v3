@@ -2,6 +2,15 @@
 
 ## Recently Completed
 
+### VJ Soft UI on SAP Sync show + VJ validation/rejection UX (2026-07-28)
+
+- [x] **VJ Soft UI** design system on `accounting/sap-sync/{id}/show` (`.vj-show`, chips, stats, actions, timeline, alerts)
+- [x] VJ validation card + Validate/Reject actions (`validate_vj` permission)
+- [x] Submit to SAP gated on `validation_status = validated`
+- [x] `VjRejectionAlertService` + global rejection banner for journal creators
+- [x] Docs: `docs/VJ-SOFT-UI.md`, ADR-UI-02, architecture section, updated `SAP-SYNC-SHOW-PAGE-REDESIGN.md`
+- [x] Tests: `SapSyncVjValidationTest`, `VjRejectionAlertTest`, `DashboardVjPendingValidationTest` (+ existing SapSync suite)
+
 ### Manual Journal Entries + SAP B1 submission + templates (2026-07-23)
 
 - [x] New tables: `journal_entries`, `journal_entry_lines`, `journal_entry_templates`, `journal_entry_template_lines`

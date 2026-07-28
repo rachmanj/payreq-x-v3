@@ -70,6 +70,10 @@ class SapSyncController extends Controller
 
         $canSubmitToSap = $this->canSubmitToSap($user, $vj);
         $canReverseSap = $this->canReverseSap($user);
+        $canValidateVj = $user->can('validate_vj');
+        $canManageSapInfo = $this->canManageSapInfo($user);
+        $canEditVjDetails = $this->canEditVjDetails($user, $vj);
+        $canManageSapInfoForVj = $this->canManageSapInfoForVj($user, $vj);
 
         $vj_details = VerificationJournalDetail::where('verification_journal_id', $id)
             ->orderBy('id', 'asc')
@@ -93,11 +97,21 @@ class SapSyncController extends Controller
             'submissionLogs',
             'canSubmitToSap',
             'canReverseSap',
+            'canValidateVj',
+            'canManageSapInfo',
+            'canEditVjDetails',
+            'canManageSapInfoForVj',
         ]));
     }
 
     public function update_sap_info(Request $request)
     {
+        $verification_journal = VerificationJournal::findOrFail($request->verification_journal_id);
+
+        if (! $this->canManageSapInfoForVj(auth()->user(), $verification_journal)) {
+            abort(403, 'You do not have permission to update SAP info.');
+        }
+
         try {
             // Begin database transaction
             DB::beginTransaction();
@@ -168,11 +182,14 @@ class SapSyncController extends Controller
 
     public function cancel_sap_info(Request $request)
     {
-        // check if user is the one who posted the SAP Info
         $verification_journal = VerificationJournal::find($request->verification_journal_id);
 
         if (! $verification_journal) {
             abort(404);
+        }
+
+        if (! $this->canManageSapInfoForVj(auth()->user(), $verification_journal)) {
+            abort(403, 'You do not have permission to cancel SAP info.');
         }
 
         $this->assertProjectAccessible(auth()->user(), $verification_journal->project);
@@ -232,6 +249,10 @@ class SapSyncController extends Controller
                     return '';
                 }
 
+                if ($journal->validation_status !== VerificationJournal::VALIDATION_VALIDATED) {
+                    return '';
+                }
+
                 return '<input type="checkbox" class="bulk-select" value="'.$journal->id.'">';
             })
             ->editColumn('date', function ($journal) {
@@ -243,6 +264,13 @@ class SapSyncController extends Controller
                 }
 
                 return '<span class="badge badge-success">Posted</span>';
+            })
+            ->addColumn('validation_status', function ($journal) {
+                return match ($journal->validation_status) {
+                    VerificationJournal::VALIDATION_VALIDATED => '<span class="badge badge-success">Validated</span>',
+                    VerificationJournal::VALIDATION_REJECTED => '<span class="badge badge-danger">Rejected</span>',
+                    default => '<span class="badge badge-warning">Pending</span>',
+                };
             })
             ->editColumn('amount', function ($journal) {
                 return number_format($journal->amount, 2);
@@ -273,7 +301,7 @@ class SapSyncController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.sap-sync.action')
-            ->rawColumns(['select', 'status', 'submitted_by', 'action'])
+            ->rawColumns(['select', 'status', 'validation_status', 'submitted_by', 'action'])
             ->toJson();
     }
 
@@ -372,6 +400,71 @@ class SapSyncController extends Controller
         return Excel::download(new VerificationJournalExport($journal_details), 'journal.xlsx');
     }
 
+    public function validateJournal(Request $request)
+    {
+        if (! $request->user()->can('validate_vj')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'verification_journal_id' => 'required|exists:verification_journals,id',
+        ]);
+
+        $vj = VerificationJournal::findOrFail($request->verification_journal_id);
+        $this->assertProjectAccessible($request->user(), $vj->project);
+
+        if ($vj->validation_status !== VerificationJournal::VALIDATION_PENDING) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal cannot be validated.');
+        }
+
+        $vj->update([
+            'validation_status' => VerificationJournal::VALIDATION_VALIDATED,
+            'validated_at' => now(),
+            'validated_by' => $request->user()->id,
+            'rejection_reason' => null,
+        ]);
+
+        return redirect()->route('accounting.sap-sync.show', $vj->id)
+            ->with('success', 'Verification journal validated successfully.');
+    }
+
+    public function rejectJournal(Request $request)
+    {
+        if (! $request->user()->can('validate_vj')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'verification_journal_id' => 'required|exists:verification_journals,id',
+            'rejection_reason' => 'required|string|min:1|max:2000',
+        ]);
+
+        $vj = VerificationJournal::findOrFail($request->verification_journal_id);
+        $this->assertProjectAccessible($request->user(), $vj->project);
+
+        if ($vj->validation_status !== VerificationJournal::VALIDATION_PENDING) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal cannot be rejected.');
+        }
+
+        $payload = [
+            'validation_status' => VerificationJournal::VALIDATION_REJECTED,
+            'validated_at' => now(),
+            'validated_by' => $request->user()->id,
+            'rejection_reason' => $request->rejection_reason,
+        ];
+
+        if ($vj->type === 'bank') {
+            $payload['status'] = 'draft';
+        }
+
+        $vj->update($payload);
+
+        return redirect()->route('accounting.sap-sync.show', $vj->id)
+            ->with('success', 'Verification journal rejected.');
+    }
+
     public function submitToSap(Request $request)
     {
         $request->validate([
@@ -389,6 +482,11 @@ class SapSyncController extends Controller
         if ($vj->sap_journal_no) {
             return redirect()->route('accounting.sap-sync.show', $vj->id)
                 ->with('error', 'This journal has already been submitted to SAP B1.');
+        }
+
+        if ($vj->validation_status !== VerificationJournal::VALIDATION_VALIDATED) {
+            return redirect()->route('accounting.sap-sync.show', $vj->id)
+                ->with('error', 'This journal must be validated before it can be submitted to SAP B1.');
         }
 
         $result = $this->processSapSubmission($vj, $user);
@@ -435,6 +533,15 @@ class SapSyncController extends Controller
 
             if ($journal->sap_journal_no) {
                 $skipped[] = $journal->nomor ?? $journal->id;
+
+                continue;
+            }
+
+            if ($journal->validation_status !== VerificationJournal::VALIDATION_VALIDATED) {
+                $failed[] = [
+                    'nomor' => $journal->nomor ?? $journal->id,
+                    'message' => 'Journal must be validated before it can be submitted to SAP B1.',
+                ];
 
                 continue;
             }
@@ -488,6 +595,39 @@ class SapSyncController extends Controller
         }
 
         return false;
+    }
+
+    protected function canChangeVjDetailProject($user): bool
+    {
+        return $user->hasAnyRole(['superadmin', 'admin', 'cashier', 'cashier_bo']);
+    }
+
+    protected function canManageSapInfo($user): bool
+    {
+        return $user->hasAnyRole(['superadmin', 'admin', 'cashier']);
+    }
+
+    protected function canManageSapInfoForVj($user, VerificationJournal $vj): bool
+    {
+        return $this->canManageSapInfo($user)
+            && $vj->validation_status !== VerificationJournal::VALIDATION_REJECTED;
+    }
+
+    protected function canEditVjDetails($user, VerificationJournal $vj): bool
+    {
+        if ($vj->sap_journal_no) {
+            return false;
+        }
+
+        if ($this->isBoRestrictedUser($user) && $vj->project !== '001H') {
+            return false;
+        }
+
+        if ($vj->created_by === $user->id) {
+            return true;
+        }
+
+        return $user->can('edit_verification_project');
     }
 
     protected function canReverseSap($user): bool
@@ -676,6 +816,10 @@ class SapSyncController extends Controller
         $vj->sap_je_jdt_num = null;
         $vj->sap_submission_status = null;
         $vj->sap_submission_error = null;
+        $vj->validation_status = VerificationJournal::VALIDATION_PENDING;
+        $vj->validated_at = null;
+        $vj->validated_by = null;
+        $vj->rejection_reason = null;
         $vj->save();
 
         $vjDetails = VerificationJournalDetail::where('verification_journal_id', $vj->id)->get();
@@ -799,6 +943,10 @@ class SapSyncController extends Controller
 
         $this->assertProjectAccessible(auth()->user(), $vj->project);
 
+        if (! $this->canEditVjDetails(auth()->user(), $vj)) {
+            abort(403, 'You do not have permission to edit this verification journal.');
+        }
+
         return view('accounting.sap-sync.edit-vjdetail.index', [
             'vj' => $vj,
         ]);
@@ -814,6 +962,10 @@ class SapSyncController extends Controller
         }
 
         $this->assertProjectAccessible(auth()->user(), $vj->project);
+
+        if (! $this->canEditVjDetails(auth()->user(), $vj)) {
+            return response()->json(['error' => 'You do not have permission to edit this verification journal.'], 403);
+        }
 
         $vj_details = VerificationJournalDetail::with('verificationJournal')
             ->where('verification_journal_id', $vj_id)
@@ -850,6 +1002,13 @@ class SapSyncController extends Controller
 
         $this->assertProjectAccessible(auth()->user(), $vj->project);
 
+        if (! $this->canEditVjDetails(auth()->user(), $vj)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit this verification journal.',
+            ], 403);
+        }
+
         if ($vj->sap_journal_no) {
             return response()->json([
                 'success' => false,
@@ -883,11 +1042,22 @@ class SapSyncController extends Controller
         }
 
         $vj_detail->account_code = $request->account_code;
-        $vj_detail->project = $request->project;
+        $vj_detail->project = $this->canChangeVjDetailProject(auth()->user())
+            ? $request->project
+            : $vj_detail->project;
         $vj_detail->cost_center = $request->cost_center;
         $vj_detail->description = $request->description;
 
         $vj_detail->save();
+
+        if ($vj->validation_status !== VerificationJournal::VALIDATION_PENDING) {
+            $vj->update([
+                'validation_status' => VerificationJournal::VALIDATION_PENDING,
+                'validated_at' => null,
+                'validated_by' => null,
+                'rejection_reason' => null,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -900,6 +1070,18 @@ class SapSyncController extends Controller
         $vjs = VerificationJournal::whereNull('sap_journal_no')->get();
 
         return $vjs;
+    }
+
+    public function vjPendingValidationCount($user): int
+    {
+        $query = VerificationJournal::query()
+            ->where('validation_status', VerificationJournal::VALIDATION_PENDING);
+
+        if ($this->isBoRestrictedUser($user)) {
+            $query->where('project', '001H');
+        }
+
+        return $query->count();
     }
 
     public function chart_vj_postby()

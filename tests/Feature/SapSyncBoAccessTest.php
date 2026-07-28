@@ -76,7 +76,7 @@ class SapSyncBoAccessTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_bo_user_can_view_001h_verification_journal_and_see_submit_button(): void
+    public function test_bo_user_can_view_001h_verification_journal_and_see_validation_message(): void
     {
         $user = $this->createBoUser('cashier_bo');
         $journal = $this->createVerificationJournal('001H', $user);
@@ -84,7 +84,7 @@ class SapSyncBoAccessTest extends TestCase
         $this->actingAs($user)
             ->get(route('accounting.sap-sync.show', $journal->id))
             ->assertOk()
-            ->assertSee('Submit to SAP B1', false);
+            ->assertSee('This journal must be validated before it can be submitted to SAP B1.', false);
     }
 
     public function test_bo_user_cannot_load_data_for_other_projects(): void

@@ -3,7 +3,8 @@
     $hasPcbc = auth()->user()->can('validate_pcbc_report') && ($pcbc_pending_validation_count ?? 0) > 0;
     $hasBankRecon = auth()->user()->can('validate_bank_reconciliation') && ($bank_reconciliation_pending_validation_count ?? 0) > 0;
     $hasOverdueExt = auth()->user()->can('approve_overdue_extension') && ($pending_overdue_extension_count ?? 0) > 0;
-    $hasActions = $hasApprovals || $hasPcbc || $hasBankRecon || $hasOverdueExt;
+    $hasVjValidation = auth()->user()->can('validate_vj') && ($vj_pending_validation_count ?? 0) > 0;
+    $hasActions = $hasApprovals || $hasPcbc || $hasBankRecon || $hasOverdueExt || $hasVjValidation;
 @endphp
 
 @if ($hasActions)
@@ -63,6 +64,19 @@
                     :href="route('document-overdue.extensions.index')"
                     title="Open overdue extension approvals"
                     data-dashboard-pending-extension-requests="{{ $pending_overdue_extension_count }}" />
+            @endif
+
+            @if ($hasVjValidation)
+                <x-dashboard.kpi-card
+                    icon="fas fa-check-double"
+                    :value="$vj_pending_validation_count"
+                    label="VJ pending validation"
+                    info="Awaiting your review"
+                    info-icon="fas fa-exclamation-circle"
+                    tone="warning"
+                    :href="route('accounting.sap-sync.index', ['page' => 'dashboard'])"
+                    title="Open SAP sync dashboard"
+                    data-dashboard-pending-vj-validation="{{ $vj_pending_validation_count }}" />
             @endif
         </div>
     </div>

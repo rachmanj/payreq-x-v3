@@ -19,8 +19,9 @@ Markdown files in this directory are indexed by `php artisan help:reindex`.
 | RAB / Anggaran | `anggaran-manual-en.md` | `anggaran-manual-id.md` |
 | Realization — scan fuel receipts (AI) | `realization-fuel-receipt-scan-manual-en.md` | `realization-fuel-receipt-scan-manual-id.md` |
 | Manual Journal Entry | `manual-journal-entry-manual-en.md` | `manual-journal-entry-manual-id.md` |
+| SAP Sync — VJ validation before posting | `sap-sync-vj-validation-manual-en.md` | `sap-sync-vj-validation-manual-id.md` |
 
-Menu navigation hints for HELP: [`docs/help-navigation.json`](../help-navigation.json) (Bank Reconciliation, Rekening Koran, Manual Journal Entry, validator queue, Help panel).
+Menu navigation hints for HELP: [`docs/help-navigation.json`](../help-navigation.json) (Bank Reconciliation, Rekening Koran, Manual Journal Entry, SAP Sync / VJ validation, validator queue, Help panel).
 
 ## Technical reference
 

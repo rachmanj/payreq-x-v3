@@ -9,6 +9,7 @@
 @endsection
 
 @section('content')
+    <div class="vj-show">
     {{-- Enhanced Header with Status Badge --}}
     <div class="row mb-3">
         <div class="col-12">
@@ -33,15 +34,15 @@
                         <div class="d-flex align-items-center">
                             <div class="mr-3">
                                 @if ($headerStatus === 'posted')
-                                    <span class="badge badge-light badge-lg">
+                                    <span class="vj-chip vj-chip-on-dark">
                                         <i class="fas fa-check-circle"></i> POSTED
                                     </span>
                                 @elseif ($headerStatus === 'reversed')
-                                    <span class="badge badge-light badge-lg">
+                                    <span class="vj-chip vj-chip-on-dark">
                                         <i class="fas fa-undo"></i> REVERSED
                                     </span>
                                 @else
-                                    <span class="badge badge-light badge-lg">
+                                    <span class="vj-chip vj-chip-on-dark">
                                         <i class="fas fa-clock"></i> PENDING
                                     </span>
                                 @endif
@@ -52,8 +53,9 @@
                             </div>
                         </div>
                         <a href="{{ route('accounting.sap-sync.index', ['page' => $vj->project]) }}"
-                            class="btn btn-sm btn-light">
-                            <i class="fas fa-arrow-left"></i> Back
+                            class="vj-action-item vj-action-back">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back</span>
                         </a>
                     </div>
                 </div>
@@ -64,7 +66,7 @@
     {{-- Information Cards Section --}}
     <div class="row mb-3">
         {{-- Journal Details Card --}}
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card card-outline card-info">
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-file-invoice"></i> Journal Details</h3>
@@ -79,12 +81,12 @@
 
                         <dt class="col-sm-5"><i class="fas fa-project-diagram text-muted"></i> Project</dt>
                         <dd class="col-sm-7">
-                            <span class="badge badge-info">{{ $vj->project }}</span>
+                            <span class="vj-chip vj-chip-info">{{ $vj->project }}</span>
                         </dd>
 
                         <dt class="col-sm-5"><i class="fas fa-file-alt text-muted"></i> Type</dt>
                         <dd class="col-sm-7">
-                            <span class="badge badge-secondary">{{ strtoupper($vj->type ?? 'REGULAR') }}</span>
+                            <span class="vj-chip vj-chip-neutral">{{ strtoupper($vj->type ?? 'REGULAR') }}</span>
                         </dd>
 
                         <dt class="col-sm-5"><i class="fas fa-user text-muted"></i> Created by</dt>
@@ -100,7 +102,7 @@
         </div>
 
         {{-- SAP Integration Card --}}
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card card-outline {{ $vj->sap_journal_no ? 'card-success' : 'card-warning' }}">
                 <div class="card-header">
                     <h3 class="card-title">
@@ -119,15 +121,22 @@
                                         $isImage = in_array($fileExtension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
                                         $iconClass = $isImage ? 'fa-file-image' : 'fa-file-pdf';
                                     @endphp
-                                    <a href="{{ asset('file_upload/') . '/' . $vj->sap_filename }}"
-                                        class="btn btn-xs btn-success ml-2" target="_blank">
-                                        <i class="fas {{ $iconClass }}"></i> View
-                                    </a>
+                                    <span class="vj-inline-actions ml-2">
+                                        <a href="{{ asset('file_upload/') . '/' . $vj->sap_filename }}"
+                                            class="vj-action-item vj-action-item-xs vj-action-export" target="_blank">
+                                            <i class="fas {{ $iconClass }}"></i>
+                                            <span>View</span>
+                                        </a>
+                                    </span>
                                 @endif
-                                <button type="button" class="btn btn-xs btn-info ml-2" data-toggle="modal"
-                                    data-target="#upload-journal">
-                                    <i class="fas fa-upload"></i> Upload
-                                </button>
+                                <span class="vj-inline-actions ml-2">
+                                    <button type="button"
+                                        class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-sap"
+                                        data-toggle="modal" data-target="#upload-journal">
+                                        <i class="fas fa-upload"></i>
+                                        <span>Upload</span>
+                                    </button>
+                                </span>
                             @else
                                 <span class="text-muted">Not submitted</span>
                             @endif
@@ -149,7 +158,7 @@
                             <dt class="col-sm-5"><i class="fas fa-history text-muted"></i> Submission Attempts</dt>
                             <dd class="col-sm-7">
                                 <span
-                                    class="badge badge-{{ $vj->sap_submission_status === 'success' ? 'success' : 'danger' }}">
+                                    class="vj-chip {{ $vj->sap_submission_status === 'success' ? 'vj-chip-success' : 'vj-chip-danger' }}">
                                     {{ $vj->sap_submission_attempts }} attempt(s)
                                 </span>
                             </dd>
@@ -157,7 +166,7 @@
                     </dl>
 
                     @if ($vj->sap_reversed_at)
-                        <div class="alert alert-secondary mt-3 mb-0">
+                        <div class="vj-alert vj-alert-secondary mt-3 mb-0">
                             <h6 class="font-weight-bold mb-2">
                                 <i class="fas fa-undo"></i> Reversal History
                             </h6>
@@ -168,7 +177,7 @@
                             @if ($vj->sap_reversal_journal_no)
                                 <p class="mb-1">
                                     <strong>SAP Reversal Journal No:</strong>
-                                    <span class="badge badge-secondary">{{ $vj->sap_reversal_journal_no }}</span>
+                                    <span class="vj-chip vj-chip-neutral">{{ $vj->sap_reversal_journal_no }}</span>
                                 </p>
                             @endif
                             @if ($vj->sap_reversal_reason)
@@ -176,6 +185,46 @@
                                     <strong>Reason:</strong> {{ $vj->sap_reversal_reason }}
                                 </p>
                             @endif
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Validation Card --}}
+        <div class="col-md-4">
+            <div class="card card-outline @if ($vj->validation_status === \App\Models\VerificationJournal::VALIDATION_VALIDATED) card-success @elseif ($vj->validation_status === \App\Models\VerificationJournal::VALIDATION_REJECTED) card-danger @else card-warning @endif">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-clipboard-check"></i> Validation</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5"><i class="fas fa-flag text-muted"></i> Status</dt>
+                        <dd class="col-sm-7">
+                            @if ($vj->validation_status === \App\Models\VerificationJournal::VALIDATION_VALIDATED)
+                                <span class="vj-chip vj-chip-success">Validated</span>
+                            @elseif ($vj->validation_status === \App\Models\VerificationJournal::VALIDATION_REJECTED)
+                                <span class="vj-chip vj-chip-danger">Rejected</span>
+                            @else
+                                <span class="vj-chip vj-chip-warning">Pending</span>
+                            @endif
+                        </dd>
+
+                        @if ($vj->validated_at)
+                            <dt class="col-sm-5"><i class="fas fa-user-check text-muted"></i> Reviewed By</dt>
+                            <dd class="col-sm-7">
+                                {{ $vj->validatedBy->name }}<br>
+                                <small class="text-muted">
+                                    {{ date('d-M-Y H:i', strtotime($vj->validated_at . '+8 hours')) }} wita
+                                </small>
+                            </dd>
+                        @endif
+                    </dl>
+
+                    @if ($vj->validation_status === \App\Models\VerificationJournal::VALIDATION_REJECTED && $vj->rejection_reason)
+                        <div class="vj-alert vj-alert-danger small mb-0 mt-3">
+                            <strong>Rejected — reason from reviewer</strong>
+                            <div class="mt-1 mb-0">{!! nl2br(e($vj->rejection_reason)) !!}</div>
                         </div>
                     @endif
                 </div>
@@ -191,54 +240,45 @@
                     <h3 class="card-title"><i class="fas fa-money-bill-wave"></i> Financial Summary</h3>
                 </div>
                 <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-4">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-info">
-                                    <i class="fas fa-dollar-sign"></i>
-                                </span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Total Amount</span>
-                                    <span class="info-box-number">
-                                        Rp. {{ number_format($vj->amount, 2) }}
-                                    </span>
-                                </div>
+                    <div class="vj-stat-grid">
+                        <div class="vj-stat vj-stat-info">
+                            <div class="vj-stat-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="vj-stat-body">
+                                <span class="vj-stat-label">Total Amount</span>
+                                <span class="vj-stat-value">Rp. {{ number_format($vj->amount, 2) }}</span>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-success">
-                                    <i class="fas fa-arrow-down"></i>
+                        <div class="vj-stat vj-stat-success">
+                            <div class="vj-stat-icon">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <div class="vj-stat-body">
+                                <span class="vj-stat-label">Total Debit</span>
+                                <span class="vj-stat-value">
+                                    Rp. {{ number_format($vj_details->where('debit_credit', 'debit')->sum('amount'), 2) }}
                                 </span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Total Debit</span>
-                                    <span class="info-box-number">
-                                        Rp. {{ number_format($vj_details->where('debit_credit', 'debit')->sum('amount'), 2) }}
-                                    </span>
-                                </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-danger">
-                                    <i class="fas fa-arrow-up"></i>
+                        <div class="vj-stat vj-stat-danger">
+                            <div class="vj-stat-icon">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <div class="vj-stat-body">
+                                <span class="vj-stat-label">Total Credit</span>
+                                <span class="vj-stat-value">
+                                    Rp. {{ number_format($vj_details->where('debit_credit', 'credit')->sum('amount'), 2) }}
                                 </span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Total Credit</span>
-                                    <span class="info-box-number">
-                                        Rp. {{ number_format($vj_details->where('debit_credit', 'credit')->sum('amount'), 2) }}
-                                    </span>
-                                </div>
                             </div>
                         </div>
                     </div>
                     @if ($vj->description)
                         <div class="row mt-2">
                             <div class="col-md-12">
-                                <div class="description-block">
-                                    <span class="description-text">
-                                        <i class="fas fa-align-left text-muted"></i> {{ $vj->description }}
-                                    </span>
+                                <div class="vj-note">
+                                    <i class="fas fa-align-left"></i>
+                                    <span>{{ $vj->description }}</span>
                                 </div>
                             </div>
                         </div>
@@ -251,79 +291,97 @@
     {{-- Action Buttons Section --}}
     <div class="row mb-3">
         <div class="col-md-12">
-            <div class="card card-outline card-secondary">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-tools"></i> Actions</h3>
-                </div>
-                <div class="card-body">
-                    {{-- Primary Actions --}}
-                    @if (empty($vj->sap_journal_no) && $canSubmitToSap)
-                        <div class="mb-3">
-                            <button type="button" class="btn btn-success btn-lg btn-block" id="submit-to-sap-btn">
-                                <i class="fas fa-paper-plane"></i> Submit to SAP B1
-                            </button>
-                        </div>
-                    @endif
+            <div class="vj-actions">
+                @if ($canValidateVj && $vj->validation_status === \App\Models\VerificationJournal::VALIDATION_PENDING && empty($vj->sap_journal_no))
+                    <div class="vj-actions-primary">
+                        <button type="button" class="vj-btn vj-btn-success" id="validate-vj-btn">
+                            <i class="fas fa-check"></i> Validate
+                        </button>
+                        <button type="button" class="vj-btn vj-btn-danger-outline" data-toggle="modal"
+                            data-target="#reject-vj-modal">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    </div>
+                @endif
 
-                    @if ($vj->sap_journal_no && $canReverseSap)
-                        <div class="mb-3">
-                            @if ($vj->sap_je_jdt_num)
-                                <button type="button" class="btn btn-danger btn-lg btn-block" id="reverse-to-sap-btn"
-                                    data-toggle="modal" data-target="#reverse-sap-auto">
-                                    <i class="fas fa-undo"></i> Reverse in SAP B1
-                                </button>
-                            @else
-                                <button type="button" class="btn btn-danger btn-lg btn-block"
-                                    data-toggle="modal" data-target="#reverse-sap-manual">
-                                    <i class="fas fa-undo"></i> Record Manual Reversal
-                                </button>
+                @if (empty($vj->sap_journal_no) && $canSubmitToSap && $vj->validation_status === \App\Models\VerificationJournal::VALIDATION_VALIDATED)
+                    <div class="vj-actions-primary">
+                        <button type="button" class="vj-btn vj-btn-success" id="submit-to-sap-btn">
+                            <i class="fas fa-paper-plane"></i> Submit to SAP B1
+                        </button>
+                    </div>
+                @elseif (empty($vj->sap_journal_no) && $canSubmitToSap && $vj->validation_status !== \App\Models\VerificationJournal::VALIDATION_VALIDATED)
+                    <div class="vj-actions-note">
+                        <i class="fas fa-info-circle"></i>
+                        <span>
+                            This journal must be validated before it can be submitted to SAP B1.
+                            @if ($vj->validation_status === \App\Models\VerificationJournal::VALIDATION_REJECTED)
+                                Please address the rejection reason and have the journal re-validated.
                             @endif
-                        </div>
-                    @endif
+                        </span>
+                    </div>
+                @endif
 
-                    {{-- Secondary Actions --}}
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <a href="{{ route('accounting.sap-sync.edit_vjdetail_display', ['vj_id' => $vj->id]) }}"
-                                class="btn btn-warning btn-block {{ empty($vj->sap_journal_no) ? '' : 'disabled' }}">
-                                <i class="fas fa-edit"></i> Edit VJ Details
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="{{ route('accounting.sap-sync.export', ['vj_id' => $vj->id]) }}"
-                                class="btn btn-info btn-block">
-                                <i class="fas fa-file-excel"></i> Export to Excel
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="{{ route('verifications.journal.print', $vj->id) }}"
-                                class="btn btn-secondary btn-block" target="_blank">
-                                <i class="fas fa-print"></i> Print Journal
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <button class="btn btn-warning btn-block {{ $vj->sap_journal_no ? 'disabled' : '' }}"
-                                data-toggle="modal" data-target="#update-sap">
-                                <i class="fas fa-sync"></i> Update SAP Info
+                @if ($vj->sap_journal_no && $canReverseSap)
+                    <div class="vj-actions-primary">
+                        @if ($vj->sap_je_jdt_num)
+                            <button type="button" class="vj-btn vj-btn-danger" id="reverse-to-sap-btn"
+                                data-toggle="modal" data-target="#reverse-sap-auto">
+                                <i class="fas fa-undo"></i> Reverse in SAP B1
                             </button>
-                        </div>
+                        @else
+                            <button type="button" class="vj-btn vj-btn-danger" data-toggle="modal"
+                                data-target="#reverse-sap-manual">
+                                <i class="fas fa-undo"></i> Record Manual Reversal
+                            </button>
+                        @endif
                     </div>
+                @endif
 
-                    {{-- Danger Actions --}}
-                    <div class="row mt-2">
-                        <div class="col-md-12">
-                            <form action="{{ route('accounting.sap-sync.cancel_sap_info') }}" method="POST"
-                                class="d-inline cancel-sap-info-form">
-                                @csrf
-                                <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
-                                <button type="submit"
-                                    class="btn btn-danger btn-block {{ $vj->sap_journal_no ? 'disabled' : '' }}"
-                                    title="{{ $vj->sap_journal_no ? 'Cannot cancel: Journal already submitted to SAP B1. Reversal must be done in SAP B1 first.' : '' }}">
-                                    <i class="fas fa-times-circle"></i> Cancel SAP Info
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+                <div class="vj-actions-toolbar">
+                    @if ($canEditVjDetails)
+                        <a href="{{ route('accounting.sap-sync.edit_vjdetail_display', ['vj_id' => $vj->id]) }}"
+                            class="vj-action-item vj-action-edit">
+                            <i class="fas fa-edit"></i>
+                            <span>Edit Details</span>
+                        </a>
+                    @endif
+                    <a href="{{ route('accounting.sap-sync.export', ['vj_id' => $vj->id]) }}"
+                        class="vj-action-item vj-action-export">
+                        <i class="fas fa-file-excel"></i>
+                        <span>Export</span>
+                    </a>
+                    <a href="{{ route('verifications.journal.print', $vj->id) }}"
+                        class="vj-action-item vj-action-print" target="_blank">
+                        <i class="fas fa-print"></i>
+                        <span>Print</span>
+                    </a>
+                    @if ($canManageSapInfo)
+                        <button type="button"
+                            class="vj-action-item vj-action-item-btn vj-action-sap {{ ! $canManageSapInfoForVj || $vj->sap_journal_no ? 'is-disabled' : '' }}"
+                            data-toggle="modal" data-target="#update-sap"
+                            @if (! $canManageSapInfoForVj || $vj->sap_journal_no) disabled @endif>
+                            <i class="fas fa-sync"></i>
+                            <span>Update SAP</span>
+                        </button>
+                        <form action="{{ route('accounting.sap-sync.cancel_sap_info') }}" method="POST"
+                            class="cancel-sap-info-form vj-action-item-form">
+                            @csrf
+                            <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+                            <button type="submit"
+                                class="vj-action-item vj-action-item-btn vj-action-cancel {{ ! $canManageSapInfoForVj || $vj->sap_journal_no ? 'is-disabled' : '' }}"
+                                @if (! $canManageSapInfoForVj || $vj->sap_journal_no) disabled
+                                    @if ($vj->sap_journal_no)
+                                        title="Cannot cancel: Journal already submitted to SAP B1. Reversal must be done in SAP B1 first."
+                                    @elseif ($vj->validation_status === \App\Models\VerificationJournal::VALIDATION_REJECTED)
+                                        title="Cannot update SAP info while the journal is rejected."
+                                    @endif
+                                @endif>
+                                <i class="fas fa-times-circle"></i>
+                                <span>Cancel SAP</span>
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         </div>
@@ -336,7 +394,7 @@
                 <div class="card-header">
                     <h3 class="card-title">
                         <i class="fas fa-list"></i> Journal Entries
-                        <span class="badge badge-primary ml-2">{{ $vj_details->count() }} lines</span>
+                        <span class="vj-chip vj-chip-primary ml-2">{{ $vj_details->count() }} lines</span>
                     </h3>
                 </div>
                 <div class="card-body p-0">
@@ -369,10 +427,10 @@
                                         </td>
                                         <td>{{ $item['description'] }}</td>
                                         <td class="text-center">
-                                            <span class="badge badge-info">{{ $item['project'] }}</span>
+                                            <span class="vj-chip vj-chip-info">{{ $item['project'] }}</span>
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge badge-secondary">{{ $item['cost_center'] }}</span>
+                                            <span class="vj-chip vj-chip-neutral">{{ $item['cost_center'] }}</span>
                                         </td>
                                         @if ($item['debit_credit'] === 'debit')
                                             <td class="text-right text-success font-weight-bold">
@@ -419,33 +477,39 @@
                             @foreach ($submissionLogs as $log)
                                 @php
                                     $isReversal = ($log->action ?? 'submission') === 'reversal';
-                                    $logBadgeClass = $isReversal
-                                        ? ($log->status === 'success' ? 'secondary' : 'danger')
-                                        : ($log->status === 'success' ? 'success' : 'danger');
+                                    $logChipClass = $isReversal
+                                        ? ($log->status === 'success' ? 'vj-chip-neutral' : 'vj-chip-danger')
+                                        : ($log->status === 'success' ? 'vj-chip-success' : 'vj-chip-danger');
+                                    $logDateClass = $log->status === 'success'
+                                        ? ($isReversal ? 'vj-timeline-date-neutral' : 'vj-timeline-date-success')
+                                        : 'vj-timeline-date-danger';
+                                    $logIconClass = $isReversal
+                                        ? ($log->status === 'success' ? 'vj-timeline-icon-neutral' : 'vj-timeline-icon-danger')
+                                        : ($log->status === 'success' ? 'vj-timeline-icon-success' : 'vj-timeline-icon-danger');
                                     $logIcon = $isReversal
-                                        ? ($log->status === 'success' ? 'undo bg-secondary' : 'times-circle bg-danger')
-                                        : ($log->status === 'success' ? 'check-circle bg-success' : 'times-circle bg-danger');
+                                        ? ($log->status === 'success' ? 'undo' : 'times-circle')
+                                        : ($log->status === 'success' ? 'check-circle' : 'times-circle');
                                 @endphp
                                 <div class="time-label">
-                                    <span class="bg-{{ $logBadgeClass }}">
+                                    <span class="vj-timeline-date {{ $logDateClass }}">
                                         {{ date('d M Y', strtotime($log->created_at)) }}
                                     </span>
                                 </div>
                                 <div>
-                                    <i class="fas fa-{{ $logIcon }}"></i>
+                                    <i class="fas fa-{{ $logIcon }} {{ $logIconClass }}"></i>
                                     <div class="timeline-item">
-                                        <span class="time">
+                                        <span class="vj-timeline-time">
                                             <i class="fas fa-clock"></i> {{ date('H:i', strtotime($log->created_at)) }}
                                         </span>
                                         <h3 class="timeline-header">
                                             @if ($isReversal)
                                                 Reversal -
-                                                <span class="badge badge-{{ $logBadgeClass }}">
+                                                <span class="vj-chip {{ $logChipClass }}">
                                                     {{ $log->status === 'success' ? 'REVERSED' : 'FAILED' }}
                                                 </span>
                                             @else
                                                 Attempt #{{ $log->attempt_number }} -
-                                                <span class="badge badge-{{ $logBadgeClass }}">
+                                                <span class="vj-chip {{ $logChipClass }}">
                                                     {{ strtoupper($log->status) }}
                                                 </span>
                                             @endif
@@ -456,7 +520,7 @@
                                         @if ($isReversal && $log->status === 'success')
                                             <div class="timeline-body">
                                                 <p><strong>Original SAP Journal Number:</strong>
-                                                    <span class="badge badge-secondary">{{ $log->sap_journal_number }}</span>
+                                                    <span class="vj-chip vj-chip-neutral">{{ $log->sap_journal_number }}</span>
                                                 </p>
                                                 @if ($log->error_message)
                                                     <p class="mb-0"><strong>Reason:</strong> {{ $log->error_message }}</p>
@@ -465,13 +529,13 @@
                                         @elseif ($log->status === 'success')
                                             <div class="timeline-body">
                                                 <p><strong>SAP Journal Number:</strong>
-                                                    <span class="badge badge-success">{{ $log->sap_journal_number }}</span>
+                                                    <span class="vj-chip vj-chip-success">{{ $log->sap_journal_number }}</span>
                                                 </p>
                                             </div>
                                         @else
                                             <div class="timeline-body">
-                                                <p><strong>Error:</strong></p>
-                                                <div class="alert alert-danger mb-0">
+                                                <p class="mb-2"><strong>Error:</strong></p>
+                                                <div class="vj-alert vj-alert-danger mb-0">
                                                     <code>{{ $log->error_message }}</code>
                                                 </div>
                                             </div>
@@ -485,39 +549,42 @@
             </div>
         </div>
     @endif
+    </div>{{-- /.vj-show --}}
 
     {{-- MODAL UPDATE - SAP --}}
-    <div class="modal fade" id="update-sap">
-        <div class="modal-dialog modal-md">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Update SAP Info</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form action="{{ route('accounting.sap-sync.update_sap_info') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="sap_posting_date">SAP Posting Date</label>
-                            <input type="date" name="sap_posting_date" class="form-control" value="{{ date('Y-m-d') }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="sap_journal_no">SAP Journal No</label>
-                            <input type="text" name="sap_journal_no" class="form-control">
-                        </div>
+    @if ($canManageSapInfo && $canManageSapInfoForVj)
+        <div class="modal fade" id="update-sap">
+            <div class="modal-dialog modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Update SAP Info</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
+                    <form action="{{ route('accounting.sap-sync.update_sap_info') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="sap_posting_date">SAP Posting Date</label>
+                                <input type="date" name="sap_posting_date" class="form-control" value="{{ date('Y-m-d') }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="sap_journal_no">SAP Journal No</label>
+                                <input type="text" name="sap_journal_no" class="form-control">
+                            </div>
+                        </div>
 
-                    <div class="modal-footer justify-content-between">
-                        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
-                    </div>
-                </form>
+                        <div class="modal-footer justify-content-between">
+                            <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
+    @endif
 
     {{-- UPLOAD DOCUMENT --}}
     <div class="modal fade" id="upload-journal">
@@ -567,6 +634,48 @@
         @csrf
         <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
     </form>
+
+    <form id="validate-vj-form" action="{{ route('accounting.sap-sync.validate') }}" method="POST" class="d-none">
+        @csrf
+        <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+    </form>
+
+    {{-- REJECT VJ --}}
+    @if ($canValidateVj && $vj->validation_status === \App\Models\VerificationJournal::VALIDATION_PENDING && empty($vj->sap_journal_no))
+        <div class="modal fade" id="reject-vj-modal">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form id="reject-vj-form" action="{{ route('accounting.sap-sync.reject') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="verification_journal_id" value="{{ $vj->id }}">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-times-circle"></i> Reject Verification Journal
+                            </h5>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted small mb-2">A reason is required so the creator knows what to fix.</p>
+                            <div class="form-group">
+                                <label for="vj_rejection_reason">Reason for rejection <span class="text-danger">*</span></label>
+                                <textarea name="rejection_reason" id="vj_rejection_reason" class="form-control" rows="4"
+                                    required maxlength="2000" minlength="1"
+                                    placeholder="Describe why this verification journal is being rejected"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between">
+                            <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-sm btn-danger" id="confirm-reject-vj-btn">
+                                <i class="fas fa-times"></i> Confirm Reject
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- REVERSE SAP AUTO --}}
     @if ($vj->sap_journal_no && $canReverseSap && $vj->sap_je_jdt_num)
@@ -678,155 +787,619 @@
 
     @push('styles')
         <style>
-            /* Status Badge Large */
-            .badge-lg {
-                font-size: 1rem;
-                padding: 0.5rem 1rem;
+            /* ── VJ Show page design system ── */
+            .vj-show .card-outline {
+                border: 1px solid #e9ecef;
+                border-radius: 10px;
+                box-shadow: none;
+                transition: box-shadow 0.2s ease;
             }
 
-            /* Card Hover Effects */
-            .card-outline {
-                transition: all 0.3s ease;
+            .vj-show .card-outline:hover {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                transform: none;
             }
 
-            .card-outline:hover {
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                transform: translateY(-2px);
-            }
-
-            /* Table Enhancements */
-            .table-hover tbody tr:hover {
-                background-color: rgba(0, 123, 255, 0.05);
-            }
-
-            /* Info Box Styling */
-            .info-box {
-                display: block;
-                min-height: 90px;
-                background: #fff;
-                width: 100%;
-                box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-                border-radius: 2px;
-                margin-bottom: 15px;
-            }
-
-            .info-box-icon {
-                border-top-left-radius: 2px;
-                border-top-right-radius: 0;
-                border-bottom-right-radius: 0;
-                border-bottom-left-radius: 2px;
-                display: block;
-                float: left;
-                height: 90px;
-                width: 90px;
-                text-align: center;
-                font-size: 45px;
-                line-height: 90px;
-                background: rgba(0, 0, 0, 0.2);
-            }
-
-            .info-box-content {
-                padding: 5px 10px;
-                margin-left: 90px;
-            }
-
-            .info-box-text {
-                text-transform: uppercase;
-                font-weight: 600;
-                font-size: 13px;
-            }
-
-            .info-box-number {
-                display: block;
-                font-weight: bold;
-                font-size: 18px;
-            }
-
-            /* Description Block */
-            .description-block {
-                padding: 10px;
+            .vj-show .card-outline .card-header {
                 background: #f8f9fa;
-                border-radius: 4px;
+                border-bottom: 1px solid #e9ecef;
+                border-radius: 10px 10px 0 0;
+                padding: 0.65rem 1rem;
             }
 
-            .description-text {
+            .vj-show .card-outline .card-header .card-title {
+                font-size: 0.9rem;
+                font-weight: 600;
                 color: #495057;
-                font-size: 14px;
+                margin-bottom: 0;
             }
 
-            /* Timeline Styling */
-            .timeline {
-                position: relative;
-                padding: 20px 0;
+            .vj-show .card-outline .card-header .card-title i {
+                color: #6c757d;
+                margin-right: 0.35rem;
             }
 
-            .timeline-item {
+            .vj-show .card-outline .card-body {
+                padding: 0.85rem 1rem;
+            }
+
+            .vj-show dl dt {
+                font-size: 0.8125rem;
+                color: #6c757d;
+                font-weight: 500;
+            }
+
+            .vj-show dl dd {
+                font-size: 0.875rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .vj-show dl dd:last-child {
+                margin-bottom: 0;
+            }
+
+            /* Chips (badges) */
+            .vj-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.3rem;
+                padding: 0.2rem 0.55rem;
+                border-radius: 6px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                line-height: 1.3;
+                border: 1px solid transparent;
+                white-space: nowrap;
+            }
+
+            .vj-chip-info {
+                background: #e8f7fa;
+                border-color: #b2ebf2;
+                color: #0c6674;
+            }
+
+            .vj-chip-neutral {
+                background: #f1f3f5;
+                border-color: #dee2e6;
+                color: #495057;
+            }
+
+            .vj-chip-success {
+                background: #e8f5e9;
+                border-color: #c8e6c9;
+                color: #198754;
+            }
+
+            .vj-chip-danger {
+                background: #ffebee;
+                border-color: #ffcdd2;
+                color: #c62828;
+            }
+
+            .vj-chip-warning {
+                background: #fff8e1;
+                border-color: #ffe082;
+                color: #b8860b;
+            }
+
+            .vj-chip-primary {
+                background: #e7f1ff;
+                border-color: #b8d4fe;
+                color: #0d47a1;
+            }
+
+            .vj-chip-on-dark {
+                background: rgba(255, 255, 255, 0.95);
+                border-color: rgba(255, 255, 255, 0.6);
+                color: #343a40;
+                font-size: 0.875rem;
+                padding: 0.35rem 0.75rem;
+                border-radius: 8px;
+            }
+
+            /* Financial stat cards */
+            .vj-stat-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.75rem;
+            }
+
+            .vj-stat {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.85rem 1rem;
+                border-radius: 10px;
+                border: 1px solid #e9ecef;
                 background: #fff;
-                border: 1px solid #ddd;
-                border-radius: 3px;
-                padding: 12px;
-                margin: 0 0 20px 60px;
+            }
+
+            .vj-stat-icon {
+                width: 2.5rem;
+                height: 2.5rem;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1rem;
+                flex-shrink: 0;
+            }
+
+            .vj-stat-info .vj-stat-icon {
+                background: #e8f7fa;
+                color: #17a2b8;
+                border: 1px solid #b2ebf2;
+            }
+
+            .vj-stat-success .vj-stat-icon {
+                background: #e8f5e9;
+                color: #198754;
+                border: 1px solid #c8e6c9;
+            }
+
+            .vj-stat-danger .vj-stat-icon {
+                background: #ffebee;
+                color: #dc3545;
+                border: 1px solid #ffcdd2;
+            }
+
+            .vj-stat-body {
+                display: flex;
+                flex-direction: column;
+                gap: 0.15rem;
+                min-width: 0;
+            }
+
+            .vj-stat-label {
+                font-size: 0.7rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+                color: #6c757d;
+            }
+
+            .vj-stat-value {
+                font-size: 1rem;
+                font-weight: 700;
+                color: #212529;
+                line-height: 1.2;
+            }
+
+            /* Notes & alerts */
+            .vj-note {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 0.65rem 0.75rem;
+                border-radius: 8px;
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                color: #495057;
+                font-size: 0.875rem;
+                line-height: 1.45;
+            }
+
+            .vj-note i {
+                margin-top: 0.15rem;
+                color: #6c757d;
+            }
+
+            .vj-alert {
+                padding: 0.65rem 0.75rem;
+                border-radius: 8px;
+                font-size: 0.875rem;
+                line-height: 1.45;
+                border: 1px solid;
+            }
+
+            .vj-alert-danger {
+                background: #fff5f5;
+                border-color: #f1c2c7;
+                color: #842029;
+            }
+
+            .vj-alert-danger code {
+                background: transparent;
+                color: inherit;
+                font-size: 0.8125rem;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
+            .vj-alert-secondary {
+                background: #f8f9fa;
+                border-color: #dee2e6;
+                color: #495057;
+            }
+
+            /* Table */
+            .vj-show .table-hover tbody tr:hover {
+                background-color: rgba(0, 123, 255, 0.04);
+            }
+
+            /* Timeline */
+            .vj-show .timeline {
+                position: relative;
+                padding: 0.5rem 0;
+            }
+
+            .vj-show .timeline > div:not(.time-label) {
+                position: relative;
+                padding-left: 3.25rem;
+            }
+
+            .vj-show .timeline-item {
+                background: #fff;
+                border: 1px solid #e9ecef;
+                border-radius: 10px;
+                padding: 0.85rem 1rem;
+                margin: 0 0 1.25rem 0;
                 position: relative;
             }
 
-            .timeline-item::before {
+            .vj-show .timeline-item::before {
                 content: '';
                 position: absolute;
-                left: -15px;
-                top: 26px;
+                left: -9px;
+                top: 1.1rem;
                 display: block;
                 width: 0;
                 height: 0;
                 border: solid transparent;
-                border-width: 8px;
-                border-right-color: #ddd;
+                border-width: 7px;
+                border-right-color: #e9ecef;
             }
 
-            .time-label {
+            .vj-show .time-label {
                 position: relative;
-                padding: 10px 0;
+                padding: 0.5rem 0 0.25rem;
             }
 
-            .time-label span {
-                padding: 5px 10px;
-                border-radius: 4px;
-                color: #fff;
+            .vj-timeline-date {
+                display: inline-flex;
+                align-items: center;
+                padding: 0.3rem 0.65rem;
+                border-radius: 8px;
+                font-size: 0.75rem;
                 font-weight: 600;
+                border: 1px solid transparent;
             }
 
-            .timeline-item i {
+            .vj-timeline-date-success {
+                background: #e8f5e9;
+                border-color: #c8e6c9;
+                color: #198754;
+            }
+
+            .vj-timeline-date-danger {
+                background: #ffebee;
+                border-color: #ffcdd2;
+                color: #c62828;
+            }
+
+            .vj-timeline-date-neutral {
+                background: #f1f3f5;
+                border-color: #dee2e6;
+                color: #495057;
+            }
+
+            .vj-show .timeline > div:not(.time-label) > i.fas {
                 position: absolute;
-                left: -45px;
-                top: 20px;
-                width: 30px;
-                height: 30px;
-                border-radius: 50%;
+                left: 0;
+                top: 0.65rem;
+                width: 2rem;
+                height: 2rem;
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: #fff;
-                font-size: 14px;
+                font-size: 0.8rem;
+                border: 1px solid transparent;
             }
 
-            .timeline-header {
-                margin-bottom: 10px;
-                font-size: 16px;
+            .vj-timeline-icon-success {
+                background: #e8f5e9;
+                border-color: #c8e6c9;
+                color: #198754;
             }
 
-            .timeline-body {
-                padding-top: 10px;
+            .vj-timeline-icon-danger {
+                background: #ffebee;
+                border-color: #ffcdd2;
+                color: #c62828;
             }
 
-            .time {
+            .vj-timeline-icon-neutral {
+                background: #f1f3f5;
+                border-color: #dee2e6;
+                color: #495057;
+            }
+
+            .vj-show .timeline-header {
+                margin-bottom: 0.5rem;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #343a40;
+            }
+
+            .vj-show .timeline-body {
+                padding-top: 0.25rem;
+                font-size: 0.875rem;
+                color: #495057;
+            }
+
+            .vj-timeline-time {
                 float: right;
-                padding: 5px 10px;
-                background: #f4f4f4;
-                border-radius: 4px;
-                font-size: 12px;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.3rem;
+                padding: 0.2rem 0.55rem;
+                background: #f1f3f5;
+                border: 1px solid #e9ecef;
+                border-radius: 6px;
+                font-size: 0.75rem;
+                font-weight: 500;
+                color: #6c757d;
             }
 
-            /* Responsive Improvements */
+            .vj-actions {
+                background: #fff;
+                border: 1px solid #e9ecef;
+                border-radius: 10px;
+                padding: 0.85rem 1rem;
+            }
+
+            .vj-actions-primary {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .vj-actions-note {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 0.65rem 0.75rem;
+                margin-bottom: 0.75rem;
+                border-radius: 8px;
+                background: #e7f3ff;
+                border: 1px solid #b8daff;
+                color: #0c5460;
+                font-size: 0.875rem;
+                line-height: 1.45;
+            }
+
+            .vj-actions-note i {
+                margin-top: 0.15rem;
+                color: #17a2b8;
+            }
+
+            .vj-actions-toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.35rem;
+                padding-top: 0.15rem;
+                border-top: 1px solid #f1f3f5;
+            }
+
+            .vj-actions-primary + .vj-actions-toolbar {
+                padding-top: 0.75rem;
+            }
+
+            .vj-actions-note + .vj-actions-toolbar {
+                padding-top: 0.75rem;
+            }
+
+            .vj-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
+                padding: 0.45rem 0.9rem;
+                border-radius: 8px;
+                border: 1px solid transparent;
+                font-size: 0.875rem;
+                font-weight: 500;
+                line-height: 1.2;
+                transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+            }
+
+            .vj-btn-success {
+                background: #198754;
+                color: #fff;
+            }
+
+            .vj-btn-success:hover {
+                background: #157347;
+                color: #fff;
+            }
+
+            .vj-btn-danger {
+                background: #dc3545;
+                color: #fff;
+            }
+
+            .vj-btn-danger:hover {
+                background: #bb2d3b;
+                color: #fff;
+            }
+
+            .vj-btn-danger-outline {
+                background: #fff;
+                color: #dc3545;
+                border-color: #f1c2c7;
+            }
+
+            .vj-btn-danger-outline:hover {
+                background: #fff5f5;
+                color: #bb2d3b;
+                border-color: #f1aeb5;
+            }
+
+            .vj-action-item,
+            .vj-action-item-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
+                padding: 0.4rem 0.7rem;
+                border: 1px solid transparent;
+                border-radius: 8px;
+                background: transparent;
+                color: #495057;
+                font-size: 0.8125rem;
+                font-weight: 500;
+                text-decoration: none;
+                transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+            }
+
+            .vj-action-edit {
+                background: #fff8e1;
+                border-color: #ffe082;
+                color: #b8860b;
+            }
+
+            .vj-action-edit i {
+                color: #f0ad4e;
+            }
+
+            .vj-action-edit:hover:not(.is-disabled) {
+                background: #ffecb3;
+                border-color: #ffd54f;
+                color: #8a6d0a;
+                text-decoration: none;
+            }
+
+            .vj-action-export {
+                background: #e8f7fa;
+                border-color: #b2ebf2;
+                color: #0c6674;
+            }
+
+            .vj-action-export i {
+                color: #17a2b8;
+            }
+
+            .vj-action-export:hover {
+                background: #d1f2f7;
+                border-color: #80deea;
+                color: #0a4f5a;
+                text-decoration: none;
+            }
+
+            .vj-action-print {
+                background: #f1f3f5;
+                border-color: #dee2e6;
+                color: #495057;
+            }
+
+            .vj-action-print i {
+                color: #6c757d;
+            }
+
+            .vj-action-print:hover {
+                background: #e9ecef;
+                border-color: #ced4da;
+                color: #212529;
+                text-decoration: none;
+            }
+
+            .vj-action-sap {
+                background: #fff3e0;
+                border-color: #ffcc80;
+                color: #e65100;
+            }
+
+            .vj-action-sap i {
+                color: #ff9800;
+            }
+
+            .vj-action-sap:hover:not(:disabled):not(.is-disabled) {
+                background: #ffe0b2;
+                border-color: #ffb74d;
+                color: #bf360c;
+            }
+
+            .vj-action-cancel {
+                background: #ffebee;
+                border-color: #ffcdd2;
+                color: #c62828;
+            }
+
+            .vj-action-cancel i {
+                color: #dc3545;
+            }
+
+            .vj-action-cancel:hover:not(:disabled):not(.is-disabled) {
+                background: #ffcdd2;
+                border-color: #ef9a9a;
+                color: #b71c1c;
+            }
+
+            .vj-action-item:hover,
+            .vj-action-item-btn:hover:not(:disabled):not(.is-disabled) {
+                text-decoration: none;
+            }
+
+            .vj-action-item i,
+            .vj-action-item-btn i {
+                width: 0.95rem;
+                text-align: center;
+                font-size: 0.8rem;
+            }
+
+            .vj-action-item.is-disabled,
+            .vj-action-item-btn.is-disabled,
+            .vj-action-item-btn:disabled {
+                opacity: 0.45;
+                pointer-events: none;
+                cursor: not-allowed;
+            }
+
+            .vj-action-item-form {
+                display: inline-flex;
+                margin: 0;
+            }
+
+            .vj-inline-actions {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                vertical-align: middle;
+            }
+
+            .vj-action-item-xs {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            .vj-action-item-xs i {
+                font-size: 0.7rem;
+                width: 0.85rem;
+            }
+
+            .vj-action-back {
+                background: rgba(255, 255, 255, 0.95);
+                border-color: rgba(255, 255, 255, 0.6);
+                color: #343a40;
+            }
+
+            .vj-action-back:hover {
+                background: #fff;
+                border-color: #fff;
+                color: #212529;
+                text-decoration: none;
+            }
+
             @media (max-width: 768px) {
+                .vj-stat-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .vj-show .timeline > div:not(.time-label) {
+                    padding-left: 2.75rem;
+                }
+
                 .btn-block {
                     font-size: 14px;
                     padding: 8px 12px;
@@ -922,6 +1495,61 @@
 
             $(document).ready(function() {
                 const $submitBtn = $('#submit-to-sap-btn');
+                const $validateBtn = $('#validate-vj-btn');
+
+                if ($validateBtn.length) {
+                    $validateBtn.on('click', function() {
+                        Swal.fire({
+                            title: 'Validate this verification journal?',
+                            html: '<p>This journal will be marked as validated and can then be submitted to SAP B1.</p>',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, validate',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $validateBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Validating...');
+                                $('#validate-vj-form').trigger('submit');
+                            }
+                        });
+                    });
+                }
+
+                const $rejectForm = $('#reject-vj-form');
+                if ($rejectForm.length) {
+                    $rejectForm.on('submit', function(e) {
+                        e.preventDefault();
+                        const form = this;
+                        const reason = $('#vj_rejection_reason').val().trim();
+
+                        if (!reason) {
+                            Swal.fire({
+                                title: 'Reason required',
+                                text: 'Please provide a reason for rejection.',
+                                icon: 'warning',
+                            });
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: 'Reject this verification journal?',
+                            html: '<p>The creator will see your rejection reason and can fix the journal before resubmitting for validation.</p>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, reject',
+                            cancelButtonText: 'Cancel',
+                            confirmButtonColor: '#dc3545',
+                            reverseButtons: true,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $('#confirm-reject-vj-btn').prop('disabled', true)
+                                    .html('<i class="fas fa-spinner fa-spin"></i> Rejecting...');
+                                form.submit();
+                            }
+                        });
+                    });
+                }
 
                 if ($submitBtn.length) {
                     $submitBtn.on('click', function() {
@@ -956,28 +1584,30 @@
                     });
                 }
 
-                $('.cancel-sap-info-form').on('submit', function(e) {
-                    const isDisabled = $(this).find('button').hasClass('disabled');
-                    if (isDisabled) {
-                        return;
-                    }
-
-                    e.preventDefault();
-                    const form = this;
-                    Swal.fire({
-                        title: 'Cancel SAP Info?',
-                        html: '<p>This will clear the SAP submission info for this journal. This action cannot be undone.</p>',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes, cancel it',
-                        cancelButtonText: 'Keep SAP Info',
-                        reverseButtons: true,
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            form.submit();
+                @if ($canManageSapInfo)
+                    $('.cancel-sap-info-form').on('submit', function(e) {
+                        const $button = $(this).find('button');
+                        if ($button.hasClass('is-disabled') || $button.prop('disabled')) {
+                            return;
                         }
+
+                        e.preventDefault();
+                        const form = this;
+                        Swal.fire({
+                            title: 'Cancel SAP Info?',
+                            html: '<p>This will clear the SAP submission info for this journal. This action cannot be undone.</p>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, cancel it',
+                            cancelButtonText: 'Keep SAP Info',
+                            reverseButtons: true,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
                     });
-                });
+                @endif
 
                 const $reverseForm = $('#reverse-sap-form');
                 if ($reverseForm.length) {

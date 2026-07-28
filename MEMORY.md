@@ -1,3 +1,23 @@
+### [069] VJ Soft UI on SAP Sync show (2026-07-28) ✅ COMPLETE
+
+**Challenge:** SAP Sync show page used bulky AdminLTE `btn-block` actions, solid badges, and `info-box` blocks — poor hierarchy and inconsistent with desired soft chip aesthetic.
+
+**Solution:** Named design system **VJ Soft UI** (`vj-` prefix, page wrapper `.vj-show`). Two-tier `.vj-actions` (`.vj-btn` + `.vj-action-item` chips); `.vj-chip` badges; `.vj-stat` financial grid; `.vj-alert` / `.vj-note`; pastel timeline. Global PCBC banner uses `.vj-banner*` in `pcbc-compliance-banner.blade.php`. Documented in `docs/VJ-SOFT-UI.md`, ADR-UI-02, `docs/architecture.md`.
+
+**Tests:** SapSync suite (34 tests).
+
+---
+
+### [068] VJ rejection in-app alert for creators (2026-07-28) ✅ COMPLETE
+
+**Challenge:** VJ validation rejection reason was only visible on `accounting/sap-sync/show`, but many creators (e.g. `cashier_022`) lack `akses_sap_sync` and have no menu path to that page — so they never see rejections (e.g. `26VJ02202522`).
+
+**Solution:** `VjRejectionAlertService` + `ShareVjRejectionAlertForViews` middleware (same pattern as PCBC banner) shares `rejectedVjAlerts` to all `templates.main` views. `<x-vj-rejection-alert-banner>` lists rejected VJs for `created_by` with reason and "Review & Fix" link: bank VJs → `cashier.bank-transactions.edit`, others → `accounting.sap-sync.show`. Alert clears automatically when `update_detail` or bank `submit` resets `validation_status` to pending.
+
+**Tests:** `VjRejectionAlertTest` (6 tests).
+
+---
+
 ### [067] Manual Journal Entries + SAP B1 + templates (2026-07-23) ✅ COMPLETE
 
 **Challenge:** Users could only post journal entries to SAP via the Realization → VerificationJournal cart workflow. No way to type arbitrary GL lines or reuse recurring entry layouts.

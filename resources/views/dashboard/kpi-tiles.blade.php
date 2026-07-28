@@ -48,6 +48,21 @@
         @endif
     @endcan
 
+    @can('validate_vj')
+        @if (($vj_pending_validation_count ?? 0) === 0)
+            <x-dashboard.kpi-card
+                icon="fas fa-check-double"
+                :value="$vj_pending_validation_count"
+                label="VJ pending validation"
+                info="Nothing pending"
+                info-icon="fas fa-check-circle"
+                tone="success"
+                :href="route('accounting.sap-sync.index', ['page' => 'dashboard'])"
+                title="Open SAP sync dashboard"
+                data-dashboard-pending-vj-validation="0" />
+        @endif
+    @endcan
+
     @can('approve_overdue_extension')
         @if (($pending_overdue_extension_count ?? 0) === 0)
             <x-dashboard.kpi-card

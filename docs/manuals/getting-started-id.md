@@ -20,6 +20,7 @@ Contoh pertanyaan di tab **How-to**:
 - *Cara upload Rekening Koran dan mulai rekonsiliasi bank*
 - **RAB / Anggaran**
 - **Scan nota BBM untuk realisasi** (tombol **Scan Fuel Receipts** di halaman detail realisasi)
+- **SAP Sync / validasi VJ** — *Bagaimana cara memvalidasi verification journal sebelum SAP?* / *Bagaimana memperbaiki VJ yang ditolak?*
 
 ## Setelah dokumentasi berubah
 

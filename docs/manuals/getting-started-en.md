@@ -20,6 +20,7 @@ Example **How-to** questions:
 - *Bagaimana cara menggunakan fitur Bank Reconciliation?* (answers in Indonesian when locale is **id**)
 - **RAB / Anggaran**
 - **Scan fuel receipts for realization** (**Scan Fuel Receipts** on the realization details page)
+- **SAP Sync / VJ validation** — *How do I validate a verification journal before SAP?* / *Bagaimana cara memperbaiki VJ yang ditolak?*
 
 ## After documentation changes
 

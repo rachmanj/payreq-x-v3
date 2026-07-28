@@ -160,6 +160,73 @@
                 "reverse in SAP B1"
             ],
             "description": "On a posted manual JE show page, users with cancel_sap_journal can reverse the SAP journal with a required reason."
+        },
+        {
+            "title": "SAP Sync / Verification Journal validation",
+            "menu_path": "Accounting → SAP Sync",
+            "route_name": "accounting.sap-sync.index",
+            "url": "/accounting/sap-sync?page=dashboard",
+            "permission": "akses_sap_sync",
+            "keywords": [
+                "SAP Sync",
+                "verification journal",
+                "VJ validation",
+                "validate VJ",
+                "reject VJ",
+                "validasi VJ",
+                "tolak VJ",
+                "submit to SAP B1",
+                "pending validation",
+                "VJ pending validation",
+                "rejected verification journal",
+                "Review and Fix"
+            ],
+            "description": "Post realization and bank verification journals to SAP B1. Each VJ must be Validated before Submit to SAP B1. Validators use Validate or Reject on the SAP Sync show page (permission validate_vj). Project tabs show Pending / Validated / Rejected badges."
+        },
+        {
+            "title": "SAP Sync — Validate or reject a journal",
+            "menu_path": "Accounting → SAP Sync → (project tab) → open journal",
+            "route_name": "accounting.sap-sync.show",
+            "permission": "validate_vj",
+            "keywords": [
+                "validate verification journal",
+                "reject verification journal",
+                "Confirm Reject",
+                "reason for rejection",
+                "Validation card",
+                "validasi jurnal verifikasi"
+            ],
+            "description": "On the SAP Sync show page, users with validate_vj see Validate and Reject while status is Pending. Reject requires Reason for rejection. After Validated, Submit to SAP B1 is enabled for users with submit permission."
+        },
+        {
+            "title": "Dashboard — VJ pending validation",
+            "menu_path": "Dashboard → Action Center / KPI tiles",
+            "route_name": "dashboard.index",
+            "url": "/dashboard",
+            "permission": "validate_vj",
+            "keywords": [
+                "VJ pending validation",
+                "pending VJ",
+                "validator dashboard",
+                "menunggu validasi VJ",
+                "jumlah VJ pending"
+            ],
+            "description": "Validators with validate_vj see a VJ pending validation counter on the dashboard (Action Center when count > 0). Count includes only Pending journals; Rejected journals are excluded until the creator saves a fix. Links to Accounting → SAP Sync."
+        },
+        {
+            "title": "Rejected VJ — creator banner and fix",
+            "menu_path": "Any page (top banner) → Review & Fix",
+            "permission": null,
+            "keywords": [
+                "Verification Journal Rejected",
+                "rejected VJ",
+                "Review and Fix",
+                "resubmit validation",
+                "fix rejected journal",
+                "VJ ditolak",
+                "perbaiki VJ"
+            ],
+            "description": "Creators see a red Verification Journal(s) Rejected banner with reason and Review & Fix. Bank VJs open Bank Transaction edit; others open Edit Details. Saving corrections resets status to Pending (no separate resubmit button). Update SAP and Cancel SAP are disabled while Rejected."
         }
     ]
 }

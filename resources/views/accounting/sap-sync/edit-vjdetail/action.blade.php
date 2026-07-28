@@ -72,14 +72,19 @@
 
                     <div class="form-group">
                         <label for="project">Project</label>
-                        <select id="project-{{ $model->id }}" name="project" class="form-control select2-modal">
-                            @foreach (\App\Models\Project::orderBy('code')->get() as $item)
-                                <option value="{{ $item->code }}"
-                                    {{ old('project', $model->project) == $item->code ? 'selected' : '' }}>
-                                    {{ $item->code }}
-                                </option>
-                            @endforeach
-                        </select>
+                        @if (auth()->user()->hasAnyRole(['superadmin', 'admin', 'cashier', 'cashier_bo']))
+                            <select id="project-{{ $model->id }}" name="project" class="form-control select2-modal">
+                                @foreach (\App\Models\Project::orderBy('code')->get() as $item)
+                                    <option value="{{ $item->code }}"
+                                        {{ old('project', $model->project) == $item->code ? 'selected' : '' }}>
+                                        {{ $item->code }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        @else
+                            <input type="text" class="form-control" value="{{ $model->project }}" readonly>
+                            <input type="hidden" name="project" value="{{ $model->project }}">
+                        @endif
                     </div>
 
                     <div class="form-group">
@@ -125,11 +130,13 @@
                 dropdownParent: $('#vjdetail-edit-{{ $model->id }}')
             });
 
+            @if (auth()->user()->hasAnyRole(['superadmin', 'admin', 'cashier', 'cashier_bo']))
             $('#project-{{ $model->id }}').select2({
                 theme: 'bootstrap4',
                 width: '100%',
                 dropdownParent: $('#vjdetail-edit-{{ $model->id }}')
             });
+            @endif
 
             $('#cost_center-{{ $model->id }}').select2({
                 theme: 'bootstrap4',

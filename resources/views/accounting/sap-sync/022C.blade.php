@@ -66,6 +66,7 @@
                                 <th>VerificationJ No</th>
                                 <th>Date</th>
                                 <th>Status</th>
+                                <th>Validation</th>
                                 <th>IDR</th>
                                 <th>SAPJ No</th>
                                 <th>Submitted By</th>
