@@ -9,65 +9,70 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Payment Request</h3>
-                    @if ($enable_payreq)
-                        <button type="button" class="btn btn-sm btn-primary float-right" data-toggle="modal"
-                            data-target="#new-payreq">
-                            <i class="fas fa-plus"></i> New Payreq
-                        </button>
-                    @else
-                        <button type="button" class="btn btn-sm btn-primary float-right" disabled>
-                            <i class="fas fa-plus"></i> New Payreq
-                        </button>
-                    @endif
-                    <br>
-                    @if ($overdue_payreqs > 0)
-                        <p class="text-red mb-1">Terdapat <b>{{ $overdue_payreqs }}</b> Payreq Advance yang Overdue.
-                            Silahkan buat Realization terlebih dahulu..
-                            <a href="{{ route('user-payreqs.overdue-documents.index') }}"
-                                class="text-red font-weight-bold ml-1"><u>Lihat dokumen overdue</u></a>
-                        </p>
-                    @endif
-                    @if ($overdue_realizations > 0)
-                        <p class="text-red mb-1">Terdapat <b>{{ $overdue_realizations }}</b> dokumen Realization yang belum
-                            diserahkan ke Accounting. Silahkan segera diselesaikan ..
-                            <a href="{{ route('user-payreqs.overdue-documents.index') }}"
-                                class="text-red font-weight-bold ml-1"><u>Lihat dokumen overdue</u></a>
-                        </p>
-                    @endif
-                </div>
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-file-invoice-dollar"></i> Payment Request
+                        </h3>
+                        @if ($enable_payreq)
+                            <button type="button" class="vj-btn vj-btn-primary" data-toggle="modal"
+                                data-target="#new-payreq">
+                                <i class="fas fa-plus"></i> New Payreq
+                            </button>
+                        @else
+                            <button type="button" class="vj-btn vj-btn-primary" disabled>
+                                <i class="fas fa-plus"></i> New Payreq
+                            </button>
+                        @endif
+                    </div>
 
-                <div class="card-body">
-                    <table id="mypayreqs" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Payreq No</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th>IDR</th>
-                                <th>Remarks</th>
-                                {{-- <th>Days</th> --}}
-                                <th></th>
-                            </tr>
-                        </thead>
-                    </table>
-                </div>
+                    @if ($overdue_payreqs > 0 || $overdue_realizations > 0)
+                        <div class="card-body border-bottom py-2">
+                            @if ($overdue_payreqs > 0)
+                                <div class="vj-alert vj-alert-danger mb-2">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    Terdapat <strong>{{ $overdue_payreqs }}</strong> Payreq Advance yang Overdue.
+                                    Silahkan buat Realization terlebih dahulu.
+                                    <a href="{{ route('user-payreqs.overdue-documents.index') }}"
+                                        class="font-weight-bold ml-1"><u>Lihat dokumen overdue</u></a>
+                                </div>
+                            @endif
+                            @if ($overdue_realizations > 0)
+                                <div class="vj-alert vj-alert-danger mb-0">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    Terdapat <strong>{{ $overdue_realizations }}</strong> dokumen Realization yang belum
+                                    diserahkan ke Accounting. Silahkan segera diselesaikan.
+                                    <a href="{{ route('user-payreqs.overdue-documents.index') }}"
+                                        class="font-weight-bold ml-1"><u>Lihat dokumen overdue</u></a>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
 
-                <!-- /.card-body -->
+                    <div class="card-body">
+                        <table id="mypayreqs" class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Payreq No</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>IDR</th>
+                                    <th>Remarks</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <!-- /.card -->
         </div>
-        <!-- /.col -->
     </div>
-    <!-- /.row -->
 
-    {{-- MODAL NEW PAYREQ --}}
     <div class="modal fade" id="new-payreq">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
@@ -77,28 +82,30 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body justify-content-between">
-                    <a href="{{ route('user-payreqs.advance.create') }}"
-                        class="btn btn-outline-success btn-lg btn-block">Advance</a>
-                    <a href="{{ route('user-payreqs.reimburse.create') }}"
-                        class="btn btn-outline-primary btn-lg btn-block">Reimburse</a>
+                <div class="modal-body">
+                    <div class="vj-modal-type-options">
+                        <a href="{{ route('user-payreqs.advance.create') }}" class="vj-btn vj-btn-success">
+                            <i class="fas fa-hand-holding-usd"></i> Advance
+                        </a>
+                        <a href="{{ route('user-payreqs.reimburse.create') }}" class="vj-btn vj-btn-primary">
+                            <i class="fas fa-receipt"></i> Reimburse
+                        </a>
+                    </div>
                 </div>
-            </div> <!-- /.modal-content -->
-        </div> <!-- /.modal-dialog -->
-    </div> <!-- /.modal -->
-
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('styles')
-    <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}" />
+    @include('partials.vj-soft-ui-styles')
 @endsection
 
 @section('scripts')
-    <!-- DataTables  & Plugins -->
     <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
@@ -134,7 +141,6 @@
                     {
                         data: 'remarks'
                     },
-                    // {data: 'days'},
                     {
                         data: 'action',
                         orderable: false,
@@ -151,7 +157,6 @@
     </script>
     <script>
         $(function() {
-            //Initialize Select2 Elements
             $('.select2bs4').select2({
                 theme: 'bootstrap4'
             })

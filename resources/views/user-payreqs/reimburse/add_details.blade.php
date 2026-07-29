@@ -9,17 +9,12 @@
 @endsection
 
 @section('styles')
-    <!-- jQuery -->
     <script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
-    <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
-    <!-- SweetAlert2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
-    <!-- Toastr -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
-
-    <!-- CSRF Token -->
+    @include('partials.vj-soft-ui-styles')
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <style>
@@ -51,47 +46,53 @@
 @endsection
 
 @section('content')
-    <!-- Add CSRF meta tag for AJAX requests -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <div class="row">
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Payreq No</h5>
-                <span class="description-text">{{ $payreq->nomor }}</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Payreq Type</h5>
-                <span class="description-text">Reimbursement</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Project</h5>
-                <span class="description-text">{{ auth()->user()->project }}</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Department</h5>
-                <span class="description-text">{{ auth()->user()->department->department_name }}</span>
-            </div>
-        </div>
-    </div>
-
-    {{-- PAYREQ REMARKS SECTION --}}
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card card-info">
-                <div class="card-header">
-                    <h4 class="card-title">Payreq Remarks</h4>
-                    <a href="{{ route('user-payreqs.index') }}" class="btn btn-sm btn-info float-right">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </a>
+    <div class="vj-show">
+        <div class="vj-stat-grid vj-stat-grid-4 mb-3">
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-hashtag"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Payreq No</span>
+                    <span class="vj-stat-value">{{ $payreq->nomor }}</span>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="vj-stat vj-stat-success">
+                <div class="vj-stat-icon"><i class="fas fa-receipt"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Payreq Type</span>
+                    <span class="vj-stat-value">Reimbursement</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-project-diagram"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Project</span>
+                    <span class="vj-stat-value">{{ auth()->user()->project }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-neutral">
+                <div class="vj-stat-icon"><i class="fas fa-building"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Department</span>
+                    <span class="vj-stat-value">{{ auth()->user()->department->department_name }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-comment-alt"></i> Payreq Remarks
+                        </h3>
+                        <a href="{{ route('user-payreqs.index') }}" class="vj-action-item vj-action-print">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back</span>
+                        </a>
+                    </div>
+                    <div class="card-body">
                     <div class="row">
                         <div class="col-12">
                             <div class="form-group">
@@ -117,7 +118,7 @@
                                     </select>
                                     <span class="input-group-append">
                                         <button type="button" id="update_rab"
-                                            class="btn btn-info btn-xs btn-flat">update</button>
+                                            class="vj-action-item vj-action-item-btn vj-action-export">update</button>
                                     </span>
                                 </div>
                             </div>
@@ -128,29 +129,32 @@
         </div>
     </div>
 
-    {{-- DETAILS SECTION --}}
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card card-info">
-                <div class="card-header">
-                    <h3 class="card-title">Reimbursement Details</h3>
-                    <form id="submit-payreq-form" action="{{ route('user-payreqs.reimburse.submit_payreq') }}"
-                        method="POST" class="d-inline">
-                        @csrf
-                        @if ($realization->realizationDetails->count() > 0)
-                            <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                            <button type="button" id="btn-submit-payreq" class="btn btn-sm btn-warning float-right mx-2">
-                                <i class="fas fa-paper-plane"></i> <b>Submit Payreq</b>
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-list"></i> Reimbursement Details
+                        </h3>
+                        <div class="vj-inline-actions">
+                            <form id="submit-payreq-form" action="{{ route('user-payreqs.reimburse.submit_payreq') }}"
+                                method="POST" class="d-inline">
+                                @csrf
+                                @if ($realization->realizationDetails->count() > 0)
+                                    <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+                                    <button type="button" id="btn-submit-payreq" class="vj-btn vj-btn-warning">
+                                        <i class="fas fa-paper-plane"></i> Submit Payreq
+                                    </button>
+                                @endif
+                            </form>
+                            <button type="button" class="vj-btn vj-btn-success" data-toggle="modal"
+                                data-target="#add-detail-modal">
+                                <i class="fas fa-plus"></i> Add Detail
                             </button>
-                        @endif
-                    </form>
-                    <button type="button" class="btn btn-sm btn-success float-right mr-2" data-toggle="modal"
-                        data-target="#add-detail-modal">
-                        <i class="fas fa-plus"></i> Add Detail
-                    </button>
-                </div>
-                <div class="card-body table-responsive p-0">
-                    <table class="table table-striped" id="details-table">
+                        </div>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-striped table-hover" id="details-table">
                         <thead>
                             <tr>
                                 <th width="5%">#</th>
@@ -180,14 +184,20 @@
                                         <td>{{ $item->expense_date ? $item->expense_date->format('d-M-Y') : '—' }}</td>
                                         <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                         <td>
-                                            <button type="button" class="btn btn-xs btn-info btn-edit"
-                                                data-id="{{ $item->id }}">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                            <a href="javascript:void(0)" onclick="confirmDelete({{ $item->id }})"
-                                                class="btn btn-xs btn-danger">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </a>
+                                            <div class="vj-inline-actions">
+                                                <button type="button"
+                                                    class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-edit btn-edit"
+                                                    data-id="{{ $item->id }}">
+                                                    <i class="fas fa-edit"></i>
+                                                    <span>Edit</span>
+                                                </button>
+                                                <button type="button"
+                                                    class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel"
+                                                    onclick="confirmDelete({{ $item->id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                    <span>Delete</span>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -224,7 +234,7 @@
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" style="max-width: 920px;">
             <div class="modal-content">
-                <div class="modal-header bg-info">
+                <div class="modal-header">
                     <h5 class="modal-title" id="addModalLabel">Add Reimbursement Detail</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -246,14 +256,15 @@
                                 </div>
                             </div>
                         @elseif($payreq->lot_no)
-                            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                            <div class="vj-alert vj-alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div>
                                     <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
                                     {{ $payreq->lot_no }}.
                                 </div>
-                                <a href="{{ route('user-payreqs.lotclaims.create') }}" class="btn btn-primary btn-sm"
-                                    style="text-decoration: none;" target="_blank">
-                                    <i class="fas fa-plus"></i> New LOTC
+                                <a href="{{ route('user-payreqs.lotclaims.create') }}"
+                                    class="vj-action-item vj-action-sap" target="_blank">
+                                    <i class="fas fa-plus"></i>
+                                    <span>New LOTC</span>
                                 </a>
                             </div>
                         @endif
@@ -374,8 +385,11 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" id="btn-submit-detail" class="btn btn-success">Add Detail</button>
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Close</span>
+                    </button>
+                    <button type="button" id="btn-submit-detail" class="vj-btn vj-btn-success">Add Detail</button>
                 </div>
             </div>
         </div>
@@ -387,7 +401,7 @@
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" style="max-width: 920px;">
             <div class="modal-content">
-                <div class="modal-header bg-info">
+                <div class="modal-header">
                     <h5 class="modal-title" id="editModalLabel">Edit Reimbursement Detail</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -410,12 +424,15 @@
                                 </div>
                             </div>
                         @elseif($payreq->lot_no)
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
-                                {{ $payreq->lot_no }}, please create new.
+                            <div class="vj-alert vj-alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <span>
+                                    <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
+                                    {{ $payreq->lot_no }}, please create new.
+                                </span>
                                 <a href="{{ route('user-payreqs.lotclaims.create') }}?lot_no={{ $payreq->lot_no }}"
-                                    class="btn btn-warning btn-sm ml-2">
-                                    <i class="fas fa-plus"></i> Create LOTC
+                                    class="vj-action-item vj-action-sap">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Create LOTC</span>
                                 </a>
                             </div>
                         @endif
@@ -526,8 +543,11 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" id="btn-update-detail" class="btn btn-primary">Update</button>
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Close</span>
+                    </button>
+                    <button type="button" id="btn-update-detail" class="vj-btn vj-btn-primary">Update</button>
                 </div>
             </div>
         </div>
@@ -730,12 +750,16 @@
                     <td>${formatExpenseDateDisplay(detail.expense_date)}</td>
                     <td class="text-right">${numberFormat(detail.amount)}</td>
                     <td>
-                        <button type="button" class="btn btn-xs btn-info btn-edit" data-id="${detail.id}">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <a href="javascript:void(0)" onclick="confirmDelete(${detail.id})" class="btn btn-xs btn-danger">
-                            <i class="fas fa-trash"></i> Delete
-                        </a>
+                        <div class="vj-inline-actions">
+                            <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-edit btn-edit" data-id="${detail.id}">
+                                <i class="fas fa-edit"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel" onclick="confirmDelete(${detail.id})">
+                                <i class="fas fa-trash"></i>
+                                <span>Delete</span>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -775,12 +799,16 @@
                 <td>${formatExpenseDateDisplay(detail.expense_date)}</td>
                 <td class="text-right">${numberFormat(detail.amount)}</td>
                 <td>
-                    <button type="button" class="btn btn-xs btn-info btn-edit" data-id="${detail.id}">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <a href="javascript:void(0)" onclick="confirmDelete(${detail.id})" class="btn btn-xs btn-danger">
-                        <i class="fas fa-trash"></i> Delete
-                    </a>
+                    <div class="vj-inline-actions">
+                        <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-edit btn-edit" data-id="${detail.id}">
+                            <i class="fas fa-edit"></i>
+                            <span>Edit</span>
+                        </button>
+                        <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel" onclick="confirmDelete(${detail.id})">
+                            <i class="fas fa-trash"></i>
+                            <span>Delete</span>
+                        </button>
+                    </div>
                 </td>
             `;
 
@@ -1070,10 +1098,9 @@
                             if ($('#btn-submit-payreq').length === 0) {
                                 // Create the submit button if it doesn't exist
                                 let submitBtn = `
-                                    @csrf
                                     <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                                    <button type="button" id="btn-submit-payreq" class="btn btn-sm btn-warning float-right mx-2">
-                                        <i class="fas fa-paper-plane"></i> <b>Submit Payreq</b>
+                                    <button type="button" id="btn-submit-payreq" class="vj-btn vj-btn-warning">
+                                        <i class="fas fa-paper-plane"></i> Submit Payreq
                                     </button>
                                 `;
                                 $('#submit-payreq-form').html(submitBtn);

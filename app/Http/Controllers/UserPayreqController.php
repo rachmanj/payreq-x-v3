@@ -264,49 +264,62 @@ class UserPayreqController extends Controller
 
                 $notif = '';
                 if ($notif_count > 0) {
-                    $notif = '<span class="badge badge-info">'.$notif_count.'</span>';
+                    $notif = '<span class="vj-chip vj-chip-primary">'.$notif_count.'</span>';
                 }
 
-                return '<a href="'.route('user-payreqs.show', $payreq->id).'">'.$payreq->nomor.'</a>'.$notif;
+                return '<a href="'.route('user-payreqs.show', $payreq->id).'" class="font-weight-bold">'.$payreq->nomor.'</a>'.$notif;
             })
             ->editColumn('type', function ($payreq) {
-                return ucfirst($payreq->type);
+                $chipClass = match ($payreq->type) {
+                    'advance' => 'vj-chip-info',
+                    'reimburse' => 'vj-chip-primary',
+                    default => 'vj-chip-neutral',
+                };
+
+                return '<span class="vj-chip '.$chipClass.'">'.ucfirst($payreq->type).'</span>';
             })
             ->editColumn('status', function ($payreq) {
-                $statusText = '';
+                $chips = [];
 
                 if ($payreq->status === 'submitted') {
-                    $statusText = 'Waiting Approval';
+                    $chips[] = '<span class="vj-chip vj-chip-warning">Waiting Approval</span>';
                 } elseif ($payreq->status === 'approved') {
-                    $approved_date = new \Carbon\Carbon($payreq->approved_at);
-                    $statusText = '<button class="btn btn-xs btn-success" style="pointer-events: none;">APPROVED at '.$approved_date->addHours(8)->format('d-M-Y H:i').' wita </button>';
+                    $approved_date = \Carbon\Carbon::parse($payreq->approved_at)->addHours(8);
+                    $chips[] = '<span class="vj-chip vj-chip-success">APPROVED at '.$approved_date->format('d-M-Y H:i').' wita</span>';
                 } elseif ($payreq->status === 'revise') {
-                    $statusText = '<span class="badge badge-warning">REVISED</span>';
+                    $chips[] = '<span class="vj-chip vj-chip-warning">REVISED</span>';
                 } elseif ($payreq->status === 'split') {
                     $amount_paid = Outgoing::where('payreq_id', $payreq->id)->sum('amount');
                     $amount_remain = $payreq->amount - $amount_paid;
-                    $statusText = '<button class="btn btn-xs btn-warning" style="pointer-events: none;">Payment SPLITTED</button>'.' Remain amount: '.number_format($amount_remain, 2);
+                    $chips[] = '<span class="vj-chip vj-chip-warning">Payment SPLITTED</span>';
+                    $chips[] = '<span class="vj-chip vj-chip-neutral">Remain: '.number_format($amount_remain, 2).'</span>';
                 } elseif ($payreq->status === 'paid') {
-                    // get difference between due_date and today
-                    $due_date = new \Carbon\Carbon($payreq->due_date);
-                    $today = new \Carbon\Carbon;
+                    $due_date = \Carbon\Carbon::parse($payreq->due_date);
+                    $today = \Carbon\Carbon::now();
                     $dif_days = $due_date->diffInDays($today);
 
-                    if ($today > $due_date) {
-                        $statusText = '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button><button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>'.$dif_days.'</b> days</button>';
+                    $chips[] = '<span class="vj-chip vj-chip-info"><strong>PAID</strong></span>';
+
+                    if ($today->greaterThan($due_date)) {
+                        $chips[] = '<span class="vj-chip vj-chip-danger">OVERDUE <strong>'.$dif_days.'</strong> days</span>';
                     } else {
-                        $statusText = '<button class="btn btn-xs btn-outline-info" style="pointer-events: none;"><b>PAID</b></button> and due in<b> '.$dif_days.' </b> days';
+                        $chips[] = '<span class="vj-chip vj-chip-neutral">Due in <strong>'.$dif_days.'</strong> days</span>';
                     }
+                } elseif ($payreq->status === 'draft') {
+                    $chips[] = '<span class="vj-chip vj-chip-neutral">Draft</span>';
+                } elseif ($payreq->status === 'rejected') {
+                    $chips[] = '<span class="vj-chip vj-chip-danger">Rejected</span>';
+                } elseif ($payreq->status === 'realization') {
+                    $chips[] = '<span class="vj-chip vj-chip-success">Realization</span>';
                 } else {
-                    $statusText = ucfirst($payreq->status);
+                    $chips[] = '<span class="vj-chip vj-chip-neutral">'.ucfirst($payreq->status).'</span>';
                 }
 
-                // Add indicator if realization was modified by approver (for reimburse type)
                 if ($payreq->type === 'reimburse' && $payreq->realization && $payreq->realization->modified_by_approver) {
-                    $statusText .= ' <span class="badge badge-warning" title="Modified by approver on '.$payreq->realization->modified_by_approver_at->format('d-M-Y H:i').'"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
+                    $chips[] = '<span class="vj-chip vj-chip-warning" title="Modified by approver on '.$payreq->realization->modified_by_approver_at->format('d-M-Y H:i').'"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
                 }
 
-                return $statusText;
+                return '<div class="vj-inline-actions flex-wrap">'.implode('', $chips).'</div>';
             })
             ->editColumn('amount', function ($payreq) {
                 if ($payreq->type === 'advance') {
@@ -344,7 +357,7 @@ class UserPayreqController extends Controller
                 return 'Submit at '.$submit_date->addHours(8)->format('d-M-Y H:i').' wita';
             })
             ->addColumn('action', 'user-payreqs.action')
-            ->rawColumns(['action', 'nomor', 'status'])
+            ->rawColumns(['action', 'nomor', 'type', 'status'])
             ->addIndexColumn()
             ->toJson();
     }

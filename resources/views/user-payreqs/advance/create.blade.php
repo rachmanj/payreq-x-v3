@@ -9,16 +9,20 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">New Payment Request - Advance</h3>
-                    <a href="{{ route('user-payreqs.index') }}" class="btn btn-sm btn-primary float-right"><i
-                            class="fas fa-arrow-left"></i> Back</a>
-                </div>
-                <div class="card-body">
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-success">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-hand-holding-usd"></i> New Payment Request — Advance
+                        </h3>
+                        <a href="{{ route('user-payreqs.index') }}" class="vj-action-item vj-action-print">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back</span>
+                        </a>
+                    </div>
+                    <div class="card-body">
                     <form action="{{ route('user-payreqs.advance.proses') }}" method="POST">
                         @csrf
 
@@ -109,21 +113,18 @@
                                         </div>
                                     </div>
                                     <div class="form-group">
-                                        <button type="button" class="btn btn-primary" id="search_lot">
+                                        <button type="button" class="vj-btn vj-btn-primary" id="search_lot">
                                             <i class="fas fa-search"></i> Search
                                         </button>
                                     </div>
-                                    <div id="lot_search_error" class="alert alert-danger alert-dismissible fade show"
+                                    <div id="lot_search_error" class="vj-alert vj-alert-danger"
                                         style="display: none;">
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
                                         <span class="error-message"></span>
                                     </div>
 
                                     <div id="lot_search_results" style="display: none;">
                                         <div class="table-responsive">
-                                            <table class="table table-bordered table-striped">
+                                            <table class="table table-bordered table-striped table-hover">
                                                 <thead>
                                                     <tr>
                                                         <th>LOT Number</th>
@@ -146,11 +147,11 @@
                                 aria-labelledby="lotDetailModalLabel" aria-hidden="true">
                                 <div class="modal-dialog modal-lg" role="document">
                                     <div class="modal-content">
-                                        <div class="modal-header bg-gradient-primary">
+                                        <div class="modal-header">
                                             <h5 class="modal-title" id="lotDetailModalLabel">
                                                 <i class="fas fa-plane-departure mr-2"></i>LOT Detail
                                             </h5>
-                                            <button type="button" class="close text-white" data-dismiss="modal"
+                                            <button type="button" class="close" data-dismiss="modal"
                                                 aria-label="Close">
                                                 <span aria-hidden="true">&times;</span>
                                             </button>
@@ -164,8 +165,7 @@
                                                         <p class="text-muted mb-0 small" id="modal_travel_date"></p>
                                                     </div>
                                                     <div>
-                                                        <span class="badge badge-lg px-3 py-2"
-                                                            id="modal_status_badge"></span>
+                                                        <span class="vj-chip vj-chip-neutral" id="modal_status_badge"></span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -331,11 +331,13 @@
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                                                <i class="fas fa-times mr-1"></i> Close
+                                            <button type="button" class="vj-action-item vj-action-print"
+                                                data-dismiss="modal">
+                                                <i class="fas fa-times"></i>
+                                                <span>Close</span>
                                             </button>
-                                            <button type="button" class="btn btn-primary" id="modal_pick_lot">
-                                                <i class="fas fa-check mr-1"></i> Pick LOT
+                                            <button type="button" class="vj-btn vj-btn-success" id="modal_pick_lot">
+                                                <i class="fas fa-check"></i> Pick LOT
                                             </button>
                                         </div>
                                     </div>
@@ -412,7 +414,7 @@
                                 @enderror
                             </div>
 
-                            <div id="advance-budget-legacy" class="border rounded p-3 mb-3 bg-light" style="display:none;">
+                            <div id="advance-budget-legacy" class="vj-form-panel" style="display:none;">
                                 <div class="form-group mb-0">
                                     <label for="rab_id_legacy">RAB No</label>
                                     <select name="rab_id" id="rab_id_legacy"
@@ -434,7 +436,7 @@
                                 </div>
                             </div>
 
-                            <div id="advance-budget-multi" class="border rounded p-3 mb-3 bg-light"
+                            <div id="advance-budget-multi" class="vj-form-panel"
                                 style="display:none;">
                                 <div class="form-group mb-2">
                                     <label>Anggaran allocation rows</label>
@@ -488,7 +490,7 @@
                                                         </td>
                                                         <td class="text-center align-middle">
                                                             <button type="button"
-                                                                class="btn btn-sm btn-outline-danger btn-remove-allocation-row"
+                                                                class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel btn-remove-allocation-row"
                                                                 title="Remove row">&times;</button>
                                                         </td>
                                                     </tr>
@@ -496,13 +498,16 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2"
-                                        id="btn-add-allocation-row">Add row</button>
+                                    <button type="button" class="vj-action-item vj-action-export mt-2"
+                                        id="btn-add-allocation-row">
+                                        <i class="fas fa-plus"></i>
+                                        <span>Add row</span>
+                                    </button>
                                 </div>
                             </div>
                         @else
                             <input type="hidden" name="budget_link_mode" value="legacy">
-                            <div id="advance-budget-legacy" class="border rounded p-3 mb-3 bg-light">
+                            <div id="advance-budget-legacy" class="vj-form-panel">
                                 <div class="form-group mb-0">
                                     <label for="rab_id_legacy">RAB No</label>
                                     <select name="rab_id" id="rab_id_legacy"
@@ -525,16 +530,14 @@
                             </div>
                         @endif
 
-                        <div class="card-footer">
-                            <div class="row">
-                                <div class="col-6">
-                                    <button type="submit" class="btn btn-primary btn-block" id="btn-draft"><i
-                                            class="fas fa-save"></i> Save as Draft</button>
-                                </div>
-                                <div class="col-6">
-                                    <button type="submit" class="btn btn-warning btn-block" id="btn-submit"><i
-                                            class="fas fa-paper-plane"></i> Save and Submit</button>
-                                </div>
+                        <div class="vj-actions vj-form-actions">
+                            <div class="vj-actions-primary">
+                                <button type="submit" class="vj-btn vj-btn-primary" id="btn-draft">
+                                    <i class="fas fa-save"></i> Save as Draft
+                                </button>
+                                <button type="submit" class="vj-btn vj-btn-warning" id="btn-submit">
+                                    <i class="fas fa-paper-plane"></i> Save and Submit
+                                </button>
                             </div>
                         </div>
                     </form>
@@ -546,9 +549,9 @@
 @endsection
 
 @section('styles')
-    <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    @include('partials.vj-soft-ui-styles')
     <style>
         .overlay {
             position: absolute;
@@ -703,9 +706,10 @@
                             <td>${lot.traveler?.position?.department?.department_name || 'N/A'}</td>
                             <td>${lot.project?.project_code || 'N/A'}</td>
                             <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-info view-lot-detail"
+                                <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-export view-lot-detail"
                                     data-lot='${JSON.stringify(lot)}'>
-                                    <i class="fas fa-eye"></i> Detail
+                                    <i class="fas fa-eye"></i>
+                                    <span>Detail</span>
                                 </button>
                             </td>
                         </tr>
@@ -723,16 +727,21 @@
 
                 // Set status badge (use lot.status from payload)
                 const status = lot.status || 'N/A';
-                let badgeClass = 'badge-secondary';
+                let chipClass = 'vj-chip-neutral';
                 const normalizedStatus = String(status).toLowerCase();
-                if (['approved', 'open', 'active'].includes(normalizedStatus)) badgeClass = 'badge-success';
-                if (['rejected', 'declined', 'closed'].includes(normalizedStatus)) badgeClass =
-                    'badge-danger';
-                if (['pending', 'in review'].includes(normalizedStatus)) badgeClass = 'badge-warning';
+                if (['approved', 'open', 'active'].includes(normalizedStatus)) {
+                    chipClass = 'vj-chip-success';
+                }
+                if (['rejected', 'declined', 'closed'].includes(normalizedStatus)) {
+                    chipClass = 'vj-chip-danger';
+                }
+                if (['pending', 'in review'].includes(normalizedStatus)) {
+                    chipClass = 'vj-chip-warning';
+                }
 
                 $('#modal_status_badge')
-                    .removeClass('badge-secondary badge-success badge-danger badge-warning')
-                    .addClass(badgeClass)
+                    .removeClass('vj-chip-neutral vj-chip-success vj-chip-danger vj-chip-warning')
+                    .addClass('vj-chip ' + chipClass)
                     .text(String(status).toUpperCase());
 
                 // Travel Information
@@ -803,15 +812,18 @@
 
             // Function to show selected LOT
             function showSelectedLot(lotNo) {
-                // Show selected LOT number
                 if (!$('#selected_lot_display').length) {
                     $('#lot_search_form').after(`
-                        <div class="alert alert-info" id="selected_lot_display">
+                        <div class="vj-alert vj-alert-secondary" id="selected_lot_display">
+                            <i class="fas fa-check-circle mr-1"></i>
                             Selected LOT Number: <strong>${lotNo}</strong>
                         </div>
                     `);
                 } else {
-                    $('#selected_lot_display').html(`Selected LOT Number: <strong>${lotNo}</strong>`);
+                    $('#selected_lot_display').html(`
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Selected LOT Number: <strong>${lotNo}</strong>
+                    `);
                 }
             }
 

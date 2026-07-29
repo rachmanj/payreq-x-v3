@@ -1,3 +1,19 @@
+### [071] VJ Soft UI on Reimburse add details (2026-07-29) ✅ COMPLETE
+
+**Challenge:** Post-store reimburse flow (`reimburse/store` → `add_details.blade.php`) used AdminLTE description blocks, `card-info`, Bootstrap table/modal buttons.
+
+**Solution:** `vj-stat-grid-4` header tiles; soft `card-outline` panels; `vj-btn` / `vj-action-item` for table and header actions; `vj-alert-warning` for LOTC; VJ modal footers; JS row builders updated for chip-style actions.
+
+---
+
+### [070] VJ Soft UI on User Payreqs index (2026-07-29) ✅ COMPLETE
+
+**Challenge:** `user-payreqs` index used default AdminLTE card, Bootstrap badges/buttons in DataTables status column, and block modal CTAs — inconsistent with VJ Soft UI on SAP Sync show.
+
+**Solution:** Wrapped page in `.vj-show`; soft card header + `vj-btn-primary` New Payreq; overdue warnings as `vj-alert-danger`; modal Advance/Reimburse as `vj-btn`; DataTables type/status/nomor columns and row actions use `vj-chip` / `vj-action-item` chips. Extracted shared styles to `resources/views/partials/vj-soft-ui-styles.blade.php` (SAP Sync show now includes same partial).
+
+---
+
 ### [069] VJ Soft UI on SAP Sync show (2026-07-28) ✅ COMPLETE
 
 **Challenge:** SAP Sync show page used bulky AdminLTE `btn-block` actions, solid badges, and `info-box` blocks — poor hierarchy and inconsistent with desired soft chip aesthetic.
