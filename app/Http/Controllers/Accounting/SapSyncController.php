@@ -108,8 +108,12 @@ class SapSyncController extends Controller
     {
         $verification_journal = VerificationJournal::findOrFail($request->verification_journal_id);
 
-        if (! $this->canManageSapInfoForVj(auth()->user(), $verification_journal)) {
+        if (! $this->canManageSapInfo(auth()->user())) {
             abort(403, 'You do not have permission to update SAP info.');
+        }
+
+        if (! $this->canManageSapInfoForVj(auth()->user(), $verification_journal)) {
+            abort(403, 'This journal must be validated before SAP info can be updated.');
         }
 
         try {
@@ -188,8 +192,12 @@ class SapSyncController extends Controller
             abort(404);
         }
 
-        if (! $this->canManageSapInfoForVj(auth()->user(), $verification_journal)) {
+        if (! $this->canManageSapInfo(auth()->user())) {
             abort(403, 'You do not have permission to cancel SAP info.');
+        }
+
+        if (! $this->canManageSapInfoForVj(auth()->user(), $verification_journal)) {
+            abort(403, 'This journal must be validated before SAP info can be canceled.');
         }
 
         $this->assertProjectAccessible(auth()->user(), $verification_journal->project);
@@ -610,7 +618,7 @@ class SapSyncController extends Controller
     protected function canManageSapInfoForVj($user, VerificationJournal $vj): bool
     {
         return $this->canManageSapInfo($user)
-            && $vj->validation_status !== VerificationJournal::VALIDATION_REJECTED;
+            && $vj->validation_status === VerificationJournal::VALIDATION_VALIDATED;
     }
 
     protected function canEditVjDetails($user, VerificationJournal $vj): bool
@@ -1075,7 +1083,8 @@ class SapSyncController extends Controller
     public function vjPendingValidationCount($user): int
     {
         $query = VerificationJournal::query()
-            ->where('validation_status', VerificationJournal::VALIDATION_PENDING);
+            ->where('validation_status', VerificationJournal::VALIDATION_PENDING)
+            ->whereNull('sap_journal_no');
 
         if ($this->isBoRestrictedUser($user)) {
             $query->where('project', '001H');

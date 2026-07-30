@@ -106,4 +106,22 @@ class DashboardVjPendingValidationTest extends TestCase
             ->assertSee('VJ pending validation', false)
             ->assertSee('data-dashboard-pending-vj-validation="1"', false);
     }
+
+    public function test_posted_pending_journal_is_excluded_from_dashboard_count(): void
+    {
+        $validator = $this->createValidator();
+
+        $this->createJournal([
+            'validation_status' => VerificationJournal::VALIDATION_PENDING,
+            'sap_journal_no' => '267673958',
+        ]);
+        $this->createJournal([
+            'validation_status' => VerificationJournal::VALIDATION_PENDING,
+        ]);
+
+        $this->actingAs($validator)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertSee('data-dashboard-pending-vj-validation="1"', false);
+    }
 }

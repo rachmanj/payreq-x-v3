@@ -1,3 +1,11 @@
+### [072] VJ validation bypass via Update SAP Info (2026-07-30) ✅ COMPLETE
+
+**Challenge:** VJ `26VJ00102524` was posted to SAP (`sap_journal_no = 267673958`) while `validation_status` remained **pending**. Dashboard **VJ pending validation** showed **1** but validators could not act (Validate/Reject hidden when already posted). Root cause: `canManageSapInfoForVj()` only blocked **Rejected**, not **Pending** — manual **Update SAP Info** bypassed the validation gate that `submitToSap()` correctly enforces.
+
+**Solution:** `canManageSapInfoForVj()` now requires `validation_status === validated`. Split 403 messages in `update_sap_info` / `cancel_sap_info` (permission vs not-yet-validated). `vjPendingValidationCount()` excludes journals with `sap_journal_no` set. Migration backfills posted journals with non-validated status to `validated`. Tests in `SapSyncVjValidationTest` and `DashboardVjPendingValidationTest`.
+
+---
+
 ### [071] VJ Soft UI on Reimburse add details (2026-07-29) ✅ COMPLETE
 
 **Challenge:** Post-store reimburse flow (`reimburse/store` → `add_details.blade.php`) used AdminLTE description blocks, `card-info`, Bootstrap table/modal buttons.

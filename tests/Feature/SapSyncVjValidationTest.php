@@ -276,13 +276,67 @@ class SapSyncVjValidationTest extends TestCase
     public function test_cashier_can_see_sap_info_management_buttons(): void
     {
         $user = $this->createCashierUser();
-        $journal = $this->createJournal();
+        $journal = $this->createJournal([
+            'validation_status' => VerificationJournal::VALIDATION_VALIDATED,
+            'validated_by' => $user->id,
+            'validated_at' => now(),
+        ]);
 
         $this->actingAs($user)
             ->get(route('accounting.sap-sync.show', $journal->id))
             ->assertOk()
             ->assertSee('data-target="#update-sap"', false)
             ->assertSee('cancel-sap-info-form', false);
+    }
+
+    public function test_cashier_cannot_manage_sap_info_while_pending(): void
+    {
+        $user = $this->createCashierUser();
+        $journal = $this->createJournal([
+            'validation_status' => VerificationJournal::VALIDATION_PENDING,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('accounting.sap-sync.show', $journal->id))
+            ->assertOk()
+            ->assertSee('cancel-sap-info-form', false)
+            ->assertSee('disabled', false)
+            ->assertDontSee('id="update-sap"', false);
+
+        $this->actingAs($user)
+            ->post(route('accounting.sap-sync.update_sap_info'), [
+                'verification_journal_id' => $journal->id,
+                'sap_posting_date' => now()->toDateString(),
+                'sap_journal_no' => 'SAP-123',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->post(route('accounting.sap-sync.cancel_sap_info'), [
+                'verification_journal_id' => $journal->id,
+            ])
+            ->assertForbidden();
+
+        $journal->refresh();
+        $this->assertNull($journal->sap_journal_no);
+    }
+
+    public function test_update_sap_info_requires_validated_status(): void
+    {
+        $user = $this->createCashierUser();
+        $journal = $this->createJournal([
+            'validation_status' => VerificationJournal::VALIDATION_PENDING,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('accounting.sap-sync.update_sap_info'), [
+                'verification_journal_id' => $journal->id,
+                'sap_posting_date' => now()->toDateString(),
+                'sap_journal_no' => 'SAP-BYPASS',
+            ])
+            ->assertForbidden();
+
+        $this->assertNull($journal->fresh()->sap_journal_no);
     }
 
     public function test_site_cashier_cannot_see_sap_info_management_buttons(): void
