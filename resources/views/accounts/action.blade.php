@@ -86,6 +86,13 @@
               </div>
             @enderror
           </div>
+          <div class="form-group">
+            <label for="is_active_{{ $model->id }}">Status</label>
+            <div class="form-check">
+              <input type="checkbox" name="is_active" id="is_active_{{ $model->id }}" class="form-check-input" value="1" {{ old('is_active', $model->is_active) ? 'checked' : '' }}>
+              <label class="form-check-label" for="is_active_{{ $model->id }}">Active</label>
+            </div>
+          </div>
         </div> <!-- /.modal-body -->
 
         <div class="modal-footer float-left">

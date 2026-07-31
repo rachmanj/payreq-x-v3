@@ -812,44 +812,55 @@
     @endphp
 
     @push('scripts')
+        @include('partials.vj-soft-ui-swal')
         <script>
             const submissionMeta = @json($submissionMeta);
+            const vjSwalWideClass = {
+                popup: 'vj-swal-popup vj-swal-popup-wide',
+            };
 
             function buildSubmissionSummaryHtml(meta) {
                 const journal = meta.journal;
                 const attempts = meta.attempts;
+                const statusChipClass = journal.status_badge === 'success' ? 'vj-chip-success' : 'vj-chip-warning';
                 const attemptsHtml = attempts.count > 0 ? `
-                    <div class="mt-3 alert alert-danger">
-                        <h6 class="font-weight-bold"><i class="fas fa-history"></i> Previous Submission Attempts</h6>
-                        <p class="mb-1"><strong>Attempts:</strong> ${attempts.count}</p>
-                        ${attempts.lastAttemptAt ? `<p class="mb-1"><strong>Last Attempt:</strong> ${attempts.lastAttemptAt}</p>` : ''}
-                        ${attempts.lastError ? `<div class="alert alert-danger mb-0"><code>${attempts.lastError}</code></div>` : ''}
+                    <div class="vj-alert vj-alert-danger">
+                        <div class="font-weight-bold mb-2"><i class="fas fa-history"></i> Previous Submission Attempts</div>
+                        <dl class="vj-swal-meta">
+                            <dt>Attempts</dt><dd>${attempts.count}</dd>
+                            ${attempts.lastAttemptAt ? `<dt>Last Attempt</dt><dd>${attempts.lastAttemptAt}</dd>` : ''}
+                        </dl>
+                        ${attempts.lastError ? `<code class="d-block mt-2">${attempts.lastError}</code>` : ''}
                     </div>
                 ` : '';
 
                 return `
-                    <div class="text-left">
+                    <div class="vj-swal-summary">
                         <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="font-weight-bold"><i class="fas fa-info-circle text-primary"></i> Journal Information</h6>
-                                <table class="table table-sm table-borderless mb-0">
-                                    <tr><td><strong>Journal No:</strong></td><td>${journal.number}</td></tr>
-                                    <tr><td><strong>Date:</strong></td><td>${journal.date}</td></tr>
-                                    <tr><td><strong>Project:</strong></td><td><span class="badge badge-info">${journal.project}</span></td></tr>
-                                    <tr><td><strong>Type:</strong></td><td><span class="badge badge-secondary">${journal.type}</span></td></tr>
-                                </table>
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <div class="vj-swal-panel">
+                                    <div class="vj-swal-panel-title"><i class="fas fa-info-circle"></i> Journal Information</div>
+                                    <dl class="vj-swal-meta">
+                                        <dt>Journal No</dt><dd>${journal.number}</dd>
+                                        <dt>Date</dt><dd>${journal.date}</dd>
+                                        <dt>Project</dt><dd><span class="vj-chip vj-chip-info">${journal.project}</span></dd>
+                                        <dt>Type</dt><dd><span class="vj-chip vj-chip-neutral">${journal.type}</span></dd>
+                                    </dl>
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <h6 class="font-weight-bold"><i class="fas fa-chart-line text-success"></i> Financial Summary</h6>
-                                <table class="table table-sm table-borderless mb-0">
-                                    <tr><td><strong>Total Amount:</strong></td><td><strong>${journal.amount}</strong></td></tr>
-                                    <tr><td><strong>Total Lines:</strong></td><td><strong>${journal.lines}</strong></td></tr>
-                                    <tr><td><strong>Status:</strong></td><td><span class="badge badge-${journal.status_badge}">${journal.status}</span></td></tr>
-                                </table>
+                                <div class="vj-swal-panel">
+                                    <div class="vj-swal-panel-title"><i class="fas fa-chart-line"></i> Financial Summary</div>
+                                    <dl class="vj-swal-meta">
+                                        <dt>Total Amount</dt><dd><strong>${journal.amount}</strong></dd>
+                                        <dt>Total Lines</dt><dd>${journal.lines}</dd>
+                                        <dt>Status</dt><dd><span class="vj-chip ${statusChipClass}">${journal.status}</span></dd>
+                                    </dl>
+                                </div>
                             </div>
                         </div>
-                        <div class="mt-3 alert alert-warning">
-                            <h6 class="font-weight-bold"><i class="fas fa-exclamation-triangle"></i> Important Notes</h6>
+                        <div class="vj-alert vj-alert-warning">
+                            <div class="font-weight-bold mb-2"><i class="fas fa-exclamation-triangle"></i> Important Notes</div>
                             <ul class="mb-0 pl-3">
                                 <li>The journal will be saved as a <strong>draft</strong> in SAP B1.</li>
                                 <li>Please ensure account codes, projects, and cost centers exist in SAP B1.</li>
@@ -868,13 +879,13 @@
 
                 if ($validateBtn.length) {
                     $validateBtn.on('click', function() {
-                        Swal.fire({
+                        VjSwal.fire({
                             title: 'Validate this verification journal?',
                             html: '<p>This journal will be marked as validated and can then be submitted to SAP B1.</p>',
                             icon: 'question',
                             showCancelButton: true,
                             confirmButtonText: 'Yes, validate',
-                            cancelButtonText: 'Cancel',
+                            confirmVariant: 'primary',
                             reverseButtons: true,
                         }).then((result) => {
                             if (result.isConfirmed) {
@@ -893,22 +904,22 @@
                         const reason = $('#vj_rejection_reason').val().trim();
 
                         if (!reason) {
-                            Swal.fire({
+                            VjSwal.fire({
                                 title: 'Reason required',
                                 text: 'Please provide a reason for rejection.',
                                 icon: 'warning',
+                                confirmVariant: 'warning',
                             });
                             return;
                         }
 
-                        Swal.fire({
+                        VjSwal.fire({
                             title: 'Reject this verification journal?',
                             html: '<p>The creator will see your rejection reason and can fix the journal before resubmitting for validation.</p>',
                             icon: 'warning',
                             showCancelButton: true,
                             confirmButtonText: 'Yes, reject',
-                            cancelButtonText: 'Cancel',
-                            confirmButtonColor: '#dc3545',
+                            confirmVariant: 'danger',
                             reverseButtons: true,
                         }).then((result) => {
                             if (result.isConfirmed) {
@@ -922,18 +933,18 @@
 
                 if ($submitBtn.length) {
                     $submitBtn.on('click', function() {
-                        Swal.fire({
+                        VjSwal.fire({
                             title: 'Submit this journal to SAP B1?',
                             html: buildSubmissionSummaryHtml(submissionMeta),
                             icon: 'warning',
                             showCancelButton: true,
                             confirmButtonText: 'Yes, submit to SAP B1',
-                            cancelButtonText: 'Cancel',
+                            confirmVariant: 'warning',
                             reverseButtons: true,
-                            width: '60rem',
+                            customClass: vjSwalWideClass,
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                Swal.fire({
+                                VjSwal.fire({
                                     title: 'Submitting...',
                                     html: 'Please wait while we save this journal as a draft in SAP B1.',
                                     allowOutsideClick: false,
@@ -962,13 +973,13 @@
 
                         e.preventDefault();
                         const form = this;
-                        Swal.fire({
+                        VjSwal.fire({
                             title: 'Cancel SAP Info?',
                             html: '<p>This will clear the SAP submission info for this journal. This action cannot be undone.</p>',
                             icon: 'warning',
                             showCancelButton: true,
                             confirmButtonText: 'Yes, cancel it',
-                            cancelButtonText: 'Keep SAP Info',
+                            confirmVariant: 'danger',
                             reverseButtons: true,
                         }).then((result) => {
                             if (result.isConfirmed) {
@@ -986,26 +997,26 @@
                         const reason = $('#reverse_reason').val().trim();
 
                         if (!reason) {
-                            Swal.fire({
+                            VjSwal.fire({
                                 title: 'Reason required',
                                 text: 'Please provide a reason for the reversal.',
                                 icon: 'warning',
+                                confirmVariant: 'warning',
                             });
                             return;
                         }
 
-                        Swal.fire({
+                        VjSwal.fire({
                             title: 'Reverse this journal in SAP B1?',
                             html: '<p>This will cancel the journal in SAP B1 and unlock it in this app for correction.</p>',
                             icon: 'warning',
                             showCancelButton: true,
                             confirmButtonText: 'Yes, reverse in SAP B1',
-                            cancelButtonText: 'Cancel',
-                            confirmButtonColor: '#dc3545',
+                            confirmVariant: 'danger',
                             reverseButtons: true,
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                Swal.fire({
+                                VjSwal.fire({
                                     title: 'Reversing...',
                                     html: 'Please wait while we cancel this journal in SAP B1.',
                                     allowOutsideClick: false,
@@ -1031,21 +1042,22 @@
                         const reason = $('#manual_reverse_reason').val().trim();
 
                         if (!reason) {
-                            Swal.fire({
+                            VjSwal.fire({
                                 title: 'Reason required',
                                 text: 'Please provide a reason for the reversal.',
                                 icon: 'warning',
+                                confirmVariant: 'warning',
                             });
                             return;
                         }
 
-                        Swal.fire({
+                        VjSwal.fire({
                             title: 'Record manual reversal?',
                             html: '<p>Confirm that you have already reversed this journal in SAP B1. This will unlock the journal in this app.</p>',
                             icon: 'warning',
                             showCancelButton: true,
                             confirmButtonText: 'Yes, record & unlock',
-                            cancelButtonText: 'Cancel',
+                            confirmVariant: 'warning',
                             reverseButtons: true,
                         }).then((result) => {
                             if (result.isConfirmed) {

@@ -30,6 +30,7 @@
             <th>Type</th>
             <th>Project</th>
             <th>Description</th>
+            <th>Active</th>
             <th></th>
           </tr>
           </thead>
@@ -194,6 +195,7 @@
           {data: 'type'},
           {data: 'project'},
           {data: 'description'},
+          {data: 'is_active'},
           {data: 'action', orderable: false, searchable: false},
         ],
         fixedHeader: true,

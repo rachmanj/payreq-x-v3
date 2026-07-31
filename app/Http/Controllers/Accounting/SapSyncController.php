@@ -1024,16 +1024,23 @@ class SapSyncController extends Controller
             ], 422);
         }
 
+        $account = Account::where('account_number', $request->account_code)->first();
+
+        if (! $account) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selected account not found.',
+            ], 422);
+        }
+
+        if (! $account->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selected account is inactive.',
+            ], 422);
+        }
+
         if ($vj_detail->debit_credit === 'credit') {
-            $account = Account::where('account_number', $request->account_code)->first();
-
-            if (! $account) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Selected account not found.',
-                ], 422);
-            }
-
             if (! in_array($account->type, ['cash', 'bank'])) {
                 return response()->json([
                     'success' => false,

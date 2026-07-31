@@ -51,17 +51,7 @@
                         <label for="account_code">Account Number</label>
                         <select id="account_code-{{ $model->id }}" name="account_code"
                             class="form-control select2-modal">
-                            @php
-                                if ($model->debit_credit === 'credit' && $vj) {
-                                    $accounts = \App\Models\Account::whereIn('type', ['cash', 'bank'])
-                                        ->where('project', $vj->project)
-                                        ->orderBy('account_number')
-                                        ->get();
-                                } else {
-                                    $accounts = \App\Models\Account::orderBy('account_number')->get();
-                                }
-                            @endphp
-                            @foreach ($accounts as $item)
+                            @foreach (\App\Models\Account::forVjDetailSelection($model->debit_credit, $vj?->project) as $item)
                                 <option value="{{ $item->account_number }}"
                                     {{ old('account_code', $model->account_code) == $item->account_number ? 'selected' : '' }}>
                                     {{ $item->account_number . ' - ' . $item->account_name }}

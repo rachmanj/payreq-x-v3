@@ -53,7 +53,10 @@ class AccountController extends Controller
             return redirect()->route('accounts.index')->with('error', 'Account number already exists!');
         }
 
-        Account::where('id', $id)->update(array_merge($validated, $request->description ? ['description' => $request->description] : []));
+        Account::where('id', $id)->update(array_merge($validated, [
+            'description' => $request->description,
+            'is_active' => $request->has('is_active') ? 1 : 0,
+        ]));
 
         return redirect()->route('accounts.index')->with('success', 'Account updated successfully!');
     }
@@ -144,9 +147,7 @@ class AccountController extends Controller
 
     public function data()
     {
-        $userRoles = app(UserController::class)->getUserRoles();
-
-        if (in_array(['superadmin', 'admin', 'cashier'], $userRoles)) {
+        if (auth()->user()->hasAnyRole(['superadmin', 'admin', 'cashier'])) {
             $accounts = Account::orderBy('account_number', 'asc')
                 ->get();
         } else {
@@ -160,8 +161,13 @@ class AccountController extends Controller
 
         return datatables()->of($accounts)
             ->addIndexColumn()
+            ->editColumn('is_active', function ($account) {
+                return $account->is_active
+                    ? '<span class="badge badge-success">Active</span>'
+                    : '<span class="badge badge-secondary">Inactive</span>';
+            })
             ->addColumn('action', 'accounts.action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'is_active'])
             ->toJson();
     }
 

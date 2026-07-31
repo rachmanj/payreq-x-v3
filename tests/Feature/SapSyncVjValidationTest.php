@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
 use App\Models\User;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
@@ -213,6 +214,14 @@ class SapSyncVjValidationTest extends TestCase
             'project' => '000H',
             'created_by' => $user->id,
         ]);
+        Account::query()->create([
+            'account_number' => '61202001',
+            'account_name' => 'Test Expense',
+            'type' => 'expense',
+            'project' => '000H',
+            'is_active' => 1,
+            'is_hidden' => 0,
+        ]);
         $detail = VerificationJournalDetail::query()->create([
             'verification_journal_id' => $journal->id,
             'realization_date' => now()->toDateString(),
@@ -247,6 +256,14 @@ class SapSyncVjValidationTest extends TestCase
         $journal = $this->createJournal([
             'project' => '022C',
             'created_by' => $user->id,
+        ]);
+        Account::query()->create([
+            'account_number' => '61202001',
+            'account_name' => 'Test Expense',
+            'type' => 'expense',
+            'project' => '022C',
+            'is_active' => 1,
+            'is_hidden' => 0,
         ]);
         $detail = VerificationJournalDetail::query()->create([
             'verification_journal_id' => $journal->id,
