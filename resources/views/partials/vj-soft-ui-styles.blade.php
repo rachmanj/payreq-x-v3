@@ -661,7 +661,9 @@
     cursor: not-allowed;
 }
 
-.vj-show #mypayreqs thead th {
+.vj-show #mypayreqs thead th,
+.vj-show #realizations thead th,
+.vj-show #details-table thead th {
     background: #f8f9fa;
     border-color: #e9ecef;
     color: #495057;
@@ -728,6 +730,101 @@
     background: #fff8e1;
     border-color: #ffe082;
     color: #856404;
+}
+
+/* SweetAlert2 — VJ Soft UI */
+.swal2-container.vj-swal-container {
+    background-color: rgba(33, 37, 41, 0.35) !important;
+}
+
+.vj-swal-popup.swal2-popup {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    padding: 1.1rem 1rem 0.9rem;
+    font-family: inherit;
+}
+
+.vj-swal-popup .swal2-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #343a40;
+    padding: 0 0.25rem;
+}
+
+.vj-swal-popup .swal2-html-container {
+    font-size: 0.875rem;
+    color: #6c757d;
+    line-height: 1.45;
+    margin: 0.35rem 0 0;
+}
+
+.vj-swal-popup .swal2-icon {
+    width: 3rem;
+    height: 3rem;
+    margin: 0.65rem auto 0.5rem;
+    border-width: 2px;
+}
+
+.vj-swal-popup .swal2-icon .swal2-icon-content {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.vj-swal-popup .swal2-icon.swal2-warning {
+    border-color: #ffe082;
+    color: #b8860b;
+}
+
+.vj-swal-popup .swal2-icon.swal2-warning .swal2-icon-content {
+    color: #b8860b;
+}
+
+.vj-swal-popup .swal2-icon.swal2-success {
+    border-color: #c8e6c9;
+    color: #198754;
+}
+
+.vj-swal-popup .swal2-icon.swal2-success [class^='swal2-success-line'] {
+    background-color: #198754;
+}
+
+.vj-swal-popup .swal2-icon.swal2-success .swal2-success-ring {
+    border-color: rgba(25, 135, 84, 0.3);
+}
+
+.vj-swal-popup .swal2-icon.swal2-error {
+    border-color: #ffcdd2;
+    color: #c62828;
+}
+
+.vj-swal-popup .swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+    background-color: #c62828;
+}
+
+.vj-swal-popup .swal2-icon.swal2-info {
+    border-color: #b2ebf2;
+    color: #0c6674;
+}
+
+.vj-swal-popup .swal2-icon.swal2-question {
+    border-color: #b8d4fe;
+    color: #0d47a1;
+}
+
+.vj-swal-actions.swal2-actions {
+    gap: 0.5rem;
+    margin: 0.85rem 0 0.15rem;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.vj-swal-actions .vj-btn,
+.vj-swal-actions .vj-action-item {
+    margin: 0;
+    min-width: 7rem;
+    justify-content: center;
 }
 
 </style>

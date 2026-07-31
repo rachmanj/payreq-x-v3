@@ -2,7 +2,7 @@
     aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-warning">
+            <div class="modal-header">
                 <h5 class="modal-title" id="bulkScanModalLabel">
                     <i class="fas fa-camera"></i> Scan Fuel Receipts
                     <small class="d-block text-muted font-weight-normal mt-1" style="font-size: 0.85rem;">Hanya Nota Pembelian Fuel</small>
@@ -19,7 +19,7 @@
                             multiple>
                     </div>
                     <div class="col-md-4">
-                        <button type="button" id="btn-bulk-scan-all" class="btn btn-info btn-block" disabled>
+                        <button type="button" id="btn-bulk-scan-all" class="vj-btn vj-btn-primary btn-block" disabled>
                             <i class="fas fa-search"></i> Scan All
                         </button>
                     </div>
@@ -64,12 +64,14 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" id="btn-bulk-save-all" class="btn btn-success" disabled>
+                <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                    <i class="fas fa-times"></i>
+                    <span>Close</span>
+                </button>
+                <button type="button" id="btn-bulk-save-all" class="vj-btn vj-btn-success" disabled>
                     <i class="fas fa-save"></i> Save All
                 </button>
             </div>
         </div>
     </div>
 </div>
-

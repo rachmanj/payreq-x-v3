@@ -1,3 +1,11 @@
+### [073] VJ Soft UI on User Payreqs Realizations (2026-07-31) ✅ COMPLETE
+
+**Challenge:** `/user-payreqs/realizations` index, show, create, add_details, and child partials used AdminLTE cards, Bootstrap badges/buttons, and description blocks — inconsistent with VJ Soft UI on sibling payreq pages.
+
+**Solution:** Applied `.vj-show` wrapper and shared partial across index, show, create, add_details; DataTables status column uses `vj-chip` (controller); row actions use `vj-action-item` chips; stat grid on show/add_details; VJ modal CTAs; bulk-scan modal updated. Extended table header styles in partial for `#realizations` and `#details-table`.
+
+---
+
 ### [072] VJ validation bypass via Update SAP Info (2026-07-30) ✅ COMPLETE
 
 **Challenge:** VJ `26VJ00102524` was posted to SAP (`sap_journal_no = 267673958`) while `validation_status` remained **pending**. Dashboard **VJ pending validation** showed **1** but validators could not act (Validate/Reject hidden when already posted). Root cause: `canManageSapInfoForVj()` only blocked **Rejected**, not **Pending** — manual **Update SAP Info** bypassed the validation gate that `submitToSap()` correctly enforces.

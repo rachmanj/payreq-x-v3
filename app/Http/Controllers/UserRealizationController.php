@@ -384,34 +384,44 @@ class UserRealizationController extends Controller
                 return $diff;
             })
             ->editColumn('status', function ($realization) {
-                $statusText = '';
+                $chips = [];
 
                 if ($realization->status === 'submitted') {
-                    $statusText = 'Waiting Approval';
+                    $chips[] = '<span class="vj-chip vj-chip-warning">Waiting Approval</span>';
                 } elseif ($realization->status === 'verification-complete') {
-                    $statusText = '<button class="btn btn-xs btn-outline-success mx-2" style="pointer-events: none;">Verification Complete</button>';
-                } else {
+                    $chips[] = '<span class="vj-chip vj-chip-success">Verification Complete</span>';
+                } elseif ($realization->status === 'rejected') {
+                    $chips[] = '<span class="vj-chip vj-chip-danger">Rejected</span>';
+                } elseif ($realization->status === 'draft') {
+                    $chips[] = '<span class="vj-chip vj-chip-neutral">Draft</span>';
+                } elseif ($realization->status === 'revise') {
+                    $chips[] = '<span class="vj-chip vj-chip-warning">Revise</span>';
+                } elseif ($realization->status === 'verification') {
+                    $chips[] = '<span class="vj-chip vj-chip-info">Verification</span>';
+                } elseif ($realization->status === 'approved') {
                     if ($realization->due_date == null) {
-                        $statusText = ucfirst($realization->status);
+                        $chips[] = '<span class="vj-chip vj-chip-success">Approved</span>';
                     } else {
                         $due_date = new \Carbon\Carbon($realization->due_date);
                         $today = new \Carbon\Carbon;
                         $dif_days = $due_date->diffInDays($today);
 
-                        if ($today > $due_date && $realization->status == 'approved') {
-                            $statusText = ucfirst($realization->status).'<button class="btn btn-xs btn-danger mx-2" style="pointer-events: none;">OVER DUE <b>'.$dif_days.'</b> days</button>';
+                        if ($today > $due_date) {
+                            $chips[] = '<span class="vj-chip vj-chip-success">Approved</span>';
+                            $chips[] = '<span class="vj-chip vj-chip-danger">OVERDUE <strong>'.$dif_days.'</strong> days</span>';
                         } else {
-                            $statusText = '<button class="btn btn-xs btn-outline-danger mx-2" style="pointer-events: none;">Approved and due in <b>'.$dif_days.'</b> days</button>';
+                            $chips[] = '<span class="vj-chip vj-chip-neutral">Due in <strong>'.$dif_days.'</strong> days</span>';
                         }
                     }
+                } else {
+                    $chips[] = '<span class="vj-chip vj-chip-neutral">'.ucfirst($realization->status).'</span>';
                 }
 
-                // Add indicator if realization was modified by approver
                 if ($realization->modified_by_approver) {
-                    $statusText .= ' <span class="badge badge-warning" title="Modified by approver on '.$realization->modified_by_approver_at->format('d-M-Y H:i').'"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
+                    $chips[] = '<span class="vj-chip vj-chip-warning" title="Modified by approver on '.$realization->modified_by_approver_at->format('d-M-Y H:i').'"><i class="fas fa-exclamation-triangle"></i> Needs Reprint</span>';
                 }
 
-                return $statusText;
+                return '<div class="vj-inline-actions flex-wrap">'.implode('', $chips).'</div>';
             })
             ->addColumn('action', 'user-payreqs.realizations.action')
             ->rawColumns(['action', 'nomor', 'status'])

@@ -9,49 +9,46 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-file-invoice"></i> Realizations
+                        </h3>
+                        <button type="button" class="vj-btn vj-btn-primary" data-toggle="modal"
+                            data-target="#modal-create">
+                            <i class="fas fa-plus"></i> New Realization
+                        </button>
+                    </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Realizations</h3>
-                    <button type="button" class="btn btn-sm btn-primary float-right" data-toggle="modal"
-                        data-target="#modal-create">
-                        <i class="fas fa-plus"></i> New Realization
-                    </button>
+                    <div class="card-body">
+                        <table id="realizations" class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Realization No</th>
+                                    <th>Date</th>
+                                    <th>Payreq No</th>
+                                    <th>Status</th>
+                                    <th>IDR</th>
+                                    <th>Days</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
-
-                <div class="card-body">
-                    <table id="realizations" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Realization No</th>
-                                <th>Date</th>
-                                <th>Payreq No</th>
-                                <th>Status</th>
-                                <th>IDR</th>
-                                <th>Days</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                    </table>
-                </div>
-
-                <!-- /.card-body -->
             </div>
-            <!-- /.card -->
         </div>
-        <!-- /.col -->
     </div>
-    <!-- /.row -->
 
-    {{-- MODAL CREATE --}}
     <div class="modal fade" id="modal-create">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">New Realization</h4>
+                    <h5 class="modal-title">New Realization</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -61,7 +58,6 @@
                     @csrf
 
                     <div class="modal-body">
-
                         <div class="row">
                             <div class="col-4">
                                 <div class="form-group">
@@ -90,7 +86,7 @@
 
                         <div class="row">
                             <div class="col-12">
-                                <div class="form-group">
+                                <div class="form-group mb-0">
                                     <label for="payreq_id">Payment Request No</label>
                                     <select name="payreq_id"
                                         class="form-control select2bs4 @error('payreq_id') is-invalid @enderror">
@@ -111,38 +107,39 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
-                    <div class="modal-footer justify-content-between">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Add Details</button>
+                    <div class="modal-footer">
+                        <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                            <i class="fas fa-times"></i>
+                            <span>Close</span>
+                        </button>
+                        <button type="submit" class="vj-btn vj-btn-primary">
+                            <i class="fas fa-arrow-right"></i> Add Details
+                        </button>
                     </div>
                 </form>
-            </div> <!-- /.modal-content -->
-        </div> <!-- /.modal-dialog -->
-    </div> <!-- /.modal -->
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('styles')
-    <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}" />
-    <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    @include('partials.vj-soft-ui-styles')
 @endsection
 
 @section('scripts')
-    <!-- DataTables  & Plugins -->
     <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables/datatables.min.js') }}"></script>
-    <!-- Select2 -->
     <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
 
     <script>
@@ -190,7 +187,6 @@
     </script>
     <script>
         $(function() {
-            //Initialize Select2 Elements
             $('.select2bs4').select2({
                 theme: 'bootstrap4'
             })

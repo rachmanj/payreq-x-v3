@@ -18,84 +18,89 @@
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
     <!-- Toastr -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
+    @include('partials.vj-soft-ui-styles')
 @endsection
 
 @section('content')
     <!-- Add CSRF meta tag for AJAX requests -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <div class="row">
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Realization No</h5>
-                <span class="description-text">{{ $realization->nomor }}</span>
+    <div class="vj-show">
+        <div class="vj-stat-grid vj-stat-grid-4 mb-3">
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-hashtag"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Realization No</span>
+                    <span class="vj-stat-value">{{ $realization->nomor }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-neutral">
+                <div class="vj-stat-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Payreq No</span>
+                    <span class="vj-stat-value">{{ $realization->payreq->nomor }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-success">
+                <div class="vj-stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Payreq Amount</span>
+                    <span class="vj-stat-value">{{ number_format($realization->payreq->amount, 2) }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-receipt"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Realization Amount</span>
+                    <span class="vj-stat-value" id="total-realization-amount">{{ $realization_details->count() > 0 ? number_format($realization_details->sum('amount'), 2) : '0' }}</span>
+                </div>
             </div>
         </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Payreq No</h5>
-                <span class="description-text">{{ $realization->payreq->nomor }}</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Payreq Amount</h5>
-                <span class="description-text">{{ number_format($realization->payreq->amount, 2) }}</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block">
-                <h5 class="description-header">Realization Amount</h5>
-                <span id="total-realization-amount"
-                    class="description-text">{{ $realization_details->count() > 0 ? number_format($realization_details->sum('amount'), 2) : '0' }}</span>
-            </div>
-        </div>
-    </div>
-    <!-- /.row -->
 
-    @if (! empty($realization_budget_warnings))
+        @if (! empty($realization_budget_warnings))
+            <div class="vj-alert vj-alert-warning mb-3">
+                <strong>Per-Anggaran check (informational):</strong>
+                <ul class="mb-0 pl-3 mt-1">
+                    @foreach ($realization_budget_warnings as $w)
+                        <li>{{ $w }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- DETAILS SECTION --}}
         <div class="row mb-3">
             <div class="col-12">
-                <div class="alert alert-warning mb-0">
-                    <strong>Per-Anggaran check (informational):</strong>
-                    <ul class="mb-0 pl-3">
-                        @foreach ($realization_budget_warnings as $w)
-                            <li>{{ $w }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    {{-- DETAILS SECTION --}}
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card card-info">
-                <div class="card-header">
-                    <h4 class="card-title">Realization Details</h4>
-                    <a href="{{ route('user-payreqs.realizations.index') }}" class="btn btn-sm btn-info float-right">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </a>
-                    <form id="submit-realization-form" action="{{ route('user-payreqs.realizations.submit_realization') }}"
-                        method="POST" class="d-inline">
-                        @csrf
-                        <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                        <button type="button" id="btn-submit-realization" class="btn btn-sm btn-warning float-right mx-2"
-                            {{ $realization_details->count() == 0 ? 'disabled' : '' }}>
-                            Submit Realization
-                        </button>
-                    </form>
-                    <button type="button" class="btn btn-sm btn-warning float-right mr-2 text-left" data-toggle="modal"
-                        data-target="#bulk-scan-modal">
-                        <i class="fas fa-camera"></i> Scan Fuel Receipts
-                        <small class="d-block font-weight-normal" style="font-size: 0.65rem; line-height: 1.1;">Hanya Nota Pembelian Fuel</small>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-success float-right mr-2" data-toggle="modal"
-                        data-target="#add-detail-modal">
-                        <i class="fas fa-plus"></i> Add Detail
-                    </button>
-                </div>
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-list"></i> Realization Details
+                        </h3>
+                        <div class="vj-inline-actions">
+                            <a href="{{ route('user-payreqs.realizations.index') }}" class="vj-action-item vj-action-print">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Back</span>
+                            </a>
+                            <form id="submit-realization-form"
+                                action="{{ route('user-payreqs.realizations.submit_realization') }}" method="POST"
+                                class="d-inline">
+                                @csrf
+                                <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+                                <button type="button" id="btn-submit-realization" class="vj-btn vj-btn-warning"
+                                    {{ $realization_details->count() == 0 ? 'disabled' : '' }}>
+                                    <i class="fas fa-paper-plane"></i> Submit Realization
+                                </button>
+                            </form>
+                            <button type="button" class="vj-btn vj-btn-warning" data-toggle="modal"
+                                data-target="#bulk-scan-modal">
+                                <i class="fas fa-camera"></i> Scan Fuel Receipts
+                            </button>
+                            <button type="button" class="vj-btn vj-btn-success" data-toggle="modal"
+                                data-target="#add-detail-modal">
+                                <i class="fas fa-plus"></i> Add Detail
+                            </button>
+                        </div>
+                    </div>
                 <div class="card-body table-responsive p-0">
                     <table class="table table-hover text-nowrap" id="details-table">
                         <thead>
@@ -135,14 +140,20 @@
                                         <td>{{ $detail->expense_date ? $detail->expense_date->format('d-M-Y') : '—' }}</td>
                                         <td class="text-right">{{ number_format($detail->amount, 2) }}</td>
                                         <td>
-                                            <button type="button" class="btn btn-xs btn-info btn-edit"
-                                                data-id="{{ $detail->id }}">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                            <a href="javascript:void(0)" onclick="confirmDelete({{ $detail->id }})"
-                                                class="btn btn-xs btn-danger">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </a>
+                                            <div class="vj-inline-actions">
+                                                <button type="button"
+                                                    class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-edit btn-edit"
+                                                    data-id="{{ $detail->id }}">
+                                                    <i class="fas fa-edit"></i>
+                                                    <span>Edit</span>
+                                                </button>
+                                                <button type="button"
+                                                    class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel"
+                                                    onclick="confirmDelete({{ $detail->id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                    <span>Delete</span>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -178,6 +189,7 @@
             </div>
         </div>
     </div>
+    </div>
     {{-- END DETAILS SECTION --}}
 
     <!-- Delete form for non-AJAX submission -->
@@ -191,7 +203,7 @@
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" style="max-width: 920px;">
             <div class="modal-content">
-                <div class="modal-header bg-info">
+                <div class="modal-header">
                     <h5 class="modal-title" id="addModalLabel">Add Realization Detail</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -213,14 +225,15 @@
                                 </div>
                             </div>
                         @elseif($realization->payreq->lot_no)
-                            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                            <div class="vj-alert vj-alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div>
                                     <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
                                     {{ $realization->payreq->lot_no }}.
                                 </div>
-                                <a href="{{ route('user-payreqs.lotclaims.create') }}" class="btn btn-primary btn-sm"
-                                    style="text-decoration: none;" target="_blank">
-                                    <i class="fas fa-plus"></i> New LOTC
+                                <a href="{{ route('user-payreqs.lotclaims.create') }}"
+                                    class="vj-action-item vj-action-sap" target="_blank">
+                                    <i class="fas fa-plus"></i>
+                                    <span>New LOTC</span>
                                 </a>
                             </div>
                         @endif
@@ -368,8 +381,11 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" id="btn-add-detail" class="btn btn-success">Add Detail</button>
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Close</span>
+                    </button>
+                    <button type="button" id="btn-add-detail" class="vj-btn vj-btn-success">Add Detail</button>
                 </div>
             </div>
         </div>
@@ -381,7 +397,7 @@
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" style="max-width: 920px;">
             <div class="modal-content">
-                <div class="modal-header bg-info">
+                <div class="modal-header">
                     <h5 class="modal-title" id="editModalLabel">Edit Realization Detail</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -402,12 +418,15 @@
                                 </div>
                             </div>
                         @elseif($realization->payreq->lot_no)
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
-                                {{ $realization->payreq->lot_no }}, please create new.
+                            <div class="vj-alert vj-alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <span>
+                                    <i class="fas fa-exclamation-triangle"></i> LOTC Not Available for LOT
+                                    {{ $realization->payreq->lot_no }}, please create new.
+                                </span>
                                 <a href="{{ route('user-payreqs.lotclaims.create') }}?lot_no={{ $realization->payreq->lot_no }}"
-                                    class="btn btn-warning btn-sm ml-2">
-                                    <i class="fas fa-plus"></i> Create LOTC
+                                    class="vj-action-item vj-action-sap">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Create LOTC</span>
                                 </a>
                             </div>
                         @endif
@@ -543,8 +562,11 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" id="btn-update-detail" class="btn btn-primary">Update</button>
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Close</span>
+                    </button>
+                    <button type="button" id="btn-update-detail" class="vj-btn vj-btn-primary">Update</button>
                 </div>
             </div>
         </div>
@@ -561,6 +583,7 @@
     <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
     <!-- SweetAlert2 -->
     <script src="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+    @include('partials.vj-soft-ui-swal')
     <!-- Toastr -->
     <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 
@@ -597,14 +620,13 @@
 
         // Function to confirm delete - must be globally accessible
         window.confirmDelete = function(detailId) {
-            Swal.fire({
+            VjSwal.fire({
                 title: 'Are you sure?',
                 text: "You won't be able to revert this!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
+                confirmButtonText: 'Yes, delete it!',
+                confirmVariant: 'danger',
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Use regular form submission instead of AJAX
@@ -736,12 +758,16 @@
                                         <td>${formatExpenseDateDisplay(item.expense_date)}</td>
                                         <td class="text-right">${numberFormat(item.amount)}</td>
                                         <td>
-                                            <button type="button" class="btn btn-xs btn-info btn-edit" data-id="${item.id}">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                            <a href="javascript:void(0)" onclick="confirmDelete(${item.id})" class="btn btn-xs btn-danger">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </a>
+                                            <div class="vj-inline-actions">
+                                                <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-edit btn-edit" data-id="${item.id}">
+                                                    <i class="fas fa-edit"></i>
+                                                    <span>Edit</span>
+                                                </button>
+                                                <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel" onclick="confirmDelete(${item.id})">
+                                                    <i class="fas fa-trash"></i>
+                                                    <span>Delete</span>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 `;
@@ -1041,14 +1067,13 @@
 
             // Submit Realization
             $('#btn-submit-realization').click(function() {
-                Swal.fire({
+                VjSwal.fire({
                     title: 'Are you sure?',
                     text: "You are about to submit this realization",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Yes, submit it!'
+                    confirmButtonText: 'Yes, submit it!',
+                    confirmVariant: 'warning',
                 }).then((result) => {
                     if (result.isConfirmed) {
                         $.ajax({
@@ -1056,22 +1081,24 @@
                             type: "POST",
                             data: $('#submit-realization-form').serialize(),
                             success: function(response) {
-                                Swal.fire(
-                                    'Submitted!',
-                                    'Realization submitted successfully',
-                                    'success'
-                                ).then(() => {
+                                VjSwal.fire({
+                                    title: 'Submitted!',
+                                    text: 'Realization submitted successfully',
+                                    icon: 'success',
+                                    confirmVariant: 'success',
+                                }).then(() => {
                                     window.location.href =
                                         "{{ route('user-payreqs.realizations.index') }}";
                                 });
                             },
                             error: function(xhr) {
-                                Swal.fire(
-                                    'Error!',
-                                    xhr.responseJSON?.message ||
-                                    'An error occurred',
-                                    'error'
-                                );
+                                VjSwal.fire({
+                                    title: 'Error!',
+                                    text: xhr.responseJSON?.message ||
+                                        'An error occurred',
+                                    icon: 'error',
+                                    confirmVariant: 'danger',
+                                });
                             }
                         });
                     }
