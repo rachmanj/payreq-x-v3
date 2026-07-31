@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PreparesVerificationJournalShow;
 use App\Models\Account;
 use App\Models\Department;
 use App\Models\Parameter;
@@ -14,6 +15,8 @@ use Illuminate\Http\Request;
 
 class VerificationJournalController extends Controller
 {
+    use PreparesVerificationJournalShow;
+
     public function index()
     {
         $realizations_count = $this->available_realizations();
@@ -64,23 +67,12 @@ class VerificationJournalController extends Controller
 
     public function show($id)
     {
-        $vj = VerificationJournal::find($id);
-        $vj_details = VerificationJournalDetail::where('verification_journal_id', $id)
-            ->orderBy('id', 'asc')
-            ->get()
-            ->map(function ($detail) {
-                $account = Account::where('account_number', $detail->account_code)->first();
-                $dept = Department::where('sap_code', $detail->cost_center)->first();
-                $detail->account_name = $account ? $account->account_name : 'not found';
-                $detail->dept_akronim = $dept->akronim;
+        $data = $this->verificationJournalShowData((int) $id);
+        $data['backUrl'] = route('verifications.journal.index', ['project' => $data['vj']->project]);
+        $data['pageTitle'] = 'Verification Journal';
+        $data['breadcrumbTitle'] = 'verifications / journal / show';
 
-                return $detail;
-            });
-
-        return view('verifications.journal.show', compact([
-            'vj',
-            'vj_details',
-        ]));
+        return view('accounting.sap-sync.show', $data);
     }
 
     public function print($id)

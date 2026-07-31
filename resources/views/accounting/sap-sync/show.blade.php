@@ -1,11 +1,11 @@
 ﻿@extends('templates.main')
 
 @section('title_page')
-    SAP Sync
+    {{ $pageTitle ?? 'SAP Sync' }}
 @endsection
 
 @section('breadcrumb_title')
-    accounting / sap-sync / show
+    {{ $breadcrumbTitle ?? 'accounting / sap-sync / show' }}
 @endsection
 
 @section('content')
@@ -52,7 +52,7 @@
                                 <small class="text-white-50">{{ $vj->nomor }}</small>
                             </div>
                         </div>
-                        <a href="{{ route('accounting.sap-sync.index', ['page' => $vj->project]) }}"
+                        <a href="{{ $backUrl ?? route('accounting.sap-sync.index', ['page' => $vj->project]) }}"
                             class="vj-action-item vj-action-back">
                             <i class="fas fa-arrow-left"></i>
                             <span>Back</span>

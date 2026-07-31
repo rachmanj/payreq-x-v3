@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Accounting;
 
 use App\Exports\VerificationJournalExport;
+use App\Http\Controllers\Concerns\PreparesVerificationJournalShow;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Department;
@@ -21,6 +22,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SapSyncController extends Controller
 {
+    use PreparesVerificationJournalShow;
+
     public function __construct(
         protected SapJournalSubmissionService $journalSubmissionService
     ) {}
@@ -59,49 +62,12 @@ class SapSyncController extends Controller
 
     public function show($id)
     {
-        $user = auth()->user();
-        $vj = VerificationJournal::find($id);
+        $data = $this->verificationJournalShowData((int) $id);
+        $data['backUrl'] = route('accounting.sap-sync.index', ['page' => $data['vj']->project]);
+        $data['pageTitle'] = 'SAP Sync';
+        $data['breadcrumbTitle'] = 'accounting / sap-sync / show';
 
-        if (! $vj) {
-            abort(404);
-        }
-
-        $this->assertProjectAccessible($user, $vj->project);
-
-        $canSubmitToSap = $this->canSubmitToSap($user, $vj);
-        $canReverseSap = $this->canReverseSap($user);
-        $canValidateVj = $user->can('validate_vj');
-        $canManageSapInfo = $this->canManageSapInfo($user);
-        $canEditVjDetails = $this->canEditVjDetails($user, $vj);
-        $canManageSapInfoForVj = $this->canManageSapInfoForVj($user, $vj);
-
-        $vj_details = VerificationJournalDetail::where('verification_journal_id', $id)
-            ->orderBy('id', 'asc')
-            ->get()
-            ->map(function ($detail) {
-                $account = Account::where('account_number', $detail->account_code)->first();
-                $detail->account_name = $account ? $account->account_name : 'not found';
-
-                return $detail;
-            });
-
-        // Get submission logs for history display
-        $submissionLogs = SapSubmissionLog::where('verification_journal_id', $vj->id)
-            ->orderBy('created_at', 'desc')
-            ->with('user')
-            ->get();
-
-        return view('accounting.sap-sync.show', compact([
-            'vj',
-            'vj_details',
-            'submissionLogs',
-            'canSubmitToSap',
-            'canReverseSap',
-            'canValidateVj',
-            'canManageSapInfo',
-            'canEditVjDetails',
-            'canManageSapInfoForVj',
-        ]));
+        return view('accounting.sap-sync.show', $data);
     }
 
     public function update_sap_info(Request $request)
@@ -575,72 +541,9 @@ class SapSyncController extends Controller
         return redirect()->back()->with($flashKey, $message);
     }
 
-    protected function isBoRestrictedUser($user): bool
-    {
-        $fullAccessRoles = ['superadmin', 'admin', 'cashier', 'approver'];
-        $boRoles = ['approver_bo', 'cashier_bo'];
-
-        return $user->hasAnyRole($boRoles) && ! $user->hasAnyRole($fullAccessRoles);
-    }
-
-    protected function assertProjectAccessible($user, string $project): void
-    {
-        if ($this->isBoRestrictedUser($user) && $project !== '001H') {
-            abort(403, 'You do not have permission to access this project.');
-        }
-    }
-
-    protected function canSubmitToSap($user, ?VerificationJournal $vj = null): bool
-    {
-        $allowedRoles = ['superadmin', 'admin', 'cashier', 'approver'];
-
-        if ($user->hasAnyRole($allowedRoles)) {
-            return true;
-        }
-
-        if ($user->hasAnyRole(['approver_bo', 'cashier_bo'])) {
-            return $vj !== null && $vj->project === '001H';
-        }
-
-        return false;
-    }
-
     protected function canChangeVjDetailProject($user): bool
     {
         return $user->hasAnyRole(['superadmin', 'admin', 'cashier', 'cashier_bo']);
-    }
-
-    protected function canManageSapInfo($user): bool
-    {
-        return $user->hasAnyRole(['superadmin', 'admin', 'cashier']);
-    }
-
-    protected function canManageSapInfoForVj($user, VerificationJournal $vj): bool
-    {
-        return $this->canManageSapInfo($user)
-            && $vj->validation_status === VerificationJournal::VALIDATION_VALIDATED;
-    }
-
-    protected function canEditVjDetails($user, VerificationJournal $vj): bool
-    {
-        if ($vj->sap_journal_no) {
-            return false;
-        }
-
-        if ($this->isBoRestrictedUser($user) && $vj->project !== '001H') {
-            return false;
-        }
-
-        if ($vj->created_by === $user->id) {
-            return true;
-        }
-
-        return $user->can('edit_verification_project');
-    }
-
-    protected function canReverseSap($user): bool
-    {
-        return $user->can('cancel_sap_journal');
     }
 
     public function reverseToSap(Request $request)
