@@ -31,13 +31,20 @@ class ApprovalRequestAnggaranController extends Controller
                 return $approval_request->anggaran->nomor;
             })
             ->addColumn('project', function ($approval_request) {
-                return $approval_request->anggaran->rab_project;
+                return '<span class="vj-chip vj-chip-info">'.$approval_request->anggaran->rab_project.'</span>';
             })
             ->addColumn('created_at', function ($approval_request) {
                 return $approval_request->anggaran->created_at->addHours(8)->format('d-M-Y H:i:s');
             })
             ->addColumn('type', function ($approval_request) {
-                return ucfirst($approval_request->anggaran->type);
+                $chipClass = match ($approval_request->anggaran->type) {
+                    'periode' => 'vj-chip-primary',
+                    'event' => 'vj-chip-info',
+                    'buc' => 'vj-chip-warning',
+                    default => 'vj-chip-neutral',
+                };
+
+                return '<span class="vj-chip '.$chipClass.'">'.ucfirst($approval_request->anggaran->type).'</span>';
             })
             ->addColumn('amount', function ($approval_request) {
                 return number_format($approval_request->anggaran->amount, 2);
@@ -50,7 +57,7 @@ class ApprovalRequestAnggaranController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'approvals-request.anggarans.action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'project', 'type'])
             ->toJson();
     }
 }

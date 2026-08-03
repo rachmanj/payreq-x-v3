@@ -1,23 +1,30 @@
 @if ($model->payreq->type === 'reimburse')
-    <a href="{{ route('approvals.request.payreqs.show', $model->id) }}" class="btn btn-xs btn-warning">detail</a>
+    <a href="{{ route('approvals.request.payreqs.show', $model->id) }}"
+        class="vj-action-item vj-action-item-xs vj-action-edit">
+        <i class="fas fa-eye"></i>
+        <span>detail</span>
+    </a>
 @else
-    <div class="payreq-action-buttons">
-        <div class="btn-group btn-group-sm decision-btn-group" role="group">
-            <button type="button" class="btn btn-xs btn-success decision-btn" data-id="{{ $model->id }}"
-                data-status="1" title="Approve">
+    <div class="vj-inline-actions payreq-action-buttons">
+        <div class="vj-inline-actions decision-btn-group">
+            <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-decision-approve decision-btn"
+                data-id="{{ $model->id }}" data-status="1" title="Approve">
                 <i class="fas fa-check"></i>
             </button>
-            <button type="button" class="btn btn-xs btn-info decision-btn" data-id="{{ $model->id }}"
-                data-status="2" title="Revise">
+            <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-decision-revise decision-btn"
+                data-id="{{ $model->id }}" data-status="2" title="Revise">
                 <i class="fas fa-undo"></i>
             </button>
-            <button type="button" class="btn btn-xs btn-danger decision-btn" data-id="{{ $model->id }}"
-                data-status="3" title="Reject">
+            <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel decision-btn"
+                data-id="{{ $model->id }}" data-status="3" title="Reject">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <button type="button" class="btn btn-xs btn-warning" data-toggle="modal"
-            data-target="#approvals-update-{{ $model->id }}">detail</button>
+        <button type="button" class="vj-action-item vj-action-item-xs vj-action-edit" data-toggle="modal"
+            data-target="#approvals-update-{{ $model->id }}">
+            <i class="fas fa-eye"></i>
+            <span>detail</span>
+        </button>
     </div>
 
     {{-- modal update --}}
@@ -88,8 +95,10 @@
                                                 value="{{ $model->payreq->lot_no }}" readonly>
                                             @if ($model->payreq->lot_no)
                                                 <div class="input-group-append">
-                                                    <button type="button" class="btn btn-info" id="view_lot_detail">
-                                                        <strong>LOT Detail</strong>
+                                                    <button type="button" class="vj-action-item vj-action-export"
+                                                        id="view_lot_detail">
+                                                        <i class="fas fa-plane-departure"></i>
+                                                        <span>LOT Detail</span>
                                                     </button>
                                                 </div>
                                             @endif
@@ -147,11 +156,7 @@
                         </div>
 
                     </div>
-                    <div class="modal-footer justify-content-between">
-                        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i>
-                            Save</button>
-                    </div>
+                    @include('approvals-request.partials.modal-footer')
                 </form>
             </div>
         </div>

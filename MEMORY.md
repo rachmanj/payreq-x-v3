@@ -1,3 +1,19 @@
+### [075] VJ Soft UI on Approval Requests (2026-08-03) ✅ COMPLETE
+
+**Challenge:** `/approvals/request/payreqs`, `/realizations`, `/anggarans` (RABs) index, show, action partials, and details tables used AdminLTE cards, Bootstrap badges/buttons — inconsistent with VJ Soft UI on user payreq pages.
+
+**Solution:** Shared partials (`doc-type-nav`, `bulk-toolbar`, `modal-footer`); `.vj-show` on all pages; doc-type switcher chips with pending counts; bulk action toolbar; DataTables type/project chips in controllers; quick decision chips on advance payreq rows; stat grids on show pages; VJ modals and details-table edit actions.
+
+---
+
+### [074] VJ Soft UI on User Payreqs RAB / Anggarans (2026-08-03) ✅ COMPLETE
+
+**Challenge:** `/user-payreqs/anggarans` index, show, create, edit, and action partial used AdminLTE cards, Bootstrap buttons/badges — inconsistent with VJ Soft UI on sibling payreq pages.
+
+**Solution:** Applied `.vj-show` wrapper and shared partial across index, show, create, edit; DataTables usage column uses `vj-chip` (controller); row actions use `vj-action-item` chips; stat grid on show; `vj-form-panel` / `vj-form-actions` on create/edit; budget line add/remove uses VJ chips.
+
+---
+
 ### [073] VJ Soft UI on User Payreqs Realizations (2026-07-31) ✅ COMPLETE
 
 **Challenge:** `/user-payreqs/realizations` index, show, create, add_details, and child partials used AdminLTE cards, Bootstrap badges/buttons, and description blocks — inconsistent with VJ Soft UI on sibling payreq pages.

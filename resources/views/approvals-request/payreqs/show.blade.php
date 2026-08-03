@@ -9,87 +9,95 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card card-info">
-                <div class="card-header">
-                    <h3 class="card-title">Payreq Info</h3>
-                    <a href="{{ route('approvals.request.payreqs.index') }}" class="btn btn-xs btn-primary float-right mx-2"
-                        id="back-button"><i class="fas fa-arrow-left"></i> Back</a>
-                    <button type="button" class="btn btn-xs btn-warning float-right" data-toggle="modal"
-                        data-target="#approvals-update"><b>APPROVAL</b></button>
+    <div class="vj-show">
+        <div class="vj-stat-grid vj-stat-grid-4 mb-3">
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-hashtag"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Payreq No</span>
+                    <span class="vj-stat-value">{{ $payreq->nomor }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-neutral">
+                <div class="vj-stat-icon"><i class="fas fa-user"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Requestor</span>
+                    <span class="vj-stat-value">{{ $payreq->requestor->name }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-file-invoice"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Realization No</span>
+                    <span class="vj-stat-value">{{ $realization->nomor }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-success">
+                <div class="vj-stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Payreq Amount</span>
+                    <span class="vj-stat-value">{{ number_format($payreq->amount, 2) }}</span>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row">
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Payreq No</h5>
-                <span class="description-text">{{ $payreq->nomor }}</span>
-                <br>
-                <small class="text-muted">
-                    @if($payreq->outgoings->isNotEmpty())
-                        <i class="fas fa-money-bill-wave"></i> 
-                        {{ \Carbon\Carbon::parse($payreq->outgoings->first()->outgoing_date)->format('d-M-Y') }}
-                    @else
-                        <i class="fas fa-hourglass-half"></i> Not yet paid
-                    @endif
-                </small>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Requestor</h5>
-                <span class="description-text">{{ $payreq->requestor->name }}</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Realization No</h5>
-                <span class="description-text">{{ $realization->nomor }}</span>
-                <br>
-                <small class="text-muted">
-                    <i class="far fa-clock"></i> 
-                    {{ $realization->submit_at->addHours(8)->format('d-M-Y H:i') }}
-                </small>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Payreq Amount</h5>
-                <span class="description-text">{{ number_format($payreq->amount, 2) }}</span>
-            </div>
-        </div>
-    </div>
-
-    <hr>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="form-group">
-                <label>Description</label>
-                <textarea name="" id="" cols="30" rows="2" class="form-control" readonly>{{ $payreq->remarks }}</textarea>
-            </div>
-        </div>
-    </div>
-
-    @if ($payreq->rab_id != null)
-        <div class="row">
+        <div class="row mb-3">
             <div class="col-12">
-                <div class="form-group">
-                    <label for="anggaran">RAB</label>
-                    <input type="text" class="form-control"
-                        value="{{ $payreq->anggaran->nomor }} {{ $payreq->anggaran->rab_no ? '|' . $payreq->anggaran->rab_no : '' }} | {{ $payreq->anggaran->description }}"
-                        readonly>
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-info-circle"></i> Payreq Info
+                        </h3>
+                        <div class="vj-inline-actions">
+                            <button type="button" class="vj-btn vj-btn-warning" data-toggle="modal"
+                                data-target="#approvals-update">
+                                <i class="fas fa-gavel"></i> Approval
+                            </button>
+                            <a href="{{ route('approvals.request.payreqs.index') }}" class="vj-action-item vj-action-print"
+                                id="back-button">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Back</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="vj-inline-actions mb-3">
+                            @if ($payreq->outgoings->isNotEmpty())
+                                <span class="vj-chip vj-chip-success">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    Paid {{ \Carbon\Carbon::parse($payreq->outgoings->first()->outgoing_date)->format('d-M-Y') }}
+                                </span>
+                            @else
+                                <span class="vj-chip vj-chip-warning">
+                                    <i class="fas fa-hourglass-half"></i> Not yet paid
+                                </span>
+                            @endif
+                            <span class="vj-chip vj-chip-neutral">
+                                <i class="far fa-clock"></i>
+                                {{ $realization->submit_at->addHours(8)->format('d-M-Y H:i') }}
+                            </span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Description</label>
+                            <textarea cols="30" rows="2" class="form-control" readonly>{{ $payreq->remarks }}</textarea>
+                        </div>
+
+                        @if ($payreq->rab_id != null)
+                            <div class="form-group mb-0">
+                                <label for="anggaran">RAB</label>
+                                <input type="text" class="form-control"
+                                    value="{{ $payreq->anggaran->nomor }} {{ $payreq->anggaran->rab_no ? '|' . $payreq->anggaran->rab_no : '' }} | {{ $payreq->anggaran->description }}"
+                                    readonly>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
-    @endif
-    <!-- /.row -->
 
-    @include('approvals-request.payreqs.details_table')
+        @include('approvals-request.payreqs.details_table')
+    </div>
 
     {{-- modal update --}}
     <div class="modal fade" id="approvals-update">
@@ -130,13 +138,22 @@
 
                     </div>
                     <div class="modal-footer justify-content-between">
-                        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+                        <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                            <i class="fas fa-times"></i>
+                            <span>Close</span>
+                        </button>
+                        <button type="submit" class="vj-btn vj-btn-primary">
+                            <i class="fas fa-save"></i> Save
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+@endsection
+
+@section('styles')
+    @include('partials.vj-soft-ui-styles')
 @endsection
 
 @section('scripts')

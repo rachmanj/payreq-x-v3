@@ -281,7 +281,14 @@ class UserAnggaranController extends Controller
                                 </div>';
             })
             ->editColumn('rab_project', function ($anggaran) {
-                return $anggaran->rab_project.'<br><small>'.ucfirst((string) $anggaran->usage).'</small>';
+                $usageChip = match ((string) $anggaran->usage) {
+                    'project' => 'vj-chip-info',
+                    'department' => 'vj-chip-primary',
+                    default => 'vj-chip-neutral',
+                };
+
+                return '<span class="vj-chip vj-chip-info">'.$anggaran->rab_project.'</span><br>'
+                    .'<span class="vj-chip '.$usageChip.'">'.ucfirst((string) $anggaran->usage).'</span>';
             })
             ->addIndexColumn()
             ->addColumn('action', 'user-payreqs.anggarans.action')

@@ -26,8 +26,8 @@
                     value="{{ $lineAmountDisplay }}" readonly autocomplete="off">
             </td>
             <td class="text-nowrap text-center">
-                <button type="button" class="btn btn-xs btn-danger btn-remove-budget-detail" title="Remove line"
-                    @if (count($detailRows) <= 1) disabled @endif>
+                <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel btn-remove-budget-detail"
+                    title="Remove line" @if (count($detailRows) <= 1) disabled @endif>
                     <i class="fas fa-trash"></i>
                 </button>
             </td>

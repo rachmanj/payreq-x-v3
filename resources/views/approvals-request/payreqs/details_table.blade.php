@@ -1,29 +1,34 @@
 <div class="row">
     <div class="col-12">
-        <div class="card card-info">
-            <div class="card-header">
-                <h3 class="card-title">Details</h3>
-                <div class="card-tools">
+        <div class="card card-outline card-primary">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-list"></i> Details
+                </h3>
+                <div class="vj-inline-actions">
                     @can('edit-submitted-realization')
-                        <button type="button" class="btn btn-sm btn-info" id="btn-edit-details">
-                            <i class="fas fa-edit"></i> Edit Details
+                        <button type="button" class="vj-action-item vj-action-item-xs vj-action-edit" id="btn-edit-details">
+                            <i class="fas fa-edit"></i>
+                            <span>Edit Details</span>
                         </button>
-                        <div id="edit-mode-buttons" style="display: none;">
-                            <button type="button" class="btn btn-sm btn-success" id="btn-add-row">
-                                <i class="fas fa-plus"></i> Add Row
+                        <div id="edit-mode-buttons" class="vj-inline-actions" style="display: none;">
+                            <button type="button" class="vj-action-item vj-action-item-xs vj-decision-approve" id="btn-add-row">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Row</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-primary" id="btn-save-details">
+                            <button type="button" class="vj-btn vj-btn-primary btn-sm" id="btn-save-details">
                                 <i class="fas fa-save"></i> Save Changes
                             </button>
-                            <button type="button" class="btn btn-sm btn-secondary" id="btn-cancel-edit">
-                                <i class="fas fa-times"></i> Cancel
+                            <button type="button" class="vj-action-item vj-action-item-xs vj-action-print" id="btn-cancel-edit">
+                                <i class="fas fa-times"></i>
+                                <span>Cancel</span>
                             </button>
                         </div>
                     @endcan
                 </div>
             </div>
-            <div class="card-body">
-                <table class="table table-striped" id="details-table">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-striped table-hover mb-0" id="details-table">
                     <thead>
                         <tr>
                             <th>#</td>
@@ -71,7 +76,8 @@
                                         <div class="amount-display">{{ number_format($item->amount, 2) }}</div>
                                     </td>
                                     <td class="text-center actions-column" style="display: none;">
-                                        <button type="button" class="btn btn-xs btn-danger btn-delete-row">
+                                        <button type="button"
+                                            class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel btn-delete-row">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -95,7 +101,7 @@
                             </tr>
                             <tr id="amount-warning-row" style="display: none;">
                                 <td colspan="5" class="text-center">
-                                    <div class="alert alert-warning mb-0" role="alert">
+                                    <div class="vj-alert vj-alert-warning mb-0" role="alert">
                                         <i class="fas fa-exclamation-triangle"></i>
                                         <span id="amount-warning-message">Total amount differs from original</span>
                                     </div>

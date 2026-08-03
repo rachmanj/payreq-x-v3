@@ -9,101 +9,102 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Edit RAB | {{ $anggaran->nomor }}</h3>
-                    <a href="{{ route('user-payreqs.anggarans.index') }}" class="btn btn-sm btn-primary float-right"><i
-                            class="fas fa-arrow-left"></i> Back</a>
-                </div>
-                <div class="card-body">
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-calculator"></i> Edit RAB | {{ $anggaran->nomor }}
+                        </h3>
+                        <a href="{{ route('user-payreqs.anggarans.index') }}" class="vj-action-item vj-action-print">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back</span>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ route('user-payreqs.anggarans.proses') }}" method="POST" enctype="multipart/form-data"
+                            id="form_anggaran">
+                            @csrf
+                            <input type="hidden" name="button_type" id="button_type_field"
+                                value="{{ old('button_type', '') }}">
 
-                    <form action="{{ route('user-payreqs.anggarans.proses') }}" method="POST" enctype="multipart/form-data"
-                        id="form_anggaran">
-                        @csrf
-                        <input type="hidden" name="button_type" id="button_type_field"
-                            value="{{ old('button_type', '') }}">
-
-                        <div class="row">
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="rab_no">RAB No <small>(optional)</small></label>
-                                    <input type="hidden" name="anggaran_id" value="{{ $anggaran->id }}">
-                                    <input type="hidden" name="nomor" value="{{ $anggaran->nomor }}">
-                                    <input type="text" name="rab_no" id="rab_no" class="form-control"
-                                        value="{{ old('rab_no', $anggaran->rab_no) }}">
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label for="rab_no">RAB No <small class="text-muted">(optional)</small></label>
+                                        <input type="hidden" name="anggaran_id" value="{{ $anggaran->id }}">
+                                        <input type="hidden" name="nomor" value="{{ $anggaran->nomor }}">
+                                        <input type="text" name="rab_no" id="rab_no" class="form-control"
+                                            value="{{ old('rab_no', $anggaran->rab_no) }}">
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label for="date">Date</label>
+                                        <input type="date" name="date" id="date"
+                                            class="form-control @error('date') is-invalid @enderror"
+                                            value="{{ old('date', $anggaran->date) }}">
+                                        @error('date')
+                                            <div class="invalid-feedback">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label for="project">For Project</label>
+                                        <select name="project" id="project"
+                                            class="form-control @error('project') is-invalid @enderror">
+                                            @foreach ($projects as $project)
+                                                <option value="{{ $project->code }}"
+                                                    {{ old('project', $anggaran->rab_project) == $project->code ? 'selected' : '' }}>
+                                                    {{ $project->code }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="date">Date</label>
-                                    <input type="date" name="date" id="date"
-                                        class="form-control @error('date') is-invalid @enderror"
-                                        value="{{ old('date', $anggaran->date) }}">
-                                    @error('date')
-                                        <div class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="project">For Project <div></div></label>
-                                    <select name="project" id="project"
-                                        class="form-control @error('project') is-invalid @enderror">
-                                        @foreach ($projects as $project)
-                                            <option value="{{ $project->code }}"
-                                                {{ old('project', $anggaran->rab_project) == $project->code ? 'selected' : '' }}>
-                                                {{ $project->code }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label for="description">Description</label>
-                                    <textarea name="description" id="description"
-                                        class="form-control @error('description') is-invalid @enderror">{{ old('description', $anggaran->description) }}</textarea>
-                                    @error('description')
-                                        <div class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label for="description">Description</label>
+                                        <textarea name="description" id="description"
+                                            class="form-control @error('description') is-invalid @enderror">{{ old('description', $anggaran->description) }}</textarea>
+                                        @error('description')
+                                            <div class="invalid-feedback">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-4">
-                                @include('user-payreqs.anggarans.partials.amount-field', ['amountDefault' => $anggaran->amount])
-                            </div>
-                            <div class="col-8">
-                                <div class="form-group">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <label for="file_upload">Existing file</label>
-                                            <input type="text" class="form-control" readonly
-                                                value="{{ $origin_filename }}">
-                                        </div>
-                                        <div class="col-6">
-                                            <label for="file_upload">Replace file</label>
-                                            <input type="file" name="file_upload" id="file_upload" class="form-control">
+                            <div class="row">
+                                <div class="col-4">
+                                    @include('user-payreqs.anggarans.partials.amount-field', ['amountDefault' => $anggaran->amount])
+                                </div>
+                                <div class="col-8">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <label for="file_upload">Existing file</label>
+                                                <input type="text" class="form-control" readonly
+                                                    value="{{ $origin_filename }}">
+                                            </div>
+                                            <div class="col-6">
+                                                <label for="file_upload">Replace file</label>
+                                                <input type="file" name="file_upload" id="file_upload" class="form-control">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="card card-outline card-secondary mt-2">
-                            <div class="card-header">
-                                <h5 class="mb-0">Budget detail lines</h5>
-                            </div>
-                            <div class="card-body p-0">
+                            <div class="vj-form-panel mt-2">
+                                <h5 class="mb-2">Budget detail lines</h5>
                                 <div class="table-responsive">
                                     <table class="table table-sm mb-0" id="tbl-budget-details">
                                         <thead>
@@ -119,76 +120,79 @@
                                         @include('user-payreqs.anggarans.partials.budget-detail-rows')
                                     </table>
                                 </div>
-                                <div class="p-2">
-                                    <button type="button" class="btn btn-sm btn-secondary" id="btn-add-budget-detail">Add
-                                        line</button>
+                                <div class="pt-2">
+                                    <button type="button" class="vj-action-item vj-action-item-xs vj-action-edit"
+                                        id="btn-add-budget-detail">
+                                        <i class="fas fa-plus"></i>
+                                        <span>Add line</span>
+                                    </button>
                                     @error('details')
                                         <div class="text-danger small mt-1">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
-                        </div>
 
-                        @include('user-payreqs.anggarans.partials.type-usage-fields', [
-                            'typeDefault' => $anggaran->type,
-                            'usageDefault' => $anggaran->usage,
-                        ])
-                        {{-- this row will show depent on what radio button input is clicked --}}
-                        <hr>
-                        <div class="row" id="periode">
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="periode_anggaran">Periode</label>
-                                    <select name="periode_anggaran" id="periode_anggaran" class="form-control">
-                                        @foreach ($periode_anggarans as $periode_anggaran)
-                                            @php
-                                                $date = \Carbon\Carbon::parse($periode_anggaran->periode);
-                                                $formattedDate = $date->format('F Y');
-                                            @endphp
-                                            <option value="{{ $periode_anggaran->periode }}"
-                                                {{ old('periode_anggaran', $anggaran->periode_anggaran) == $periode_anggaran->periode ? 'selected' : '' }}>
-                                                {{ $formattedDate }}</option>
-                                        @endforeach
-                                    </select>
+                            @include('user-payreqs.anggarans.partials.type-usage-fields', [
+                                'typeDefault' => $anggaran->type,
+                                'usageDefault' => $anggaran->usage,
+                            ])
+
+                            <div class="row" id="periode">
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label for="periode_anggaran">Periode</label>
+                                        <select name="periode_anggaran" id="periode_anggaran" class="form-control">
+                                            @foreach ($periode_anggarans as $periode_anggaran)
+                                                @php
+                                                    $date = \Carbon\Carbon::parse($periode_anggaran->periode);
+                                                    $formattedDate = $date->format('F Y');
+                                                @endphp
+                                                <option value="{{ $periode_anggaran->periode }}"
+                                                    {{ old('periode_anggaran', $anggaran->periode_anggaran) == $periode_anggaran->periode ? 'selected' : '' }}>
+                                                    {{ $formattedDate }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="row" id="other">
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label for="start_date">Start Date</label>
-                                    <input type="date" name="start_date" id="start_date" class="form-control"
-                                        value="{{ old('start_date', $anggaran->start_date) }}">
+                            <div class="row" id="other">
+                                <div class="col-6">
+                                    <div class="form-group">
+                                        <label for="start_date">Start Date</label>
+                                        <input type="date" name="start_date" id="start_date" class="form-control"
+                                            value="{{ old('start_date', $anggaran->start_date) }}">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-group">
+                                        <label for="end_date">End Date</label>
+                                        <input type="date" name="end_date" id="end_date" class="form-control"
+                                            value="{{ old('end_date', $anggaran->end_date) }}">
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label for="end_date">End Date</label>
-                                    <input type="date" name="end_date" id="end_date" class="form-control"
-                                        value="{{ old('end_date', $anggaran->end_date) }}">
+
+                            <div class="vj-actions vj-form-actions">
+                                <div class="vj-actions-primary">
+                                    <button type="submit" class="vj-btn vj-btn-primary" id="btn-draft">
+                                        <i class="fas fa-save"></i> Save as Draft
+                                    </button>
+                                    <button type="submit" class="vj-btn vj-btn-warning" id="btn-submit">
+                                        <i class="fas fa-paper-plane"></i> Save and Submit
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-
-                    </form>
-
-                </div> {{-- card body --}}
-                <div class="card-footer text-center">
-                    <div class="row">
-                        <div class="col-6">
-                            <button type="submit" class="btn btn-primary btn-block" id="btn-draft"
-                                form="form_anggaran"><i class="fas fa-save"></i> Save as Draft</button>
-                        </div>
-                        <div class="col-6">
-                            <button type="submit" class="btn btn-warning btn-block" id="btn-submit"
-                                form="form_anggaran"><i class="fas fa-paper-plane"></i> Save and Submit</button>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+@endsection
+
+@section('styles')
+    @include('partials.vj-soft-ui-styles')
 @endsection
 
 @section('scripts')
@@ -216,7 +220,6 @@
         $('#btn-submit').on('click', function() {
             $('#button_type_field').val('edit_submit');
         });
-
     </script>
     @include('user-payreqs.anggarans.partials.budget-detail-scripts')
 @endsection

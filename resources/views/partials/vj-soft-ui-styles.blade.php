@@ -889,4 +889,39 @@
     margin-top: 0.85rem;
 }
 
+.vj-approval-doc-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.vj-approval-doc-tabs .vj-chip-primary .vj-chip {
+    margin-left: 0.15rem;
+}
+
+.vj-decision-approve {
+    background: #d4edda;
+    border-color: #b7dfc5;
+    color: #155724;
+}
+
+.vj-decision-approve:hover:not(:disabled):not(.is-disabled) {
+    background: #c3e6cb;
+    border-color: #a3d9b1;
+    color: #0f5132;
+}
+
+.vj-decision-revise {
+    background: #e8f7fa;
+    border-color: #b2ebf2;
+    color: #0c6674;
+}
+
+.vj-decision-revise:hover:not(:disabled):not(.is-disabled) {
+    background: #d1f2f7;
+    border-color: #80deea;
+    color: #0a4f5a;
+}
+
 </style>

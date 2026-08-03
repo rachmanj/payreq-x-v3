@@ -65,7 +65,13 @@ class ApprovalRequestPayreqController extends Controller
                 return $approval_request->payreq->submit_at->addHours(8)->format('d-M-Y H:i:s');
             })
             ->addColumn('type', function ($approval_request) {
-                return ucfirst($approval_request->payreq->type);
+                $chipClass = match ($approval_request->payreq->type) {
+                    'advance' => 'vj-chip-info',
+                    'reimburse' => 'vj-chip-primary',
+                    default => 'vj-chip-neutral',
+                };
+
+                return '<span class="vj-chip '.$chipClass.'">'.ucfirst($approval_request->payreq->type).'</span>';
             })
             ->addColumn('amount', function ($approval_request) {
                 // if payreq type is advance
@@ -92,7 +98,7 @@ class ApprovalRequestPayreqController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'approvals-request.payreqs.action')
-            ->rawColumns(['action', 'remarks'])
+            ->rawColumns(['action', 'remarks', 'type'])
             ->toJson();
     }
 

@@ -14,12 +14,20 @@
 @endphp
 
 
-<button type="button" class="btn btn-xs btn-warning" data-toggle="modal"
-    data-target="#approvals-update-{{ $model->id }}">vote</button>
-@if ($model->anggaran->filename)
-    <a href="{{ asset('file_upload/') . '/' . $model->anggaran->filename }}" class="btn btn-xs btn-success"
-        target=_blank>show</a>
-@endif
+<div class="vj-inline-actions">
+    <button type="button" class="vj-action-item vj-action-item-xs vj-action-edit" data-toggle="modal"
+        data-target="#approvals-update-{{ $model->id }}">
+        <i class="fas fa-vote-yea"></i>
+        <span>vote</span>
+    </button>
+    @if ($model->anggaran->filename)
+        <a href="{{ asset('file_upload/') . '/' . $model->anggaran->filename }}"
+            class="vj-action-item vj-action-item-xs vj-action-export" target="_blank">
+            <i class="fas fa-file-alt"></i>
+            <span>show</span>
+        </a>
+    @endif
+</div>
 
 {{-- modal update --}}
 <div class="modal fade" id="approvals-update-{{ $model->id }}">
@@ -185,8 +193,13 @@
 
                 </div>
                 <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Close</span>
+                    </button>
+                    <button type="submit" class="vj-btn vj-btn-primary">
+                        <i class="fas fa-save"></i> Save
+                    </button>
                 </div>
             </form>
         </div>

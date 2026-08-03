@@ -9,43 +9,24 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-
-            <div class="card">
-                <div class="card-header">
-                    <div class="h3 card-title">
-                        <b>Payment Request</b>
-                        @if ($document_count['payreq'] > 0)
-                            <span class="badge badge-danger payreq-badge">{{ $document_count['payreq'] }}</span>
-                        @endif |
-                        <a href="{{ route('approvals.request.realizations.index') }}">Realization @if ($document_count['realization'] > 0)
-                                <span
-                                    class="badge badge-danger realization-badge">{{ $document_count['realization'] }}</span>
-                            @endif
-                        </a>
-                        |
-                        <a href="{{ route('approvals.request.anggarans.index') }}">RABs @if ($document_count['rab'] > 0)
-                                <span class="badge badge-danger rab-badge">{{ $document_count['rab'] }}</span>
-                            @endif
-                        </a>
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-tasks"></i> Approval Requests
+                        </h3>
+                        @include('approvals-request.partials.doc-type-nav', [
+                            'active' => 'payreq',
+                            'document_count' => $document_count,
+                        ])
                     </div>
-                </div>
 
-                <div class="card-body">
-                    <div class="mb-3">
-                        <button id="bulk-approve-btn" class="btn btn-success btn-sm" disabled>
-                            <i class="fas fa-check"></i> Approve Selected
-                        </button>
-                        <button id="select-all-btn" class="btn btn-primary btn-sm ml-2">
-                            <i class="fas fa-check-square"></i> Select All
-                        </button>
-                        <button id="deselect-all-btn" class="btn btn-secondary btn-sm ml-2" disabled>
-                            <i class="fas fa-square"></i> Deselect All
-                        </button>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="mypayreqs" class="table table-bordered table-striped">
+                    <div class="card-body">
+                        @include('approvals-request.partials.bulk-toolbar')
+                        <div class="table-responsive">
+                            <table id="mypayreqs" class="table table-bordered table-striped table-hover">
                             <thead>
                                 <tr>
                                     <th>
@@ -63,18 +44,12 @@
                                 </tr>
                             </thead>
                         </table>
+                        </div>
                     </div>
                 </div>
-
-                <!-- /.card-body -->
             </div>
-            <!-- /.card -->
-
-
         </div>
-        <!-- /.col -->
     </div>
-    <!-- /.row -->
 
     <!-- Bulk Approval Modal -->
     <div class="modal fade" id="bulk-approval-modal">
@@ -91,9 +66,14 @@
                         <textarea id="bulk-remarks" class="form-control" rows="2"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                    <button type="button" id="confirm-bulk-approve" class="btn btn-success">Approve</button>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="button" id="confirm-bulk-approve" class="vj-btn vj-btn-success">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
                 </div>
             </div>
         </div>
@@ -121,7 +101,7 @@
                                 <p class="text-muted mb-0 small" id="modal_travel_date"></p>
                             </div>
                             <div>
-                                <span class="badge badge-lg px-3 py-2" id="modal_status_badge"></span>
+                                <span class="vj-chip vj-chip-neutral" id="modal_status_badge"></span>
                             </div>
                         </div>
                     </div>
@@ -272,12 +252,14 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal"
                         onclick="backToApprovalsModal()">
-                        <i class="fas fa-arrow-left mr-1"></i> Back to Approvals
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Approvals</span>
                     </button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times mr-1"></i> Close
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Close</span>
                     </button>
                 </div>
             </div>
@@ -291,6 +273,7 @@
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}" />
+    @include('partials.vj-soft-ui-styles')
 
     <style>
         /* Base modal styles */
@@ -667,15 +650,21 @@
 
                             // Set status badge
                             const status = lot.official_travel_status || 'N/A';
-                            let badgeClass = 'badge-secondary';
-                            if (status === 'open') badgeClass = 'badge-success';
-                            if (status === 'closed') badgeClass = 'badge-danger';
-                            if (status === 'pending') badgeClass = 'badge-warning';
+                            let badgeClass = 'vj-chip-neutral';
+                            if (status === 'open') {
+                                badgeClass = 'vj-chip-success';
+                            }
+                            if (status === 'closed') {
+                                badgeClass = 'vj-chip-danger';
+                            }
+                            if (status === 'pending') {
+                                badgeClass = 'vj-chip-warning';
+                            }
 
                             $('#modal_status_badge')
                                 .removeClass(
-                                    'badge-secondary badge-success badge-danger badge-warning')
-                                .addClass(badgeClass)
+                                    'vj-chip-neutral vj-chip-success vj-chip-danger vj-chip-warning')
+                                .addClass('vj-chip ' + badgeClass)
                                 .text(status.toUpperCase());
 
                             // Travel Information

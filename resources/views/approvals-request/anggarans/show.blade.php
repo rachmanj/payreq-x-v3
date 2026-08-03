@@ -9,59 +9,69 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card card-info">
-                <div class="card-header">
-                    <h3 class="card-title">RAB Info</h3>
-                    <a href="{{ route('approvals.request.anggarans.index') }}" class="btn btn-xs btn-primary float-right mx-2"
-                        id="back-button"><i class="fas fa-arrow-left"></i> Back</a>
-                    <button type="button" class="btn btn-xs btn-warning float-right" data-toggle="modal"
-                        data-target="#approvals-update"><b>APPROVAL</b></button>
+    <div class="vj-show">
+        <div class="vj-stat-grid vj-stat-grid-4 mb-3">
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-hashtag"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">RAB No</span>
+                    <span class="vj-stat-value">{{ $anggaran->nomor }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-neutral">
+                <div class="vj-stat-icon"><i class="fas fa-user"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Requestor</span>
+                    <span class="vj-stat-value">{{ $anggaran->createdBy->name }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-tag"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">RAB Type</span>
+                    <span class="vj-stat-value">{{ ucfirst($anggaran->type) }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-success">
+                <div class="vj-stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">RAB Amount</span>
+                    <span class="vj-stat-value">{{ number_format($anggaran->amount, 2) }}</span>
                 </div>
             </div>
         </div>
+
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-info-circle"></i> RAB Info
+                        </h3>
+                        <div class="vj-inline-actions">
+                            <button type="button" class="vj-btn vj-btn-warning" data-toggle="modal"
+                                data-target="#approvals-update">
+                                <i class="fas fa-gavel"></i> Approval
+                            </button>
+                            <a href="{{ route('approvals.request.anggarans.index') }}" class="vj-action-item vj-action-print"
+                                id="back-button">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Back</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-0">
+                            <label>Description</label>
+                            <textarea cols="30" rows="2" class="form-control" readonly>{{ $anggaran->description }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @include('approvals-request.anggarans.details_table')
     </div>
-
-    <div class="row">
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">RAB No</h5>
-                <span class="description-text">{{ $anggaran->nomor }}</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">Requestor</h5>
-                <span class="description-text">{{ $anggaran->createdBy->name }}</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">RAB Type</h5>
-                <span class="description-text">{{ ucfirst($anggaran->type) }}</span>
-            </div>
-        </div>
-        <div class="col-sm-3 col-6">
-            <div class="description-block border-right">
-                <h5 class="description-header">RAB Amount</h5>
-                <span class="description-text">{{ number_format($anggaran->amount, 2) }}</span>
-            </div>
-        </div>
-    </div>
-
-    <hr>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="form-group">
-                <label>Description</label>
-                <textarea cols="30" rows="2" class="form-control" readonly>{{ $anggaran->description }}</textarea>
-            </div>
-        </div>
-    </div>
-
-    @include('approvals-request.anggarans.details_table')
 
     {{-- modal update --}}
     <div class="modal fade" id="approvals-update">
@@ -101,20 +111,20 @@
                         </div>
 
                     </div>
-                    <div class="modal-footer justify-content-between">
-                        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
-                    </div>
+                    @include('approvals-request.partials.modal-footer')
                 </form>
             </div>
         </div>
     </div>
 @endsection
 
+@section('styles')
+    @include('partials.vj-soft-ui-styles')
+@endsection
+
 @section('scripts')
     <script>
         $(function() {
-            // Handle AJAX form submission for approval forms
             $('.approval-form').on('submit', function(e) {
                 e.preventDefault();
 
@@ -128,20 +138,15 @@
                     data: form.serialize(),
                     dataType: 'json',
                     success: function(response) {
-                        // Close the modal
                         modal.modal('hide');
-
-                        // Show success message with Toastr
                         toastr.success(response.message);
 
-                        // Redirect back to the index page after a short delay
                         setTimeout(function() {
                             window.location.href =
                                 "{{ route('approvals.request.anggarans.index') }}";
                         }, 1500);
                     },
-                    error: function(xhr, status, error) {
-                        // Show error message
+                    error: function(xhr) {
                         var errorMessage = xhr.responseJSON ? xhr.responseJSON.message :
                             'An error occurred';
                         toastr.error(errorMessage);

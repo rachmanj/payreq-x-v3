@@ -94,7 +94,7 @@
                     '<input type="hidden" name="details[' + idx + '][amount]" class="detail-amount" value="0">' +
                     '<input type="text" class="form-control form-control-sm bg-light text-right detail-amount-display" value="0.00" readonly autocomplete="off">' +
                 '</td>' +
-                '<td class="text-nowrap text-center"><button type="button" class="btn btn-xs btn-danger btn-remove-budget-detail" title="Remove line"><i class="fas fa-trash"></i></button></td>' +
+                '<td class="text-nowrap text-center"><button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-cancel btn-remove-budget-detail" title="Remove line"><i class="fas fa-trash"></i></button></td>' +
                 '</tr>');
             $body.append($tr);
             updateRemoveButtons();
