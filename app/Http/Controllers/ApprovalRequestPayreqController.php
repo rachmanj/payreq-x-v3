@@ -93,7 +93,7 @@ class ApprovalRequestPayreqController extends Controller
                 $remarks = $approval_request->payreq->remarks;
 
                 return $remarks
-                    ? '<small title="'.e($remarks).'">'.e(Str::limit($remarks, 60)).'</small>'
+                    ? '<span title="'.e($remarks).'">'.e(Str::limit($remarks, 60)).'</span>'
                     : '—';
             })
             ->addIndexColumn()

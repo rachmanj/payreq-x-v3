@@ -329,8 +329,6 @@
         }
 
         #mypayreqs td.remarks-col {
-            font-size: 0.75rem;
-            line-height: 1.35;
             max-width: 220px;
             white-space: normal;
         }
