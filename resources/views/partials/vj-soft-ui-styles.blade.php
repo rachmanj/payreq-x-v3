@@ -892,12 +892,94 @@
 .vj-approval-doc-tabs {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 0.75rem;
+    padding: 0 1rem;
+    border-bottom: 1px solid #e9ecef;
 }
 
-.vj-approval-doc-tabs .vj-chip-primary .vj-chip {
-    margin-left: 0.15rem;
+.vj-approval-doc-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.7rem 1.1rem;
+    margin-bottom: -1px;
+    border: 1px solid transparent;
+    border-radius: 8px 8px 0 0;
+    background: transparent;
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.vj-approval-doc-tab i {
+    font-size: 0.8125rem;
+    opacity: 0.85;
+}
+
+.vj-approval-doc-tab:hover:not(.is-active) {
+    color: #0d6efd;
+    background: #f8f9fa;
+    text-decoration: none;
+}
+
+.vj-approval-doc-tab.is-active {
+    color: #0d6efd;
+    background: #fff;
+    border-color: #e9ecef;
+    border-bottom-color: #fff;
+    font-weight: 600;
+    cursor: default;
+}
+
+.vj-approval-doc-tab.is-active i {
+    opacity: 1;
+}
+
+.vj-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: #dc3545;
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.vj-show .card-header.vj-card-header-tabs {
+    background: #f8f9fa;
+    border-bottom: none;
+}
+
+.vj-show .card-header.vj-card-header-tabs .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #343a40;
+}
+
+@media (max-width: 768px) {
+    .vj-approval-doc-tabs {
+        padding: 0 0.5rem;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .vj-approval-doc-tab {
+        padding: 0.6rem 0.85rem;
+        font-size: 0.8125rem;
+    }
 }
 
 .vj-decision-approve {

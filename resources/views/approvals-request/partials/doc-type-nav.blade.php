@@ -26,22 +26,23 @@
     ];
 @endphp
 
-<nav class="vj-approval-doc-tabs" aria-label="Approval document types">
+<nav class="vj-approval-doc-tabs" aria-label="Approval document types" role="tablist">
     @foreach ($tabs as $key => $tab)
         @php
             $count = (int) ($document_count[$tab['count_key']] ?? 0);
+            $isActive = $active === $key;
         @endphp
-        @if ($active === $key)
-            <span class="vj-chip vj-chip-primary">
-                <i class="fas {{ $tab['icon'] }}"></i>
-                {{ $tab['label'] }}
-                <span class="vj-chip vj-chip-danger {{ $tab['badge_class'] }}" @if ($count === 0) style="display:none" @endif>{{ $count }}</span>
-            </span>
-        @else
-            <a href="{{ route($tab['route']) }}" class="vj-action-item vj-action-print">
+        @if ($isActive)
+            <span class="vj-approval-doc-tab is-active" role="tab" aria-selected="true">
                 <i class="fas {{ $tab['icon'] }}"></i>
                 <span>{{ $tab['label'] }}</span>
-                <span class="vj-chip vj-chip-danger {{ $tab['badge_class'] }}" @if ($count === 0) style="display:none" @endif>{{ $count }}</span>
+                <span class="vj-tab-count {{ $tab['badge_class'] }}" @if ($count === 0) style="display:none" @endif>{{ $count }}</span>
+            </span>
+        @else
+            <a href="{{ route($tab['route']) }}" class="vj-approval-doc-tab" role="tab" aria-selected="false">
+                <i class="fas {{ $tab['icon'] }}"></i>
+                <span>{{ $tab['label'] }}</span>
+                <span class="vj-tab-count {{ $tab['badge_class'] }}" @if ($count === 0) style="display:none" @endif>{{ $count }}</span>
             </a>
         @endif
     @endforeach

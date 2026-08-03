@@ -13,10 +13,12 @@
         <div class="row">
             <div class="col-12">
                 <div class="card card-outline card-primary">
-                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-                        <h3 class="card-title mb-0">
-                            <i class="fas fa-tasks"></i> Approval Requests
-                        </h3>
+                    <div class="card-header vj-card-header-tabs p-0">
+                        <div class="px-3 pt-3">
+                            <h3 class="card-title mb-0">
+                                <i class="fas fa-tasks"></i> Approval Requests
+                            </h3>
+                        </div>
                         @include('approvals-request.partials.doc-type-nav', [
                             'active' => 'payreq',
                             'document_count' => $document_count,
