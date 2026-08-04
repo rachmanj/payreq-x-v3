@@ -93,6 +93,9 @@ class SapJournalSubmissionService
                 $vj->sap_submitted_at = Carbon::now();
                 $vj->sap_submitted_by = $user->id;
                 $vj->sap_submission_error = null;
+                $vj->validation_status = VerificationJournal::VALIDATION_VALIDATED;
+                $vj->validated_at = Carbon::now();
+                $vj->validated_by = $user->id;
                 $vj->save();
 
                 $vjDetails = VerificationJournalDetail::where('verification_journal_id', $vj->id)->get();

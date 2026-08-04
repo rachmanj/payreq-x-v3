@@ -106,6 +106,7 @@ class PostUnpostedVerificationJournalsToSap extends Command
     {
         return VerificationJournal::query()
             ->whereNull('sap_journal_no')
+            ->where('validation_status', VerificationJournal::VALIDATION_VALIDATED)
             ->where('date', '>=', now()->subDays(30)->toDateString())
             ->where(function ($query) {
                 $query->whereNull('sap_submission_status')

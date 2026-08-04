@@ -39,6 +39,7 @@ class PostUnpostedVerificationJournalsToSapCommandTest extends TestCase
             'amount' => 1000,
             'created_by' => $creator->id,
             'sap_journal_no' => null,
+            'validation_status' => VerificationJournal::VALIDATION_VALIDATED,
         ], $overrides));
     }
 
@@ -99,6 +100,8 @@ class PostUnpostedVerificationJournalsToSapCommandTest extends TestCase
         $this->assertEquals('5001', $journal->sap_je_jdt_num);
         $this->assertEquals($user->id, $journal->posted_by);
         $this->assertEquals('success', $journal->sap_submission_status);
+        $this->assertEquals(VerificationJournal::VALIDATION_VALIDATED, $journal->validation_status);
+        $this->assertEquals($user->id, $journal->validated_by);
 
         $this->assertDatabaseHas('sap_submission_logs', [
             'verification_journal_id' => $journal->id,
@@ -197,6 +200,25 @@ class PostUnpostedVerificationJournalsToSapCommandTest extends TestCase
         $this->artisan('sap:post-unposted-vj', ['--dry-run' => true])
             ->assertSuccessful()
             ->expectsOutputToContain('Dry run: 1 candidate(s) would be submitted.');
+
+        $journal->refresh();
+        $this->assertNull($journal->sap_journal_no);
+    }
+
+    public function test_command_skips_journals_that_are_not_validated(): void
+    {
+        $this->createAutoSubmitUser();
+        $journal = $this->createUnpostedJournal([
+            'validation_status' => VerificationJournal::VALIDATION_PENDING,
+        ]);
+        $this->createBalancedJournalDetails($journal);
+
+        $sapMock = $this->mock(SapService::class);
+        $sapMock->shouldNotReceive('createJournalEntry');
+
+        $this->artisan('sap:post-unposted-vj')
+            ->assertSuccessful()
+            ->expectsOutput('No unposted verification journals found for automated SAP submission.');
 
         $journal->refresh();
         $this->assertNull($journal->sap_journal_no);
