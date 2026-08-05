@@ -62,7 +62,7 @@ class ApprovalRequestPayreqController extends Controller
                 return $approval_request->payreq->nomor;
             })
             ->addColumn('submit_at', function ($approval_request) {
-                return $approval_request->payreq->submit_at->addHours(8)->format('d-M-Y H:i:s');
+                return $approval_request->payreq->submit_at->format('d-M-Y H:i:s');
             })
             ->addColumn('type', function ($approval_request) {
                 $chipClass = match ($approval_request->payreq->type) {

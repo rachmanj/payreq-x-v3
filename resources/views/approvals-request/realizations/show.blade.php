@@ -74,7 +74,7 @@
                             @endif
                             <span class="vj-chip vj-chip-neutral">
                                 <i class="far fa-clock"></i>
-                                {{ $document->realization->submit_at->addHours(8)->format('d-M-Y H:i') }}
+                                {{ $document->realization->submit_at->format('d-M-Y H:i') }}
                             </span>
                         </div>
 

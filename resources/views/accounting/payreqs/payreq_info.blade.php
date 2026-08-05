@@ -14,22 +14,22 @@
     <dt class="col-sm-4">Status</dt>
     <dd class="col-sm-8">: {{ ucfirst($payreq->status) }}</dd>
     <dt class="col-sm-4">Created At</dt>
-    <dd class="col-sm-8">: {{ $payreq->created_at->addHours(8)->format('d M Y - H:i:s') }} wita</dd>
+    <dd class="col-sm-8">: {{ $payreq->created_at->format('d M Y - H:i:s') }} wita</dd>
     <dt class="col-sm-4">Submitted At</dt>
     @if ($payreq->submit_at)
-    <dd class="col-sm-8">: {{ \Carbon\Carbon::parse($payreq->submit_at)->addHours(8)->format('d M Y - H:i:s') }} wita</dd>
+    <dd class="col-sm-8">: {{ \Carbon\Carbon::parse($payreq->submit_at)->format('d M Y - H:i:s') }} wita</dd>
     @else
         <dd class="col-sm-8">: -</dd>
     @endif
     <dt class="col-sm-4">Approved At</dt>
     @if ($payreq->approved_at)
-    <dd class="col-sm-8">: {{ \Carbon\Carbon::parse($payreq->approved_at)->addHours(8)->format('d M Y - H:i:s') }} wita</dd>
+    <dd class="col-sm-8">: {{ \Carbon\Carbon::parse($payreq->approved_at)->format('d M Y - H:i:s') }} wita</dd>
     @else
         <dd class="col-sm-8">: -</dd>
     @endif
     <dt class="col-sm-4">Due Date</dt>
     @if ($payreq->due_date)
-    <dd class="col-sm-8">: {{ \Carbon\Carbon::parse($payreq->due_date)->addHours(8)->format('d M Y - H:i:s') }} wita</dd>
+    <dd class="col-sm-8">: {{ \Carbon\Carbon::parse($payreq->due_date)->format('d M Y - H:i:s') }} wita</dd>
     @else
         <dd class="col-sm-8">: -</dd>
     @endif

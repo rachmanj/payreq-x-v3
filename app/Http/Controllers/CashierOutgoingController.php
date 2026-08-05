@@ -25,7 +25,7 @@ class CashierOutgoingController extends Controller
             'amount' => 'required',
         ]);
 
-        $outgoing = new Outgoing();
+        $outgoing = new Outgoing;
         $outgoing->cashier_id = auth()->user()->id;
         $outgoing->description = $request->description;
         $outgoing->amount = $request->amount;
@@ -80,7 +80,8 @@ class CashierOutgoingController extends Controller
             })
             ->editColumn('outgoing_date', function ($outgoing) {
                 $outgoing_date = new \Carbon\Carbon($outgoing->outgoing_date);
-                return $outgoing_date->addHours(8)->format('d-M-Y');
+
+                return $outgoing_date->format('d-M-Y');
             })
             ->editColumn('amount', function ($outgoing) {
                 return number_format($outgoing->amount, 2);
@@ -91,7 +92,7 @@ class CashierOutgoingController extends Controller
             ->addColumn('account', function ($outgoing) {
                 // if account id not null
                 if ($outgoing->account_id) {
-                    return $outgoing->account->account_number . ' - ' . $outgoing->account->account_name;
+                    return $outgoing->account->account_number.' - '.$outgoing->account->account_name;
                 } else {
                     return $outgoing->description;
                 }

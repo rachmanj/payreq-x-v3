@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Cashier;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Transaksi;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TransaksiController extends Controller
@@ -19,7 +18,7 @@ class TransaksiController extends Controller
 
     public function store($type, $data)
     {
-        $transaksi = new Transaksi();
+        $transaksi = new Transaksi;
 
         $latest_transaksi_of_account = Transaksi::where('account_id', $data->account_id)->latest()->first();
         $last_balance = $latest_transaksi_of_account ? $latest_transaksi_of_account->balance : 0;
@@ -29,7 +28,7 @@ class TransaksiController extends Controller
             $transaksi->document_id = $data->id;
             $transaksi->document_type = 'outgoing';
             $transaksi->posting_date = $data->outgoing_date;
-            $transaksi->description = 'Payreq no.' . $data->payreq->nomor . ', ' . $data->payreq->requestor->name;
+            $transaksi->description = 'Payreq no.'.$data->payreq->nomor.', '.$data->payreq->requestor->name;
             $transaksi->credit = $data->amount;
             $transaksi->balance = $last_balance - $data->amount;
             $transaksi->save();
@@ -52,14 +51,14 @@ class TransaksiController extends Controller
     public function data()
     {
         $account_id = request()->query('account_id');
-        
+
         // Get the first transaction to use as a starting point for balance calculation
         $first_transaction = Transaksi::where('account_id', $account_id)
             ->orderBy('id', 'asc')
             ->first();
-            
+
         $initial_balance = $first_transaction ? $first_transaction->balance : 0;
-        
+
         // Use query builder for better performance with DataTables
         $query = Transaksi::query()
             ->where('account_id', $account_id)
@@ -73,13 +72,13 @@ class TransaksiController extends Controller
                 'credit',
                 'balance',
                 DB::raw('(SELECT SUM(t2.debit) FROM transaksis as t2 WHERE t2.account_id = transaksis.account_id AND t2.id <= transaksis.id) as cumulative_debit'),
-                DB::raw('(SELECT SUM(t2.credit) FROM transaksis as t2 WHERE t2.account_id = transaksis.account_id AND t2.id <= transaksis.id) as cumulative_credit')
+                DB::raw('(SELECT SUM(t2.credit) FROM transaksis as t2 WHERE t2.account_id = transaksis.account_id AND t2.id <= transaksis.id) as cumulative_credit'),
             ]);
 
         return datatables()->of($query)
             ->editColumn('created_at', function ($transaksi) {
-                //add 8 hours to match with Jakarta timezone
-                return '<small>' . date('d-M-Y H:i:s', strtotime($transaksi->created_at . '+8 hours')) . '</small>';
+                // add 8 hours to match with Jakarta timezone
+                return '<small>'.(\Carbon\Carbon::parse($transaksi->created_at)->format('d-M-Y H:i:s')).'</small>';
             })
             ->editColumn('posting_date', function ($transaksi) {
                 return $transaksi->posting_date ? date('d-M-Y', strtotime($transaksi->posting_date)) : '-';

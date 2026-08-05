@@ -93,7 +93,7 @@
                         <dd class="col-sm-7">
                             {{ $vj->createdBy->name }}<br>
                             <small class="text-muted">
-                                {{ date('d-M-Y H:i', strtotime($vj->created_at . '+8 hours')) }} wita
+                                {{ \Carbon\Carbon::parse($vj->created_at)->format('d-M-Y H:i') }} wita
                             </small>
                         </dd>
                     </dl>
@@ -147,7 +147,7 @@
                             @if ($vj->posted_by)
                                 {{ $vj->postedBy->name }}<br>
                                 <small class="text-muted">
-                                    {{ date('d-M-Y H:i', strtotime($vj->updated_at . '+8 hours')) }} wita
+                                    {{ \Carbon\Carbon::parse($vj->updated_at)->format('d-M-Y H:i') }} wita
                                 </small>
                             @else
                                 <span class="text-muted">Not posted yet</span>
@@ -172,7 +172,7 @@
                             </h6>
                             <p class="mb-1">
                                 <strong>Reversed by:</strong> {{ $vj->reversedBy->name }}
-                                on {{ date('d-M-Y H:i', strtotime($vj->sap_reversed_at . '+8 hours')) }} wita
+                                on {{ \Carbon\Carbon::parse($vj->sap_reversed_at)->format('d-M-Y H:i') }} wita
                             </p>
                             @if ($vj->sap_reversal_journal_no)
                                 <p class="mb-1">
@@ -215,7 +215,7 @@
                             <dd class="col-sm-7">
                                 {{ $vj->validatedBy->name }}<br>
                                 <small class="text-muted">
-                                    {{ date('d-M-Y H:i', strtotime($vj->validated_at . '+8 hours')) }} wita
+                                    {{ \Carbon\Carbon::parse($vj->validated_at)->format('d-M-Y H:i') }} wita
                                 </small>
                             </dd>
                         @endif
@@ -808,7 +808,7 @@
             'attempts' => [
                 'count' => (int) $vj->sap_submission_attempts,
                 'lastAttemptAt' => $vj->sap_submitted_at
-                    ? date('d-M-Y H:i', strtotime($vj->sap_submitted_at . '+8 hours')) . ' wita'
+                    ? \Carbon\Carbon::parse($vj->sap_submitted_at)->format('d-M-Y H:i') . ' wita'
                     : null,
                 'lastError' => $vj->sap_submission_error,
             ],

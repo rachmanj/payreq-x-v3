@@ -21,7 +21,7 @@ class CashOutJournalController extends Controller
             $select_all_button = false;
         }
 
-        $outgoings_in_cart = Outgoing::where('flag', 'CJT' . auth()->user()->id)
+        $outgoings_in_cart = Outgoing::where('flag', 'CJT'.auth()->user()->id)
             ->get();
 
         if ($outgoings_in_cart->count() > 0) {
@@ -35,12 +35,12 @@ class CashOutJournalController extends Controller
 
     public function store(Request $request)
     {
-        $outgoings = Outgoing::where('flag', 'CJT' . auth()->user()->id)
+        $outgoings = Outgoing::where('flag', 'CJT'.auth()->user()->id)
             ->get();
 
-        $cash_journal = new CashJournal();
+        $cash_journal = new CashJournal;
         $cash_journal->date = $request->date;
-        $cash_journal->type = "cash-out";
+        $cash_journal->type = 'cash-out';
         $cash_journal->amount = $outgoings->sum('amount');
         $cash_journal->description = $request->description;
         $cash_journal->project = auth()->user()->project;
@@ -64,7 +64,7 @@ class CashOutJournalController extends Controller
     public function add_to_cart(Request $request)
     {
         $outgoing = Outgoing::findOrFail($request->outgoing_id);
-        $outgoing->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
+        $outgoing->flag = 'CJT'.auth()->user()->id; // CJT = Cash Journal Temporary
         $outgoing->save();
 
         return redirect()->back();
@@ -87,7 +87,7 @@ class CashOutJournalController extends Controller
             ->get();
 
         foreach ($outgoings as $outgoing) {
-            $outgoing->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
+            $outgoing->flag = 'CJT'.auth()->user()->id; // CJT = Cash Journal Temporary
             $outgoing->save();
         }
 
@@ -96,7 +96,7 @@ class CashOutJournalController extends Controller
 
     public function remove_all_fromcart()
     {
-        $outgoings = Outgoing::where('flag', 'CJT' . auth()->user()->id)
+        $outgoings = Outgoing::where('flag', 'CJT'.auth()->user()->id)
             ->get();
 
         foreach ($outgoings as $outgoing) {
@@ -131,7 +131,8 @@ class CashOutJournalController extends Controller
             })
             ->editColumn('outgoing_date', function ($outgoing) {
                 $date = new \Carbon\Carbon($outgoing->outgoing_date);
-                return $date->addHours(8)->format('d-M-Y');
+
+                return $date->format('d-M-Y');
             })
             ->addIndexColumn()
             ->addColumn('action', 'cash-journal.out.to-cart-action')
@@ -140,7 +141,7 @@ class CashOutJournalController extends Controller
 
     public function in_cart_data()
     {
-        $outgoings = Outgoing::where('flag', 'CJT' . auth()->user()->id)
+        $outgoings = Outgoing::where('flag', 'CJT'.auth()->user()->id)
             ->get();
 
         return datatables()->of($outgoings)
@@ -152,7 +153,8 @@ class CashOutJournalController extends Controller
             })
             ->editColumn('outgoing_date', function ($outgoing) {
                 $date = new \Carbon\Carbon($outgoing->outgoing_date);
-                return $date->addHours(8)->format('d-M-Y');
+
+                return $date->format('d-M-Y');
             })
             ->addIndexColumn()
             ->addColumn('action', 'cash-journal.out.in-cart-action')

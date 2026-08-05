@@ -32,7 +32,7 @@ class ApprovalRequestRealizationController extends Controller
             'document_details',
             'payreq',
             'departments',
-            'projects'
+            'projects',
         ]));
     }
 
@@ -56,7 +56,7 @@ class ApprovalRequestRealizationController extends Controller
                 $submitAt = $approval_request->realization?->submit_at;
 
                 return $submitAt
-                    ? $submitAt->addHours(8)->format('d-M-Y H:i:s') . ' wita'
+                    ? $submitAt->format('d-M-Y H:i:s').' wita'
                     : '-';
             })
             ->addColumn('amount', function ($approval_request) {
@@ -103,7 +103,7 @@ class ApprovalRequestRealizationController extends Controller
             $realization = $document->realization;
 
             // Delete removed details
-            if ($request->has('deleted_ids') && !empty($request->deleted_ids)) {
+            if ($request->has('deleted_ids') && ! empty($request->deleted_ids)) {
                 RealizationDetail::whereIn('id', $request->deleted_ids)
                     ->where('realization_id', $realization->id)
                     ->delete();
@@ -166,9 +166,10 @@ class ApprovalRequestRealizationController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update details: ' . $e->getMessage(),
+                'message' => 'Failed to update details: '.$e->getMessage(),
             ], 500);
         }
     }

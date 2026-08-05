@@ -62,7 +62,7 @@
                             <div class="form-group">
                                 <label for="submit_at">Submitted at</label>
                                 <input type="text" id="submit_at" class="form-control"
-                                    value="{{ Carbon\Carbon::parse($model->anggaran->submit_at)->addHours(8)->format('d-M-Y H:i:s') }}"
+                                    value="{{ Carbon\Carbon::parse($model->anggaran->submit_at)->format('d-M-Y H:i:s') }}"
                                     readonly>
                             </div>
                         </div>

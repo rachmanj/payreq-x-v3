@@ -48,26 +48,28 @@ class OutgoingController extends Controller
 
         return datatables()->of($payreqs)
             ->editColumn('approved_at', function ($payreq) {
-                $date =  new Carbon($payreq->approved_at);
-                return $date->addHours(8)->format('d M Y H:i:s');
+                $date = new Carbon($payreq->approved_at);
+
+                return $date->format('d M Y H:i:s');
             })
             ->addColumn('requestor', function ($payreq) {
                 return $payreq->requestor->name;
             })
             ->editColumn('amount', function ($payreq) {
                 $sum_outgoings = Outgoing::where('payreq_id', $payreq->id)->sum('amount');
-                if (!$sum_outgoings) {
+                if (! $sum_outgoings) {
                     return number_format($payreq->amount, 2, ',', '.');
                 } else {
-                    return number_format($payreq->amount - $sum_outgoings, 2, ',', '.') . ' of ' . number_format($payreq->amount, 2, ',', '.');
+                    return number_format($payreq->amount - $sum_outgoings, 2, ',', '.').' of '.number_format($payreq->amount, 2, ',', '.');
                 }
             })
             ->editColumn('type', function ($payreq) {
                 return ucfirst($payreq->type);
             })
             ->addColumn('days', function ($payreq) {
-                $date =  new Carbon($payreq->approved_at);
+                $date = new Carbon($payreq->approved_at);
                 $days = $date->diffInDays(now());
+
                 return $days;
             })
             ->addIndexColumn()

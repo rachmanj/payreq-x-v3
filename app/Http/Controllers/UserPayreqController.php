@@ -112,7 +112,7 @@ class UserPayreqController extends Controller
 
         if ($payreq->submit_at) {
             $date = new \Carbon\Carbon($payreq->submit_at);
-            $submit_at = $date->addHours(8)->format('d-M-Y H:i:s').' wita';
+            $submit_at = $date->format('d-M-Y H:i:s').' wita';
         } else {
             $submit_at = '';
         }
@@ -284,7 +284,7 @@ class UserPayreqController extends Controller
                 if ($payreq->status === 'submitted') {
                     $chips[] = '<span class="vj-chip vj-chip-warning">Waiting Approval</span>';
                 } elseif ($payreq->status === 'approved') {
-                    $approved_date = \Carbon\Carbon::parse($payreq->approved_at)->addHours(8);
+                    $approved_date = \Carbon\Carbon::parse($payreq->approved_at);
                     $chips[] = '<span class="vj-chip vj-chip-success">APPROVED at '.$approved_date->format('d-M-Y H:i').' wita</span>';
                 } elseif ($payreq->status === 'revise') {
                     $chips[] = '<span class="vj-chip vj-chip-warning">REVISED</span>';
@@ -344,17 +344,17 @@ class UserPayreqController extends Controller
             })
             ->editColumn('submit_at', function ($payreq) {
                 if ($payreq->status == 'draft') {
-                    return 'Created at '.$payreq->created_at->addHours(8)->format('d-M-Y H:i').' wita';
+                    return 'Created at '.$payreq->created_at->format('d-M-Y H:i').' wita';
                 }
                 if ($payreq->status == 'paid') {
                     $paid_date = App(ToolController::class)->getPaidDate($payreq->id);
                     $paid_date = new \Carbon\Carbon($paid_date);
 
-                    return 'Paid at '.$paid_date->addHours(8)->format('d-M-Y');
+                    return 'Paid at '.$paid_date->format('d-M-Y');
                 }
                 $submit_date = new \Carbon\Carbon($payreq->submit_at);
 
-                return 'Submit at '.$submit_date->addHours(8)->format('d-M-Y H:i').' wita';
+                return 'Submit at '.$submit_date->format('d-M-Y H:i').' wita';
             })
             ->addColumn('action', 'user-payreqs.action')
             ->rawColumns(['action', 'nomor', 'type', 'status'])

@@ -21,7 +21,7 @@ class CashierApprovedController extends Controller
         $payreq = Payreq::findOrfail($id);
         $cashier = auth()->user();
 
-        $request = new Request();
+        $request = new Request;
         $request['payreq_id'] = $id;
         $request['amount'] = $payreq->amount;
         $request['cashier_id'] = $cashier->id;
@@ -74,7 +74,7 @@ class CashierApprovedController extends Controller
         }
 
         // create new outgoing record
-        $outgoing = new Outgoing();
+        $outgoing = new Outgoing;
         $outgoing->payreq_id = $payreq->id;
         $outgoing->amount = $request->amount;
         $outgoing->cashier_id = auth()->user()->id;
@@ -89,7 +89,7 @@ class CashierApprovedController extends Controller
         // update app_balance in account table
         $response = app(AccountController::class)->outgoing($request->amount);
 
-        if (!$response) {
+        if (! $response) {
             return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Account not found!');
         }
 
@@ -142,15 +142,17 @@ class CashierApprovedController extends Controller
                 return ucfirst($approved->type);
             })
             ->editColumn('nomor', function ($approved) {
-                return '<a href="#" style="color: black" title="' . $approved->remarks . '">' . $approved->nomor . '</a>';
+                return '<a href="#" style="color: black" title="'.$approved->remarks.'">'.$approved->nomor.'</a>';
             })
             ->editColumn('approved_at', function ($approved) {
                 $approved_date = new \Carbon\Carbon($approved->approved_at);
-                return $approved_date->addHours(8)->format('d-M-Y H:i:s');
+
+                return $approved_date->format('d-M-Y H:i:s');
             })
             ->addColumn('days', function ($approved) {
                 $approved_date = new \Carbon\Carbon($approved->approved_at);
-                return $approved_date->addHours(8)->diffInDays(now());
+
+                return $approved_date->diffInDays(now());
             })
             ->editColumn('amount', function ($approved) {
                 if ($approved->status == 'split') {
@@ -158,9 +160,11 @@ class CashierApprovedController extends Controller
                     $original_amount = $approved->amount;
                     $applied_amount = $outgoings->sum('amount');
                     $amount_due = $approved->amount - $outgoings->sum('amount');
-                    return '<span class="badge badge-warning">split</span><small>Original: ' . number_format($original_amount, 2) .
-                        '</small><br><small>applied: ' . number_format($applied_amount, 2)  . '</small><br>' . '<small>Due: ' . number_format($amount_due, 2) . '</small>';
+
+                    return '<span class="badge badge-warning">split</span><small>Original: '.number_format($original_amount, 2).
+                        '</small><br><small>applied: '.number_format($applied_amount, 2).'</small><br>'.'<small>Due: '.number_format($amount_due, 2).'</small>';
                 }
+
                 return number_format($approved->amount, 2);
             })
             ->addIndexColumn()

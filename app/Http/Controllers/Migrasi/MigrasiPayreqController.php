@@ -49,7 +49,7 @@ class MigrasiPayreqController extends Controller
             'nomor' => app(DocumentNumberController::class)->generate_document_number('payreq', $project),
             'department_id' => $department_id,
             'type' => 'advance',
-            'remarks' => $request->remarks . ', migrasi payreq ' . $request->old_payreq_no,
+            'remarks' => $request->remarks.', migrasi payreq '.$request->old_payreq_no,
             'rab_id' => null,
             'approved_at' => $request->paid_date,
             'submit_at' => $request->paid_date,
@@ -66,9 +66,9 @@ class MigrasiPayreqController extends Controller
         ]);
 
         $cashier_project = User::findOrFail($request->cashier_id)->project;
-        $account_id = Account::where('type', 'cash')->where('project',  $cashier_project)->first()->id;
+        $account_id = Account::where('type', 'cash')->where('project', $cashier_project)->first()->id;
 
-        $outgoing = new Outgoing();
+        $outgoing = new Outgoing;
         $outgoing->payreq_id = $payreq->id;
         $outgoing->amount = $payreq->amount;
         $outgoing->cashier_id = $request->cashier_id;
@@ -131,25 +131,29 @@ class MigrasiPayreqController extends Controller
                 return $payreq->requestor->name;
             })
             ->editColumn('nomor', function ($payreq) {
-                return '<a href="#" style="color: black" title="' . $payreq->remarks . '">' . $payreq->nomor . '</a>';
+                return '<a href="#" style="color: black" title="'.$payreq->remarks.'">'.$payreq->nomor.'</a>';
             })
             ->addColumn('days', function ($payreq) {
                 $payreq_date = new \Carbon\Carbon($payreq->payreq_at);
-                return $payreq_date->addHours(8)->diffInDays(now());
+
+                return $payreq_date->diffInDays(now());
             })
             ->addColumn('cashier', function ($payreq) {
                 // if payreq has outgoings, get the cashier name
                 if ($payreq->outgoings->count() > 0) {
                     return $payreq->outgoings->first()->cashier->name;
                 }
+
                 return 'no outgoing found';
             })
             ->editColumn('amount', function ($payreq) {
                 if ($payreq->status == 'split') {
                     $outgoings = Outgoing::where('payreq_id', $payreq->id)->get();
                     $amount = $payreq->amount - $outgoings->sum('amount');
-                    return '<span class="badge badge-warning">split</span>' . ' ' . number_format($amount, 2);
+
+                    return '<span class="badge badge-warning">split</span>'.' '.number_format($amount, 2);
                 }
+
                 return number_format($payreq->amount, 2);
             })
             // ->addColumn('approved_at', function ($payreq) {

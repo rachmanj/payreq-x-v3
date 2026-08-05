@@ -22,16 +22,17 @@ class CashJournalController extends Controller
     {
         $cash_journal = CashJournal::find($id);
 
-
         if ($cash_journal->type === 'cash-out') {
             $outgoings = Outgoing::where('cash_journal_id', $id)->get();
             $debet_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
             $credit_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+
             return view('cash-journal.show_cash_out', compact(['cash_journal', 'outgoings', 'debet_account', 'credit_account']));
         } else {
             $incomings = Incoming::where('cash_journal_id', $id)->get();
             $debet_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
             $credit_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+
             return view('cash-journal.show_cash_in', compact(['cash_journal', 'incomings', 'debet_account', 'credit_account']));
         }
     }
@@ -163,7 +164,8 @@ class CashJournalController extends Controller
         return datatables()->of($cash_journals)
             ->editColumn('date', function ($cash_journal) {
                 $date = new \Carbon\Carbon($cash_journal->date);
-                return $date->addHours(8)->format('d-M-Y');
+
+                return $date->format('d-M-Y');
             })
             ->addColumn('status', function ($cash_journal) {
                 if ($cash_journal->sap_journal_no == null) {

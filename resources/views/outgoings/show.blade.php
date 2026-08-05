@@ -29,7 +29,7 @@
                 <dt class="col-sm-4">Status</dt>
                 <dd class="col-sm-8">: {{ $payreq->status == 'submitted' ? 'Wait approve' : ucfirst($payreq->status) }}</dd>
                 <dt class="col-sm-4">Created at</dt>
-                <dd class="col-sm-8">: {{ $payreq->created_at->addHours(8)->format('d-M-Y H:i:s') }}</dd>
+                <dd class="col-sm-8">: {{ $payreq->created_at->format('d-M-Y H:i:s') }}</dd>
               </div>
             </div>
 
@@ -58,7 +58,7 @@
                         @endif
                       @endforeach
                       <td>{{ $item->remarks }}</td>
-                      <td>{{ $item->updated_at->addHours(8)->format('d-M-Y H:i:s') }}</td>
+                      <td>{{ $item->updated_at->format('d-M-Y H:i:s') }}</td>
                     </tr>
                   @endforeach
               </table>

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
-use App\Models\Faktur;
 use App\Models\Customer;
+use App\Models\Faktur;
 use App\Models\SapSubmissionLog;
-use App\Services\SapService;
 use App\Services\SapArInvoiceBuilder;
 use App\Services\SapArInvoiceJeBuilder;
+use App\Services\SapService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +33,7 @@ class VatController extends Controller
 
         if ($page === 'search') {
             $customers = Customer::orderBy('name')->get();
+
             return view($views[$page], compact('customers'));
         }
 
@@ -52,7 +53,7 @@ class VatController extends Controller
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
             $extension = $file->getClientOriginalExtension();
-            $filename = 'faktur_' . uniqid() . '.' . $extension;
+            $filename = 'faktur_'.uniqid().'.'.$extension;
             $file->move(public_path('faktur'), $filename);
             $document->attachment = $filename;
         }
@@ -113,7 +114,8 @@ class VatController extends Controller
             ->addColumn('amount', function ($document) {
                 $dpp = number_format($document->dpp, 2);
                 $ppn = number_format($document->ppn, 2);
-                return '<small>DPP: ' . $dpp . '</small><br><small>PPN: ' . $ppn . '</small>';
+
+                return '<small>DPP: '.$dpp.'</small><br><small>PPN: '.$ppn.'</small>';
             })
             ->editColumn('create_date', function ($document) {
                 return date('d-M-Y', strtotime($document->create_date));
@@ -122,38 +124,43 @@ class VatController extends Controller
                 return date('d-M-Y', strtotime($document->posting_date));
             })
             ->addColumn('invoice', function ($document) {
-                return '<small>No.' . $document->invoice_no . '</small><br><small>Tgl.' . date('d-M-Y', strtotime($document->invoice_date)) . '</small>';
+                return '<small>No.'.$document->invoice_no.'</small><br><small>Tgl.'.date('d-M-Y', strtotime($document->invoice_date)).'</small>';
             })
             ->addColumn('faktur', function ($document) {
                 if (is_null($document->faktur_date)) {
-                    return '<small>No.' . $document->faktur_no . '</small><br><small>Tgl. - </small>';
+                    return '<small>No.'.$document->faktur_no.'</small><br><small>Tgl. - </small>';
                 }
-                return '<small>No.' . $document->faktur_no . '</small><br><small>Tgl.' . date('d-M-Y', strtotime($document->faktur_date)) . '</small>';
+
+                return '<small>No.'.$document->faktur_no.'</small><br><small>Tgl.'.date('d-M-Y', strtotime($document->faktur_date)).'</small>';
             })
             ->addColumn('customer', function ($document) {
-                return '<small>' . $document->customer->name . '</small>';
+                return '<small>'.$document->customer->name.'</small>';
             })
             ->editColumn('remarks', function ($document) {
-                return '<small>' . strtolower($document->remarks) . '</small>';
+                return '<small>'.strtolower($document->remarks).'</small>';
             })
             // add column name days that count the difference between posting_date and today
             ->editColumn('days', function ($document) {
                 $today = date('Y-m-d');
                 $diff = date_diff(date_create($document->posting_date), date_create($today));
+
                 return $diff->format('%a');
             })
             ->editColumn('updated_by', function ($document) {
-                $updatedAt = Carbon::parse($document->updated_at)->addHours(8)->format('d-M-Y H:i');
-                return '<small>' . $document->updated_by . '</small><br><small>at ' . $updatedAt . '</small>';
+                $updatedAt = Carbon::parse($document->updated_at)->format('d-M-Y H:i');
+
+                return '<small>'.$document->updated_by.'</small><br><small>at '.$updatedAt.'</small>';
             })
             ->addColumn('doc_date', function ($document) {
                 $createDate = Carbon::parse($document->create_date)->format('d-M-Y');
                 $postingDate = Carbon::parse($document->posting_date)->format('d-M-Y');
-                return $createDate . '<br>' . $postingDate;
+
+                return $createDate.'<br>'.$postingDate;
             })
             ->addColumn('sales_days', function ($document) {
                 $today = date('Y-m-d');
                 $diff = date_diff(date_create($document->invoice_date), date_create($today));
+
                 return $diff->format('%a');
             })
             ->addColumn('sap_ar_doc_num', function ($document) {
@@ -188,7 +195,7 @@ class VatController extends Controller
             '09' => 'Sep',
             '10' => 'Oct',
             '11' => 'Nov',
-            '12' => 'Dec'
+            '12' => 'Dec',
         ];
 
         $data = [];
@@ -200,15 +207,15 @@ class VatController extends Controller
                     'total' => 0,
                     'percent_complete' => 0,
                     'outstanding' => 0,
-                    'complete' => 0
+                    'complete' => 0,
                 ],
                 'sales' => [
                     'total' => 0,
                     'percent_complete' => 0,
                     'outstanding' => 0,
-                    'complete' => 0
+                    'complete' => 0,
                 ],
-                'data' => []
+                'data' => [],
             ];
 
             $total_purchase_outstanding = 0;
@@ -229,13 +236,13 @@ class VatController extends Controller
                     'purchase' => [
                         'outstanding' => $purchase_outstanding,
                         'complete' => $purchase_complete,
-                        'percent' => $purchase_outstanding + $purchase_complete > 0 ? number_format($purchase_complete / ($purchase_outstanding + $purchase_complete) * 100, 1) : 0
+                        'percent' => $purchase_outstanding + $purchase_complete > 0 ? number_format($purchase_complete / ($purchase_outstanding + $purchase_complete) * 100, 1) : 0,
                     ],
                     'sales' => [
                         'outstanding' => $sales_outstanding,
                         'complete' => $sales_complete,
-                        'percent' => $sales_outstanding + $sales_complete > 0 ? number_format($sales_complete / ($sales_outstanding + $sales_complete) * 100, 1) : 0
-                    ]
+                        'percent' => $sales_outstanding + $sales_complete > 0 ? number_format($sales_complete / ($sales_outstanding + $sales_complete) * 100, 1) : 0,
+                    ],
                 ];
 
                 $yearData['data'][] = $monthData;
@@ -287,7 +294,7 @@ class VatController extends Controller
             '09' => 'Sep',
             '10' => 'Oct',
             '11' => 'Nov',
-            '12' => 'Dec'
+            '12' => 'Dec',
         ];
 
         $data = [];
@@ -298,7 +305,7 @@ class VatController extends Controller
                 'sales' => 0,
                 'purchase' => 0,
                 'difference' => 0,
-                'data' => []
+                'data' => [],
             ];
 
             foreach ($months as $month => $monthName) {
@@ -308,7 +315,7 @@ class VatController extends Controller
                     'month_name' => $monthName,
                     'sales' => number_format($this->sum_amount_monthly($year, $month, 'sales') / 1000, 2),
                     'purchase' => number_format($this->sum_amount_monthly($year, $month, 'purchase') / 1000, 2),
-                    'difference' => number_format($this->calculate_difference_monthly($year, $month) / 1000, 2)
+                    'difference' => number_format($this->calculate_difference_monthly($year, $month) / 1000, 2),
                 ];
 
                 $yearData['data'][] = $monthData;
@@ -328,7 +335,7 @@ class VatController extends Controller
     public function search_data()
     {
         // Return empty data if search hasn't been clicked
-        if (!request('search_clicked')) {
+        if (! request('search_clicked')) {
             return datatables()->of([])->addIndexColumn()->toJson();
         }
 
@@ -336,7 +343,7 @@ class VatController extends Controller
             ->with('customer');
 
         if (request('faktur_no')) {
-            $query->where('faktur_no', 'like', '%' . request('faktur_no') . '%');
+            $query->where('faktur_no', 'like', '%'.request('faktur_no').'%');
         }
 
         if (request('type')) {
@@ -344,7 +351,7 @@ class VatController extends Controller
         }
 
         if (request('invoice_no')) {
-            $query->where('invoice_no', 'like', '%' . request('invoice_no') . '%');
+            $query->where('invoice_no', 'like', '%'.request('invoice_no').'%');
         }
 
         if (request('customer_name')) {
@@ -352,14 +359,15 @@ class VatController extends Controller
         }
 
         if (request('doc_num')) {
-            $query->where('doc_num', 'like', '%' . request('doc_num') . '%');
+            $query->where('doc_num', 'like', '%'.request('doc_num').'%');
         }
 
         return datatables()->of($query)
             ->addColumn('amount', function ($document) {
                 $dpp = number_format($document->dpp, 2);
                 $ppn = number_format($document->ppn, 2);
-                return '<small>DPP: ' . $dpp . '</small><br><small>PPN: ' . $ppn . '</small>';
+
+                return '<small>DPP: '.$dpp.'</small><br><small>PPN: '.$ppn.'</small>';
             })
             ->editColumn('create_date', function ($document) {
                 return date('d-M-Y', strtotime($document->create_date));
@@ -369,28 +377,30 @@ class VatController extends Controller
                     return '<small>No. - </small><br><small>Tgl. - </small>';
                 }
                 if (is_null($document->invoice_date)) {
-                    return '<small>No.' . $document->invoice_no . '</small><br><small>Tgl. - </small>';
+                    return '<small>No.'.$document->invoice_no.'</small><br><small>Tgl. - </small>';
                 }
-                return '<small>No.' . $document->invoice_no . '</small><br><small>Tgl.' . date('d-M-Y', strtotime($document->invoice_date)) . '</small>';
+
+                return '<small>No.'.$document->invoice_no.'</small><br><small>Tgl.'.date('d-M-Y', strtotime($document->invoice_date)).'</small>';
             })
             ->addColumn('faktur', function ($document) {
                 if (is_null($document->faktur_date)) {
-                    return '<small>No.' . $document->faktur_no . '</small><br><small>Tgl. - </small>';
+                    return '<small>No.'.$document->faktur_no.'</small><br><small>Tgl. - </small>';
                 }
-                return '<small>No.' . $document->faktur_no . '</small><br><small>Tgl.' . date('d-M-Y', strtotime($document->faktur_date)) . '</small>';
+
+                return '<small>No.'.$document->faktur_no.'</small><br><small>Tgl.'.date('d-M-Y', strtotime($document->faktur_date)).'</small>';
             })
             ->addColumn('customer', function ($document) {
-                return '<small>' . $document->customer->name . '</small>';
+                return '<small>'.$document->customer->name.'</small>';
             })
             ->addColumn('action', function ($document) {
-                $showButton = '<a href="' . route('accounting.vat.show', $document->id) . '" class="btn btn-xs btn-success">show</a>';
+                $showButton = '<a href="'.route('accounting.vat.show', $document->id).'" class="btn btn-xs btn-success">show</a>';
 
                 $attachmentButton = '';
                 if ($document->attachment) {
-                    $attachmentButton = ' <a href="' . $document->attachment . '" target="_blank" class="btn btn-xs btn-info"><i class="fas fa-paperclip"></i></a>';
+                    $attachmentButton = ' <a href="'.$document->attachment.'" target="_blank" class="btn btn-xs btn-info"><i class="fas fa-paperclip"></i></a>';
                 }
 
-                return $showButton . $attachmentButton;
+                return $showButton.$attachmentButton;
             })
             ->addIndexColumn()
             ->rawColumns(['amount', 'invoice', 'customer', 'faktur', 'action'])
@@ -409,6 +419,7 @@ class VatController extends Controller
     {
         $sales = $this->sum_amount_monthly($year, $month, 'sales');
         $purchase = $this->sum_amount_monthly($year, $month, 'purchase');
+
         return $purchase - $sales;
     }
 
@@ -423,6 +434,7 @@ class VatController extends Controller
     {
         $sales = $this->sum_amount_yearly($year, 'sales');
         $purchase = $this->sum_amount_yearly($year, 'purchase');
+
         return $purchase - $sales;
     }
 
@@ -474,7 +486,7 @@ class VatController extends Controller
                 if ($request->hasFile('attachment')) {
                     $file = $request->file('attachment');
                     $extension = $file->getClientOriginalExtension();
-                    $filename = 'faktur_' . uniqid() . '.' . $extension;
+                    $filename = 'faktur_'.uniqid().'.'.$extension;
                     $file->move(public_path('faktur'), $filename);
 
                     $faktur->attachment = $filename;
@@ -484,6 +496,7 @@ class VatController extends Controller
 
                     return redirect()->back()->with('success', 'File uploaded successfully');
                 }
+
                 return redirect()->back()->with('error', 'No file uploaded');
             } else {
                 // For sales type
@@ -514,21 +527,21 @@ class VatController extends Controller
     public function previewSapSubmission(Faktur $faktur)
     {
         // Permission check
-        if (!auth()->user()->can('submit-sap-ar-invoice')) {
+        if (! auth()->user()->can('submit-sap-ar-invoice')) {
             abort(403, 'Unauthorized action.');
         }
 
         // Validate faktur can be submitted
         $arInvoiceBuilder = new SapArInvoiceBuilder($faktur);
         $arErrors = $arInvoiceBuilder->validate();
-        if (!empty($arErrors)) {
-            return redirect()->back()->with('error', 'Validation failed: ' . implode(', ', $arErrors));
+        if (! empty($arErrors)) {
+            return redirect()->back()->with('error', 'Validation failed: '.implode(', ', $arErrors));
         }
 
         // Get service item code
         $sapService = app(SapService::class);
         $serviceItems = $sapService->getServiceItems();
-        $itemCode = !empty($serviceItems) ? ($serviceItems[0]['ItemCode'] ?? null) : null;
+        $itemCode = ! empty($serviceItems) ? ($serviceItems[0]['ItemCode'] ?? null) : null;
         if (empty($itemCode)) {
             $itemCode = config('services.sap.ar_invoice.default_item_code', 'SERVICE');
         }
@@ -539,13 +552,13 @@ class VatController extends Controller
 
         // Build JE preview data with default dates (previous EOM)
         $invoiceDate = \Carbon\Carbon::parse($faktur->invoice_date);
-        $defaultJePostingDate = $faktur->je_posting_date 
+        $defaultJePostingDate = $faktur->je_posting_date
             ? \Carbon\Carbon::parse($faktur->je_posting_date)
             : $invoiceDate->copy()->subMonth()->endOfMonth();
-        $defaultJeTaxDate = $faktur->je_tax_date 
+        $defaultJeTaxDate = $faktur->je_tax_date
             ? \Carbon\Carbon::parse($faktur->je_tax_date)
             : $defaultJePostingDate;
-        $defaultJeDueDate = $faktur->je_due_date 
+        $defaultJeDueDate = $faktur->je_due_date
             ? \Carbon\Carbon::parse($faktur->je_due_date)
             : $defaultJePostingDate;
 
@@ -563,7 +576,7 @@ class VatController extends Controller
     public function updateSapPreview(Request $request, Faktur $faktur)
     {
         // Permission check
-        if (!auth()->user()->can('submit-sap-ar-invoice')) {
+        if (! auth()->user()->can('submit-sap-ar-invoice')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized action.',
@@ -608,7 +621,7 @@ class VatController extends Controller
             $faktur->je_posting_date = $request->je_posting_date;
             $faktur->je_tax_date = $request->je_tax_date;
             $faktur->je_due_date = $request->je_due_date;
-            
+
             // Update revenue account if provided
             if ($request->has('revenue_account_code')) {
                 $validAccounts = ['41101', '41201'];
@@ -616,7 +629,7 @@ class VatController extends Controller
                     $faktur->revenue_account_code = $request->revenue_account_code;
                 }
             }
-            
+
             $faktur->save();
 
             return response()->json([
@@ -635,25 +648,25 @@ class VatController extends Controller
     public function submitToSap(Request $request, Faktur $faktur)
     {
         // Permission check
-        if (!auth()->user()->can('submit-sap-ar-invoice')) {
+        if (! auth()->user()->can('submit-sap-ar-invoice')) {
             abort(403, 'Unauthorized action.');
         }
 
         // Validate and update editable fields
-        if ($request->has('invoice_no') && !empty($request->invoice_no)) {
+        if ($request->has('invoice_no') && ! empty($request->invoice_no)) {
             $faktur->invoice_no = $request->invoice_no;
         }
-        if ($request->has('faktur_no') && !empty($request->faktur_no)) {
+        if ($request->has('faktur_no') && ! empty($request->faktur_no)) {
             $faktur->faktur_no = $request->faktur_no;
         }
-        if ($request->has('faktur_date') && !empty($request->faktur_date)) {
+        if ($request->has('faktur_date') && ! empty($request->faktur_date)) {
             $faktur->faktur_date = $request->faktur_date;
         }
 
         // Validate revenue account code if provided
         if ($request->has('revenue_account_code')) {
             $validAccounts = ['41101', '41201'];
-            if (!in_array($request->revenue_account_code, $validAccounts)) {
+            if (! in_array($request->revenue_account_code, $validAccounts)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid revenue account code. Must be 41101 or 41201.',
@@ -668,20 +681,20 @@ class VatController extends Controller
         }
 
         // Set project from request or customer
-        if ($request->has('project') && !empty($request->project)) {
+        if ($request->has('project') && ! empty($request->project)) {
             $faktur->project = $request->project;
         } elseif (empty($faktur->project)) {
             $faktur->project = $faktur->customer->project;
         }
 
         // Set JE dates from request
-        if ($request->has('je_posting_date') && !empty($request->je_posting_date)) {
+        if ($request->has('je_posting_date') && ! empty($request->je_posting_date)) {
             $faktur->je_posting_date = $request->je_posting_date;
         }
-        if ($request->has('je_tax_date') && !empty($request->je_tax_date)) {
+        if ($request->has('je_tax_date') && ! empty($request->je_tax_date)) {
             $faktur->je_tax_date = $request->je_tax_date;
         }
-        if ($request->has('je_due_date') && !empty($request->je_due_date)) {
+        if ($request->has('je_due_date') && ! empty($request->je_due_date)) {
             $faktur->je_due_date = $request->je_due_date;
         }
 
@@ -696,12 +709,12 @@ class VatController extends Controller
             // Step 1: Get valid service item code from SAP B1
             $sapService = app(SapService::class);
             $serviceItems = $sapService->getServiceItems();
-            
-            if (!empty($serviceItems)) {
+
+            if (! empty($serviceItems)) {
                 // Use the first service item found
                 $itemCode = $serviceItems[0]['ItemCode'] ?? null;
             }
-            
+
             // Fallback to configured default if no service items found
             if (empty($itemCode)) {
                 $itemCode = config('services.sap.ar_invoice.default_item_code', 'SERVICE');
@@ -711,10 +724,10 @@ class VatController extends Controller
             $arInvoiceBuilder = new SapArInvoiceBuilder($faktur, $itemCode);
             $arErrors = $arInvoiceBuilder->validate();
 
-            if (!empty($arErrors)) {
+            if (! empty($arErrors)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validation failed: ' . implode(', ', $arErrors),
+                    'message' => 'Validation failed: '.implode(', ', $arErrors),
                 ], 422);
             }
 
@@ -723,8 +736,8 @@ class VatController extends Controller
             // Step 3: Create AR Invoice in SAP B1
             $arResult = $sapService->createArInvoice($arInvoiceData);
 
-            if (!($arResult['success'] ?? false)) {
-                throw new \Exception('Failed to create AR Invoice: ' . ($arResult['message'] ?? 'Unknown error'));
+            if (! ($arResult['success'] ?? false)) {
+                throw new \Exception('Failed to create AR Invoice: '.($arResult['message'] ?? 'Unknown error'));
             }
 
             // Step 3: Update faktur with AR Invoice info
@@ -747,23 +760,23 @@ class VatController extends Controller
             ]);
 
             // Step 4: Build and validate Journal Entry with custom dates
-            $jePostingDate = $faktur->je_posting_date 
+            $jePostingDate = $faktur->je_posting_date
                 ? \Carbon\Carbon::parse($faktur->je_posting_date)
                 : null;
-            $jeTaxDate = $faktur->je_tax_date 
+            $jeTaxDate = $faktur->je_tax_date
                 ? \Carbon\Carbon::parse($faktur->je_tax_date)
                 : null;
-            $jeDueDate = $faktur->je_due_date 
+            $jeDueDate = $faktur->je_due_date
                 ? \Carbon\Carbon::parse($faktur->je_due_date)
                 : null;
 
             $jeBuilder = new SapArInvoiceJeBuilder($faktur, $jePostingDate, $jeTaxDate, $jeDueDate);
             $jeErrors = $jeBuilder->validate();
 
-            if (!empty($jeErrors)) {
+            if (! empty($jeErrors)) {
                 // AR Invoice created but JE validation failed - mark as partial
                 $faktur->sap_submission_status = 'ar_created';
-                $faktur->sap_submission_error = 'JE Validation failed: ' . implode(', ', $jeErrors);
+                $faktur->sap_submission_error = 'JE Validation failed: '.implode(', ', $jeErrors);
                 $faktur->save();
 
                 DB::commit();
@@ -771,7 +784,7 @@ class VatController extends Controller
                 return response()->json([
                     'success' => false,
                     'partial' => true,
-                    'message' => 'AR Invoice created successfully, but Journal Entry validation failed: ' . implode(', ', $jeErrors),
+                    'message' => 'AR Invoice created successfully, but Journal Entry validation failed: '.implode(', ', $jeErrors),
                     'ar_doc_num' => $arResult['doc_num'],
                 ], 422);
             }
@@ -781,10 +794,10 @@ class VatController extends Controller
             // Step 5: Create Journal Entry in SAP B1
             $jeResult = $sapService->createJournalEntry($jeData);
 
-            if (!($jeResult['success'] ?? false)) {
+            if (! ($jeResult['success'] ?? false)) {
                 // AR Invoice created but JE creation failed - mark as partial
                 $faktur->sap_submission_status = 'ar_created';
-                $faktur->sap_submission_error = 'JE Creation failed: ' . ($jeResult['message'] ?? 'Unknown error');
+                $faktur->sap_submission_error = 'JE Creation failed: '.($jeResult['message'] ?? 'Unknown error');
                 $faktur->save();
 
                 // Log JE failure
@@ -802,7 +815,7 @@ class VatController extends Controller
                 return response()->json([
                     'success' => false,
                     'partial' => true,
-                    'message' => 'AR Invoice created successfully, but Journal Entry creation failed: ' . ($jeResult['message'] ?? 'Unknown error'),
+                    'message' => 'AR Invoice created successfully, but Journal Entry creation failed: '.($jeResult['message'] ?? 'Unknown error'),
                     'ar_doc_num' => $arResult['doc_num'],
                 ], 422);
             }
@@ -843,17 +856,17 @@ class VatController extends Controller
             // Get the ItemCode that was attempted
             $itemCode = $itemCode ?? config('services.sap.ar_invoice.default_item_code', 'SERVICE');
             $errorMessage = $e->getMessage();
-            
+
             // Check for specific SAP B1 errors and provide helpful guidance
             if (stripos($errorMessage, 'Business partner catalog number linked to item not specified as sales item') !== false) {
                 $customerCode = $faktur->customer->code ?? 'N/A';
-                $errorMessage = "SAP B1 Error: The item '{$itemCode}' is not configured as a sales item for customer '{$customerCode}'. " .
-                    "To fix this in SAP B1:\n" .
-                    "1. Go to Business Partners → Select customer '{$customerCode}'\n" .
-                    "2. Go to the 'Items' tab\n" .
-                    "3. Add item '{$itemCode}' to the customer's item catalog\n" .
-                    "4. Ensure it's marked as a 'Sales Item'\n" .
-                    "5. Save the customer master data\n" .
+                $errorMessage = "SAP B1 Error: The item '{$itemCode}' is not configured as a sales item for customer '{$customerCode}'. ".
+                    "To fix this in SAP B1:\n".
+                    "1. Go to Business Partners → Select customer '{$customerCode}'\n".
+                    "2. Go to the 'Items' tab\n".
+                    "3. Add item '{$itemCode}' to the customer's item catalog\n".
+                    "4. Ensure it's marked as a 'Sales Item'\n".
+                    "5. Save the customer master data\n".
                     "Then try submitting again. (Attempted ItemCode: '{$itemCode}')";
             } elseif (stripos($errorMessage, 'item number') !== false || stripos($errorMessage, 'itemcode') !== false) {
                 $errorMessage .= " (Attempted ItemCode: '{$itemCode}'). Please configure a valid service item code in your .env file using SAP_AR_INVOICE_DEFAULT_ITEM_CODE.";
@@ -885,7 +898,7 @@ class VatController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to submit to SAP B1: ' . $errorMessage,
+                'message' => 'Failed to submit to SAP B1: '.$errorMessage,
             ], 500);
         }
     }

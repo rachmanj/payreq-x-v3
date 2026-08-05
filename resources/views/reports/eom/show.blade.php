@@ -33,9 +33,9 @@ reports / eom-journal / show
                             <dt class="col-sm-4">Amount</dt>
                             <dd class="col-sm-8">: Rp.{{ number_format($journal->amount, 2) }}</dd>
                             <dt class="col-sm-4">Created by</dt>
-                            <dd class="col-sm-8">: {{ $journal->createdBy->name }} on {{  date('d-M-Y H:m', strtotime($journal->created_at . '+8 hours')) }} wita</dd>
+                            <dd class="col-sm-8">: {{ $journal->createdBy->name }} on {{  (\Carbon\Carbon::parse($journal->created_at)->format('d-M-Y H:i')) }} wita</dd>
                             <dt class="col-sm-4">Posted by</dt>
-                            <dd class="col-sm-8">: {{ ($journal->posted_by ? $journal->postedBy->name . ' on ' . date('d-M-Y H:m', strtotime($journal->updated_at . '+8 hours')) . ' wita' : 'not posted yet') }}</dd>
+                            <dd class="col-sm-8">: {{ ($journal->posted_by ? $journal->postedBy->name . ' on ' . (\Carbon\Carbon::parse($journal->updated_at)->format('d-M-Y H:i')) . ' wita' : 'not posted yet') }}</dd>
                         </div>
                     </div>
                     <div class="col-4">

@@ -34,7 +34,7 @@ class ApprovalRequestAnggaranController extends Controller
                 return '<span class="vj-chip vj-chip-info">'.$approval_request->anggaran->rab_project.'</span>';
             })
             ->addColumn('created_at', function ($approval_request) {
-                return $approval_request->anggaran->created_at->addHours(8)->format('d-M-Y H:i:s');
+                return $approval_request->anggaran->created_at->format('d-M-Y H:i:s');
             })
             ->addColumn('type', function ($approval_request) {
                 $chipClass = match ($approval_request->anggaran->type) {

@@ -18,7 +18,7 @@ class CashInJournalController extends Controller
             $select_all_button = false;
         }
 
-        $incomings_in_cart = Incoming::where('flag', 'CJT' . auth()->user()->id)
+        $incomings_in_cart = Incoming::where('flag', 'CJT'.auth()->user()->id)
             ->get();
 
         if ($incomings_in_cart->count() > 0) {
@@ -32,12 +32,12 @@ class CashInJournalController extends Controller
 
     public function store(Request $request)
     {
-        $incomings = Incoming::where('flag', 'CJT' . auth()->user()->id)
+        $incomings = Incoming::where('flag', 'CJT'.auth()->user()->id)
             ->get();
 
-        $cash_journal = new CashJournal();
+        $cash_journal = new CashJournal;
         $cash_journal->date = $request->date;
-        $cash_journal->type = "cash-in";
+        $cash_journal->type = 'cash-in';
         $cash_journal->amount = $incomings->sum('amount');
         $cash_journal->description = $request->description;
         $cash_journal->project = auth()->user()->project;
@@ -63,7 +63,7 @@ class CashInJournalController extends Controller
         $incomings = $this->incoming_will_post();
 
         foreach ($incomings as $incoming) {
-            $incoming->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
+            $incoming->flag = 'CJT'.auth()->user()->id; // CJT = Cash Journal Temporary
             $incoming->save();
         }
 
@@ -72,7 +72,7 @@ class CashInJournalController extends Controller
 
     public function remove_all_fromcart()
     {
-        $incomings = Incoming::where('flag', 'CJT' . auth()->user()->id)
+        $incomings = Incoming::where('flag', 'CJT'.auth()->user()->id)
             ->get();
 
         foreach ($incomings as $incoming) {
@@ -86,7 +86,7 @@ class CashInJournalController extends Controller
     public function add_to_cart(Request $request)
     {
         $incoming = Incoming::findOrFail($request->incoming_id);
-        $incoming->flag = 'CJT' . auth()->user()->id; // CJT = Cash Journal Temporary
+        $incoming->flag = 'CJT'.auth()->user()->id; // CJT = Cash Journal Temporary
         $incoming->save();
 
         return redirect()->back();
@@ -118,7 +118,8 @@ class CashInJournalController extends Controller
             })
             ->editColumn('receive_date', function ($incoming) {
                 $date = new \Carbon\Carbon($incoming->receive_date);
-                return $date->addHours(8)->format('d-M-Y');
+
+                return $date->format('d-M-Y');
             })
             ->addIndexColumn()
             ->addColumn('action', 'cash-journal.in.to-cart-action')
@@ -127,7 +128,7 @@ class CashInJournalController extends Controller
 
     public function in_cart_data()
     {
-        $incomings = Incoming::where('flag', 'CJT' . auth()->user()->id)
+        $incomings = Incoming::where('flag', 'CJT'.auth()->user()->id)
             ->get();
 
         return datatables()->of($incomings)
@@ -143,7 +144,8 @@ class CashInJournalController extends Controller
             })
             ->editColumn('receive_date', function ($incoming) {
                 $date = new \Carbon\Carbon($incoming->receive_date);
-                return $date->addHours(8)->format('d-M-Y');
+
+                return $date->format('d-M-Y');
             })
             ->addIndexColumn()
             ->addColumn('action', 'cash-journal.in.in-cart-action')

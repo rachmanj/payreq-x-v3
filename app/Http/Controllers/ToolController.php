@@ -164,7 +164,7 @@ class ToolController extends Controller
         $realization_project_count = Realization::where('project', auth()->user()->project)
             ->whereIn('status', $status_include)
             ->count();
-        $nomor = 'RQ'.Carbon::now()->addHours(8)->format('y').substr(auth()->user()->project, 0, 3).str_pad($realization_project_count + 1, 3, '0', STR_PAD_LEFT);
+        $nomor = 'RQ'.Carbon::now()->format('y').substr(auth()->user()->project, 0, 3).str_pad($realization_project_count + 1, 3, '0', STR_PAD_LEFT);
 
         return $nomor;
     }

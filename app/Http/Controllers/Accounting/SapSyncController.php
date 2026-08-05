@@ -313,7 +313,7 @@ class SapSyncController extends Controller
                 return str_starts_with((string) $log->error_message, '[Manual]') ? 'Manual' : 'Automated';
             })
             ->editColumn('created_at', function ($log) {
-                return date('d-M-Y H:i', strtotime($log->created_at.'+8 hours')).' wita';
+                return \Carbon\Carbon::parse($log->created_at)->format('d-M-Y H:i').' wita';
             })
             ->editColumn('error_message', function ($log) {
                 return ltrim(str_replace('[Manual]', '', (string) $log->error_message));

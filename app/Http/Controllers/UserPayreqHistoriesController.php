@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Payreq;
 use App\Models\Realization;
-use App\Models\RealizationDetail;
-use Illuminate\Http\Request;
 
 class UserPayreqHistoriesController extends Controller
 {
@@ -27,6 +25,7 @@ class UserPayreqHistoriesController extends Controller
 
         if ($payreq->status === 'canceled') {
             $payreq->delete();
+
             return redirect()->route('user-payreqs.histories.index')->with('success', 'Payreq deleted successfully');
         } else {
             return redirect()->route('user-payreqs.histories.index')->with('error', 'Payreq cannot be deleted');
@@ -45,7 +44,7 @@ class UserPayreqHistoriesController extends Controller
 
         return datatables()->of($payreqs)
             ->editColumn('nomor', function ($payreq) {
-                return '<a href="#" style="color: black" title="' . $payreq->remarks . '">' . $payreq->nomor . '</a>';
+                return '<a href="#" style="color: black" title="'.$payreq->remarks.'">'.$payreq->nomor.'</a>';
             })
             ->editColumn('amount', function ($payreq) {
                 return number_format($payreq->amount, 2);
@@ -64,15 +63,18 @@ class UserPayreqHistoriesController extends Controller
             ->editColumn('status', function ($payreq) {
                 if ($payreq->status === 'canceled') {
                     $cancel_date = new \Carbon\Carbon($payreq->canceled_at);
-                    return '<button class="badge badge-danger">CANCELED</button> at ' . $cancel_date->addHours(8)->format('d-M-Y H:i') . ' wita';
+
+                    return '<button class="badge badge-danger">CANCELED</button> at '.$cancel_date->format('d-M-Y H:i').' wita';
                 } else {
                     $close_date = new \Carbon\Carbon($payreq->updated_at);
-                    return '<button class="badge badge-success">CLOSE</button> at ' . $close_date->addHours(8)->format('d-M-Y H:i') . ' wita';
+
+                    return '<button class="badge badge-success">CLOSE</button> at '.$close_date->format('d-M-Y H:i').' wita';
                 }
             })
             ->editColumn('approved_at', function ($payreq) {
                 $approved = new \Carbon\Carbon($payreq->approved_at);
-                return $approved->addHours(8)->format('d-M-Y H:i') . ' wita';
+
+                return $approved->format('d-M-Y H:i').' wita';
             })
             ->addColumn('duration', function ($payreq) {
                 $approved = new \Carbon\Carbon($payreq->approved_at);

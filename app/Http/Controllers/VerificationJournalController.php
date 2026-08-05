@@ -345,7 +345,7 @@ class VerificationJournalController extends Controller
             ->editColumn('date', function ($journal) {
                 $date = new \Carbon\Carbon($journal->date);
 
-                return $date->addHours(8)->format('d-M-Y');
+                return $date->format('d-M-Y');
             })
             ->addColumn('status', function ($journal) {
                 if ($journal->sap_journal_no == null) {
@@ -363,7 +363,7 @@ class VerificationJournalController extends Controller
                 } else {
                     $date = new \Carbon\Carbon($journal->sap_posting_date);
 
-                    return $date->addHours(8)->format('d-M-Y');
+                    return $date->format('d-M-Y');
                 }
             })
             ->addIndexColumn()

@@ -36,7 +36,7 @@ class EomController extends Controller
         foreach ($eom_journal_details as $detail) {
             $eom_journal->eomJournalDetails()->create([
                 'account_number' => $detail['debit']['account_number'],
-                'posting_date' =>  $eom_journal->date,
+                'posting_date' => $eom_journal->date,
                 'description' => $detail['debit']['description'],
                 'project' => $detail['debit']['project_code'],
                 'cost_center' => $detail['debit']['cost_center'],
@@ -72,7 +72,7 @@ class EomController extends Controller
                 'debit' => [
                     'account_number' => Account::where('type', 'advance')->where('project', $project)->first()->account_number,
                     'account_name' => Account::where('type', 'advance')->where('project', $project)->first()->account_name,
-                    'description' => 'EOM ' . date('dmY') . ' Journal',
+                    'description' => 'EOM '.date('dmY').' Journal',
                     'project_code' => $project,
                     'cost_center' => '30',
                     'amount' => app(OngoingDashboardController::class)->dashboard_data($project)['total_advance_employee'],
@@ -80,7 +80,7 @@ class EomController extends Controller
                 'credit' => [
                     'account_number' => Account::where('type', 'cash')->where('project', $project)->first()->account_number,
                     'account_name' => Account::where('type', 'advance')->where('project', $project)->first()->account_name,
-                    'description' => 'EOM ' . date('dmY') . ' Journal',
+                    'description' => 'EOM '.date('dmY').' Journal',
                     'project_code' => $project,
                     'cost_center' => '30',
                     'amount' => app(OngoingDashboardController::class)->dashboard_data($project)['total_advance_employee'],
@@ -104,15 +104,15 @@ class EomController extends Controller
         $eom_journal_id = request()->query('eom_journal_id');
 
         $eom_journal_details = EomJournalDetail::select(
-            "id",
-            "eom_journal_id",
-            "posting_date",
-            "account_number",
-            "d_c",
-            "description",
-            "project",
-            "cost_center",
-            "amount",
+            'id',
+            'eom_journal_id',
+            'posting_date',
+            'account_number',
+            'd_c',
+            'description',
+            'project',
+            'cost_center',
+            'amount',
         )->where('eom_journal_id', $eom_journal_id)->get();
 
         return Excel::download(new EomJournalExport($eom_journal_details), 'eom_journal.xlsx');
@@ -125,7 +125,8 @@ class EomController extends Controller
         return datatables()->of($eom_journals)
             ->editColumn('date', function ($journal) {
                 $date = new \Carbon\Carbon($journal->date);
-                return $date->addHours(8)->format('d-M-Y');
+
+                return $date->format('d-M-Y');
             })
             ->addColumn('status', function ($journal) {
                 if ($journal->sap_journal_no == null) {
@@ -139,14 +140,16 @@ class EomController extends Controller
             })
             ->addColumn('projects', function ($journal) {
                 $projects = $journal->eomJournalDetails->pluck('project')->unique()->toArray();
-                return '<small><b>' . implode(', ', $projects) . '</b></small>';
+
+                return '<small><b>'.implode(', ', $projects).'</b></small>';
             })
             ->editColumn('sap_posting_date', function ($journal) {
                 if ($journal->sap_posting_date == null) {
                     return '-';
                 } else {
                     $date = new \Carbon\Carbon($journal->sap_posting_date);
-                    return $date->addHours(8)->format('d-M-Y');
+
+                    return $date->format('d-M-Y');
                 }
             })
             ->addIndexColumn()

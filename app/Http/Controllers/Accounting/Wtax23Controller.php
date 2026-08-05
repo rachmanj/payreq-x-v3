@@ -21,7 +21,7 @@ class Wtax23Controller extends Controller
         $views = [
             'dashboard' => 'accounting.wtax23.dashboard',
             'purchase' => $status == 'outstanding' ? 'accounting.wtax23.ap.outstanding' : 'accounting.wtax23.ap.complete',
-            'default' => $status == 'outstanding' ? 'accounting.wtax23.ar.outstanding' : 'accounting.wtax23.ar.complete'
+            'default' => $status == 'outstanding' ? 'accounting.wtax23.ar.outstanding' : 'accounting.wtax23.ar.complete',
         ];
 
         if ($page === 'dashboard') {
@@ -47,7 +47,7 @@ class Wtax23Controller extends Controller
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
             $extension = $file->getClientOriginalExtension();
-            $filename = 'wtax_' . uniqid() . '.' . $extension;
+            $filename = 'wtax_'.uniqid().'.'.$extension;
             $file->move(public_path('wtax'), $filename);
             $document->filename = $filename;
         }
@@ -91,22 +91,25 @@ class Wtax23Controller extends Controller
                 return date('d-M-Y', strtotime($document->posting_date));
             })
             ->editColumn('remarks', function ($document) {
-                return '<small>' . strtolower($document->remarks) . '</small>';
+                return '<small>'.strtolower($document->remarks).'</small>';
             })
             // add column name days that count the difference between posting_date and today
             ->editColumn('days', function ($document) {
                 $today = date('Y-m-d');
                 $diff = date_diff(date_create($document->posting_date), date_create($today));
+
                 return $diff->format('%a');
             })
             ->editColumn('bupot_by', function ($document) {
-                $bupotAt = Carbon::parse($document->bupot_at)->addHours(8)->format('d-M-Y H:i');
-                return '<small>' . $document->bupot_by . '</small><br><small>at ' . $bupotAt . '</small>';
+                $bupotAt = Carbon::parse($document->bupot_at)->format('d-M-Y H:i');
+
+                return '<small>'.$document->bupot_by.'</small><br><small>at '.$bupotAt.'</small>';
             })
             ->addColumn('doc_date', function ($document) {
                 $createDate = Carbon::parse($document->create_date)->format('d-M-Y');
                 $postingDate = Carbon::parse($document->posting_date)->format('d-M-Y');
-                return $createDate . '<br>' . $postingDate;
+
+                return $createDate.'<br>'.$postingDate;
             })
             ->addColumn('action', $action_button)
             ->addIndexColumn()
@@ -134,7 +137,7 @@ class Wtax23Controller extends Controller
             '09' => 'Sep',
             '10' => 'Oct',
             '11' => 'Nov',
-            '12' => 'Dec'
+            '12' => 'Dec',
         ];
 
         $data = [];
@@ -144,7 +147,7 @@ class Wtax23Controller extends Controller
                 'year' => $year,
                 'in' => 0,
                 'out' => 0,
-                'data' => []
+                'data' => [],
             ];
 
             foreach ($months as $month => $monthName) {
@@ -153,7 +156,7 @@ class Wtax23Controller extends Controller
                     'month' => $month,
                     'month_name' => $monthName,
                     'in' => number_format($this->sum_amount_monthly($year, $month, 'in') / 1000, 2),
-                    'out' => number_format($this->sum_amount_monthly($year, $month, 'out') / 1000, 2)
+                    'out' => number_format($this->sum_amount_monthly($year, $month, 'out') / 1000, 2),
                 ];
 
                 $yearData['data'][] = $monthData;
@@ -189,7 +192,7 @@ class Wtax23Controller extends Controller
             '09' => 'Sep',
             '10' => 'Oct',
             '11' => 'Nov',
-            '12' => 'Dec'
+            '12' => 'Dec',
         ];
 
         $data = [];
@@ -201,15 +204,15 @@ class Wtax23Controller extends Controller
                     'total' => 0,
                     'percent_complete' => 0,
                     'outstanding' => 0,
-                    'complete' => 0
+                    'complete' => 0,
                 ],
                 'out' => [
                     'total' => 0,
                     'percent_complete' => 0,
                     'outstanding' => 0,
-                    'complete' => 0
+                    'complete' => 0,
                 ],
-                'data' => []
+                'data' => [],
             ];
 
             $total_in_outstanding = 0;
@@ -230,13 +233,13 @@ class Wtax23Controller extends Controller
                     'in' => [
                         'outstanding' => $in_outstanding,
                         'complete' => $in_complete,
-                        'percent' => $in_outstanding + $in_complete > 0 ? number_format($in_complete / ($in_outstanding + $in_complete) * 100, 1) : 0
+                        'percent' => $in_outstanding + $in_complete > 0 ? number_format($in_complete / ($in_outstanding + $in_complete) * 100, 1) : 0,
                     ],
                     'out' => [
                         'outstanding' => $out_outstanding,
                         'complete' => $out_complete,
-                        'percent' => $out_outstanding + $out_complete > 0 ? number_format($out_complete / ($out_outstanding + $out_complete) * 100, 1) : 0
-                    ]
+                        'percent' => $out_outstanding + $out_complete > 0 ? number_format($out_complete / ($out_outstanding + $out_complete) * 100, 1) : 0,
+                    ],
                 ];
 
                 $yearData['data'][] = $monthData;

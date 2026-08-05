@@ -37,9 +37,9 @@
               <dt class="col-sm-4">Status</dt>
               <dd class="col-sm-8">: {{ $realization->status == 'submitted' ? 'Wait approve' : ucfirst($realization->status) }}</dd>
               <dt class="col-sm-4">Submitted at</dt>
-              <dd class="col-sm-8">: {{ $submit_at->addHours(8)->format('d-M-Y H:i:s') . ' wita'  }}</dd>
+              <dd class="col-sm-8">: {{ $submit_at->format('d-M-Y H:i:s') . ' wita'  }}</dd>
               <dt class="col-sm-4">Created at</dt>
-              <dd class="col-sm-8">: {{ $realization->created_at->addHours(8)->format('d-M-Y H:i:s') . ' wita' }}</dd>
+              <dd class="col-sm-8">: {{ $realization->created_at->format('d-M-Y H:i:s') . ' wita' }}</dd>
             </div>
           </div>
 
