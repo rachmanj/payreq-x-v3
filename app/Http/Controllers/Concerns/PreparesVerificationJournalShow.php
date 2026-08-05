@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\SapSubmissionLog;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
+use App\Support\VerificationJournalDetailDescriptionEnricher;
 
 trait PreparesVerificationJournalShow
 {
@@ -34,7 +35,7 @@ trait PreparesVerificationJournalShow
                 $account = Account::where('account_number', $detail->account_code)->first();
                 $detail->account_name = $account ? $account->account_name : 'not found';
 
-                return $detail;
+                return VerificationJournalDetailDescriptionEnricher::enrich($detail);
             });
 
         $submissionLogs = SapSubmissionLog::where('verification_journal_id', $vj->id)

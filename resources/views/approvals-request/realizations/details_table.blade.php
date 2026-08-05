@@ -52,17 +52,7 @@
                                     <td class="description-cell">
                                         <div class="description-display">
                                             {{ $item->description }}
-                                            @if ($item->unit_no != null)
-                                                <br />
-                                                @if ($item->type === 'fuel')
-                                                    <small>Unit No: {{ $item->unit_no }}, {{ $item->type }}
-                                                        {{ $item->qty }} {{ $item->uom }}. HM:
-                                                        {{ $item->km_position }}</small>
-                                                @else
-                                                    <small>Unit No: {{ $item->unit_no }}, {{ $item->type }}, HM:
-                                                        {{ $item->km_position }}</small>
-                                                @endif
-                                            @endif
+                                            @include('partials.realization-detail-meta', ['detail' => $item])
                                         </div>
                                     </td>
                                     <td class="department-cell">

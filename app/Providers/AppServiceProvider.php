@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\ApprovalPlan;
 use App\Models\OverdueExtension;
+use Illuminate\Foundation\Console\ServeCommand;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
@@ -24,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (PHP_OS_FAMILY === 'Windows' && ! in_array('SystemRoot', ServeCommand::$passthroughVariables, true)) {
+            ServeCommand::$passthroughVariables[] = 'SystemRoot';
+        }
+
         Paginator::useBootstrapFive();
 
         View::composer(['templates.partials.sidebar', 'templates.partials.menu.accounting', 'templates.partials.menu.admin'], function ($view): void {

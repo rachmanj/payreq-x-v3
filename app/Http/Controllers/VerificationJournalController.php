@@ -10,6 +10,7 @@ use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
+use App\Support\VerificationJournalDetailDescriptionEnricher;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -459,90 +460,7 @@ class VerificationJournalController extends Controller
             $detail->akun = $detail->account_code.' - '.$detail->account_name;
             $detail->cost_center = $detail->cost_center.' <br><small><b> '.$detail->dept_akronim.'</b></small>';
 
-            // Enrich description with additional information from realization details - only for debit entries
-            if ($detail->realization_no && $detail->debit_credit === 'debit') {
-                // Try to find the related realization by nomor
-                $realization = Realization::where('nomor', $detail->realization_no)->first();
-
-                if ($realization) {
-                    // Get all realization details for this realization
-                    $r_details_all = RealizationDetail::where('realization_id', $realization->id)->get();
-
-                    // First try to match by description and account
-                    $r_details = null;
-
-                    foreach ($r_details_all as $rd) {
-                        // Try to get the account
-                        $rd_account = $rd->account_id ? Account::find($rd->account_id) : null;
-                        $rd_account_number = $rd_account ? $rd_account->account_number : null;
-
-                        // Check if this detail matches by account code and description similarity
-                        if (
-                            $rd_account_number === $detail->account_code &&
-                            (stripos($detail->description, $rd->description) !== false ||
-                                stripos($rd->description, $detail->description) !== false)
-                        ) {
-                            $r_details = $rd;
-                            break;
-                        }
-                    }
-
-                    // If no match found, try just by account
-                    if (! $r_details) {
-                        foreach ($r_details_all as $rd) {
-                            $rd_account = $rd->account_id ? Account::find($rd->account_id) : null;
-                            $rd_account_number = $rd_account ? $rd_account->account_number : null;
-
-                            if ($rd_account_number === $detail->account_code) {
-                                $r_details = $rd;
-                                break;
-                            }
-                        }
-                    }
-
-                    // If still no match found but there's only one realization detail, use that
-                    if (! $r_details && count($r_details_all) === 1) {
-                        $r_details = $r_details_all->first();
-                    }
-
-                    // If we found a matching realization detail, add the additional info
-                    if ($r_details) {
-                        // Build additional info string
-                        $additionalInfo = [];
-
-                        if (! empty($r_details->unit_no)) {
-                            $additionalInfo[] = 'Unit: '.$r_details->unit_no;
-                        }
-
-                        if (! empty($r_details->nopol)) {
-                            $additionalInfo[] = 'Nopol: '.$r_details->nopol;
-                        }
-
-                        if (! empty($r_details->type)) {
-                            $additionalInfo[] = 'Type: '.$r_details->type;
-                        }
-
-                        if (! empty($r_details->qty)) {
-                            $additionalInfo[] = 'Qty: '.$r_details->qty;
-
-                            if (! empty($r_details->uom)) {
-                                $additionalInfo[count($additionalInfo) - 1] .= ' '.$r_details->uom;
-                            }
-                        }
-
-                        if (! empty($r_details->km_position)) {
-                            $additionalInfo[] = 'KM: '.$r_details->km_position;
-                        }
-
-                        // Add additional info to description if any exists
-                        if (count($additionalInfo) > 0) {
-                            $detail->description = $detail->description."\n[".implode(' | ', $additionalInfo).']';
-                        }
-                    }
-                }
-            }
-
-            return $detail;
+            return VerificationJournalDetailDescriptionEnricher::enrich($detail);
         });
 
         return datatables()->of($vj_details)

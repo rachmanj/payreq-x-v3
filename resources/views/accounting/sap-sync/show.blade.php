@@ -425,7 +425,11 @@
                                                 <small class="text-muted">{{ $item['account_name'] }}</small>
                                             @endif
                                         </td>
-                                        <td>{{ $item['description'] }}</td>
+                                        <td>
+                                            @include('partials.verification-journal-detail-description', [
+                                                'description' => $item->description,
+                                            ])
+                                        </td>
                                         <td class="text-center">
                                             <span class="vj-chip vj-chip-info">{{ $item['project'] }}</span>
                                         </td>
