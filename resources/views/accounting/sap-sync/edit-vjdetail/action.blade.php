@@ -5,21 +5,23 @@
 @endphp
 
 @if ($vj && !$vj->sap_journal_no)
-    <button type="button" class="btn btn-xs btn-warning edit-btn" data-toggle="modal"
-        data-target="#vjdetail-edit-{{ $model->id }}">
-        <i class="fas fa-edit"></i> Edit
-    </button>
+    <div class="vj-inline-actions">
+        <button type="button" class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-edit edit-btn"
+            data-toggle="modal" data-target="#vjdetail-edit-{{ $model->id }}">
+            <i class="fas fa-edit"></i>
+            <span>Edit</span>
+        </button>
+    </div>
 @elseif ($vj && $vj->sap_journal_no)
-    <span class="badge badge-secondary" title="Cannot edit: Already posted to SAP">
+    <span class="vj-chip vj-chip-neutral" title="Cannot edit: Already posted to SAP">
         <i class="fas fa-lock"></i> Posted
     </span>
 @endif
 
-{{-- modal update --}}
 <div class="modal fade" id="vjdetail-edit-{{ $model->id }}">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-warning">
+            <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="fas fa-edit"></i> Edit VJ Detail
                 </h5>
@@ -35,17 +37,11 @@
                 <input type="hidden" name="debit_credit" value="{{ $model->debit_credit }}">
 
                 <div class="modal-body">
-                    @php
-                        $vj = $vj ?? $model->verificationJournal;
-                    @endphp
-                    
                     @if ($model->debit_credit === 'credit' && $vj)
-                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                            <i class="fas fa-exclamation-triangle"></i> 
-                            <strong>Credit Entry:</strong> Only cash or bank accounts from project <strong>{{ $vj->project }}</strong> can be selected.
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                        <div class="vj-alert vj-alert-warning mb-3">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Credit Entry:</strong> Only cash or bank accounts from project
+                            <strong>{{ $vj->project }}</strong> can be selected.
                         </div>
                     @endif
 
@@ -98,97 +94,98 @@
                     </div>
 
                     @if ($model->debit_credit === 'debit' && $model->realization_no && $realizationDetail)
-                        <hr>
-                        <h6 class="text-muted mb-3">
-                            <i class="fas fa-truck"></i> Unit / Expense Details
-                        </h6>
-                        <input type="hidden" name="realization_detail_id" value="{{ $realizationDetail->id }}">
+                        <div class="vj-form-panel">
+                            <h6 class="mb-3">
+                                <i class="fas fa-truck"></i> Unit / Expense Details
+                            </h6>
+                            <input type="hidden" name="realization_detail_id" value="{{ $realizationDetail->id }}">
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="unit_no-{{ $model->id }}">Unit No</label>
-                                    <select id="unit_no-{{ $model->id }}" name="unit_no"
-                                        class="form-control select2-modal">
-                                        <option value="">-- select unit no --</option>
-                                        @foreach ($equipments as $item)
-                                            <option value="{{ $item->unit_code }}"
-                                                data-nopol="{{ $item->nomor_polisi }}"
-                                                {{ old('unit_no', $realizationDetail->unit_no) == $item->unit_code ? 'selected' : '' }}>
-                                                {{ $item->unit_code }} - {{ $item->project }} -
-                                                {{ $item->plant_group }} - {{ $item->nomor_polisi }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="unit_no-{{ $model->id }}">Unit No</label>
+                                        <select id="unit_no-{{ $model->id }}" name="unit_no"
+                                            class="form-control select2-modal">
+                                            <option value="">-- select unit no --</option>
+                                            @foreach ($equipments as $item)
+                                                <option value="{{ $item->unit_code }}"
+                                                    data-nopol="{{ $item->nomor_polisi }}"
+                                                    {{ old('unit_no', $realizationDetail->unit_no) == $item->unit_code ? 'selected' : '' }}>
+                                                    {{ $item->unit_code }} - {{ $item->project }} -
+                                                    {{ $item->plant_group }} - {{ $item->nomor_polisi }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="nopol-{{ $model->id }}">No Polisi</label>
+                                        <input type="text" id="nopol-{{ $model->id }}" name="nopol"
+                                            class="form-control"
+                                            value="{{ old('nopol', $realizationDetail->nopol) }}">
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="nopol-{{ $model->id }}">No Polisi</label>
-                                    <input type="text" id="nopol-{{ $model->id }}" name="nopol"
-                                        class="form-control"
-                                        value="{{ old('nopol', $realizationDetail->nopol) }}">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="expense_date-{{ $model->id }}">Expense Date</label>
+                                        <input type="date" id="expense_date-{{ $model->id }}" name="expense_date"
+                                            class="form-control"
+                                            value="{{ old('expense_date', $realizationDetail->expense_date ? \Illuminate\Support\Carbon::parse($realizationDetail->expense_date)->format('Y-m-d') : $model->realization_date) }}">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="type-{{ $model->id }}">Type</label>
+                                        <select id="type-{{ $model->id }}" name="type" class="form-control select2-modal">
+                                            <option value="">-- type --</option>
+                                            @foreach (['fuel' => 'Fuel', 'service' => 'Service', 'tax' => 'STNK / Tax', 'other' => 'Others'] as $value => $label)
+                                                <option value="{{ $value }}"
+                                                    {{ old('type', $realizationDetail->type) == $value ? 'selected' : '' }}>
+                                                    {{ $label }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="qty-{{ $model->id }}">Qty</label>
+                                        <input type="number" id="qty-{{ $model->id }}" name="qty" class="form-control"
+                                            value="{{ old('qty', $realizationDetail->qty) }}">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="uom-{{ $model->id }}">UOM</label>
+                                        <select id="uom-{{ $model->id }}" name="uom" class="form-control select2-modal">
+                                            <option value="">-- uom --</option>
+                                            @foreach (['liter' => 'liter', 'each' => 'Each'] as $value => $label)
+                                                <option value="{{ $value }}"
+                                                    {{ old('uom', $realizationDetail->uom) == $value ? 'selected' : '' }}>
+                                                    {{ $label }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="expense_date-{{ $model->id }}">Expense Date</label>
-                                    <input type="date" id="expense_date-{{ $model->id }}" name="expense_date"
-                                        class="form-control"
-                                        value="{{ old('expense_date', $realizationDetail->expense_date ? \Illuminate\Support\Carbon::parse($realizationDetail->expense_date)->format('Y-m-d') : $model->realization_date) }}">
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="type-{{ $model->id }}">Type</label>
-                                    <select id="type-{{ $model->id }}" name="type" class="form-control select2-modal">
-                                        <option value="">-- type --</option>
-                                        @foreach (['fuel' => 'Fuel', 'service' => 'Service', 'tax' => 'STNK / Tax', 'other' => 'Others'] as $value => $label)
-                                            <option value="{{ $value }}"
-                                                {{ old('type', $realizationDetail->type) == $value ? 'selected' : '' }}>
-                                                {{ $label }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="qty-{{ $model->id }}">Qty</label>
-                                    <input type="number" id="qty-{{ $model->id }}" name="qty" class="form-control"
-                                        value="{{ old('qty', $realizationDetail->qty) }}">
-                                </div>
-                            </div>
-
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="uom-{{ $model->id }}">UOM</label>
-                                    <select id="uom-{{ $model->id }}" name="uom" class="form-control select2-modal">
-                                        <option value="">-- uom --</option>
-                                        @foreach (['liter' => 'liter', 'each' => 'Each'] as $value => $label)
-                                            <option value="{{ $value }}"
-                                                {{ old('uom', $realizationDetail->uom) == $value ? 'selected' : '' }}>
-                                                {{ $label }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group mb-0">
-                                    <label for="km_position-{{ $model->id }}">HM</label>
-                                    <input type="number" id="km_position-{{ $model->id }}" name="km_position"
-                                        class="form-control"
-                                        value="{{ old('km_position', $realizationDetail->km_position) }}">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label for="km_position-{{ $model->id }}">HM</label>
+                                        <input type="number" id="km_position-{{ $model->id }}" name="km_position"
+                                            class="form-control"
+                                            value="{{ old('km_position', $realizationDetail->km_position) }}">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -196,10 +193,11 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times"></i> Cancel
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
                     </button>
-                    <button type="submit" class="btn btn-primary submit-btn">
+                    <button type="submit" class="vj-btn vj-btn-primary submit-btn">
                         <i class="fas fa-save"></i> Save Changes
                     </button>
                 </div>
@@ -210,9 +208,7 @@
 
 <script>
     $(document).ready(function() {
-        // Initialize modal when it's shown
         $('#vjdetail-edit-{{ $model->id }}').on('shown.bs.modal', function() {
-            // Initialize Select2 elements
             $('#account_code-{{ $model->id }}').select2({
                 theme: 'bootstrap4',
                 width: '100%',
@@ -247,15 +243,11 @@
             });
         });
 
-        // Form submission via AJAX
         $('#vjdetail-form-{{ $model->id }}').on('submit', function(e) {
             e.preventDefault();
 
-            // Get form data for debugging
             const formData = $(this).serialize();
-            console.log("Form data being submitted:", formData);
 
-            // Show loading state
             let submitBtn = $(this).find('.submit-btn');
             let originalText = submitBtn.html();
             submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Saving...');
@@ -275,7 +267,7 @@
                         window.showAlert(response.message || 'Update failed', 'danger');
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function(xhr) {
                     let errorMessage = 'An error occurred while updating';
 
                     if (xhr.responseJSON && xhr.responseJSON.message) {

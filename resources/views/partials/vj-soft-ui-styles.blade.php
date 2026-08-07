@@ -663,7 +663,8 @@
 
 .vj-show #mypayreqs thead th,
 .vj-show #realizations thead th,
-.vj-show #details-table thead th {
+.vj-show #details-table thead th,
+.vj-show #vj_details thead th {
     background: #f8f9fa;
     border-color: #e9ecef;
     color: #495057;

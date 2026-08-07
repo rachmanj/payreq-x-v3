@@ -921,10 +921,10 @@ class SapSyncController extends Controller
                 return $vj_detail->cost_center.' <br><small><b> '.Department::where('sap_code', $vj_detail->cost_center)->first()->akronim.'</b></small>';
             })
             ->addColumn('debit_credit_badge', function ($vj_detail) {
-                $badgeClass = $vj_detail->debit_credit === 'debit' ? 'badge-primary' : 'badge-danger';
+                $chipClass = $vj_detail->debit_credit === 'debit' ? 'vj-chip-primary' : 'vj-chip-danger';
                 $badgeText = strtoupper($vj_detail->debit_credit);
 
-                return '<span class="badge '.$badgeClass.'">'.$badgeText.'</span>';
+                return '<span class="vj-chip '.$chipClass.'">'.$badgeText.'</span>';
             })
             ->addIndexColumn()
             ->addColumn('action', function ($vj_detail) use ($vj, $equipments) {

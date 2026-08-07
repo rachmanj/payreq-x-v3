@@ -9,125 +9,113 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card card-primary card-outline">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-file-invoice"></i> VJ Details
-                    </h3>
-                    <div class="card-tools">
-                        <a href="{{ route('accounting.sap-sync.show', $vj->id) }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="fas fa-arrow-left"></i> Back
+    <div class="vj-show">
+        <div class="vj-stat-grid mb-3">
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-hashtag"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">VJ Number</span>
+                    <span class="vj-stat-value">{{ $vj->nomor }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-success">
+                <div class="vj-stat-icon"><i class="fas fa-project-diagram"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Project</span>
+                    <span class="vj-stat-value">{{ $vj->project }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-neutral">
+                <div class="vj-stat-icon"><i class="fas fa-user"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Creator</span>
+                    <span class="vj-stat-value">{{ $vj->createdBy->name }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-file-invoice"></i> VJ Details
+                        </h3>
+                        <a href="{{ route('accounting.sap-sync.show', $vj->id) }}" class="vj-action-item vj-action-print">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back</span>
                         </a>
                     </div>
-                </div>
 
-                <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="info-box bg-light">
-                                <div class="info-box-content">
-                                    <span class="info-box-text text-muted">VJ Number</span>
-                                    <span class="info-box-number">{{ $vj->nomor }}</span>
-                                </div>
-                            </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table id="vj_details" class="table table-bordered table-striped table-hover mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th width="8%">Type</th>
+                                        <th width="18%">Account / Acc Name</th>
+                                        <th width="22%">Description</th>
+                                        <th width="8%">Project</th>
+                                        <th width="10%">Cost Center</th>
+                                        <th width="12%">Amount</th>
+                                        <th width="10%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-md-4">
-                            <div class="info-box bg-light">
-                                <div class="info-box-content">
-                                    <span class="info-box-text text-muted">Project</span>
-                                    <span class="info-box-number">{{ $vj->project }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="info-box bg-light">
-                                <div class="info-box-content">
-                                    <span class="info-box-text text-muted">Creator</span>
-                                    <span class="info-box-number">{{ $vj->createdBy->name }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table id="vj_details" class="table table-bordered table-striped table-hover">
-                            <thead class="bg-primary">
-                                <tr>
-                                    <th width="5%">#</th>
-                                    <th width="8%">Type</th>
-                                    <th width="18%">Account / Acc Name</th>
-                                    <th width="22%">Description</th>
-                                    <th width="8%">Project</th>
-                                    <th width="10%">Cost Center</th>
-                                    <th width="12%">Amount</th>
-                                    <th width="10%">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- DataTables will fill this -->
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Status Messages -->
     <div id="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;"></div>
 
-    <!-- Store CSRF token for AJAX requests -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 @endsection
 
 @section('styles')
-    <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}" />
-    <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    @include('partials.vj-soft-ui-styles')
+
     <style>
-        .table thead th {
-            vertical-align: middle;
-            text-align: center;
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: rgba(0, 123, 255, 0.1);
-        }
-
         .select2-container--bootstrap4 .select2-selection--single {
             height: calc(2.25rem + 2px) !important;
         }
 
-        /* Fix for modal select2 */
         .select2-container {
             z-index: 9999 !important;
         }
 
-        /* Style for alerts */
-        #alert-container .alert {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 4px;
+        #alert-container .vj-alert {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 0.5rem;
         }
 
-        /* Amount styling */
+        #alert-container .vj-alert-success {
+            background: #e8f5e9;
+            border-color: #c8e6c9;
+            color: #198754;
+        }
+
         .amount-debit {
-            color: #28a745;
-            font-weight: bold;
+            color: #198754;
+            font-weight: 600;
         }
 
         .amount-credit {
             color: #dc3545;
-            font-weight: bold;
+            font-weight: 600;
         }
 
-        /* Description additional info styling */
         .additional-info {
             display: block;
             color: #6c757d;
@@ -140,37 +128,31 @@
 @endsection
 
 @section('scripts')
-    <!-- DataTables  & Plugins -->
     <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables/datatables.min.js') }}"></script>
-    <!-- Select2 -->
     <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
 
     <script>
         $(function() {
-            // Setup CSRF token for all AJAX requests
             $.ajaxSetup({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
 
-            // Format number function
             function formatNumber(number) {
                 return new Intl.NumberFormat('id-ID').format(number);
             }
 
-            // Initialize DataTable
             let table = $("#vj_details").DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
                     url: '{{ route('accounting.sap-sync.edit_vjdetail_data', ['vj_id' => $vj->id]) }}',
                     error: function(xhr, error, thrown) {
-                        // Handle AJAX errors in DataTable
                         window.showAlert('Error loading data. Please refresh the page.', 'danger');
                         console.error("DataTable error:", error, thrown);
                     }
@@ -192,12 +174,10 @@
                         data: 'description',
                         render: function(data, type, row) {
                             if (type === 'display') {
-                                // Check if description contains additional info (indicated by \n)
                                 if (data && data.includes('\n')) {
                                     let parts = data.split('\n');
                                     let mainDesc = parts[0];
-                                    let additionalInfo = parts[1].replace(/\[|\]/g,
-                                        ''); // Remove brackets
+                                    let additionalInfo = parts[1].replace(/\[|\]/g, '');
 
                                     return mainDesc + '<small class="additional-info">' +
                                         additionalInfo + '</small>';
@@ -212,14 +192,13 @@
                     },
                     {
                         data: 'cost_center',
-                        render: function(data, type, row) {
-                            return data; // Already formatted with HTML in controller
+                        render: function(data) {
+                            return data;
                         }
                     },
                     {
                         data: 'amount',
                         render: function(data, type, row) {
-                            // Format the amount with thousand separators and add class
                             if (type === 'display') {
                                 let formattedAmount = formatNumber(Math.abs(parseFloat(data) || 0));
                                 let cssClass = row.debit_credit === 'debit' ? 'amount-debit' :
@@ -254,24 +233,24 @@
                 }
             });
 
-            // Function to show alerts
             window.showAlert = function(message, type) {
-                const alertDiv = $(`<div class="alert alert-${type} alert-dismissible fade show">
-                              <button type="button" class="close" data-dismiss="alert">&times;</button>
-                              ${message}
-                            </div>`);
+                const alertClass = type === 'success'
+                    ? 'vj-alert-success'
+                    : (type === 'danger' ? 'vj-alert-danger' : 'vj-alert-warning');
+
+                const alertDiv = $(`<div class="vj-alert ${alertClass} alert-dismissible fade show">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    ${message}
+                </div>`);
 
                 $("#alert-container").append(alertDiv);
 
-                // Auto dismiss after 5 seconds
                 setTimeout(function() {
                     alertDiv.alert('close');
                 }, 5000);
             }
 
-            // Handle errors for AJAX requests globally
             $(document).ajaxError(function(event, jqXHR, settings, thrownError) {
-                // Only handle errors not already handled in specific error callbacks
                 if (settings.error === undefined && jqXHR.status !== 0) {
                     console.error("Global AJAX error:", thrownError);
                     console.error("Response text:", jqXHR.responseText);
@@ -282,7 +261,6 @@
                         errorMessage = jqXHR.responseJSON.message;
                     }
 
-                    // Don't show error if it's a DataTable ajax request (handled separately)
                     if (!settings.url.includes(
                             '{{ route('accounting.sap-sync.edit_vjdetail_data', ['vj_id' => $vj->id]) }}'
                         )) {
