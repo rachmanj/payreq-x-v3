@@ -1,5 +1,7 @@
 @php
     $vj = $vj ?? $model->verificationJournal;
+    $equipments = $equipments ?? collect();
+    $realizationDetail = $realizationDetail ?? \App\Support\VerificationJournalDetailDescriptionEnricher::matchedRealizationDetail($model);
 @endphp
 
 @if ($vj && !$vj->sap_journal_no)
@@ -15,7 +17,7 @@
 
 {{-- modal update --}}
 <div class="modal fade" id="vjdetail-edit-{{ $model->id }}">
-    <div class="modal-dialog modal-md">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-warning">
                 <h5 class="modal-title">
@@ -92,8 +94,105 @@
 
                     <div class="form-group">
                         <label for="description">Description</label>
-                        <textarea class="form-control" name="description" rows="3">{{ old('description', $model->description) }}</textarea>
+                        <textarea class="form-control" name="description" rows="3">{{ old('description', \App\Support\VerificationJournalDetailDescriptionEnricher::baseDescription($model->description)) }}</textarea>
                     </div>
+
+                    @if ($model->debit_credit === 'debit' && $model->realization_no && $realizationDetail)
+                        <hr>
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-truck"></i> Unit / Expense Details
+                        </h6>
+                        <input type="hidden" name="realization_detail_id" value="{{ $realizationDetail->id }}">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="unit_no-{{ $model->id }}">Unit No</label>
+                                    <select id="unit_no-{{ $model->id }}" name="unit_no"
+                                        class="form-control select2-modal">
+                                        <option value="">-- select unit no --</option>
+                                        @foreach ($equipments as $item)
+                                            <option value="{{ $item->unit_code }}"
+                                                data-nopol="{{ $item->nomor_polisi }}"
+                                                {{ old('unit_no', $realizationDetail->unit_no) == $item->unit_code ? 'selected' : '' }}>
+                                                {{ $item->unit_code }} - {{ $item->project }} -
+                                                {{ $item->plant_group }} - {{ $item->nomor_polisi }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="nopol-{{ $model->id }}">No Polisi</label>
+                                    <input type="text" id="nopol-{{ $model->id }}" name="nopol"
+                                        class="form-control"
+                                        value="{{ old('nopol', $realizationDetail->nopol) }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="expense_date-{{ $model->id }}">Expense Date</label>
+                                    <input type="date" id="expense_date-{{ $model->id }}" name="expense_date"
+                                        class="form-control"
+                                        value="{{ old('expense_date', $realizationDetail->expense_date ? \Illuminate\Support\Carbon::parse($realizationDetail->expense_date)->format('Y-m-d') : $model->realization_date) }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="type-{{ $model->id }}">Type</label>
+                                    <select id="type-{{ $model->id }}" name="type" class="form-control select2-modal">
+                                        <option value="">-- type --</option>
+                                        @foreach (['fuel' => 'Fuel', 'service' => 'Service', 'tax' => 'STNK / Tax', 'other' => 'Others'] as $value => $label)
+                                            <option value="{{ $value }}"
+                                                {{ old('type', $realizationDetail->type) == $value ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="qty-{{ $model->id }}">Qty</label>
+                                    <input type="number" id="qty-{{ $model->id }}" name="qty" class="form-control"
+                                        value="{{ old('qty', $realizationDetail->qty) }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="uom-{{ $model->id }}">UOM</label>
+                                    <select id="uom-{{ $model->id }}" name="uom" class="form-control select2-modal">
+                                        <option value="">-- uom --</option>
+                                        @foreach (['liter' => 'liter', 'each' => 'Each'] as $value => $label)
+                                            <option value="{{ $value }}"
+                                                {{ old('uom', $realizationDetail->uom) == $value ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label for="km_position-{{ $model->id }}">HM</label>
+                                    <input type="number" id="km_position-{{ $model->id }}" name="km_position"
+                                        class="form-control"
+                                        value="{{ old('km_position', $realizationDetail->km_position) }}">
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="modal-footer">
@@ -132,6 +231,19 @@
                 theme: 'bootstrap4',
                 width: '100%',
                 dropdownParent: $('#vjdetail-edit-{{ $model->id }}')
+            });
+
+            $('#unit_no-{{ $model->id }}, #type-{{ $model->id }}, #uom-{{ $model->id }}').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#vjdetail-edit-{{ $model->id }}')
+            });
+
+            $('#unit_no-{{ $model->id }}').on('change', function() {
+                const nopol = $(this).find(':selected').data('nopol');
+                if (nopol) {
+                    $('#nopol-{{ $model->id }}').val(nopol);
+                }
             });
         });
 

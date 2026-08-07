@@ -460,10 +460,13 @@ class VerificationJournalController extends Controller
             $detail->akun = $detail->account_code.' - '.$detail->account_name;
             $detail->cost_center = $detail->cost_center.' <br><small><b> '.$detail->dept_akronim.'</b></small>';
 
-            return VerificationJournalDetailDescriptionEnricher::enrich($detail);
+            return $detail;
         });
 
         return datatables()->of($vj_details)
+            ->editColumn('description', function ($detail) {
+                return VerificationJournalDetailDescriptionEnricher::displayDescription($detail);
+            })
             ->addIndexColumn()
             ->addColumn('action', function ($detail) {
                 return view('accounting.sap-sync.edit-vjdetail.action', ['model' => $detail])->render();

@@ -7,13 +7,16 @@ use App\Http\Controllers\Concerns\PreparesVerificationJournalShow;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Department;
+use App\Models\Equipment;
 use App\Models\Realization;
+use App\Models\RealizationDetail;
 use App\Models\SapSubmissionLog;
 use App\Models\User;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
 use App\Services\SapJournalSubmissionService;
 use App\Services\SapService;
+use App\Support\VerificationJournalDetailDescriptionEnricher;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -546,6 +549,28 @@ class SapSyncController extends Controller
         return $user->hasAnyRole(['superadmin', 'admin', 'cashier', 'cashier_bo']);
     }
 
+    protected function equipmentsForVjDetailForm(User $user)
+    {
+        if (in_array($user->project, ['000H', 'APS', '001H'], true)) {
+            return Equipment::orderBy('unit_code')->get();
+        }
+
+        return Equipment::where('project', $user->project)->orderBy('unit_code')->get();
+    }
+
+    protected function realizationDetailBelongsToVjDetail(
+        RealizationDetail $realizationDetail,
+        VerificationJournalDetail $vjDetail
+    ): bool {
+        if (! $vjDetail->realization_no) {
+            return false;
+        }
+
+        $realization = Realization::find($realizationDetail->realization_id);
+
+        return $realization && $realization->nomor === $vjDetail->realization_no;
+    }
+
     public function reverseToSap(Request $request)
     {
         $request->validate([
@@ -860,6 +885,7 @@ class SapSyncController extends Controller
 
         return view('accounting.sap-sync.edit-vjdetail.index', [
             'vj' => $vj,
+            'equipments' => $this->equipmentsForVjDetailForm(auth()->user()),
         ]);
     }
 
@@ -878,11 +904,16 @@ class SapSyncController extends Controller
             return response()->json(['error' => 'You do not have permission to edit this verification journal.'], 403);
         }
 
+        $equipments = $this->equipmentsForVjDetailForm(auth()->user());
+
         $vj_details = VerificationJournalDetail::with('verificationJournal')
             ->where('verification_journal_id', $vj_id)
             ->get();
 
         return datatables()->of($vj_details)
+            ->editColumn('description', function ($vj_detail) {
+                return VerificationJournalDetailDescriptionEnricher::displayDescription($vj_detail);
+            })
             ->addColumn('akun', function ($vj_detail) {
                 return $vj_detail->account_code.' <br><small><b> '.Account::where('account_number', $vj_detail->account_code)->first()->account_name.'</b></small>';
             })
@@ -896,10 +927,12 @@ class SapSyncController extends Controller
                 return '<span class="badge '.$badgeClass.'">'.$badgeText.'</span>';
             })
             ->addIndexColumn()
-            ->addColumn('action', function ($vj_detail) use ($vj) {
+            ->addColumn('action', function ($vj_detail) use ($vj, $equipments) {
                 return view('accounting.sap-sync.edit-vjdetail.action', [
                     'model' => $vj_detail,
                     'vj' => $vj,
+                    'equipments' => $equipments,
+                    'realizationDetail' => VerificationJournalDetailDescriptionEnricher::matchedRealizationDetail($vj_detail),
                 ])->render();
             })
             ->rawColumns(['akun', 'action', 'cost_center', 'debit_credit_badge'])
@@ -927,7 +960,22 @@ class SapSyncController extends Controller
             ], 422);
         }
 
-        $account = Account::where('account_number', $request->account_code)->first();
+        $validated = $request->validate([
+            'account_code' => ['required', 'string'],
+            'project' => ['required', 'string'],
+            'cost_center' => ['required', 'string'],
+            'description' => ['required', 'string', 'max:255'],
+            'realization_detail_id' => ['nullable', 'integer', 'exists:realization_details,id'],
+            'unit_no' => ['nullable', 'string', 'max:20'],
+            'nopol' => ['nullable', 'string', 'max:50'],
+            'expense_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'type' => ['nullable', 'in:fuel,service,tax,other'],
+            'qty' => ['nullable', 'numeric'],
+            'uom' => ['nullable', 'in:liter,each'],
+            'km_position' => ['nullable', 'integer', 'min:0', 'max:99999999'],
+        ]);
+
+        $account = Account::where('account_number', $validated['account_code'])->first();
 
         if (! $account) {
             return response()->json([
@@ -959,14 +1007,34 @@ class SapSyncController extends Controller
             }
         }
 
-        $vj_detail->account_code = $request->account_code;
+        $vj_detail->account_code = $validated['account_code'];
         $vj_detail->project = $this->canChangeVjDetailProject(auth()->user())
-            ? $request->project
+            ? $validated['project']
             : $vj_detail->project;
-        $vj_detail->cost_center = $request->cost_center;
-        $vj_detail->description = $request->description;
+        $vj_detail->cost_center = $validated['cost_center'];
+        $vj_detail->description = VerificationJournalDetailDescriptionEnricher::baseDescription($validated['description']);
+
+        if (! empty($validated['expense_date'])) {
+            $vj_detail->realization_date = $validated['expense_date'];
+        }
 
         $vj_detail->save();
+
+        if (! empty($validated['realization_detail_id'])) {
+            $realizationDetail = RealizationDetail::find($validated['realization_detail_id']);
+
+            if ($realizationDetail && $this->realizationDetailBelongsToVjDetail($realizationDetail, $vj_detail)) {
+                $realizationDetail->update([
+                    'unit_no' => $validated['unit_no'] ?: null,
+                    'nopol' => $validated['nopol'] ?: null,
+                    'expense_date' => $validated['expense_date'] ?? $realizationDetail->expense_date,
+                    'type' => $validated['type'] ?: null,
+                    'qty' => isset($validated['qty']) && $validated['qty'] !== '' ? (int) round((float) $validated['qty']) : null,
+                    'uom' => $validated['uom'] ?: null,
+                    'km_position' => isset($validated['km_position']) && $validated['km_position'] !== '' ? (int) $validated['km_position'] : null,
+                ]);
+            }
+        }
 
         if ($vj->validation_status !== VerificationJournal::VALIDATION_PENDING) {
             $vj->update([

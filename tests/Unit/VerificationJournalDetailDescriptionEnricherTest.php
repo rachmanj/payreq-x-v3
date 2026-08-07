@@ -42,4 +42,15 @@ class VerificationJournalDetailDescriptionEnricherTest extends TestCase
 
         $this->assertSame([], VerificationJournalDetailDescriptionEnricher::buildAdditionalInfo($detail));
     }
+
+    #[Test]
+    public function it_strips_appended_unit_metadata_from_description(): void
+    {
+        $polluted = "Pembelian Fuel Pertalite Mitsubishi Xpander VA 060\n[Unit: VA 060 | Nopol: B 1284 DFD | Type: fuel | Qty: 23 liter | HM: 73169]\n[Unit: VA 038 | Nopol: B 1284 DFD | Type: fuel | Qty: 23 liter | HM: 73169]";
+
+        $this->assertSame(
+            'Pembelian Fuel Pertalite Mitsubishi Xpander VA 060',
+            VerificationJournalDetailDescriptionEnricher::baseDescription($polluted)
+        );
+    }
 }

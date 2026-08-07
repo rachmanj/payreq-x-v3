@@ -9,29 +9,47 @@ use App\Models\VerificationJournalDetail;
 
 class VerificationJournalDetailDescriptionEnricher
 {
-    public static function enrich(VerificationJournalDetail $detail): VerificationJournalDetail
+    public static function baseDescription(?string $description): string
     {
+        if ($description === null || $description === '') {
+            return '';
+        }
+
+        return trim((string) preg_replace('/\n?\[Unit: [^\]]+\]/', '', $description));
+    }
+
+    public static function displayDescription(VerificationJournalDetail $detail): string
+    {
+        $baseDescription = self::baseDescription($detail->description);
+
         if (! $detail->realization_no || $detail->debit_credit !== 'debit') {
-            return $detail;
+            return $baseDescription;
         }
 
         $realization = Realization::where('nomor', $detail->realization_no)->first();
 
         if (! $realization) {
-            return $detail;
+            return $baseDescription;
         }
 
-        $matchedDetail = self::matchRealizationDetail($detail, $realization);
+        $matchedDetail = self::matchedRealizationDetail($detail, $realization);
 
         if (! $matchedDetail) {
-            return $detail;
+            return $baseDescription;
         }
 
         $additionalInfo = self::buildAdditionalInfo($matchedDetail);
 
-        if ($additionalInfo !== []) {
-            $detail->description = $detail->description."\n[".implode(' | ', $additionalInfo).']';
+        if ($additionalInfo === []) {
+            return $baseDescription;
         }
+
+        return $baseDescription."\n[".implode(' | ', $additionalInfo).']';
+    }
+
+    public static function enrich(VerificationJournalDetail $detail): VerificationJournalDetail
+    {
+        $detail->description = self::displayDescription($detail);
 
         return $detail;
     }
@@ -72,7 +90,24 @@ class VerificationJournalDetailDescriptionEnricher
         return $additionalInfo;
     }
 
-    private static function matchRealizationDetail(
+    public static function matchedRealizationDetail(
+        VerificationJournalDetail $detail,
+        ?Realization $realization = null
+    ): ?RealizationDetail {
+        if (! $detail->realization_no || $detail->debit_credit !== 'debit') {
+            return null;
+        }
+
+        $realization ??= Realization::where('nomor', $detail->realization_no)->first();
+
+        if (! $realization) {
+            return null;
+        }
+
+        return self::resolveMatchedRealizationDetail($detail, $realization);
+    }
+
+    private static function resolveMatchedRealizationDetail(
         VerificationJournalDetail $detail,
         Realization $realization
     ): ?RealizationDetail {
