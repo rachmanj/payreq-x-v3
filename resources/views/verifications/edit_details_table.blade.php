@@ -1,39 +1,45 @@
+@php
+    $canEditProject = auth()->user()->can('edit_verification_project');
+    $columnCount = $canEditProject ? 6 : 4;
+    $totalColspan = $columnCount - 1;
+@endphp
+
 <div class="row">
     <div class="col-12">
-        <div class="card card-info">
-            <div class="card-header">
-                {{-- <h3 class="card-title">Details</h3> --}}
-                {{-- button back --}}
-                <a href="{{ route('verifications.index') }}" class="btn btn-sm btn-success float-right"><i
-                        class="fas fa-arrow-left"></i> Back</a>
-                <button type="submit" form="save_verification" action="{{ route('verifications.index') }}"
-                    class="btn btn-sm btn-primary"><i class="fas fa-save"></i> SAVE</button>
+        <div class="card card-outline card-primary">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-list"></i> Verification Details
+                </h3>
+                <div class="vj-inline-actions">
+                    <a href="{{ route('verifications.index') }}" class="vj-action-item vj-action-print">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back</span>
+                    </a>
+                    <button type="submit" form="save_verification" class="vj-btn vj-btn-primary">
+                        <i class="fas fa-save"></i> SAVE
+                    </button>
+                </div>
             </div>
-            <div class="card-body">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>#</td>
-                            <th>Desc</td>
-                            <th>Current Account</td>
-                            <th>New Account</th>
-                            <td></td>
-
-                            {{-- @hasanyrole('superadmin|admin|cashier|cashier_017|cashier_bo') --}}
-                            @can('edit_verification_project')
-                                <th>Project</th>
-                                <th>Dept</th>
-                            @endcan
-                            {{-- @endhasanyrole --}}
-
-                            <th class="text-right">Amount (IDR)</th>
-                        </tr>
-                    </thead>
-                    @if ($realization_details->count() > 0)
-                        <tbody>
-                            <form action="{{ route('verifications.save') }}" id="save_verification" method="POST">
-                                @csrf
-                                <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+            <div class="card-body table-responsive p-0">
+                <form action="{{ route('verifications.save') }}" id="save_verification" method="POST">
+                    @csrf
+                    <input type="hidden" name="realization_id" value="{{ $realization->id }}">
+                    <table class="table table-bordered table-striped table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Desc</th>
+                                <th>Account</th>
+                                @can('edit_verification_project')
+                                    <th>Project</th>
+                                    <th>Dept</th>
+                                @endcan
+                                <th class="text-right">Amount (IDR)</th>
+                            </tr>
+                        </thead>
+                        @if ($realization_details->count() > 0)
+                            <tbody>
                                 @foreach ($realization_details as $key => $item)
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
@@ -49,34 +55,34 @@
                                                 @endif
                                             @endif
                                         </td>
-                                        <td>{{ $item->account_id ? $item->account->account_number : '-' }}</td>
-                                        <td colspan="2">
-                                            <div class="form-group">
-                                                <div class="d-flex mb-2">
-                                                    <input type="hidden" value="{{ $item->id }}"
-                                                        name="realization_details[{{ $key }}][id]">
-                                                    <div class="position-relative flex-shrink-0"
-                                                        style="width: 200px;">
+                                        <td>
+                                            <div class="form-group mb-0">
+                                                <input type="hidden" value="{{ $item->id }}"
+                                                    name="realization_details[{{ $key }}][id]">
+                                                <div class="d-flex mb-2 align-items-center">
+                                                    <div class="position-relative flex-shrink-0" style="width: 200px;">
                                                         <input type="text" id="account_number_{{ $item->id }}"
                                                             name="realization_details[{{ $key }}][account_number]"
                                                             class="form-control" style="width: 200px;"
+                                                            value="{{ $item->account_id ? $item->account->account_number : '' }}"
                                                             placeholder="Account Number" autocomplete="off">
                                                         <div id="account_suggestions_{{ $item->id }}"
                                                             class="account-suggestions-dropdown list-group shadow-sm border bg-white">
                                                         </div>
                                                     </div>
-                                                    <button type="button" class="btn btn-sm btn-primary ml-2"
+                                                    <button type="button"
+                                                        class="vj-action-item vj-action-item-btn vj-action-item-xs vj-action-edit ml-2"
+                                                        title="Search account"
                                                         onclick="openAccountModal({{ $item->id }})">
                                                         <i class="fas fa-search"></i>
                                                     </button>
                                                 </div>
                                                 <input type="text" id="account_name_{{ $item->id }}"
                                                     class="form-control" style="border: none; background: transparent;"
+                                                    value="{{ $item->account_id ? $item->account->account_name : '' }}"
                                                     placeholder="Account Name" disabled>
                                             </div>
                                         </td>
-
-                                        {{-- @hasanyrole('superadmin|admin|cashier|cashier_017|cashier_bo') --}}
                                         @can('edit_verification_project')
                                             <td>
                                                 <select name="realization_details[{{ $key }}][project]"
@@ -99,38 +105,33 @@
                                                 </select>
                                             </td>
                                         @endcan
-                                        {{-- @endhasanyrole --}}
-
                                         <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                                     </tr>
                                 @endforeach
-                            </form>
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="5" class="text-right"></td>
-                                <td style="width: 10%;"></td>
-                                <td class="text-right" style="width: 10%;">TOTAL</td>
-                                <td class="text-right">
-                                    <b>{{ number_format($realization_details->sum('amount'), 2) }}</b>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    @else
-                        <tbody>
-                            <tr>
-                                <td colspan="4" class="text-center">No Data Found</td>
-                            </tr>
-                        </tbody>
-                    @endif
-                </table>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="{{ $totalColspan }}" class="text-right"><strong>TOTAL</strong></td>
+                                    <td class="text-right">
+                                        <strong>{{ number_format($realization_details->sum('amount'), 2) }}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        @else
+                            <tbody>
+                                <tr>
+                                    <td colspan="{{ $columnCount }}" class="text-center">No Data Found</td>
+                                </tr>
+                            </tbody>
+                        @endif
+                    </table>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
 @section('modals')
-    <!-- Account Selection Modal -->
     <div class="modal fade" id="accountModal" tabindex="-1" role="dialog" aria-labelledby="accountModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
@@ -153,6 +154,12 @@
                         <tbody>
                         </tbody>
                     </table>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        <span>Close</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -224,7 +231,6 @@
 
 @push('scripts')
     <script type="text/javascript">
-        // Define functions in global scope
         function openAccountModal(detailId) {
             window.currentDetailId = detailId;
             $('#accountModal').modal('show');
@@ -252,7 +258,6 @@
                     let tbody = $('#accountsTable tbody');
                     tbody.empty();
 
-                    // Destroy existing DataTable if it exists
                     if ($.fn.DataTable.isDataTable('#accountsTable')) {
                         $('#accountsTable').DataTable().destroy();
                         console.log('Existing DataTable destroyed');
@@ -270,7 +275,6 @@
                         return;
                     }
 
-                    // Remove any duplicates from response
                     const uniqueAccounts = [...new Map(response.map(item => [item.account_number, item]))
                         .values()
                     ];
@@ -289,7 +293,6 @@
                         return;
                     }
 
-                    // First populate the tbody
                     uniqueAccounts.forEach(function(account) {
                         const accountNumber = account.account_number.replace(/'/g, "\\'");
                         const accountName = account.account_name.replace(/'/g, "\\'");
@@ -299,7 +302,7 @@
                                 <td>${accountNumber}</td>
                                 <td>${accountName}</td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-success" 
+                                    <button type="button" class="vj-btn vj-btn-success"
                                         onclick="selectAccount('${accountNumber}', '${accountName}')">
                                         Select
                                     </button>
@@ -308,7 +311,6 @@
                         `);
                     });
 
-                    // Then initialize DataTable
                     try {
                         const dataTable = $('#accountsTable').DataTable({
                             pageLength: 10,
@@ -431,10 +433,5 @@
             }, 200);
         });
 
-        // Document ready function
-        $(document).ready(function() {
-            // Remove the DataTable initialization from here
-            // We'll initialize it after loading the data
-        });
     </script>
 @endpush

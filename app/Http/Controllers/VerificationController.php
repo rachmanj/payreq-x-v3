@@ -33,7 +33,7 @@ class VerificationController extends Controller
 
     public function save(Request $request)
     {
-        //UPDATE REALIZATION DETAIL
+        // UPDATE REALIZATION DETAIL
         foreach ($request->realization_details as $item) {
             $realization_detail = RealizationDetail::findOrFail($item['id']);
 
@@ -49,7 +49,7 @@ class VerificationController extends Controller
             $realization_detail->save();
         }
 
-        //UPDATE REALIZATION
+        // UPDATE REALIZATION
         $realization = Realization::where('id', $request->realization_id)->first();
         $realization->deletable = 0;
 
@@ -69,29 +69,30 @@ class VerificationController extends Controller
     public function data()
     {
         $userRoles = app(UserController::class)->getUserRoles();
-        $status_include = ['approved', 'reimburse-paid', 'verification', 'close', 'verification-complete'];
+        $statusInclude = ['approved', 'reimburse-paid', 'verification', 'close', 'verification-complete'];
+
+        $query = Realization::query()
+            ->select('realizations.*')
+            ->with(['requestor:id,name', 'payreq:id,nomor'])
+            ->withExists([
+                'realizationDetails as has_incomplete_account' => function ($detailQuery) {
+                    $detailQuery->whereNull('account_id');
+                },
+            ])
+            ->whereIn('status', $statusInclude)
+            ->whereNull('verification_journal_id');
 
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
-            $realizations = Realization::whereIn('status', $status_include)
-                ->whereNull('verification_journal_id')
-                ->orderBy('created_at', 'desc')
-                ->get();
+            // admins see all pending verifications
         } elseif (in_array('cashier', $userRoles)) {
-            $include_projects = ['000H', 'APS'];
-            $realizations = Realization::whereIn('status', $status_include)
-                ->whereIn('project', $include_projects)
-                ->whereNull('verification_journal_id')
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $query->whereIn('project', ['000H', 'APS']);
         } else {
-            $realizations = Realization::whereIn('status', $status_include)
-                ->where('project', auth()->user()->project)
-                ->whereNull('verification_journal_id')
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $query->where('project', auth()->user()->project);
         }
 
-        return datatables()->of($realizations)
+        $query->orderBy('created_at', 'desc');
+
+        return datatables()->of($query)
             ->addColumn('realization_no', function ($realization) {
                 return $realization->nomor;
             })
@@ -99,38 +100,44 @@ class VerificationController extends Controller
                 return $realization->requestor->name;
             })
             ->addColumn('payreq_no', function ($realization) {
-                // return "ninja";
                 return $realization->payreq->nomor;
             })
             ->addColumn('date', function ($realization) {
-                return date('d-M-Y', strtotime($realization->created_at));
+                return $realization->created_at->format('d-M-Y');
             })
             ->editColumn('is_complete', function ($realization) {
-                if ($this->realizationDetailIsComplete($realization)) {
-                    return '<span class="badge badge-success">COMPLETE</span>';
-                } else {
-                    return '<span class="badge badge-danger">INCOMPLETE</span>';
+                if (! $realization->has_incomplete_account) {
+                    return '<span class="vj-chip vj-chip-success">COMPLETE</span>';
                 }
+
+                return '<span class="vj-chip vj-chip-danger">INCOMPLETE</span>';
             })
             ->addColumn('action', 'verifications.action')
+            ->filterColumn('realization_no', function ($query, $keyword) {
+                $query->where('realizations.nomor', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('payreq_no', function ($query, $keyword) {
+                $query->whereHas('payreq', function ($payreqQuery) use ($keyword) {
+                    $payreqQuery->where('nomor', 'like', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('requestor', function ($query, $keyword) {
+                $query->whereHas('requestor', function ($requestorQuery) use ($keyword) {
+                    $requestorQuery->where('name', 'like', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('date', function ($query, $keyword) {
+                $query->where('realizations.created_at', 'like', "%{$keyword}%");
+            })
+            ->orderColumn('realization_no', 'realizations.nomor $1')
+            ->orderColumn('date', 'realizations.created_at $1')
             ->rawColumns(['action', 'is_complete'])
             ->addIndexColumn()
             ->toJson();
     }
 
-    /*
-    *   this to Check if all realization details have account
-    */
-    public function realizationDetailIsComplete($realization)
+    public function realizationDetailIsComplete($realization): bool
     {
-        $realization_details = $realization->realizationDetails;
-
-        foreach ($realization_details as $realization_detail) {
-            if ($realization_detail->account_id == null) {
-                return false;
-            }
-        }
-
-        return true;
+        return ! $realization->realizationDetails()->whereNull('account_id')->exists();
     }
 }

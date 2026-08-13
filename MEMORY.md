@@ -1,3 +1,27 @@
+### [078] Faster /verifications DataTable (2026-08-13) ✅ COMPLETE
+
+**Challenge:** `/verifications` DataTable advertised `serverSide: true` but `VerificationController@data` loaded every pending realization with `->get()`, then N+1 queried requestor, payreq, and all realization details per row.
+
+**Solution:** Pass an Eloquent query to Yajra so pagination happens in SQL; eager-load `requestor` and `payreq`; use `withExists` for incomplete accounts instead of loading details; add `filterColumn`/`orderColumn` for virtual columns; index `(verification_journal_id, status, project)` and `(realization_id, account_id)`; drop unused Select2 on the index page.
+
+---
+
+### [077] VJ Soft UI on Verification edit (2026-08-13) ✅ COMPLETE
+
+**Challenge:** `/verifications/{id}/edit` used AdminLTE `description-block` header (including "Empoyee" typo), solid `card-info`, Bootstrap buttons, and invalid table/form HTML — inconsistent with VJ Soft UI on the verifications index and realization add-details pages.
+
+**Solution:** Wrapped page in `.vj-show`; 4-tile stat grid (Realization No, Payreq No, amounts); Verification Info card with employee/department `dl`, remarks `.vj-note`, and variance chip; details card with Back chip + SAVE `vj-btn-primary`; current account chips; search CTA as `vj-action-item`; account modal Select as `vj-btn-success`. Form now wraps the table; thead/tfoot colspan match visible columns.
+
+---
+
+### [076] VJ Soft UI on Verifications index (2026-08-13) ✅ COMPLETE
+
+**Challenge:** `/verifications` index used default AdminLTE card, Bootstrap badges in Accounts column, and `btn-warning` edit button — inconsistent with VJ Soft UI on sibling payreq/approval pages.
+
+**Solution:** Wrapped page in `.vj-show`; soft card header with `vj-btn-success` Create Journal CTA; DataTables Accounts column uses `vj-chip-success` / `vj-chip-danger`; row edit action uses `vj-action-item` chip in `verifications/action.blade.php`.
+
+---
+
 ### [075] VJ Soft UI on Approval Requests (2026-08-03) ✅ COMPLETE
 
 **Challenge:** `/approvals/request/payreqs`, `/realizations`, `/anggarans` (RABs) index, show, action partials, and details tables used AdminLTE cards, Bootstrap badges/buttons — inconsistent with VJ Soft UI on user payreq pages.
