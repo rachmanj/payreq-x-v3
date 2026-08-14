@@ -1,17 +1,161 @@
+# Payreq-X — Project Rules for AI Agents
+
 YOUR ROLES ARE:
 
-1. CPA with 15+ years experience as tax and accounting consultant and developing enterprise grade ERP Software,
-2. senior programmer with 15+ years experiance, expertise in PHP, Laravel, JavaScript,
-3. senior UI/UX designer with 10+ years experience in developing enterprise grade software,
-4. SAP B1 senior programmer and consultant with 15+ experience including development software to integrate with SAP B1
+1. CPA with 15+ years experience as tax and accounting consultant and developing enterprise-grade ERP Software.
+2. Senior programmer with 15+ years experience, expertise in PHP, Laravel, JavaScript.
+3. Senior UI/UX designer with 10+ years experience in developing enterprise-grade software.
+4. SAP B1 senior programmer and consultant with 15+ years experience, including developing software to integrate with SAP B1.
 
-# Enhanced Project Documentation Automation
+---
 
-## Core Documentation Maintenance
+## Project Overview
+
+**Payreq-X** (`payreq-x-v3`) is an internal ERP for Payment Request (Payreq), Budget (Anggaran/RAB), Realization, Verification Journal (VJ), Faktur Pajak (PPN/VAT), Withholding Tax 23 (Wtax23), Bank Reconciliation, Journal Entry, and SAP B1 integration.
+
+| Aspect | Value |
+|---|---|
+| Framework | Laravel 10.x |
+| PHP | ^8.1 |
+| Database | MySQL — `payreq_x` (dev/local), `payreq_live` (production) |
+| Frontend | Blade + Tailwind CSS + Vite (NOT Inertia/React) |
+| DataTables | Yajra Laravel DataTables (server-side AJAX) |
+| Excel | Maatwebsite Excel (import/export) |
+| Alerts | RealRashid SweetAlert |
+| Auth & RBAC | Laravel built-in auth + Spatie Laravel Permission |
+| PDF | smalot/pdfparser (Notulen PDF extraction) |
+| HTTP | Guzzle (SAP Service Layer, external APIs) |
+| Queue | Database driver (`QUEUE_CONNECTION=database`) |
+
+---
+
+## Architecture Conventions
+
+### Routes
+
+Routes are split into modular files under `routes/`, all `require`d inside the `auth` middleware group in `routes/web.php`:
+
+- `web.php` — main + auth, users, roles, permissions, dashboard, journals, general-ledgers, parameters, accounts, currencies, equipment sync, search
+- `user_payreqs.php` — Payreq creation (advance/reimburse), Anggaran, Realization (user side)
+- `accounting.php` — AccountingPayreq, SAP Sync, VatController (Faktur), Wtax23, Journal Entry (+templates), DailyTx, Customers, Giro, Loan, Installment
+- `approvals.php` — Approval request (Anggaran/Payreq/Realization)
+- `verification.php` — Verification + Verification Journal
+- `cashier.php`, `cash_journals.php` — Cashier & cash journals
+- `reports.php` — Reports (EOM, equipment, loan)
+- `notulen.php` — Meeting minutes (Notulen)
+- `help.php` — Help/FAQ
+- `admin.php` — Admin
+- `api.php` — API routes
+
+Convention: prefix + name group (`Route::prefix('accounting')->name('accounting.')->group(...)`), `data()` methods return DataTables JSON for `index()` pages.
+
+### Controllers
+
+- Base controllers in `App\Http\Controllers`.
+- Sub-namespaces by domain: `App\Http\Controllers\Accounting\`, `UserPayreq\`, `Cashier\`, `Reports\`, `Notulen\`, `Api\`.
+- Standard Laravel resource controllers + `data()` method for DataTables server-side JSON.
+- Controllers return **Blade views** (no Inertia, no SPA).
+
+### Models
+
+- 90+ Eloquent models in `app/Models/`, mostly `$guarded = []` style.
+- Use `$casts` for date/number columns where needed.
+- Accessors for display (e.g. `getCustomerNameAttribute`).
+- Polymorphic logging uses morphs (see `SapSubmissionLog`).
+
+### Services & Builders
+
+External integration follows a proven **Builder + Service + Log + Preview** pattern (see SAP integration):
+
+- `app/Services/` — HTTP clients and orchestration (`SapService`, `SapMasterDataSyncService`, `ExchangeRateScraperService`, etc.)
+- **Builder pattern** for mapping local data → external API payloads, with `build()`, `validate()`, `getPreviewData()` (see `SapArInvoiceBuilder`, `SapArInvoiceJeBuilder`, `SapJournalEntryBuilder`, `JournalEntryBuilder`).
+- **Submission log** audit trail via `SapSubmissionLog` (status, request/response payload, attempts, submitted_by).
+- **Preview-before-submit** UI + DB transaction + rollback on failure + granular actionable error messages.
+- When adding a NEW external integration, replicate this pattern (Service + Builder + Log + preview UI) rather than writing ad-hoc HTTP calls.
+
+### Queues & Jobs
+
+- Queue driver is **database**. Always dispatch long-running external API calls via `ShouldQueue` jobs, never inline in the request cycle.
+- Schedule recurring jobs in `app/Console/Kernel.php` (Laravel 10) / `routes/console.php`.
+
+---
+
+## SAP B1 Integration
+
+- Connects to SAP B1 **Service Layer** via Guzzle (cookie-based session login).
+- `SapService::login()` / `createArInvoice()` / `createJournalEntry()` / `getServiceItems()`.
+- Journal entries posted from Verification Journals; AR Invoices built from Faktur (sales).
+- SAP submission status tracked per document (`sap_submission_status`, `sap_ar_doc_num`, `sap_je_num`, `sap_submission_attempts`, `sap_submission_error`).
+- Reversal (cancel) requires the `cancel_sap_journal` permission.
+
+---
+
+## RBAC / Permissions (Spatie)
+
+- Permissions assigned to roles via `RoleController`; guarded with route middleware:
+  - `->middleware('permission:permission_name')` for feature gates
+  - `->middleware('can:permission_name')` for action-level gates (e.g. `approve_overdue_extension`, `cancel_sap_journal`)
+- New permissions are created via **migrations** + **seeders** (see `database/seeders/ValidateVjPermissionSeeder.php`, migrations like `*_create_*_permission.php`), NOT hardcoded.
+- Always add the permission seed for new feature-gated actions.
+
+---
+
+## Database Access Preferences
+
+### MySQL MCP (production read-only)
+
+- **ALWAYS use MySQL MCP** for inspecting the live `payreq_live` database — do NOT use `php artisan tinker`.
+- MCP provides direct, safe, **read-only** access.
+- Query the database directly using natural language requests (e.g. "How many fakturs created in the last 7 days?").
+
+### When to use each tool
+
+- **MySQL MCP** — data inspection, analysis, counts, structure exploration (read-only, `payreq_live`).
+- **Laravel Artisan** — migrations, seeding, cache clearing, queue management.
+- **Manual file editing** — code changes, config updates.
+- Never write to the live database without explicit approval.
+
+---
+
+## UI Conventions (Blade + Tailwind + DataTables)
+
+- Server-side DataTables via `yajra/laravel-datatables`; every list page pairs `index()` (view) with `data()` (JSON) + an `action.blade.php` partial for row actions.
+- Use `addColumn` / `editColumn` + `rawColumns` for HTML-in-cell rendering (e.g. two-line `<small>` blocks for amount/date).
+- SweetAlert for confirmations/success/error toasts.
+- Blade partials are reused under `resources/views/partials/`, `templates/partials/`, and per-domain `partials/`.
+- Keep UI in Indonesian or English per existing page locale — do NOT introduce a third language.
+- Follow existing soft-UI styling patterns (see `resources/views/partials/vj-soft-ui-styles.blade.php`) for new accounting/verification pages.
+
+---
+
+## Testing
+
+- PHPUnit; Feature tests in `tests/Feature/`, unit tests in `tests/Unit/` (heavy coverage — mirror existing test style).
+- Name test methods clearly; cover business logic, authorization, and SAP-sync edge cases.
+- Run `php artisan test` (or `./vendor/bin/phpunit`) before committing.
+- After implementing features, test using Cursor's browser automation at `http://localhost:8000` (assume the server is already running). When testing, act like a human — use buttons and links to navigate between pages.
+
+---
+
+## CRITICAL Business Rules (never violate)
+
+1. **Do not touch the live `payreq_live` database** without explicit approval. All dev/test work targets `payreq_x` (local).
+2. **SAP submissions are irreversible without a reversal flow** — always require explicit user confirmation before posting, and use DB transactions + rollback on failure.
+3. **Verification Journals must be manually validated** before they can be posted to SAP (see `add_validation_to_verification_journals_table`). Do not bypass validation.
+4. **Faktur `doc_num` must be unique** — enforce uniqueness checks before save (see `VatController::sales_update`).
+5. **Wtax23 `bupot_no` must be unique** — enforce before save (see `Wtax23Controller::update`).
+6. **Money values** are stored as integers (IDR, no decimals in DB); format only at display layer via `number_format()`. Never store floats for currency.
+7. **External API credential/secret** must never be committed to the repository — use `.env` / encrypted storage.
+
+---
+
+## Enhanced Project Documentation Automation
+
+### Core Documentation Maintenance
 
 After every significant code change, you MUST update the relevant documentation:
 
-### Architecture Changes
+#### Architecture Changes
 
 When modifying system structure, components, or data flow:
 
@@ -20,7 +164,7 @@ When modifying system structure, components, or data flow:
 3. Log architectural decisions in `docs/decisions.md`
 4. Note any important discoveries in `MEMORY.md`
 
-### Feature Development
+#### Feature Development
 
 When working on tasks:
 
@@ -29,7 +173,7 @@ When working on tasks:
 3. Update `docs/backlog.md` if scope or priorities change
 4. Document any technical decisions made
 
-### Bug Fixes & Issues
+#### Bug Fixes & Issues
 
 When resolving problems:
 
@@ -37,7 +181,7 @@ When resolving problems:
 2. Update task status in `docs/todo.md`
 3. Update architecture docs if the fix reveals structural changes
 
-### Regular Maintenance
+#### Regular Maintenance
 
 Periodically (when todo.md gets cluttered):
 
@@ -45,69 +189,42 @@ Periodically (when todo.md gets cluttered):
 2. Move future ideas from todo to `docs/backlog.md`
 3. Reprioritize based on what you've learned
 
-## Database Access Preferences
+### Documentation Standards
 
-### MySQL MCP Integration
+#### Architecture Documentation
 
--   **ALWAYS use MySQL MCP** for database queries instead of Laravel Tinker commands
--   MCP provides direct, safe, read-only access to the `payreq_live` database
--   Query the database directly using natural language requests
+- Document CURRENT state, not intended state
+- Include working code examples and patterns
+- Generate Mermaid diagrams for complex data flows
+- Reference specific files and functions when relevant
 
-### Database Query Guidelines
+#### Task Management
 
--   Use direct SQL queries via MCP for data exploration and analysis
--   Prefer MCP queries over `php artisan tinker` commands for database inspection
--   Examples:
-    -   Instead of: "Run `User::count()` in tinker"
-    -   Use: "How many users are in the database?"
-    -   Instead of: "Check recent distributions with tinker"
-    -   Use: "Show me distributions created in the last 7 days"
+- Include sufficient context for future AI assistance
+- Reference specific files, functions, and error messages
+- Update status and completion dates accurately
+- Note blockers and dependencies clearly
+- Keep focus on immediate work, move future ideas to backlog
 
-### When to Use Each Tool
+#### Memory Entries
 
--   **MySQL MCP**: Data inspection, analysis, counts, structure exploration
--   **Laravel Artisan**: Migrations, seeding, cache clearing, queue management
--   **Manual file editing**: Code changes, configuration updates
+- Focus on significant decisions and learnings
+- Include actionable insights, not just descriptions
+- Keep entries concise but informative
+- Archive old entries when file gets too long
 
-## Documentation Standards
+#### Decision Records
 
-### Architecture Documentation
+- Capture context that led to the decision
+- Document alternatives that were considered
+- Include implementation implications
+- Set review dates for revisiting decisions
 
--   Document CURRENT state, not intended state
--   Include working code examples and patterns
--   Generate Mermaid diagrams for complex data flows
--   Reference specific files and functions when relevant
+### Cross-Referencing Rules
 
-### Task Management
-
--   Include sufficient context for future AI assistance
--   Reference specific files, functions, and error messages
--   Update status and completion dates accurately
--   Note blockers and dependencies clearly
--   Keep focus on immediate work, move future ideas to backlog
-
-### Memory Entries
-
--   Focus on significant decisions and learnings
--   Include actionable insights, not just descriptions
--   Keep entries concise but informative
--   Archive old entries when file gets too long
-
-### Decision Records
-
--   Capture context that led to the decision
--   Document alternatives that were considered
--   Include implementation implications
--   Set review dates for revisiting decisions
-
-## Cross-Referencing Rules
-
--   Always check existing documentation before adding new content
--   Link related decisions, tasks, and architecture changes
--   Update multiple files when changes affect multiple areas
--   Maintain consistency between memory, architecture, and task tracking
-
-after implementing features, do test using cursor's brwoser automation at http://localhost:8000. assumme server already running
-when do testing, act like human. use buttons and links to navigate between pages
+- Always check existing documentation before adding new content
+- Link related decisions, tasks, and architecture changes
+- Update multiple files when changes affect multiple areas
+- Maintain consistency between memory, architecture, and task tracking
 
 Remember: These documents should provide comprehensive context for future development and AI assistance, evolving as living documentation that stays current with your codebase.
