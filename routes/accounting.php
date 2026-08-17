@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Accounting\AccountingManagerDashboardController;
 use App\Http\Controllers\Accounting\CustomerController;
 use App\Http\Controllers\Accounting\DailyTxController;
 use App\Http\Controllers\Accounting\DeliveryController;
@@ -168,6 +169,14 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/{id}/receive', [DeliveryController::class, 'receive_show'])->name('receive_show');
         Route::put('/{id}/receive-update', [DeliveryController::class, 'updateReceiveInfo'])->name('receive_update');
         Route::get('/dashboard-data', [DeliveryController::class, 'dashboard_data'])->name('dashboard-data');
+    });
+
+    // Manager Dashboard
+    Route::prefix('manager-dashboard')->name('manager-dashboard.')->middleware('permission:view_accounting_manager_dashboard')->group(function () {
+        Route::get('/', [AccountingManagerDashboardController::class, 'index'])->name('index');
+        Route::get('/project/{project}/advances', [AccountingManagerDashboardController::class, 'advances'])->name('project.advances');
+        Route::get('/project/{project}/unpaid', [AccountingManagerDashboardController::class, 'unpaid'])->name('project.unpaid');
+        Route::get('/project/{project}/realizations', [AccountingManagerDashboardController::class, 'realizations'])->name('project.realizations');
     });
 
     // EXCHANGE RATES
