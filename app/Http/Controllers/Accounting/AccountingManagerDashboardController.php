@@ -152,7 +152,7 @@ class AccountingManagerDashboardController extends Controller
         $realisasiYtd = $this->realisasiYtdByProject($year);
         $topAccounts = $this->topAccountsByProject($year, $month);
 
-        $saldoKas = Account::whereIn('type', ['cash', 'bank'])->sum('balance');
+        $saldoKas = Account::where('type', 'cash')->sum('app_balance');
         $outstandingAdvanceCnt = (int) $outstandingByProject->sum('cnt');
         $outstandingAdvanceTotal = round((float) $outstandingByProject->sum('total'), 2);
         $kebutuhanDanaCnt = (int) $kebutuhanByProject->sum('cnt');

@@ -39,7 +39,7 @@ Manager Accounting memantau **DUA SISI** arus kas:
 | Framework | Laravel 10 (Blade + Tailwind + AdminLTE) + Chart.js |
 | **Funding project dim** | `payreqs.project` (0 null di data) |
 | **Expense project dim** | `realization_details.project` (0 null di data) |
-| Saldo kas | `SUM(accounts.balance)` WHERE `type_id IN (1,2)` |
+| Saldo kas | `SUM(accounts.app_balance)` WHERE `type='cash'` (petty cash; bank tidak di-track app_balance) |
 | Outstanding advance | payreq `type='advance'`, tanpa realization, **sudah dicairkan** (ada outgoing), **`approved_at >= 2025-01-01`** |
 | Aging basis | `outgoings.outgoing_date` (tanggal dana dicairkan) |
 | Kebutuhan dana (belum paid) | payreq `status IN ('submitted','approved','draft','revise')` DAN belum ada outgoing |
@@ -61,10 +61,11 @@ Permission: `view_accounting_manager_dashboard`.
 
 ## 5. Data Mapping (tervalidasi data)
 
-### 5.1 Saldo kas (global)
+### 5.1 Saldo kas (petty cash)
 ```php
-Account::whereIn('type_id', [1, 2])->sum('balance'); // 1=bank, 2=cash
+Account::where('type', 'cash')->sum('app_balance'); // app_balance = saldo kas aktif (di-maintain app)
 ```
+> Catatan: `app_balance` hanya track petty cash (`type='cash'`). Saldo bank tidak di-track di `app_balance` (semua 0) — bank balance butuh data bank reconciliation terpisah.
 
 ### 5.2 Outstanding advance (dana beredar)
 Payreq advance tanpa realization, yang SUDAH dicairkan (punya outgoing), **approved 2025 ke atas**.
