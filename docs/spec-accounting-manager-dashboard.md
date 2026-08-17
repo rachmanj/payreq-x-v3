@@ -1,61 +1,57 @@
-# Spec — Accounting Manager Dashboard (v2)
+# Spec — Accounting Manager Dashboard (v3 FINAL)
 
 > Feature: dashboard pemantauan untuk Manager Accounting (Iwan).
 > Branch: `feature/accounting-manager-dashboard`
-> Status: **Spec disetujui (v2 — dua sisi)** — siap implement.
+> Status: **Spec final — tervalidasi data production (dump 17 Aug 2026).**
 
 ---
 
 ## 1. Goal
 
-Manager Accounting memantau **DUA SISI** arus kas perusahaan:
+Manager Accounting memantau **DUA SISI** arus kas:
 
-1. **Sisi Dana Beredar (Funding)** — berapa dana masih beredar di requestor (outstanding advance + aging), dan berapa dana lagi dibutuhkan untuk payreq yang belum paid/parsial. Untuk perencanaan **pemenuhan kebutuhan dana cash**.
-2. **Sisi Realisasi Biaya (Expense)** — seberapa besar dana sudah dikeluarkan/direalisasikan ke tiap project atas biaya tertentu.
+1. **Sisi Dana Beredar (Funding)** — dana yang masih beredar di requestor (outstanding advance + aging) dan kebutuhan dana untuk payreq yang belum dicairkan.
+2. **Sisi Realisasi Biaya (Expense)** — dana yang sudah direalisasikan ke tiap project atas biaya tertentu.
 
 ---
 
 ## 2. Scope
 
 ### In Scope
-
 - 1 halaman dashboard + 1 permission + 1 route.
-- **Section A (Funding)**: KPI + tabel outstanding advance per project (dengan aging) + kebutuhan dana payreq belum paid/parsial.
-- **Section B (Expense)**: KPI + tabel realisasi biaya per project (breakdown by akun COA).
-- Saldo kas global (posisi kas & bank).
+- **Section A (Funding)**: outstanding advance per project + aging + kebutuhan dana (belum paid).
+- **Section B (Expense)**: realisasi biaya per project, breakdown by akun COA.
+- Saldo kas global.
 - Drill-down per project ke daftar dokumen.
 - Trend chart realisasi vs advance per bulan.
 
 ### Out of Scope
-
 - Edit data (read-only).
-- Integrasi e-Filing / SAP.
-- Export/print (nanti).
+- Integrasi e-Filing/SAP.
+- Export/print.
 
 ---
 
-## 3. Tech Decisions
+## 3. Tech Decisions (final)
 
 | Item | Keputusan |
 |---|---|
-| Framework | Laravel 10 (Blade + Tailwind + AdminLTE) |
-| Chart | Chart.js |
-| **Project dimension — Funding** | `payreqs.project` (project PEMBUAT payreq) |
-| **Project dimension — Expense** | `realization_details.project` (project DIKENAKAN biaya) |
-| Saldo kas | `SUM(accounts.balance)` WHERE `type_id IN (1, 2)` |
-| Outstanding advance | `payreqs` WHERE `type='advance'` DAN tanpa realization |
-| Payreq belum paid | `payreqs.status` belum `paid` (submitted/approved) |
-| Payreq parsial | `SUM(outgoings.amount) < payreq.amount` |
-| Cache | `Cache::remember(..., 300)` (5 menit) |
+| Framework | Laravel 10 (Blade + Tailwind + AdminLTE) + Chart.js |
+| **Funding project dim** | `payreqs.project` (0 null di data) |
+| **Expense project dim** | `realization_details.project` (0 null di data) |
+| Saldo kas | `SUM(accounts.balance)` WHERE `type_id IN (1,2)` |
+| Outstanding advance | payreq `type='advance'`, tanpa realization, **sudah dicairkan** (ada outgoing) |
+| Aging basis | `outgoings.outgoing_date` (tanggal dana dicairkan) |
+| Kebutuhan dana (belum paid) | payreq `status IN ('submitted','approved','draft','revise')` DAN belum ada outgoing |
+| Parsial | **DIBUANG** — 0 record di production (payment all-or-nothing) |
+| Cache | `Cache::remember(..., 300)` |
 | Permission | `view_accounting_manager_dashboard` |
 
 ---
 
 ## 4. DB Changes
 
-**Tidak ada perubahan schema tabel** — read-only.
-
-Hanya **1 migration + 1 seeder** permission baru:
+Tidak ada perubahan schema. Hanya 1 migration + 1 seeder permission:
 - `database/migrations/xxxx_create_view_accounting_manager_dashboard_permission.php`
 - `database/seeders/AccountingManagerDashboardPermissionSeeder.php`
 
@@ -63,131 +59,101 @@ Permission: `view_accounting_manager_dashboard`.
 
 ---
 
-## 5. Data Mapping (presisi)
+## 5. Data Mapping (tervalidasi data)
 
 ### 5.1 Saldo kas (global)
-
 ```php
 Account::whereIn('type_id', [1, 2])->sum('balance'); // 1=bank, 2=cash
 ```
 
-### 5.2 Sisi Funding — Outstanding Advance (dana beredar di requestor)
-
-**Definisi:** payreq `type='advance'` yang **belum punya realization sama sekali**.
-
+### 5.2 Outstanding advance (dana beredar)
+Payreq advance tanpa realization, yang SUDAH dicairkan (punya outgoing).
 ```php
-Payreq::where('type', 'advance')
-    ->whereDoesntHave('realization')
-    ->groupBy('project')            // payreqs.project
-    ->selectRaw('project, COUNT(*) as count, SUM(amount) as total');
+Payreq::where('type','advance')
+  ->whereHas('outgoings')                    // sudah dicairkan
+  ->whereDoesntHave('realization')           // belum direalisasi
+  ->whereNotIn('status', ['canceled','rejected'])
+  ->groupBy('project')                        // payreqs.project
+  ->selectRaw('project, COUNT(*) cnt, SUM(amount) total');
 ```
+**Aging** per payreq = `DATEDIFF(NOW(), MIN(outgoings.outgoing_date))`. Bucket: 0-30 / 31-60 / 61-90 / >90 hari.
 
-**Aging:** hari sejak dana keluar (`outgoing_date`) / sejak `submit_at` sampai sekarang. *(perlu konfirmasi Iwan — lihat §8)*
-
-### 5.3 Sisi Funding — Payreq Belum Paid / Parsial (kebutuhan dana)
-
+### 5.3 Kebutuhan dana (belum paid)
+Payreq yang belum dicairkan sama sekali (belum ada outgoing), status menunggu bayar.
 ```php
-// Belum paid: approved tapi belum dicairkan
-Payreq::whereIn('status', ['submitted', 'approved'])->sum('amount');
-
-// Parsial: sudah ada outgoing tapi sum < amount
-Payreq::whereHas('outgoings')
-    ->get()
-    ->filter(fn($p) => $p->outgoings->sum('amount') < $p->amount);
+Payreq::whereIn('status', ['submitted','approved','draft','revise'])
+  ->whereDoesntHave('outgoings')
+  ->groupBy('project')
+  ->selectRaw('project, COUNT(*) cnt, SUM(amount) total');
 ```
-
-Group by `payreqs.project`.
 
 ### 5.4 Sisi Expense — Realisasi per project
-
 ```php
-RealizationDetail::query()
-    ->whereYear('expense_date', $year)
-    ->whereMonth('expense_date', $month)
-    ->groupBy('project')             // realization_details.project
-    ->selectRaw('project, SUM(amount) as total');
+RealizationDetail::whereYear('expense_date', $year)
+  ->whereMonth('expense_date', $month)
+  ->groupBy('project')                        // realization_details.project
+  ->selectRaw('project, SUM(amount) total');
 ```
+Breakdown by akun: `account_id → accounts.account_number/account_name`.
 
-Breakdown by akun: `realization_details.account_id → accounts.account_number/account_name`.
-
-### 5.5 Budget vs Actual (serapan) — OPSIONAL, per project
-
+### 5.5 Budget vs actual (opsional)
 ```php
-Anggaran::where('is_active', 1)
-    ->groupBy('rab_project')
-    ->selectRaw('rab_project, SUM(amount) as budget, SUM(balance) as sisa');
-// serapan = realisasi / budget
+Anggaran::where('is_active',1)->groupBy('rab_project')
+  ->selectRaw('rab_project, SUM(amount) budget, SUM(balance) sisa');
 ```
-
-> Catatan: budget vs actual pakai `rab_project`, sementara realisasi pakai `realization_details.project`. Keduanya mungkin tidak 1:1 — flag sebagai risiko §9.
+> Catatan: budget pakai `rab_project`, realisasi pakai `realization_details.project` — dua dimensi beda, TAMPILKAN TERPISAH (lihat §9).
 
 ---
 
 ## 6. UI/UX
 
 ### Route
-
 ```
 GET /accounting/manager-dashboard
   → AccountingManagerDashboardController@index
   → middleware: permission:view_accounting_manager_dashboard
 ```
 
-### Layout (`resources/views/accounting/manager-dashboard/index.blade.php`)
-
+### Layout
 ```
-┌──────────────────────────────────────────────────────────┐
-│  Manager Accounting Dashboard          [Bulan ▾] [Tahun ▾] │
-├──────────────────────────────────────────────────────────┤
-│  [KPI: Saldo Kas]  [KPI: Outstanding Advance]             │
-│  [KPI: Kebutuhan Dana Belum Paid]  [KPI: Realisasi Bulan] │
-├──────────────────────────────────────────────────────────┤
-│  SECTION A — Dana Beredar (Funding)                       │
-│  Tabel per project (payreqs.project):                     │
-│  Project | Outstanding Adv | Aging (rata/hari) | Belum Paid │
-│  → klik → drill-down list advance outstanding             │
-├──────────────────────────────────────────────────────────┤
-│  SECTION B — Realisasi Biaya (Expense)                    │
-│  Tabel per project (realization_details.project):         │
-│  Project | Realisasi Bulan Ini | YTD | Top Akun           │
-│  → klik → drill-down list realisasi by akun               │
-└──────────────────────────────────────────────────────────┘
+[KPI: Saldo Kas] [KPI: Outstanding Advance] [KPI: Kebutuhan Dana] [KPI: Realisasi]
+SECTION A — Dana Beredar (Funding)
+  Tabel per project (payreqs.project):
+  Project | Outstanding Adv | Aging bucket | Belum Paid
+  → drill-down list advance + list belum-paid
+SECTION B — Realisasi Biaya (Expense)
+  Tabel per project (realization_details.project):
+  Project | Realisasi Bulan | YTD | Top Akun
+  → drill-down list realisasi by akun
 ```
 
 ### Visual
-
-- KPI cards gaya AdminLTE existing.
-- Aging pakai color coding: hijau (<30 hari), kuning (30–60), merah (>60 hari).
-- Format rupiah `number_format(..., 2)`.
+- KPI cards AdminLTE. Aging color: hijau <30, kuning 30-60, merah >60 hari.
+- Rupiah `number_format(..., 2)`.
 
 ---
 
 ## 7. API Endpoints
-
 | Method | Endpoint | Fungsi |
 |---|---|---|
-| GET | `/accounting/manager-dashboard` | Render halaman + KPI + kedua tabel |
-| GET | `/accounting/manager-dashboard/project/{project}/advances` | DataTables JSON: advance outstanding per project |
-| GET | `/accounting/manager-dashboard/project/{project}/realizations` | DataTables JSON: realisasi by akun per project |
+| GET | `/accounting/manager-dashboard` | Halaman + KPI + kedua tabel |
+| GET | `/accounting/manager-dashboard/project/{project}/advances` | DataTables JSON: advance outstanding |
+| GET | `/accounting/manager-dashboard/project/{project}/unpaid` | DataTables JSON: belum paid |
+| GET | `/accounting/manager-dashboard/project/{project}/realizations` | DataTables JSON: realisasi by akun |
 
 ---
 
-## 8. Nuances & Open Questions
-
-1. **Dua field project (sudah dikonfirmasi Iwan):** Funding pakai `payreqs.project`, Expense pakai `realization_details.project`. TIDAK pakai `anggarans.rab_project` lagi.
-
-2. **Aging basis** — dihitung dari `outgoing_date` (tanggal dana keluar) atau `submit_at` (tanggal submit)? *(perlu konfirmasi Iwan)*
-
-3. **Definisi "belum paid"** — apakah cukup `status` (`submitted`/`approved`), atau perlu `outgoing_date IS NULL` juga? Verifikasi dengan data dump.
-
-4. **Definisi "parsial"** — payreq yang `SUM(outgoings) < amount`. Perlu dicek apakah ada field status khusus (mis. `partial`) atau dihitung manual.
-
-5. **`rab_id` null** — untuk sisi funding (payreq tanpa rab_id) `payreqs.project` tetap ada, jadi aman. Untuk budget vs actual, anggaran tanpa `rab_project` dikelompokkan "Tanpa Project".
+## 8. Validated Facts (dari dump production)
+- `payreqs.project` & `realization_details.project` = 0 null.
+- `payreqs.rab_id` null 63%, `realization_details.rab_id` null 72% → `rab_project` tidak dipakai.
+- Outstanding advance = 103 payreqs (Rp 859,66 jt): 52 sudah cair, 51 belum.
+- Kebutuhan dana (approved+draft+submitted+revise) = 96 payreqs (Rp 1,08 M).
+- Aging >90 hari = 17 payreqs (Rp 217,8 jt).
+- "Parsial" tidak terjadi (0 record).
 
 ---
 
 ## 9. Risks
-
-- **Dua project field bisa tidak sinkron** — realisasi dibebankan ke `realization_details.project`, sementara budget di `rab_project`; serapan budget vs realisasi bisa mismatch. Mitigasi: tampilkan keduanya terpisah, jangan dicampur.
-- **Performa query aggregate** — cache 5 menit + index existing.
-- **Definisi status paid/parsial** — harus divalidasi dengan data dump production sebelum finalisasi query.
+- **Dua dimensi project (funding vs expense) beda** — jangan dicampur; tampilkan section terpisah.
+- **Budget (rab_project) vs realisasi (realization_details.project)** bisa mismatch — tampilkan terpisah atau beri disclaimer.
+- **Performa** — cache 5 menit + index (`payreqs.project`, `payreqs.status`, `realization_details.project`, `realization_details.expense_date`).
