@@ -40,7 +40,7 @@ Manager Accounting memantau **DUA SISI** arus kas:
 | **Funding project dim** | `payreqs.project` (0 null di data) |
 | **Expense project dim** | `realization_details.project` (0 null di data) |
 | Saldo kas | `SUM(accounts.balance)` WHERE `type_id IN (1,2)` |
-| Outstanding advance | payreq `type='advance'`, tanpa realization, **sudah dicairkan** (ada outgoing) |
+| Outstanding advance | payreq `type='advance'`, tanpa realization, **sudah dicairkan** (ada outgoing), **`approved_at >= 2025-01-01`** |
 | Aging basis | `outgoings.outgoing_date` (tanggal dana dicairkan) |
 | Kebutuhan dana (belum paid) | payreq `status IN ('submitted','approved','draft','revise')` DAN belum ada outgoing |
 | Parsial | **DIBUANG** — 0 record di production (payment all-or-nothing) |
@@ -67,12 +67,13 @@ Account::whereIn('type_id', [1, 2])->sum('balance'); // 1=bank, 2=cash
 ```
 
 ### 5.2 Outstanding advance (dana beredar)
-Payreq advance tanpa realization, yang SUDAH dicairkan (punya outgoing).
+Payreq advance tanpa realization, yang SUDAH dicairkan (punya outgoing), **approved 2025 ke atas**.
 ```php
 Payreq::where('type','advance')
   ->whereHas('outgoings')                    // sudah dicairkan
   ->whereDoesntHave('realization')           // belum direalisasi
   ->whereNotIn('status', ['canceled','rejected'])
+  ->where('approved_at', '>=', '2025-01-01') // filter approved >= 2025
   ->groupBy('project')                        // payreqs.project
   ->selectRaw('project, COUNT(*) cnt, SUM(amount) total');
 ```
@@ -146,8 +147,8 @@ SECTION B — Realisasi Biaya (Expense)
 ## 8. Validated Facts (dari dump production)
 - `payreqs.project` & `realization_details.project` = 0 null.
 - `payreqs.rab_id` null 63%, `realization_details.rab_id` null 72% → `rab_project` tidak dipakai.
-- Outstanding advance = 103 payreqs (Rp 859,66 jt): 52 sudah cair, 51 belum.
-- Kebutuhan dana (approved+draft+submitted+revise) = 96 payreqs (Rp 1,08 M).
+- Outstanding advance (disbursed, approved ≥ 2025) = **48 payreqs** (Rp 417 jt) — 4 pre-2024 dibuang oleh filter.
+- Kebutuhan dana (approved+draft+submitted+revise) = 96 payreqs (Rp 1,08 M); approved-nya semua 2025+, draft/submitted/revise belum ada `approved_at` (pre-approval).
 - Aging >90 hari = 17 payreqs (Rp 217,8 jt).
 - "Parsial" tidak terjadi (0 record).
 
