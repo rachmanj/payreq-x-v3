@@ -301,6 +301,15 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            @can('view_accounting_manager_dashboard')
+                                <li class="nav-item">
+                                    <a href="{{ route('accounting.manager-dashboard.index') }}"
+                                        class="nav-link {{ request()->routeIs('accounting.manager-dashboard.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Manager Dashboard</p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('akses_sap_sync')
                                 <li class="nav-item">
                                     <a href="{{ route('accounting.sap-sync.index', ['page' => 'dashboard']) }}"
