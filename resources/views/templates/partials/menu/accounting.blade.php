@@ -3,6 +3,12 @@
         class="nav-link dropdown-toggle">Accounting</a>
     <ul aria-labelledby="dropdownPayreq" class="dropdown-menu border-0 shadow">
 
+        @can('view_accounting_manager_dashboard')
+            <li><a href="{{ route('accounting.manager-dashboard.index') }}" class="dropdown-item">Manager Dashboard</a>
+            </li>
+            <li class="dropdown-divider"></li>
+        @endcan
+
         @can('akses_sap_sync')
             <li><a href="{{ route('accounting.sap-sync.index', ['page' => 'dashboard']) }}" class="dropdown-item">SAP
                     Sync</a>
