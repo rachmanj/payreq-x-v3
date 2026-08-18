@@ -166,6 +166,40 @@ Sidebar → Utilities (menu terpisah, sejajar Accounting)
 ## 8. Risks
 
 - **Periode sebagai string "YYYY-MM"** — harus konsisten format; validasi saat input.
-- **Copy bulan lalu** bisa buat tagihan duplikat — mitigasi unique constraint (utility_customer_id, periode) → abort/replace kalau sudah ada.
+- **Copy bulan lalu** bisa buat tagihan duplikat — mitigasi unique constraint (utility_customer_id, periode) → skip yang sudah ada.
 - **Status derived** — pastikan timezone konsisten (Asia/Makassar) untuk hitung `telat`.
 - **Jenis utilitas baru di masa depan** — pakai string (bukan enum DB) biar fleksibel tambah jenis.
+- **OCR akurasi** — AI bisa salah baca nominal/idpel; mitigasi: preview confirm-before-save + confidence rendah ditandai.
+
+---
+
+## 9. OCR Upload Struk "Daftar Tagihan Kolektif" (Fase 2)
+
+Upload gambar struk tagihan kolektif (PLN/PDAM/TELKOM dari PPOB) di `/utilities/bills`, extract N tagihan sekaligus via AI (OpenRouter vision), lalu masukkan ke daftar tagihan bulanan.
+
+### Flow
+1. User klik "Upload Struk" → pilih **jenis utilitas** + **periode** (default bulan berjalan) + upload gambar.
+2. AI extract `bills[]` = `{idpel, nama, jumlah}` dari gambar.
+3. Tampil **preview** (confirm-before-save): tabel editable (idpel, nama, jumlah, jatuh tempo) + status match (existing customer / baru).
+4. User konfirmasi → simpan semua tagihan (`tanggal_bayar = null`, status **belum**), auto-create `utility_customers` untuk idpel baru.
+
+### Keputusan
+| Item | Keputusan |
+|---|---|
+| Status | **belum bayar** (tanggal_bayar = null) — upload di awal bulan, belum lunas |
+| Jenis utilitas | **selector** di form upload |
+| Periode | default dari **timestamp struk** (bisa override) |
+| ID pelanggan baru | **auto-create** customer (idpel + nama dari struk + jenis + project dari form) |
+| Konfirmasi | **preview confirm-before-save** |
+| Tanggal jatuh tempo | default **end-of-month** periode (editable di preview) |
+
+### Data Mapping
+- `idpel` → `utility_customers.id_pelanggan` (match; create kalau belum ada).
+- `nama` → nama customer (dipakai saat create baru).
+- `jumlah` → `utility_bills.jumlah_tagihan`.
+- `produk` ("PLN POSTPAID") → konfirmasi `jenis_utilitas`.
+
+### Teknis
+- Tambah method `extractUtilityBillsFromImageBase64()` di `OpenRouterService` (pola `extractReceiptFromImageBase64`), model vision `bankStatementModel` (gemini-3-flash-preview).
+- Service baru `UtilityBillParserService` (pola `BankStatementParserService`): read base64 → OpenRouter → return `bills[]`.
+- Controller: `UtilityBillController@upload` (render form) + `@parseUpload` (extract → preview) + `@storeUpload` (persist semua).
