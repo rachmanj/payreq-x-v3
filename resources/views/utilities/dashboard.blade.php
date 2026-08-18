@@ -85,4 +85,116 @@
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Fluktuasi Bulanan per Kategori (12 Bulan Terakhir)</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" style="height: 320px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Fluktuasi Bulanan per ID Pelanggan</h3>
+                    <div class="float-right" style="width: 320px;">
+                        <select id="customerSelect" class="form-control form-control-sm">
+                            <option value="">-- Pilih ID Pelanggan --</option>
+                            @foreach ($customers as $c)
+                                <option value="{{ $c['id'] }}">{{ $c['idpel'] }} — {{ $c['nama'] }}
+                                    ({{ $c['jenis_label'] }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="customerChart" style="height: 320px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('scripts')
+    <script src="{{ asset('adminlte/plugins/chart.js/Chart.min.js') }}"></script>
+    <script>
+        const monthLabels = @json($chart_labels);
+        const categoryData = @json($chart_category);
+        const customerData = @json($chart_customer);
+
+        const moneyFmt = (v) => new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            maximumFractionDigits: 0
+        }).format(v);
+
+        // Chart A: per kategori
+        const catCtx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(catCtx, {
+            type: 'line',
+            data: {
+                labels: monthLabels,
+                datasets: [
+                    { label: 'PLN', data: categoryData.pln, borderColor: '#f39c12', backgroundColor: 'rgba(243,156,18,0.1)', tension: 0.3, fill: false },
+                    { label: 'PDAM', data: categoryData.pdam, borderColor: '#00a65a', backgroundColor: 'rgba(0,166,90,0.1)', tension: 0.3, fill: false },
+                    { label: 'TELKOM', data: categoryData.telkom, borderColor: '#3c8dbc', backgroundColor: 'rgba(60,141,188,0.1)', tension: 0.3, fill: false },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: { ticks: { callback: (v) => moneyFmt(v) } },
+                },
+                plugins: {
+                    tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + moneyFmt(ctx.parsed.y) } },
+                },
+            },
+        });
+
+        // Chart B: per ID pelanggan (dropdown)
+        const custCtx = document.getElementById('customerChart').getContext('2d');
+        const customerChart = new Chart(custCtx, {
+            type: 'line',
+            data: { labels: monthLabels, datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: { ticks: { callback: (v) => moneyFmt(v) } },
+                },
+                plugins: {
+                    tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + moneyFmt(ctx.parsed.y) } },
+                },
+            },
+        });
+
+        document.getElementById('customerSelect').addEventListener('change', function() {
+            const id = parseInt(this.value, 10);
+            const found = customerData.find((c) => c.id === id);
+            if (!found) {
+                customerChart.data.datasets = [];
+                customerChart.update();
+                return;
+            }
+            customerChart.data.datasets = [{
+                label: found.idpel + ' — ' + found.nama,
+                data: found.data,
+                borderColor: '#3c8dbc',
+                backgroundColor: 'rgba(60,141,188,0.1)',
+                tension: 0.3,
+                fill: false,
+            }];
+            customerChart.update();
+        });
+    </script>
 @endsection
