@@ -29,3 +29,4 @@ api.rest
 !/docs/manuals/
 !/docs/manuals/**
 !/docs/help-navigation.json
+/public/uploads/

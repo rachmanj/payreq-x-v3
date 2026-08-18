@@ -166,6 +166,70 @@ PROMPT;
     }
 
     /**
+     * @return array<int, array{idpel: string, nama: string, jumlah: int, confidence: float}>
+     */
+    public function extractUtilityBillsFromImageBase64(string $base64Image, string $mimeType = 'image/jpeg'): array
+    {
+        $prompt = <<<'PROMPT'
+You are parsing an Indonesian utility bill collective list ("DAFTAR TAGIHAN KOLEKTIF") for PLN/PDAM/TELKOM postpaid bills.
+Return ONLY valid JSON (no markdown fences) with this exact shape:
+{"bills":[{"idpel":string,"nama":string,"jumlah":number,"confidence":number},...]}
+
+Rules:
+- idpel: the customer ID (column "IDPEL"). Return as a string with no spaces (e.g. "232000325791").
+- nama: the customer name exactly as printed.
+- jumlah: the bill amount in Rupiah (integer, no thousands separators, no decimals). e.g. 266227 not "266.227".
+- confidence: 0-1 estimate per row of how confidently you read that row.
+- Include one object in "bills" for EVERY row in the table. Do not merge or skip rows.
+PROMPT;
+
+        $messages = [
+            [
+                'role' => 'user',
+                'content' => [
+                    ['type' => 'text', 'text' => $prompt],
+                    [
+                        'type' => 'image_url',
+                        'image_url' => [
+                            'url' => 'data:'.$mimeType.';base64,'.$base64Image,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $json = $this->chat($messages, $this->bankStatementModel);
+        $content = data_get($json, 'choices.0.message.content');
+        if (! is_string($content)) {
+            throw new OpenRouterException('Invalid OpenRouter response: missing message content.', 500, is_array($json) ? $json : null);
+        }
+
+        $trimmed = trim($content);
+        if (preg_match('/^```(?:json)?\s*([\s\S]*?)\s*```$/m', $trimmed, $m)) {
+            $trimmed = trim($m[1]);
+        }
+        $decoded = json_decode($trimmed, true);
+        if (! is_array($decoded) || ! isset($decoded['bills']) || ! is_array($decoded['bills'])) {
+            throw new OpenRouterException('AI returned invalid JSON: missing bills array.', 500);
+        }
+
+        $bills = [];
+        foreach ($decoded['bills'] as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $bills[] = [
+                'idpel' => (string) data_get($row, 'idpel', ''),
+                'nama' => (string) data_get($row, 'nama', ''),
+                'jumlah' => (int) data_get($row, 'jumlah', 0),
+                'confidence' => (float) data_get($row, 'confidence', 0),
+            ];
+        }
+
+        return $bills;
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     protected function decodeReceiptJsonPayload(string $content): array

@@ -10,6 +10,10 @@ Route::prefix('utilities')->name('utilities.')->middleware('permission:akses_uti
     Route::get('/bills', [UtilityBillController::class, 'index'])->name('bills.index');
     Route::get('/bills/data', [UtilityBillController::class, 'data'])->name('bills.data');
     Route::get('/bills/create', [UtilityBillController::class, 'create'])->name('bills.create');
+    Route::get('/bills/upload', [UtilityBillController::class, 'upload'])->name('bills.upload');
+    Route::post('/bills/parse-upload', [UtilityBillController::class, 'parseUpload'])->name('bills.parse-upload');
+    Route::get('/bills/preview', [UtilityBillController::class, 'preview'])->name('bills.preview');
+    Route::post('/bills/store-upload', [UtilityBillController::class, 'storeUpload'])->name('bills.store-upload');
     Route::post('/bills', [UtilityBillController::class, 'store'])->name('bills.store');
     Route::post('/bills/copy-last-month', [UtilityBillController::class, 'copyLastMonth'])->name('bills.copy-last-month');
     Route::post('/bills/{bill}/mark-paid', [UtilityBillController::class, 'markPaid'])->name('bills.mark-paid');

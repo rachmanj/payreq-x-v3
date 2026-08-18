@@ -19,6 +19,9 @@
                             data-target="#modal-copy-month">
                             <i class="fas fa-copy"></i> Copy Bulan Lalu
                         </button>
+                        <a href="{{ route('utilities.bills.upload') }}" class="btn btn-sm btn-info">
+                            <i class="fas fa-camera"></i> Upload Struk
+                        </a>
                         <a href="{{ route('utilities.bills.create') }}" class="btn btn-sm btn-primary">
                             <i class="fas fa-plus"></i> Tambah Tagihan
                         </a>

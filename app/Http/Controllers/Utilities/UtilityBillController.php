@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Utilities;
 
+use App\Exceptions\OpenRouterException;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\UtilityBill;
 use App\Models\UtilityCustomer;
+use App\Services\OpenRouterService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class UtilityBillController extends Controller
@@ -182,5 +185,181 @@ class UtilityBillController extends Controller
         }
 
         return back()->with('success', "Berhasil menyalin {$copied} tagihan ke periode {$validated['periode_target']}.");
+    }
+
+    public function upload(): View
+    {
+        return view('utilities.bills.upload', [
+            'jenisList' => UtilityCustomer::JENIS_UTILITAS,
+            'projects' => Project::orderBy('code')->get(),
+            'periodeDefault' => now()->format('Y-m'),
+        ]);
+    }
+
+    public function parseUpload(Request $request, OpenRouterService $openRouter): RedirectResponse
+    {
+        $validated = $request->validate([
+            'jenis_utilitas' => 'required|in:pln,pdam,telkom',
+            'project' => 'required|string|max:20',
+            'periode' => 'required|date_format:Y-m',
+            'file' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+        ]);
+
+        $file = $request->file('file');
+        $mimeType = $file->getMimeType() ?: 'image/jpeg';
+        $base64 = base64_encode((string) file_get_contents($file->getRealPath()));
+
+        $uploadDir = public_path('uploads/utilities');
+        if (! is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        $file->move($uploadDir, uniqid('struk_', true).'.'.$file->getClientOriginalExtension());
+
+        try {
+            $extractedBills = $openRouter->extractUtilityBillsFromImageBase64($base64, $mimeType);
+        } catch (OpenRouterException $exception) {
+            return back()
+                ->withInput()
+                ->with('alert_type', 'error')
+                ->with('alert_title', 'Gagal Membaca Struk')
+                ->with('alert_message', $exception->getMessage());
+        }
+
+        if (count($extractedBills) === 0) {
+            return back()
+                ->withInput()
+                ->with('alert_type', 'error')
+                ->with('alert_title', 'Gagal Membaca Struk')
+                ->with('alert_message', 'Tidak ada tagihan terdeteksi pada gambar.');
+        }
+
+        $jenis = $validated['jenis_utilitas'];
+        $rows = [];
+        foreach ($extractedBills as $bill) {
+            $idpel = preg_replace('/\s+/', '', $bill['idpel']);
+            $customer = UtilityCustomer::query()
+                ->where('jenis_utilitas', $jenis)
+                ->where('id_pelanggan', $idpel)
+                ->first();
+
+            $rows[] = [
+                'idpel' => $idpel,
+                'nama' => $bill['nama'],
+                'jumlah' => $bill['jumlah'],
+                'confidence' => $bill['confidence'],
+                'matched' => $customer !== null,
+            ];
+        }
+
+        session([
+            'utility_upload_preview' => $rows,
+            'utility_upload_meta' => [
+                'jenis_utilitas' => $jenis,
+                'project' => $validated['project'],
+                'periode' => $validated['periode'],
+            ],
+        ]);
+
+        return redirect()->route('utilities.bills.preview');
+    }
+
+    public function preview(): View|RedirectResponse
+    {
+        $rows = session('utility_upload_preview');
+        $meta = session('utility_upload_meta');
+
+        if (! is_array($rows) || ! is_array($meta) || count($rows) === 0) {
+            return redirect()
+                ->route('utilities.bills.upload')
+                ->with('error', 'Tidak ada data preview. Silakan upload struk terlebih dahulu.');
+        }
+
+        $periode = $meta['periode'];
+        $tanggalJatuhTempo = Carbon::createFromFormat('Y-m', $periode)->endOfMonth()->toDateString();
+
+        return view('utilities.bills.preview', [
+            'rows' => $rows,
+            'jenis_utilitas' => $meta['jenis_utilitas'],
+            'jenis_label' => UtilityCustomer::JENIS_UTILITAS[$meta['jenis_utilitas']] ?? $meta['jenis_utilitas'],
+            'project' => $meta['project'],
+            'periode' => $periode,
+            'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
+        ]);
+    }
+
+    public function storeUpload(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'jenis_utilitas' => 'required|in:pln,pdam,telkom',
+            'project' => 'required|string|max:20',
+            'periode' => 'required|date_format:Y-m',
+            'tanggal_jatuh_tempo' => 'required|date',
+            'rows' => 'required|array|min:1',
+            'rows.*.idpel' => 'nullable|string|max:50',
+            'rows.*.nama' => 'nullable|string|max:255',
+            'rows.*.jumlah' => 'nullable|integer|min:0',
+        ]);
+
+        $saved = 0;
+        $skipped = 0;
+        $skippedInvalid = 0;
+        $skippedDuplicate = 0;
+
+        DB::transaction(function () use ($validated, &$saved, &$skipped, &$skippedInvalid, &$skippedDuplicate) {
+            foreach ($validated['rows'] as $row) {
+                $idpel = preg_replace('/\s+/', '', (string) ($row['idpel'] ?? ''));
+                $jumlah = (int) ($row['jumlah'] ?? 0);
+
+                if ($idpel === '' || $jumlah <= 0) {
+                    $skipped++;
+                    $skippedInvalid++;
+
+                    continue;
+                }
+
+                $customer = UtilityCustomer::query()->firstOrCreate(
+                    [
+                        'jenis_utilitas' => $validated['jenis_utilitas'],
+                        'id_pelanggan' => $idpel,
+                    ],
+                    [
+                        'nama' => (string) ($row['nama'] ?? $idpel),
+                        'project' => $validated['project'],
+                        'is_active' => true,
+                    ]
+                );
+
+                $exists = UtilityBill::query()
+                    ->where('utility_customer_id', $customer->id)
+                    ->where('periode', $validated['periode'])
+                    ->exists();
+
+                if ($exists) {
+                    $skipped++;
+                    $skippedDuplicate++;
+
+                    continue;
+                }
+
+                UtilityBill::create([
+                    'utility_customer_id' => $customer->id,
+                    'periode' => $validated['periode'],
+                    'jumlah_tagihan' => $jumlah,
+                    'tanggal_jatuh_tempo' => $validated['tanggal_jatuh_tempo'],
+                    'tanggal_bayar' => null,
+                ]);
+
+                $saved++;
+            }
+        });
+
+        session()->forget(['utility_upload_preview', 'utility_upload_meta']);
+
+        $message = "Berhasil menyimpan {$saved} tagihan.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} baris dilewati ({$skippedInvalid} tidak valid, {$skippedDuplicate} duplikat).";
+        }
+
+        return redirect()->route('utilities.bills.index')->with('success', $message);
     }
 }
