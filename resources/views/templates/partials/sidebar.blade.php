@@ -456,6 +456,44 @@
                     </li>
                 @endcan
 
+                <!-- Utilities -->
+                @can('akses_utilities')
+                    <li
+                        class="nav-item has-treeview {{ request()->routeIs('utilities.*') ? 'menu-open' : '' }}">
+                        <a href="#"
+                            class="nav-link {{ request()->routeIs('utilities.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-plug"></i>
+                            <p>
+                                Utilities
+                                <i class="fas fa-angle-left right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('utilities.dashboard') }}"
+                                    class="nav-link {{ request()->routeIs('utilities.dashboard') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Dashboard</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('utilities.bills.index') }}"
+                                    class="nav-link {{ request()->routeIs('utilities.bills.*') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Tagihan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('utilities.customers.index') }}"
+                                    class="nav-link {{ request()->routeIs('utilities.customers.*') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>ID Pelanggan</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                @endcan
+
                 <!-- Approvals -->
                 @can('akses_approvals')
                     <li

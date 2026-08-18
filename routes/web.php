@@ -205,6 +205,7 @@ Route::middleware('auth')->group(function () {
     require __DIR__.'/verification.php';
     require __DIR__.'/cash_journals.php';
     require __DIR__.'/accounting.php';
+    require __DIR__.'/utilities.php';
     require __DIR__.'/reports.php';
     require __DIR__.'/admin.php';
 
