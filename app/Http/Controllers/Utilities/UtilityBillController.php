@@ -518,7 +518,7 @@ class UtilityBillController extends Controller
                 $realization->realizationDetails()->create([
                     'project' => $realization->project,
                     'department_id' => $realization->department_id,
-                    'description' => 'Token '.strtoupper($bill->customer->jenis_utilitas).' '.$bill->customer->id_pelanggan.' — '.$bill->periode,
+                    'description' => 'Token '.strtoupper($bill->customer->jenis_utilitas).' '.$bill->customer->id_pelanggan.' — '.$bill->periode.($bill->customer->lokasi ? ' - '.$bill->customer->lokasi : ''),
                     'amount' => $bill->jumlah_tagihan,
                     'account_id' => $bill->customer->account_id,
                     'expense_date' => $bill->tanggal_bayar ? $bill->tanggal_bayar->toDateString() : now()->toDateString(),
