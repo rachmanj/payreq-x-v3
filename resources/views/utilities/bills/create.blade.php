@@ -181,10 +181,6 @@
     <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
     <script>
         $(function() {
-            $('.select2bs4').select2({
-                theme: 'bootstrap4'
-            });
-
             function toggleTipeFields() {
                 const tipe = $('#tipe').val();
                 if (tipe === 'prepaid') {
@@ -198,22 +194,48 @@
                 }
             }
 
-            function syncTipeFromCustomer() {
-                const selected = $('#utility_customer_id option:selected');
-                const customerTipe = selected.data('tipe');
-                if (customerTipe) {
-                    $('#tipe').val(customerTipe);
-                    toggleTipeFields();
+            function initCustomerSelect(tipe) {
+                const $select = $('#utility_customer_id');
+
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+
+                $select.select2({
+                    theme: 'bootstrap4',
+                    matcher: function(params, data) {
+                        const $opt = $(data.element);
+                        // Placeholder ("Pilih ID Pelanggan") selalu tampil
+                        if ($opt.val() === '') {
+                            return data;
+                        }
+                        const optTipe = $opt.data('tipe') || 'postpaid';
+                        if (optTipe !== tipe) {
+                            return null;
+                        }
+                        const term = $.trim(params.term).toLowerCase();
+                        if (term === '') {
+                            return data;
+                        }
+                        return data.text.toLowerCase().indexOf(term) > -1 ? data : null;
+                    }
+                });
+
+                // Hapus pilihan jika customer terpilih tidak cocok dengan tipe
+                const $selected = $select.find(':selected');
+                if ($selected.length && $selected.val() !== '' && ($selected.data('tipe') || 'postpaid') !== tipe) {
+                    $select.val('').trigger('change');
                 }
             }
 
-            $('#tipe').on('change', toggleTipeFields);
-            $('#utility_customer_id').on('change', syncTipeFromCustomer);
+            $('#tipe').on('change', function() {
+                const tipe = $(this).val();
+                toggleTipeFields();
+                initCustomerSelect(tipe);
+            });
 
             toggleTipeFields();
-            if ($('#utility_customer_id').val()) {
-                syncTipeFromCustomer();
-            }
+            initCustomerSelect($('#tipe').val());
         });
     </script>
 @endsection
