@@ -65,6 +65,14 @@
                                     <option value="lunas" @selected($status === 'lunas')>Lunas</option>
                                 </select>
                             </div>
+                            <div class="col-md-2">
+                                <label class="small text-muted">Klaim</label>
+                                <select id="filter_claimed" class="form-control form-control-sm">
+                                    <option value="">Semua</option>
+                                    <option value="0">Belum diklaim</option>
+                                    <option value="1">Sudah diklaim</option>
+                                </select>
+                            </div>
                             <div class="col-md-2 d-flex align-items-end">
                                 <button type="button" id="btn_filter" class="vj-btn vj-btn-primary">
                                     <i class="fas fa-filter"></i> Filter
@@ -75,6 +83,7 @@
                         <table id="bills-table" class="table table-bordered table-striped">
                             <thead>
                                 <tr>
+                                    <th></th>
                                     <th>ID Pelanggan</th>
                                     <th>Nama</th>
                                     <th>Jenis</th>
@@ -84,10 +93,26 @@
                                     <th>Jatuh Tempo</th>
                                     <th>Token</th>
                                     <th>Status</th>
+                                    <th>Payreq</th>
                                     <th></th>
                                 </tr>
                             </thead>
                         </table>
+
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" id="bulk-bar">
+                            <div>
+                                <span class="vj-chip vj-chip-neutral">Terpilih: <strong id="selected-count">0</strong> token</span>
+                                <span class="vj-chip vj-chip-info">Total: <strong id="selected-total">0</strong></span>
+                            </div>
+                            <form action="{{ route('utilities.bills.create-payreq') }}" method="POST" id="bulk-form">
+                                @csrf
+                                <input type="hidden" id="bill_ids" value="">
+                                <div id="bill-ids-inputs"></div>
+                                <button type="submit" class="vj-btn vj-btn-success" id="btn-create-payreq" disabled>
+                                    <i class="fas fa-file-invoice-dollar"></i> Buat Payreq Reimburse
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -148,7 +173,7 @@
                 processing: true,
                 serverSide: true,
                 order: [
-                    [4, 'desc']
+                    [5, 'desc']
                 ],
                 ajax: {
                     url: '{{ route('utilities.bills.data') }}',
@@ -157,9 +182,15 @@
                         d.jenis_utilitas = $('#filter_jenis').val();
                         d.project = $('#filter_project').val();
                         d.status = $('#filter_status').val();
+                        d.claimed = $('#filter_claimed').val();
                     }
                 },
                 columns: [{
+                        data: 'checkbox',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'id_pelanggan',
                         name: 'utility_customers.id_pelanggan'
                     },
@@ -200,11 +231,58 @@
                         searchable: false
                     },
                     {
+                        data: 'payreq_badge',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'action',
                         orderable: false,
                         searchable: false
                     },
                 ],
+            });
+
+            function formatAmount(value) {
+                return new Intl.NumberFormat('id-ID', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(value);
+            }
+
+            function updateBulkBar() {
+                const checked = $('.bill-checkbox:checked');
+                let total = 0;
+                const ids = [];
+
+                checked.each(function() {
+                    ids.push($(this).val());
+                    total += parseFloat($(this).data('amount')) || 0;
+                });
+
+                $('#selected-count').text(ids.length);
+                $('#selected-total').text(formatAmount(total));
+                $('#bill_ids').val(ids.join(','));
+                $('#bill-ids-inputs').empty();
+                ids.forEach(function(id) {
+                    $('#bill-ids-inputs').append(
+                        $('<input>').attr({
+                            type: 'hidden',
+                            name: 'bill_ids[]',
+                            value: id
+                        })
+                    );
+                });
+                $('#btn-create-payreq').prop('disabled', ids.length === 0);
+            }
+
+            $('#bills-table').on('change', '.bill-checkbox', updateBulkBar);
+            table.on('draw', updateBulkBar);
+
+            $('#bulk-form').on('submit', function(e) {
+                if ($('.bill-checkbox:checked').length === 0) {
+                    e.preventDefault();
+                }
             });
 
             $('#btn_filter').on('click', function() {

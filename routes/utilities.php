@@ -16,6 +16,7 @@ Route::prefix('utilities')->name('utilities.')->middleware('permission:akses_uti
     Route::post('/bills/store-upload', [UtilityBillController::class, 'storeUpload'])->name('bills.store-upload');
     Route::post('/bills', [UtilityBillController::class, 'store'])->name('bills.store');
     Route::post('/bills/copy-last-month', [UtilityBillController::class, 'copyLastMonth'])->name('bills.copy-last-month');
+    Route::post('/bills/create-payreq', [UtilityBillController::class, 'createPayreq'])->name('bills.create-payreq');
     Route::post('/bills/{bill}/mark-paid', [UtilityBillController::class, 'markPaid'])->name('bills.mark-paid');
     Route::post('/bills/{bill}/unmark-paid', [UtilityBillController::class, 'unmarkPaid'])->name('bills.unmark-paid');
 

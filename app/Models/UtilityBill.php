@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,6 +19,16 @@ class UtilityBill extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(UtilityCustomer::class, 'utility_customer_id');
+    }
+
+    public function payreq(): BelongsTo
+    {
+        return $this->belongsTo(Payreq::class);
+    }
+
+    public function scopeUnclaimed(Builder $query): Builder
+    {
+        return $query->whereNull('payreq_id');
     }
 
     public function getStatusAttribute(): string

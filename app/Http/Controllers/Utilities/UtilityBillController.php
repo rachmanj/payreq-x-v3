@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Utilities;
 
 use App\Exceptions\OpenRouterException;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\DocumentNumberController;
+use App\Http\Controllers\PayreqController;
 use App\Models\Project;
+use App\Models\Realization;
 use App\Models\UtilityBill;
 use App\Models\UtilityCustomer;
 use App\Services\OpenRouterService;
@@ -42,7 +45,7 @@ class UtilityBillController extends Controller
         $mendekatiLimit = now()->addDays(3)->toDateString();
 
         $query = UtilityBill::query()
-            ->with('customer.account')
+            ->with(['customer.account', 'payreq'])
             ->join('utility_customers', 'utility_customers.id', '=', 'utility_bills.utility_customer_id')
             ->select('utility_bills.*');
 
@@ -72,7 +75,23 @@ class UtilityBillController extends Controller
             };
         }
 
+        if ($request->filled('claimed')) {
+            if ($request->claimed === '1') {
+                $query->whereNotNull('utility_bills.payreq_id');
+            } elseif ($request->claimed === '0') {
+                $query->whereNull('utility_bills.payreq_id');
+            }
+        }
+
         return datatables()->of($query)
+            ->addColumn('checkbox', function (UtilityBill $bill) {
+                $tipe = $bill->customer->tipe ?? 'postpaid';
+                if ($tipe === 'prepaid' && $bill->tanggal_bayar && ! $bill->payreq_id) {
+                    return '<input type="checkbox" class="bill-checkbox" value="'.$bill->id.'" data-amount="'.e($bill->jumlah_tagihan).'">';
+                }
+
+                return '';
+            })
             ->addColumn('id_pelanggan', fn (UtilityBill $bill) => $bill->customer->id_pelanggan ?? '-')
             ->addColumn('nama_customer', fn (UtilityBill $bill) => $bill->customer->nama ?? '-')
             ->addColumn('jenis_utilitas', fn (UtilityBill $bill) => UtilityCustomer::JENIS_UTILITAS[$bill->customer->jenis_utilitas ?? ''] ?? ($bill->customer->jenis_utilitas ?? '-'))
@@ -94,8 +113,18 @@ class UtilityBillController extends Controller
             ->addColumn('status_badge', function (UtilityBill $bill) {
                 return '<span class="vj-chip vj-chip-'.$bill->status_color.'">'.$bill->status_label.'</span>';
             })
+            ->addColumn('payreq_badge', function (UtilityBill $bill) {
+                if ($bill->payreq_id && $bill->payreq) {
+                    $url = route('user-payreqs.show', $bill->payreq_id);
+                    $nomor = e($bill->payreq->nomor ?? $bill->payreq_id);
+
+                    return '<a href="'.$url.'" class="vj-chip vj-chip-primary" title="Lihat payreq">Payreq #'.$nomor.'</a>';
+                }
+
+                return '';
+            })
             ->addColumn('action', 'utilities.bills.action')
-            ->rawColumns(['status_badge', 'tipe_badge', 'nomor_token_display', 'action'])
+            ->rawColumns(['checkbox', 'status_badge', 'tipe_badge', 'nomor_token_display', 'payreq_badge', 'action'])
             ->toJson();
     }
 
@@ -422,5 +451,90 @@ class UtilityBillController extends Controller
         }
 
         return redirect()->route('utilities.bills.index')->with('success', $message);
+    }
+
+    public function createPayreq(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'bill_ids' => 'required|array|min:1',
+            'bill_ids.*' => 'integer|exists:utility_bills,id',
+        ]);
+
+        $bills = UtilityBill::query()
+            ->with('customer')
+            ->whereIn('id', $validated['bill_ids'])
+            ->whereNull('payreq_id')
+            ->get();
+
+        if ($bills->isEmpty()) {
+            return back()->with('error', 'Tidak ada token valid untuk diproses (mungkin sudah diklaim).');
+        }
+
+        $nonPrepaid = $bills->filter(fn (UtilityBill $b) => ($b->customer->tipe ?? 'postpaid') !== 'prepaid');
+        if ($nonPrepaid->isNotEmpty()) {
+            return back()->with('error', 'Hanya token (prepaid) yang bisa dibuatkan payreq.');
+        }
+
+        $unpaid = $bills->filter(fn (UtilityBill $b) => ! $b->tanggal_bayar);
+        if ($unpaid->isNotEmpty()) {
+            return back()->with('error', 'Ada token yang belum lunas.');
+        }
+
+        $projects = $bills->pluck('customer.project')->unique()->values();
+        if ($projects->count() !== 1) {
+            return back()->with('error', 'Token harus dari satu project yang sama.');
+        }
+
+        $project = $projects->first();
+        $jenis = strtoupper($bills->first()->customer->jenis_utilitas ?? '');
+        $periode = $bills->pluck('periode')->unique()->values()->implode(', ');
+
+        $payreq = DB::transaction(function () use ($request, $bills, $project, $jenis, $periode) {
+            $request->merge([
+                'payreq_type' => 'reimburse',
+                'amount' => $bills->sum('jumlah_tagihan'),
+                'project' => $project,
+                'department_id' => auth()->user()->department_id,
+                'payreq_no' => app(DocumentNumberController::class)->generate_draft_document_number($project),
+                'rab_id' => null,
+                'lot_no' => null,
+                'employee_id' => auth()->id(),
+                'remarks' => "Reimburse token {$jenis} periode {$periode}",
+            ]);
+
+            $payreq = app(PayreqController::class)->store($request);
+
+            $realization = Realization::create([
+                'payreq_id' => $payreq->id,
+                'project' => $payreq->project,
+                'department_id' => $payreq->department_id,
+                'remarks' => $payreq->remarks,
+                'user_id' => $payreq->user_id,
+                'nomor' => app(DocumentNumberController::class)->generate_draft_document_number($project),
+                'status' => 'reimburse-draft',
+            ]);
+
+            foreach ($bills as $bill) {
+                $realization->realizationDetails()->create([
+                    'project' => $realization->project,
+                    'department_id' => $realization->department_id,
+                    'description' => 'Token '.strtoupper($bill->customer->jenis_utilitas).' '.$bill->customer->id_pelanggan.' — '.$bill->periode,
+                    'amount' => $bill->jumlah_tagihan,
+                    'account_id' => $bill->customer->account_id,
+                    'expense_date' => $bill->tanggal_bayar ? $bill->tanggal_bayar->toDateString() : now()->toDateString(),
+                    'type' => 'other',
+                ]);
+            }
+
+            $payreq->update(['amount' => $realization->realizationDetails()->sum('amount')]);
+
+            UtilityBill::query()->whereIn('id', $bills->pluck('id'))->update(['payreq_id' => $payreq->id]);
+
+            return $payreq;
+        });
+
+        return redirect()
+            ->route('user-payreqs.reimburse.edit', $payreq->id)
+            ->with('success', 'Payreq reimburse berhasil dibuat dari '.$bills->count().' token.');
     }
 }
