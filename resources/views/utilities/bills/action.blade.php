@@ -1,21 +1,27 @@
 <div class="vj-inline-actions">
-    @if (! $model->tanggal_bayar)
-        <button type="button" class="vj-action-item vj-action-item-xs vj-action-success btn-mark-paid" data-toggle="modal"
-            data-target="#modal-mark-paid-{{ $model->id }}" title="Tandai Lunas">
-            <i class="fas fa-check"></i><span>lunas</span>
-        </button>
+    @if ($model->payreq_id)
+        <span class="vj-chip vj-chip-neutral" title="Sudah masuk payreq, terkunci">
+            <i class="fas fa-lock"></i> Terkunci
+        </span>
     @else
-        <form action="{{ route('utilities.bills.unmark-paid', $model->id) }}" method="POST" class="d-inline">
-            @csrf
-            <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel" title="Batalkan Lunas"
-                onclick="return confirm('Batalkan status lunas tagihan ini?')">
-                <i class="fas fa-undo"></i><span>batal</span>
+        @if (! $model->tanggal_bayar)
+            <button type="button" class="vj-action-item vj-action-item-xs vj-action-success btn-mark-paid" data-toggle="modal"
+                data-target="#modal-mark-paid-{{ $model->id }}" title="Tandai Lunas">
+                <i class="fas fa-check"></i><span>lunas</span>
             </button>
-        </form>
+        @else
+            <form action="{{ route('utilities.bills.unmark-paid', $model->id) }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel" title="Batalkan Lunas"
+                    onclick="return confirm('Batalkan status lunas tagihan ini?')">
+                    <i class="fas fa-undo"></i><span>batal</span>
+                </button>
+            </form>
+        @endif
     @endif
 </div>
 
-@if (! $model->tanggal_bayar)
+@if (! $model->tanggal_bayar && ! $model->payreq_id)
     <div class="modal fade" id="modal-mark-paid-{{ $model->id }}">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">

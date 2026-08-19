@@ -7,6 +7,7 @@ use App\Models\ApprovalPlan;
 use App\Models\ApprovalStage;
 use App\Models\Payreq;
 use App\Models\Realization;
+use App\Models\UtilityBill;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -162,6 +163,11 @@ class ApprovalPlanController extends Controller
                 'status' => 'rejected',
                 'deletable' => 1,
             ]);
+
+            // Release linked utility token bills so they can be re-claimed
+            if ($document_type === 'payreq') {
+                UtilityBill::where('payreq_id', $document->id)->update(['payreq_id' => null]);
+            }
 
             // find its payment request if it exists
             $payment_request = Payreq::where('id', $document->payreq_id)->first();
