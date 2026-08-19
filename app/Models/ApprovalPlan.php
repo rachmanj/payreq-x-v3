@@ -26,7 +26,7 @@ class ApprovalPlan extends Model
 
     public function payreq()
     {
-        return $this->belongsTo(PayReq::class, 'document_id', 'id');
+        return $this->belongsTo(Payreq::class, 'document_id', 'id');
     }
 
     public function realization()
