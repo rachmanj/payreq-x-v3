@@ -9,30 +9,34 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Master ID Pelanggan</h3>
-                    <a href="{{ route('utilities.customers.create') }}" class="btn btn-sm btn-primary float-right">
-                        <i class="fas fa-plus"></i> Tambah ID Pelanggan
-                    </a>
-                </div>
-                <div class="card-body">
-                    <table id="customers-table" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>ID Pelanggan</th>
-                                <th>Nama</th>
-                                <th>Jenis</th>
-                                <th>Tipe</th>
-                                <th>Project</th>
-                                <th>Akun</th>
-                                <th>Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                    </table>
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-users"></i> Master ID Pelanggan
+                        </h3>
+                        <a href="{{ route('utilities.customers.create') }}" class="vj-btn vj-btn-success">
+                            <i class="fas fa-plus"></i> Tambah ID Pelanggan
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <table id="customers-table" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID Pelanggan</th>
+                                    <th>Nama</th>
+                                    <th>Jenis</th>
+                                    <th>Tipe</th>
+                                    <th>Project</th>
+                                    <th>Akun</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -42,6 +46,7 @@
 @section('styles')
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+    @include('partials.vj-soft-ui-styles')
 @endsection
 
 @section('scripts')

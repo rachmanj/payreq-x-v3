@@ -28,10 +28,10 @@ class UtilityCustomerController extends Controller
             ->addColumn('jenis_label', fn (UtilityCustomer $customer) => UtilityCustomer::JENIS_UTILITAS[$customer->jenis_utilitas] ?? $customer->jenis_utilitas)
             ->addColumn('tipe_badge', function (UtilityCustomer $customer) {
                 if ($customer->tipe === 'prepaid') {
-                    return '<span class="badge badge-info">Token</span>';
+                    return '<span class="vj-chip vj-chip-info">Token</span>';
                 }
 
-                return '<span class="badge badge-secondary">Pascabayar</span>';
+                return '<span class="vj-chip vj-chip-neutral">Pascabayar</span>';
             })
             ->addColumn('account_info', function (UtilityCustomer $customer) {
                 if (! $customer->account) {
@@ -41,8 +41,8 @@ class UtilityCustomerController extends Controller
                 return '<small>'.$customer->account->account_number.'</small><br><small>'.e($customer->account->account_name).'</small>';
             })
             ->addColumn('is_active_badge', fn (UtilityCustomer $customer) => $customer->is_active
-                ? '<span class="badge badge-success">Aktif</span>'
-                : '<span class="badge badge-secondary">Nonaktif</span>')
+                ? '<span class="vj-chip vj-chip-success">Aktif</span>'
+                : '<span class="vj-chip vj-chip-neutral">Nonaktif</span>')
             ->addColumn('action', 'utilities.customers.action')
             ->rawColumns(['account_info', 'is_active_badge', 'tipe_badge', 'action'])
             ->toJson();

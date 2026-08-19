@@ -79,10 +79,10 @@ class UtilityBillController extends Controller
             ->addColumn('tipe_badge', function (UtilityBill $bill) {
                 $tipe = $bill->customer->tipe ?? 'postpaid';
                 if ($tipe === 'prepaid') {
-                    return '<span class="badge badge-info">Token</span>';
+                    return '<span class="vj-chip vj-chip-info">Token</span>';
                 }
 
-                return '<span class="badge badge-secondary">Pascabayar</span>';
+                return '<span class="vj-chip vj-chip-neutral">Pascabayar</span>';
             })
             ->addColumn('nomor_token_display', fn (UtilityBill $bill) => $bill->nomor_token
                 ? '<small>'.e($bill->nomor_token).'</small>'
@@ -92,7 +92,7 @@ class UtilityBillController extends Controller
                 ? $bill->tanggal_jatuh_tempo->format('d-M-Y')
                 : '-')
             ->addColumn('status_badge', function (UtilityBill $bill) {
-                return '<span class="badge badge-'.$bill->status_color.'">'.$bill->status_label.'</span>';
+                return '<span class="vj-chip vj-chip-'.$bill->status_color.'">'.$bill->status_label.'</span>';
             })
             ->addColumn('action', 'utilities.bills.action')
             ->rawColumns(['status_badge', 'tipe_badge', 'nomor_token_display', 'action'])

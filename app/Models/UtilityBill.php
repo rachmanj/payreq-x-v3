@@ -56,7 +56,7 @@ class UtilityBill extends Model
             'lunas' => 'success',
             'telat' => 'danger',
             'mendekati' => 'warning',
-            default => 'secondary',
+            default => 'neutral',
         };
     }
 }

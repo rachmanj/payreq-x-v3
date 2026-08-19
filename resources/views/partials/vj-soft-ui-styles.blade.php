@@ -515,6 +515,23 @@
     text-decoration: none;
 }
 
+.vj-action-success {
+    background: #e8f5e9;
+    border-color: #c8e6c9;
+    color: #198754;
+}
+
+.vj-action-success i {
+    color: #198754;
+}
+
+.vj-action-success:hover {
+    background: #d4edd7;
+    border-color: #a5d6a7;
+    color: #146c43;
+    text-decoration: none;
+}
+
 .vj-action-print {
     background: #f1f3f5;
     border-color: #dee2e6;
@@ -664,7 +681,9 @@
 .vj-show #mypayreqs thead th,
 .vj-show #realizations thead th,
 .vj-show #details-table thead th,
-.vj-show #vj_details thead th {
+.vj-show #vj_details thead th,
+.vj-show #bills-table thead th,
+.vj-show #customers-table thead th {
     background: #f8f9fa;
     border-color: #e9ecef;
     color: #495057;

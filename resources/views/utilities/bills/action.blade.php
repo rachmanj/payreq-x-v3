@@ -1,17 +1,19 @@
-@if (! $model->tanggal_bayar)
-    <button type="button" class="btn btn-xs btn-success btn-mark-paid" data-toggle="modal"
-        data-target="#modal-mark-paid-{{ $model->id }}" title="Tandai Lunas">
-        <i class="fas fa-check"></i>
-    </button>
-@else
-    <form action="{{ route('utilities.bills.unmark-paid', $model->id) }}" method="POST" class="d-inline">
-        @csrf
-        <button type="submit" class="btn btn-xs btn-warning" title="Batalkan Lunas"
-            onclick="return confirm('Batalkan status lunas tagihan ini?')">
-            <i class="fas fa-undo"></i>
+<div class="vj-inline-actions">
+    @if (! $model->tanggal_bayar)
+        <button type="button" class="vj-action-item vj-action-item-xs vj-action-success btn-mark-paid" data-toggle="modal"
+            data-target="#modal-mark-paid-{{ $model->id }}" title="Tandai Lunas">
+            <i class="fas fa-check"></i><span>lunas</span>
         </button>
-    </form>
-@endif
+    @else
+        <form action="{{ route('utilities.bills.unmark-paid', $model->id) }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel" title="Batalkan Lunas"
+                onclick="return confirm('Batalkan status lunas tagihan ini?')">
+                <i class="fas fa-undo"></i><span>batal</span>
+            </button>
+        </form>
+    @endif
+</div>
 
 @if (! $model->tanggal_bayar)
     <div class="modal fade" id="modal-mark-paid-{{ $model->id }}">
@@ -42,8 +44,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check"></i> Lunas</button>
+                        <button type="button" class="vj-action-item" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="vj-btn vj-btn-success"><i class="fas fa-check"></i> Lunas</button>
                     </div>
                 </form>
             </div>
