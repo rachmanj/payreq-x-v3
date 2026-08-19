@@ -15,6 +15,11 @@ class UtilityCustomer extends Model
         'telkom' => 'TELKOM',
     ];
 
+    public const TIPE = [
+        'postpaid' => 'Pascabayar',
+        'prepaid' => 'Token / Prabayar',
+    ];
+
     protected $guarded = [];
 
     protected $casts = [
@@ -34,5 +39,15 @@ class UtilityCustomer extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopePostpaid(Builder $query): Builder
+    {
+        return $query->where('tipe', 'postpaid');
+    }
+
+    public function scopePrepaid(Builder $query): Builder
+    {
+        return $query->where('tipe', 'prepaid');
     }
 }

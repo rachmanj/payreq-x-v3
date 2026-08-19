@@ -21,14 +21,23 @@
                 <form action="{{ route('utilities.bills.store-upload') }}" method="POST">
                     @csrf
                     <input type="hidden" name="jenis_utilitas" value="{{ $jenis_utilitas }}">
+                    <input type="hidden" name="tipe" value="{{ $tipe }}">
                     <input type="hidden" name="project" value="{{ $project }}">
                     <input type="hidden" name="periode" value="{{ $periode }}">
 
                     <div class="card-body">
                         <div class="row mb-3">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="small text-muted d-block">Jenis Utilitas</label>
                                 <strong>{{ $jenis_label }}</strong>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small text-muted d-block">Tipe</label>
+                                @if ($tipe === 'prepaid')
+                                    <span class="badge badge-info">{{ $tipe_label }}</span>
+                                @else
+                                    <span class="badge badge-secondary">{{ $tipe_label }}</span>
+                                @endif
                             </div>
                             <div class="col-md-2">
                                 <label class="small text-muted d-block">Project</label>
@@ -38,24 +47,31 @@
                                 <label class="small text-muted d-block">Periode</label>
                                 <strong>{{ $periode }}</strong>
                             </div>
-                            <div class="col-md-3">
-                                <label for="tanggal_jatuh_tempo" class="small text-muted d-block">Tanggal Jatuh Tempo</label>
-                                <input type="date" name="tanggal_jatuh_tempo" id="tanggal_jatuh_tempo"
-                                    class="form-control form-control-sm @error('tanggal_jatuh_tempo') is-invalid @enderror"
-                                    value="{{ old('tanggal_jatuh_tempo', $tanggal_jatuh_tempo) }}" required>
-                                @error('tanggal_jatuh_tempo')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-2">
+                            @if ($tipe === 'postpaid')
+                                <div class="col-md-3">
+                                    <label for="tanggal_jatuh_tempo" class="small text-muted d-block">Tanggal Jatuh Tempo</label>
+                                    <input type="date" name="tanggal_jatuh_tempo" id="tanggal_jatuh_tempo"
+                                        class="form-control form-control-sm @error('tanggal_jatuh_tempo') is-invalid @enderror"
+                                        value="{{ old('tanggal_jatuh_tempo', $tanggal_jatuh_tempo) }}" required>
+                                    @error('tanggal_jatuh_tempo')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            @endif
+                            <div class="col-md-{{ $tipe === 'postpaid' ? '1' : '4' }}">
                                 <label class="small text-muted d-block">Total Baris</label>
                                 <strong>{{ count($rows) }}</strong>
                             </div>
                         </div>
 
                         <p class="text-muted small mb-2">
-                            Periksa dan koreksi data sebelum menyimpan. Tagihan disimpan dengan status <strong>belum
-                                bayar</strong>. ID pelanggan baru akan otomatis dibuat.
+                            @if ($tipe === 'prepaid')
+                                Periksa dan koreksi data sebelum menyimpan. Pembelian token disimpan langsung sebagai
+                                <strong>lunas</strong>. ID pelanggan baru akan otomatis dibuat.
+                            @else
+                                Periksa dan koreksi data sebelum menyimpan. Tagihan disimpan dengan status <strong>belum
+                                    bayar</strong>. ID pelanggan baru akan otomatis dibuat.
+                            @endif
                         </p>
 
                         <div class="table-responsive">

@@ -25,6 +25,11 @@ class UtilityBill extends Model
         if ($this->tanggal_bayar) {
             return 'lunas';
         }
+
+        if (! $this->tanggal_jatuh_tempo) {
+            return 'belum';
+        }
+
         if ($this->tanggal_jatuh_tempo < now()->toDateString()) {
             return 'telat';
         }

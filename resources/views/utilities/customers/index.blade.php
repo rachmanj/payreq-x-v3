@@ -25,6 +25,7 @@
                                 <th>ID Pelanggan</th>
                                 <th>Nama</th>
                                 <th>Jenis</th>
+                                <th>Tipe</th>
                                 <th>Project</th>
                                 <th>Akun</th>
                                 <th>Status</th>
@@ -65,6 +66,11 @@
                     {
                         data: 'jenis_label',
                         name: 'jenis_utilitas'
+                    },
+                    {
+                        data: 'tipe_badge',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'project',

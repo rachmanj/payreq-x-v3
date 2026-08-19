@@ -26,6 +26,13 @@ class UtilityCustomerController extends Controller
             UtilityCustomer::query()->with('account')->orderBy('nama')
         )
             ->addColumn('jenis_label', fn (UtilityCustomer $customer) => UtilityCustomer::JENIS_UTILITAS[$customer->jenis_utilitas] ?? $customer->jenis_utilitas)
+            ->addColumn('tipe_badge', function (UtilityCustomer $customer) {
+                if ($customer->tipe === 'prepaid') {
+                    return '<span class="badge badge-info">Token</span>';
+                }
+
+                return '<span class="badge badge-secondary">Pascabayar</span>';
+            })
             ->addColumn('account_info', function (UtilityCustomer $customer) {
                 if (! $customer->account) {
                     return '-';
@@ -37,7 +44,7 @@ class UtilityCustomerController extends Controller
                 ? '<span class="badge badge-success">Aktif</span>'
                 : '<span class="badge badge-secondary">Nonaktif</span>')
             ->addColumn('action', 'utilities.customers.action')
-            ->rawColumns(['account_info', 'is_active_badge', 'action'])
+            ->rawColumns(['account_info', 'is_active_badge', 'tipe_badge', 'action'])
             ->toJson();
     }
 
@@ -90,6 +97,7 @@ class UtilityCustomerController extends Controller
     {
         return [
             'jenisList' => UtilityCustomer::JENIS_UTILITAS,
+            'tipeList' => UtilityCustomer::TIPE,
             'projects' => Project::orderBy('code')->get(),
             'accounts' => Account::query()->selectable()->orderBy('account_number')->get(),
         ];
@@ -109,6 +117,7 @@ class UtilityCustomerController extends Controller
 
         $validated = $request->validate([
             'jenis_utilitas' => 'required|in:pln,pdam,telkom',
+            'tipe' => 'required|in:postpaid,prepaid',
             'id_pelanggan' => ['required', 'string', 'max:50', $uniqueRule],
             'nama' => 'required|string|max:255',
             'lokasi' => 'nullable|string|max:255',

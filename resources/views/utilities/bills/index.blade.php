@@ -75,9 +75,11 @@
                                 <th>ID Pelanggan</th>
                                 <th>Nama</th>
                                 <th>Jenis</th>
+                                <th>Tipe</th>
                                 <th>Periode</th>
                                 <th>Jumlah</th>
                                 <th>Jatuh Tempo</th>
+                                <th>Token</th>
                                 <th>Status</th>
                                 <th></th>
                             </tr>
@@ -111,6 +113,7 @@
                                 value="{{ $periode_target_default }}" required>
                         </div>
                         <p class="text-muted small mt-2 mb-0">
+                            Hanya tagihan pascabayar yang disalin. Token/prabayar dilewati.
                             Tagihan yang sudah ada di periode target akan dilewati.
                         </p>
                     </div>
@@ -140,7 +143,7 @@
                 processing: true,
                 serverSide: true,
                 order: [
-                    [3, 'desc']
+                    [4, 'desc']
                 ],
                 ajax: {
                     url: '{{ route('utilities.bills.data') }}',
@@ -164,6 +167,11 @@
                         name: 'utility_customers.jenis_utilitas'
                     },
                     {
+                        data: 'tipe_badge',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'periode',
                         name: 'utility_bills.periode'
                     },
@@ -175,6 +183,11 @@
                     {
                         data: 'tanggal_jatuh_tempo',
                         name: 'utility_bills.tanggal_jatuh_tempo'
+                    },
+                    {
+                        data: 'nomor_token_display',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'status_badge',

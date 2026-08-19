@@ -27,7 +27,7 @@
                         </p>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="jenis_utilitas">Jenis Utilitas <span class="text-danger">*</span></label>
                                     <select name="jenis_utilitas" id="jenis_utilitas"
@@ -45,7 +45,24 @@
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="tipe">Tipe Pembayaran <span class="text-danger">*</span></label>
+                                    <select name="tipe" id="tipe"
+                                        class="form-control @error('tipe') is-invalid @enderror" required>
+                                        @foreach ($tipeList as $key => $label)
+                                            <option value="{{ $key }}"
+                                                {{ old('tipe', 'postpaid') === $key ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('tipe')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="project">Project <span class="text-danger">*</span></label>
                                     <select name="project" id="project"

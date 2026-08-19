@@ -76,13 +76,26 @@ class UtilityBillController extends Controller
             ->addColumn('id_pelanggan', fn (UtilityBill $bill) => $bill->customer->id_pelanggan ?? '-')
             ->addColumn('nama_customer', fn (UtilityBill $bill) => $bill->customer->nama ?? '-')
             ->addColumn('jenis_utilitas', fn (UtilityBill $bill) => UtilityCustomer::JENIS_UTILITAS[$bill->customer->jenis_utilitas ?? ''] ?? ($bill->customer->jenis_utilitas ?? '-'))
+            ->addColumn('tipe_badge', function (UtilityBill $bill) {
+                $tipe = $bill->customer->tipe ?? 'postpaid';
+                if ($tipe === 'prepaid') {
+                    return '<span class="badge badge-info">Token</span>';
+                }
+
+                return '<span class="badge badge-secondary">Pascabayar</span>';
+            })
+            ->addColumn('nomor_token_display', fn (UtilityBill $bill) => $bill->nomor_token
+                ? '<small>'.e($bill->nomor_token).'</small>'
+                : '-')
             ->editColumn('jumlah_tagihan', fn (UtilityBill $bill) => number_format($bill->jumlah_tagihan, 2))
-            ->editColumn('tanggal_jatuh_tempo', fn (UtilityBill $bill) => $bill->tanggal_jatuh_tempo->format('d-M-Y'))
+            ->editColumn('tanggal_jatuh_tempo', fn (UtilityBill $bill) => $bill->tanggal_jatuh_tempo
+                ? $bill->tanggal_jatuh_tempo->format('d-M-Y')
+                : '-')
             ->addColumn('status_badge', function (UtilityBill $bill) {
                 return '<span class="badge badge-'.$bill->status_color.'">'.$bill->status_label.'</span>';
             })
             ->addColumn('action', 'utilities.bills.action')
-            ->rawColumns(['status_badge', 'action'])
+            ->rawColumns(['status_badge', 'tipe_badge', 'nomor_token_display', 'action'])
             ->toJson();
     }
 
@@ -90,6 +103,7 @@ class UtilityBillController extends Controller
     {
         return view('utilities.bills.create', [
             'customers' => UtilityCustomer::active()->with('account')->orderBy('nama')->get(),
+            'tipeList' => UtilityCustomer::TIPE,
             'periodeDefault' => now()->format('Y-m'),
         ]);
     }
@@ -100,25 +114,53 @@ class UtilityBillController extends Controller
             'utility_customer_id' => 'required|exists:utility_customers,id',
             'periode' => 'required|date_format:Y-m',
             'jumlah_tagihan' => 'required|numeric|min:0',
-            'tanggal_jatuh_tempo' => 'required|date',
+            'tipe' => 'required|in:postpaid,prepaid',
+            'tanggal_jatuh_tempo' => 'nullable|required_if:tipe,postpaid|date',
+            'tanggal_bayar' => 'nullable|date',
+            'nomor_token' => 'nullable|string|max:255',
             'nomor_tagihan' => 'nullable|string|max:255',
             'meter_awal' => 'nullable|integer|min:0',
             'meter_akhir' => 'nullable|integer|min:0',
             'keterangan' => 'nullable|string',
         ]);
 
-        $exists = UtilityBill::query()
-            ->where('utility_customer_id', $validated['utility_customer_id'])
-            ->where('periode', $validated['periode'])
-            ->exists();
+        $customer = UtilityCustomer::query()->findOrFail($validated['utility_customer_id']);
 
-        if ($exists) {
+        if ($customer->tipe !== $validated['tipe']) {
             return back()->withInput()->withErrors([
-                'periode' => 'Tagihan untuk ID pelanggan dan periode ini sudah ada.',
+                'tipe' => 'Tipe tagihan tidak sesuai dengan tipe ID pelanggan.',
             ]);
         }
 
-        UtilityBill::create($validated);
+        if ($customer->tipe === 'postpaid') {
+            $exists = UtilityBill::query()
+                ->where('utility_customer_id', $validated['utility_customer_id'])
+                ->where('periode', $validated['periode'])
+                ->exists();
+
+            if ($exists) {
+                return back()->withInput()->withErrors([
+                    'periode' => 'Tagihan bulan ini sudah ada.',
+                ]);
+            }
+        }
+
+        $isPrepaid = $customer->tipe === 'prepaid';
+
+        UtilityBill::create([
+            'utility_customer_id' => $validated['utility_customer_id'],
+            'periode' => $validated['periode'],
+            'jumlah_tagihan' => $validated['jumlah_tagihan'],
+            'nomor_tagihan' => $validated['nomor_tagihan'] ?? null,
+            'nomor_token' => $isPrepaid ? ($validated['nomor_token'] ?? null) : null,
+            'tanggal_jatuh_tempo' => $isPrepaid ? null : $validated['tanggal_jatuh_tempo'],
+            'tanggal_bayar' => $isPrepaid
+                ? ($validated['tanggal_bayar'] ?? now()->toDateString())
+                : null,
+            'meter_awal' => $validated['meter_awal'] ?? null,
+            'meter_akhir' => $validated['meter_akhir'] ?? null,
+            'keterangan' => $validated['keterangan'] ?? null,
+        ]);
 
         return redirect()->route('utilities.bills.index')->with('success', 'Tagihan berhasil disimpan.');
     }
@@ -153,6 +195,7 @@ class UtilityBillController extends Controller
         ]);
 
         $sourceBills = UtilityBill::query()
+            ->with('customer')
             ->where('periode', $validated['periode_sumber'])
             ->get();
 
@@ -163,6 +206,10 @@ class UtilityBillController extends Controller
 
         $copied = 0;
         foreach ($sourceBills as $sourceBill) {
+            if ($sourceBill->customer?->tipe === 'prepaid') {
+                continue;
+            }
+
             if (in_array($sourceBill->utility_customer_id, $existingCustomerIds, true)) {
                 continue;
             }
@@ -191,6 +238,7 @@ class UtilityBillController extends Controller
     {
         return view('utilities.bills.upload', [
             'jenisList' => UtilityCustomer::JENIS_UTILITAS,
+            'tipeList' => UtilityCustomer::TIPE,
             'projects' => Project::orderBy('code')->get(),
             'periodeDefault' => now()->format('Y-m'),
         ]);
@@ -200,6 +248,7 @@ class UtilityBillController extends Controller
     {
         $validated = $request->validate([
             'jenis_utilitas' => 'required|in:pln,pdam,telkom',
+            'tipe' => 'required|in:postpaid,prepaid',
             'project' => 'required|string|max:20',
             'periode' => 'required|date_format:Y-m',
             'file' => 'required|image|mimes:jpg,jpeg,png|max:5120',
@@ -255,6 +304,7 @@ class UtilityBillController extends Controller
             'utility_upload_preview' => $rows,
             'utility_upload_meta' => [
                 'jenis_utilitas' => $jenis,
+                'tipe' => $validated['tipe'],
                 'project' => $validated['project'],
                 'periode' => $validated['periode'],
             ],
@@ -275,12 +325,17 @@ class UtilityBillController extends Controller
         }
 
         $periode = $meta['periode'];
-        $tanggalJatuhTempo = Carbon::createFromFormat('Y-m', $periode)->endOfMonth()->toDateString();
+        $tipe = $meta['tipe'] ?? 'postpaid';
+        $tanggalJatuhTempo = $tipe === 'postpaid'
+            ? Carbon::createFromFormat('Y-m', $periode)->endOfMonth()->toDateString()
+            : null;
 
         return view('utilities.bills.preview', [
             'rows' => $rows,
             'jenis_utilitas' => $meta['jenis_utilitas'],
             'jenis_label' => UtilityCustomer::JENIS_UTILITAS[$meta['jenis_utilitas']] ?? $meta['jenis_utilitas'],
+            'tipe' => $tipe,
+            'tipe_label' => UtilityCustomer::TIPE[$tipe] ?? $tipe,
             'project' => $meta['project'],
             'periode' => $periode,
             'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
@@ -291,21 +346,23 @@ class UtilityBillController extends Controller
     {
         $validated = $request->validate([
             'jenis_utilitas' => 'required|in:pln,pdam,telkom',
+            'tipe' => 'required|in:postpaid,prepaid',
             'project' => 'required|string|max:20',
             'periode' => 'required|date_format:Y-m',
-            'tanggal_jatuh_tempo' => 'required|date',
+            'tanggal_jatuh_tempo' => 'nullable|required_if:tipe,postpaid|date',
             'rows' => 'required|array|min:1',
             'rows.*.idpel' => 'nullable|string|max:50',
             'rows.*.nama' => 'nullable|string|max:255',
             'rows.*.jumlah' => 'nullable|integer|min:0',
         ]);
 
+        $isPrepaid = $validated['tipe'] === 'prepaid';
         $saved = 0;
         $skipped = 0;
         $skippedInvalid = 0;
         $skippedDuplicate = 0;
 
-        DB::transaction(function () use ($validated, &$saved, &$skipped, &$skippedInvalid, &$skippedDuplicate) {
+        DB::transaction(function () use ($validated, $isPrepaid, &$saved, &$skipped, &$skippedInvalid, &$skippedDuplicate) {
             foreach ($validated['rows'] as $row) {
                 $idpel = preg_replace('/\s+/', '', (string) ($row['idpel'] ?? ''));
                 $jumlah = (int) ($row['jumlah'] ?? 0);
@@ -323,30 +380,34 @@ class UtilityBillController extends Controller
                         'id_pelanggan' => $idpel,
                     ],
                     [
+                        'tipe' => $validated['tipe'],
                         'nama' => (string) ($row['nama'] ?? $idpel),
                         'project' => $validated['project'],
                         'is_active' => true,
                     ]
                 );
 
-                $exists = UtilityBill::query()
-                    ->where('utility_customer_id', $customer->id)
-                    ->where('periode', $validated['periode'])
-                    ->exists();
+                if (! $isPrepaid) {
+                    $exists = UtilityBill::query()
+                        ->where('utility_customer_id', $customer->id)
+                        ->where('periode', $validated['periode'])
+                        ->exists();
 
-                if ($exists) {
-                    $skipped++;
-                    $skippedDuplicate++;
+                    if ($exists) {
+                        $skipped++;
+                        $skippedDuplicate++;
 
-                    continue;
+                        continue;
+                    }
                 }
 
                 UtilityBill::create([
                     'utility_customer_id' => $customer->id,
                     'periode' => $validated['periode'],
                     'jumlah_tagihan' => $jumlah,
-                    'tanggal_jatuh_tempo' => $validated['tanggal_jatuh_tempo'],
-                    'tanggal_bayar' => null,
+                    'tanggal_jatuh_tempo' => $isPrepaid ? null : $validated['tanggal_jatuh_tempo'],
+                    'tanggal_bayar' => $isPrepaid ? now()->toDateString() : null,
+                    'nomor_token' => null,
                 ]);
 
                 $saved++;

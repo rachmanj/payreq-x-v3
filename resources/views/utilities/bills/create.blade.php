@@ -27,7 +27,7 @@
                                 class="form-control select2bs4 @error('utility_customer_id') is-invalid @enderror" required>
                                 <option value="">Pilih ID Pelanggan</option>
                                 @foreach ($customers as $customer)
-                                    <option value="{{ $customer->id }}"
+                                    <option value="{{ $customer->id }}" data-tipe="{{ $customer->tipe ?? 'postpaid' }}"
                                         {{ old('utility_customer_id') == $customer->id ? 'selected' : '' }}>
                                         [{{ strtoupper($customer->jenis_utilitas) }}] {{ $customer->id_pelanggan }} —
                                         {{ $customer->nama }} ({{ $customer->project }})
@@ -35,6 +35,20 @@
                                 @endforeach
                             </select>
                             @error('utility_customer_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tipe">Tipe Pembayaran <span class="text-danger">*</span></label>
+                            <select name="tipe" id="tipe" class="form-control @error('tipe') is-invalid @enderror" required>
+                                @foreach ($tipeList as $key => $label)
+                                    <option value="{{ $key }}" {{ old('tipe', 'postpaid') === $key ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('tipe')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -64,14 +78,14 @@
                             </div>
                         </div>
 
-                        <div class="row">
+                        <div class="row" id="field-postpaid">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="tanggal_jatuh_tempo">Tanggal Jatuh Tempo <span
                                             class="text-danger">*</span></label>
                                     <input type="date" name="tanggal_jatuh_tempo" id="tanggal_jatuh_tempo"
                                         class="form-control @error('tanggal_jatuh_tempo') is-invalid @enderror"
-                                        value="{{ old('tanggal_jatuh_tempo') }}" required>
+                                        value="{{ old('tanggal_jatuh_tempo') }}">
                                     @error('tanggal_jatuh_tempo')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -84,6 +98,31 @@
                                         class="form-control @error('nomor_tagihan') is-invalid @enderror"
                                         value="{{ old('nomor_tagihan') }}">
                                     @error('nomor_tagihan')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row d-none" id="field-prepaid">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="tanggal_bayar">Tanggal Beli <span class="text-danger">*</span></label>
+                                    <input type="date" name="tanggal_bayar" id="tanggal_bayar"
+                                        class="form-control @error('tanggal_bayar') is-invalid @enderror"
+                                        value="{{ old('tanggal_bayar', now()->toDateString()) }}">
+                                    @error('tanggal_bayar')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="nomor_token">Nomor Token</label>
+                                    <input type="text" name="nomor_token" id="nomor_token"
+                                        class="form-control @error('nomor_token') is-invalid @enderror"
+                                        value="{{ old('nomor_token') }}" placeholder="Opsional">
+                                    @error('nomor_token')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -145,6 +184,36 @@
             $('.select2bs4').select2({
                 theme: 'bootstrap4'
             });
+
+            function toggleTipeFields() {
+                const tipe = $('#tipe').val();
+                if (tipe === 'prepaid') {
+                    $('#field-postpaid').addClass('d-none');
+                    $('#field-prepaid').removeClass('d-none');
+                    $('#tanggal_jatuh_tempo').prop('required', false);
+                } else {
+                    $('#field-postpaid').removeClass('d-none');
+                    $('#field-prepaid').addClass('d-none');
+                    $('#tanggal_jatuh_tempo').prop('required', true);
+                }
+            }
+
+            function syncTipeFromCustomer() {
+                const selected = $('#utility_customer_id option:selected');
+                const customerTipe = selected.data('tipe');
+                if (customerTipe) {
+                    $('#tipe').val(customerTipe);
+                    toggleTipeFields();
+                }
+            }
+
+            $('#tipe').on('change', toggleTipeFields);
+            $('#utility_customer_id').on('change', syncTipeFromCustomer);
+
+            toggleTipeFields();
+            if ($('#utility_customer_id').val()) {
+                syncTipeFromCustomer();
+            }
         });
     </script>
 @endsection
