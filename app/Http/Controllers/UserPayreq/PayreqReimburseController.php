@@ -206,6 +206,13 @@ class PayreqReimburseController extends Controller
             'remarks' => $request->remarks,
         ]);
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'RAB updated successfully',
+            ]);
+        }
+
         return redirect()->route('user-payreqs.index')->with('success', 'RAB updated successfully');
     }
 }
