@@ -9,8 +9,13 @@ use Illuminate\Validation\Validator;
 class RealizationDetailOdometerMonotonicityValidator
 {
     /**
-     * Enforce non-decreasing HM across calendar days for a unit: HM_max(D) <= HM_min(D_next).
-     * Rows without expense_date or km_position are excluded from the timeline.
+     * Validate the NEW reading against the unit's existing timeline, without
+     * re-flagging pre-existing inconsistencies elsewhere in the history.
+     *
+     * A candidate (date D, HM H) must satisfy:
+     *   - H >= max(HM) of all existing rows with date < D
+     *   - H <= min(HM) of all existing rows with date > D
+     * Same-day rows do not constrain the candidate (within-day order is free).
      *
      * @param  array<string, mixed>  $input  Request input (must contain unit_no, km_position, expense_date when invoked)
      */
@@ -44,34 +49,58 @@ class RealizationDetailOdometerMonotonicityValidator
             ->when($excludeDetailId !== null, fn ($q) => $q->where('id', '!=', $excludeDetailId))
             ->get(['expense_date', 'km_position']);
 
-        /** @var array<string, array<int>> $buckets date string => HM values */
-        $buckets = [];
+        $maxBefore = null;
+        $minAfter = null;
 
         foreach ($rows as $row) {
-            $rawDay = $row->getRawOriginal('expense_date');
-            if ($rawDay !== null && $rawDay !== '') {
-                $day = substr((string) $rawDay, 0, 10);
-            } elseif ($row->expense_date instanceof Carbon) {
-                $day = $row->expense_date->timezone(config('app.timezone'))->toDateString();
-            } else {
-                $day = Carbon::parse($row->expense_date)->timezone(config('app.timezone'))->toDateString();
+            $day = self::dayOfRow($row);
+            if ($day === null) {
+                continue;
             }
-            $buckets[$day][] = (int) $row->km_position;
+
+            $hm = (int) $row->km_position;
+
+            if ($day < $candidateDay) {
+                $maxBefore = $maxBefore === null ? $hm : max($maxBefore, $hm);
+            } elseif ($day > $candidateDay) {
+                $minAfter = $minAfter === null ? $hm : min($minAfter, $hm);
+            }
         }
 
-        if (! isset($buckets[$candidateDay])) {
-            $buckets[$candidateDay] = [];
-        }
-        $buckets[$candidateDay][] = $candidateHm;
-
-        ksort($buckets);
-
-        if (self::breaksCrossDayMonotonicity($buckets)) {
+        if ($maxBefore !== null && $candidateHm < $maxBefore) {
             $validator->errors()->add(
                 'km_position',
-                'HM reading is inconsistent with expense dates for this unit: the odometer cannot decrease when moving forward in time. Adjust HM or expense date so earlier days do not show higher HM than later days.'
+                'HM reading is lower than a previously recorded reading for this unit (highest earlier reading: '.number_format($maxBefore).'). Adjust the HM or expense date.'
             );
         }
+
+        if ($minAfter !== null && $candidateHm > $minAfter) {
+            $validator->errors()->add(
+                'km_position',
+                'HM reading is higher than a later recorded reading for this unit (lowest later reading: '.number_format($minAfter).'). Adjust the HM or expense date.'
+            );
+        }
+    }
+
+    /**
+     * @param  RealizationDetail  $row
+     */
+    private static function dayOfRow($row): ?string
+    {
+        $rawDay = $row->getRawOriginal('expense_date');
+        if ($rawDay !== null && $rawDay !== '') {
+            return substr((string) $rawDay, 0, 10);
+        }
+
+        if ($row->expense_date instanceof Carbon) {
+            return $row->expense_date->timezone(config('app.timezone'))->toDateString();
+        }
+
+        if ($row->expense_date !== null) {
+            return Carbon::parse($row->expense_date)->timezone(config('app.timezone'))->toDateString();
+        }
+
+        return null;
     }
 
     /**
