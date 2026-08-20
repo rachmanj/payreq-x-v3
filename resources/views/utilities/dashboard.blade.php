@@ -166,11 +166,14 @@
         const categoryData = @json($chart_category);
         const customerData = @json($chart_customer);
 
-        const moneyFmt = (v) => new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            maximumFractionDigits: 0
-        }).format(v);
+        // Format kompak: Rp 1,4 jt / Rp 850 rb / Rp 500 (kurangi nol)
+        const moneyFmt = (v) => {
+            const n = Math.abs(v);
+            if (n >= 1e9) return 'Rp ' + (v / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' M';
+            if (n >= 1e6) return 'Rp ' + (v / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' jt';
+            if (n >= 1e3) return 'Rp ' + (v / 1e3).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' rb';
+            return 'Rp ' + Math.round(v).toLocaleString('id-ID');
+        };
 
         // Chart per kategori (PLN / PDAM / TELKOM) — sparkline minimalis
         function makeCategoryChart(canvasId, badgeId, label, data, borderColor) {
