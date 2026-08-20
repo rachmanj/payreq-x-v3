@@ -82,15 +82,39 @@
         </div>
 
         <div class="row">
-            <div class="col-12">
+            <div class="col-md-4">
                 <div class="card card-outline card-primary">
                     <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h3 class="card-title mb-0">
-                            <i class="fas fa-chart-line"></i> Fluktuasi Bulanan per Kategori (12 Bulan Terakhir)
+                            <i class="fas fa-bolt"></i> Fluktuasi PLN
                         </h3>
                     </div>
                     <div class="card-body">
-                        <canvas id="categoryChart" style="height: 320px;"></canvas>
+                        <canvas id="plnChart" style="height: 260px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-tint"></i> Fluktuasi PDAM
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="pdamChart" style="height: 260px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-phone"></i> Fluktuasi TELKOM
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="telkomChart" style="height: 260px;"></canvas>
                     </div>
                 </div>
             </div>
@@ -139,30 +163,33 @@
             maximumFractionDigits: 0
         }).format(v);
 
-        // Chart A: per kategori
-        const catCtx = document.getElementById('categoryChart').getContext('2d');
-        new Chart(catCtx, {
-            type: 'line',
-            data: {
-                labels: monthLabels,
-                datasets: [
-                    { label: 'PLN', data: categoryData.pln, borderColor: '#f39c12', backgroundColor: 'rgba(243,156,18,0.1)', tension: 0.3, fill: false },
-                    { label: 'PDAM', data: categoryData.pdam, borderColor: '#00a65a', backgroundColor: 'rgba(0,166,90,0.1)', tension: 0.3, fill: false },
-                    { label: 'TELKOM', data: categoryData.telkom, borderColor: '#3c8dbc', backgroundColor: 'rgba(60,141,188,0.1)', tension: 0.3, fill: false },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                scales: {
-                    y: { ticks: { callback: (v) => moneyFmt(v) } },
+        // Chart per kategori (PLN / PDAM / TELKOM — masing-masing chart terpisah)
+        function makeCategoryChart(canvasId, label, data, borderColor) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{ label: label, data: data, borderColor: borderColor, tension: 0.3, fill: false }],
                 },
-                plugins: {
-                    tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + moneyFmt(ctx.parsed.y) } },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { ticks: { callback: (v) => moneyFmt(v) } },
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + moneyFmt(ctx.parsed.y) } },
+                    },
                 },
-            },
-        });
+            });
+        }
+
+        makeCategoryChart('plnChart', 'PLN', categoryData.pln, '#f39c12');
+        makeCategoryChart('pdamChart', 'PDAM', categoryData.pdam, '#00a65a');
+        makeCategoryChart('telkomChart', 'TELKOM', categoryData.telkom, '#3c8dbc');
 
         // Chart B: per ID pelanggan (dropdown)
         const custCtx = document.getElementById('customerChart').getContext('2d');
