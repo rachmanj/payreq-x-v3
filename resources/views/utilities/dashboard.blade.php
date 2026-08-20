@@ -220,7 +220,7 @@
                         },
                     },
                     scales: {
-                        xAxes: [{ display: false }],
+                        xAxes: [{ gridLines: { display: false }, ticks: { fontSize: 10, fontColor: '#6c757d' } }],
                         yAxes: [{ display: false }],
                     },
                 },
