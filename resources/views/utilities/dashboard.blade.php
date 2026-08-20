@@ -134,20 +134,23 @@
                 <div class="card card-outline card-primary">
                     <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h3 class="card-title mb-0">
-                            <i class="fas fa-user-tag"></i> Fluktuasi Bulanan per ID Pelanggan
+                            <i class="fas fa-user-tag mr-2"></i> Per ID Pelanggan
                         </h3>
-                        <div style="width: 320px;">
-                            <select id="customerSelect" class="form-control form-control-sm">
-                                <option value="">-- Pilih ID Pelanggan --</option>
-                                @foreach ($customers as $c)
-                                    <option value="{{ $c['id'] }}">{{ $c['idpel'] }} — {{ $c['nama'] }}
-                                        ({{ $c['jenis_label'] }})</option>
-                                @endforeach
-                            </select>
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted font-weight-bold mr-3" id="custLatest">—</span>
+                            <div style="width: 280px;">
+                                <select id="customerSelect" class="form-control form-control-sm">
+                                    <option value="">-- Pilih ID Pelanggan --</option>
+                                    @foreach ($customers as $c)
+                                        <option value="{{ $c['id'] }}">{{ $c['idpel'] }} — {{ $c['nama'] }}
+                                            ({{ $c['jenis_label'] }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <canvas id="customerChart" style="height: 320px;"></canvas>
+                    <div class="card-body pt-2 pb-2">
+                        <canvas id="customerChart" style="height: 120px;"></canvas>
                     </div>
                 </div>
             </div>
@@ -248,7 +251,7 @@
                 },
                 scales: {
                     xAxes: [{ gridLines: { display: false } }],
-                    yAxes: [{ ticks: { callback: function (value) { return moneyFmt(value); } } }],
+                    yAxes: [{ display: false }],
                 },
             },
         });
@@ -256,18 +259,29 @@
         document.getElementById('customerSelect').addEventListener('change', function() {
             const id = parseInt(this.value, 10);
             const found = customerData.find((c) => c.id === id);
+            const badge = document.getElementById('custLatest');
             if (!found) {
                 customerChart.data.datasets = [];
                 customerChart.update();
+                if (badge) badge.textContent = '—';
                 return;
             }
+            // nilai bulan terakhir (non-zero)
+            let latest = 0;
+            for (let i = found.data.length - 1; i >= 0; i--) {
+                if (found.data[i]) { latest = found.data[i]; break; }
+            }
+            if (badge) badge.textContent = moneyFmt(latest);
             customerChart.data.datasets = [{
                 label: found.idpel + ' — ' + found.nama,
                 data: found.data,
                 borderColor: '#3c8dbc',
-                backgroundColor: 'rgba(60,141,188,0.1)',
+                backgroundColor: 'rgba(60,141,188,0.12)',
                 lineTension: 0.3,
-                fill: false,
+                fill: true,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHoverBackgroundColor: '#3c8dbc',
             }];
             customerChart.update();
         });
