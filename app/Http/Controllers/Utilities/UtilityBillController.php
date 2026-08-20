@@ -85,8 +85,7 @@ class UtilityBillController extends Controller
 
         return datatables()->of($query)
             ->addColumn('checkbox', function (UtilityBill $bill) {
-                $tipe = $bill->customer->tipe ?? 'postpaid';
-                if ($tipe === 'prepaid' && $bill->tanggal_bayar && ! $bill->payreq_id) {
+                if ($bill->tanggal_bayar && ! $bill->payreq_id) {
                     return '<input type="checkbox" class="bill-checkbox" value="'.$bill->id.'" data-amount="'.e($bill->jumlah_tagihan).'">';
                 }
 
@@ -467,22 +466,17 @@ class UtilityBillController extends Controller
             ->get();
 
         if ($bills->isEmpty()) {
-            return back()->with('error', 'Tidak ada token valid untuk diproses (mungkin sudah diklaim).');
-        }
-
-        $nonPrepaid = $bills->filter(fn (UtilityBill $b) => ($b->customer->tipe ?? 'postpaid') !== 'prepaid');
-        if ($nonPrepaid->isNotEmpty()) {
-            return back()->with('error', 'Hanya token (prepaid) yang bisa dibuatkan payreq.');
+            return back()->with('error', 'Tidak ada tagihan valid untuk diproses (mungkin sudah diklaim).');
         }
 
         $unpaid = $bills->filter(fn (UtilityBill $b) => ! $b->tanggal_bayar);
         if ($unpaid->isNotEmpty()) {
-            return back()->with('error', 'Ada token yang belum lunas.');
+            return back()->with('error', 'Ada tagihan yang belum lunas. Hanya tagihan lunas yang bisa dibuatkan payreq.');
         }
 
         $projects = $bills->pluck('customer.project')->unique()->values();
         if ($projects->count() !== 1) {
-            return back()->with('error', 'Token harus dari satu project yang sama.');
+            return back()->with('error', 'Tagihan harus dari satu project yang sama.');
         }
 
         $project = $projects->first();
@@ -499,7 +493,7 @@ class UtilityBillController extends Controller
                 'rab_id' => null,
                 'lot_no' => null,
                 'employee_id' => auth()->id(),
-                'remarks' => "Reimburse token {$jenis} periode {$periode}",
+                'remarks' => "Reimburse {$jenis} periode {$periode}",
             ]);
 
             $payreq = app(PayreqController::class)->store($request);
@@ -518,7 +512,7 @@ class UtilityBillController extends Controller
                 $realization->realizationDetails()->create([
                     'project' => $realization->project,
                     'department_id' => $realization->department_id,
-                    'description' => 'Token '.strtoupper($bill->customer->jenis_utilitas).' '.$bill->customer->id_pelanggan.' — '.$bill->periode.($bill->customer->lokasi ? ' - '.$bill->customer->lokasi : ''),
+                    'description' => ($bill->customer->tipe === 'prepaid' ? 'Token ' : 'Tagihan ').strtoupper($bill->customer->jenis_utilitas).' '.$bill->customer->id_pelanggan.' — '.$bill->periode.($bill->customer->lokasi ? ' - '.$bill->customer->lokasi : ''),
                     'amount' => $bill->jumlah_tagihan,
                     'account_id' => $bill->customer->account_id,
                     'expense_date' => $bill->tanggal_bayar ? $bill->tanggal_bayar->toDateString() : now()->toDateString(),
