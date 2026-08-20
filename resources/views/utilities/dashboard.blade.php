@@ -176,7 +176,7 @@
         };
 
         // Chart per kategori (PLN / PDAM / TELKOM) — sparkline minimalis
-        function makeCategoryChart(canvasId, badgeId, label, data, borderColor) {
+        function makeCategoryChart(canvasId, badgeId, label, data, borderColor, fillColor) {
             // nilai bulan terakhir (non-zero)
             let latest = 0;
             for (let i = data.length - 1; i >= 0; i--) {
@@ -194,9 +194,9 @@
                         label: label,
                         data: data,
                         borderColor: borderColor,
-                        backgroundColor: borderColor + '22',
+                        backgroundColor: fillColor,
                         borderWidth: 1.5,
-                        tension: 0.35,
+                        lineTension: 0.35,
                         fill: true,
                         pointRadius: 0,
                         pointHoverRadius: 4,
@@ -206,22 +206,27 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        x: { display: false },
-                        y: { display: false },
+                    legend: { display: false },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function (tooltipItem, data) {
+                                return data.datasets[tooltipItem.datasetIndex].label + ': ' + moneyFmt(tooltipItem.yLabel);
+                            },
+                        },
                     },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + moneyFmt(ctx.parsed.y) } },
+                    scales: {
+                        xAxes: [{ display: false }],
+                        yAxes: [{ display: false }],
                     },
                 },
             });
         }
 
-        makeCategoryChart('plnChart', 'plnLatest', 'PLN', categoryData.pln, '#f39c12');
-        makeCategoryChart('pdamChart', 'pdamLatest', 'PDAM', categoryData.pdam, '#00a65a');
-        makeCategoryChart('telkomChart', 'telkomLatest', 'TELKOM', categoryData.telkom, '#3c8dbc');
+        makeCategoryChart('plnChart', 'plnLatest', 'PLN', categoryData.pln, '#f39c12', 'rgba(243,156,18,0.15)');
+        makeCategoryChart('pdamChart', 'pdamLatest', 'PDAM', categoryData.pdam, '#00a65a', 'rgba(0,166,90,0.15)');
+        makeCategoryChart('telkomChart', 'telkomLatest', 'TELKOM', categoryData.telkom, '#3c8dbc', 'rgba(60,141,188,0.15)');
 
         // Chart B: per ID pelanggan (dropdown)
         const custCtx = document.getElementById('customerChart').getContext('2d');
@@ -231,12 +236,19 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                scales: {
-                    y: { ticks: { callback: (v) => moneyFmt(v) } },
+                legend: { display: false },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            return data.datasets[tooltipItem.datasetIndex].label + ': ' + moneyFmt(tooltipItem.yLabel);
+                        },
+                    },
                 },
-                plugins: {
-                    tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + moneyFmt(ctx.parsed.y) } },
+                scales: {
+                    xAxes: [{ gridLines: { display: false } }],
+                    yAxes: [{ ticks: { callback: function (value) { return moneyFmt(value); } } }],
                 },
             },
         });
@@ -254,7 +266,7 @@
                 data: found.data,
                 borderColor: '#3c8dbc',
                 backgroundColor: 'rgba(60,141,188,0.1)',
-                tension: 0.3,
+                lineTension: 0.3,
                 fill: false,
             }];
             customerChart.update();
