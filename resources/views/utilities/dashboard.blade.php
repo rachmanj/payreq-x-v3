@@ -84,13 +84,14 @@
         <div class="row">
             <div class="col-12">
                 <div class="card card-outline card-primary">
-                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="card-header d-flex align-items-center justify-content-between">
                         <h3 class="card-title mb-0">
-                            <i class="fas fa-bolt"></i> Fluktuasi PLN
+                            <i class="fas fa-bolt mr-2"></i> PLN
                         </h3>
+                        <span class="text-muted font-weight-bold" id="plnLatest">—</span>
                     </div>
-                    <div class="card-body">
-                        <canvas id="plnChart" style="height: 260px;"></canvas>
+                    <div class="card-body pt-2 pb-2">
+                        <canvas id="plnChart" style="height: 90px;"></canvas>
                     </div>
                 </div>
             </div>
@@ -99,13 +100,14 @@
         <div class="row">
             <div class="col-12">
                 <div class="card card-outline card-primary">
-                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="card-header d-flex align-items-center justify-content-between">
                         <h3 class="card-title mb-0">
-                            <i class="fas fa-tint"></i> Fluktuasi PDAM
+                            <i class="fas fa-tint mr-2"></i> PDAM
                         </h3>
+                        <span class="text-muted font-weight-bold" id="pdamLatest">—</span>
                     </div>
-                    <div class="card-body">
-                        <canvas id="pdamChart" style="height: 260px;"></canvas>
+                    <div class="card-body pt-2 pb-2">
+                        <canvas id="pdamChart" style="height: 90px;"></canvas>
                     </div>
                 </div>
             </div>
@@ -114,13 +116,14 @@
         <div class="row">
             <div class="col-12">
                 <div class="card card-outline card-primary">
-                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="card-header d-flex align-items-center justify-content-between">
                         <h3 class="card-title mb-0">
-                            <i class="fas fa-phone"></i> Fluktuasi TELKOM
+                            <i class="fas fa-phone mr-2"></i> TELKOM
                         </h3>
+                        <span class="text-muted font-weight-bold" id="telkomLatest">—</span>
                     </div>
-                    <div class="card-body">
-                        <canvas id="telkomChart" style="height: 260px;"></canvas>
+                    <div class="card-body pt-2 pb-2">
+                        <canvas id="telkomChart" style="height: 90px;"></canvas>
                     </div>
                 </div>
             </div>
@@ -169,21 +172,41 @@
             maximumFractionDigits: 0
         }).format(v);
 
-        // Chart per kategori (PLN / PDAM / TELKOM — masing-masing chart terpisah)
-        function makeCategoryChart(canvasId, label, data, borderColor) {
+        // Chart per kategori (PLN / PDAM / TELKOM) — sparkline minimalis
+        function makeCategoryChart(canvasId, badgeId, label, data, borderColor) {
+            // nilai bulan terakhir (non-zero)
+            let latest = 0;
+            for (let i = data.length - 1; i >= 0; i--) {
+                if (data[i]) { latest = data[i]; break; }
+            }
+            const badge = document.getElementById(badgeId);
+            if (badge) badge.textContent = moneyFmt(latest);
+
             const ctx = document.getElementById(canvasId).getContext('2d');
             return new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: monthLabels,
-                    datasets: [{ label: label, data: data, borderColor: borderColor, tension: 0.3, fill: false }],
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: borderColor,
+                        backgroundColor: borderColor + '22',
+                        borderWidth: 1.5,
+                        tension: 0.35,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointHoverBackgroundColor: borderColor,
+                    }],
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     scales: {
-                        y: { ticks: { callback: (v) => moneyFmt(v) } },
+                        x: { display: false },
+                        y: { display: false },
                     },
                     plugins: {
                         legend: { display: false },
@@ -193,9 +216,9 @@
             });
         }
 
-        makeCategoryChart('plnChart', 'PLN', categoryData.pln, '#f39c12');
-        makeCategoryChart('pdamChart', 'PDAM', categoryData.pdam, '#00a65a');
-        makeCategoryChart('telkomChart', 'TELKOM', categoryData.telkom, '#3c8dbc');
+        makeCategoryChart('plnChart', 'plnLatest', 'PLN', categoryData.pln, '#f39c12');
+        makeCategoryChart('pdamChart', 'pdamLatest', 'PDAM', categoryData.pdam, '#00a65a');
+        makeCategoryChart('telkomChart', 'telkomLatest', 'TELKOM', categoryData.telkom, '#3c8dbc');
 
         // Chart B: per ID pelanggan (dropdown)
         const custCtx = document.getElementById('customerChart').getContext('2d');
