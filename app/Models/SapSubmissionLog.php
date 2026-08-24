@@ -13,6 +13,7 @@ class SapSubmissionLog extends Model
         'verification_journal_id',
         'journal_entry_id',
         'faktur_id',
+        'utility_ap_invoice_id',
         'document_type',
         'user_id',
         'submitted_by',
@@ -44,6 +45,11 @@ class SapSubmissionLog extends Model
     public function faktur()
     {
         return $this->belongsTo(Faktur::class);
+    }
+
+    public function utilityApInvoice()
+    {
+        return $this->belongsTo(UtilityApInvoice::class);
     }
 
     public function user()

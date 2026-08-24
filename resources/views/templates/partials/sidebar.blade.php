@@ -490,6 +490,15 @@
                                     <p>ID Pelanggan</p>
                                 </a>
                             </li>
+                            @can('submit_sap_ap_invoice_utilities')
+                                <li class="nav-item">
+                                    <a href="{{ route('utilities.vendors.index') }}"
+                                        class="nav-link {{ request()->routeIs('utilities.vendors.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Vendor Mapping</p>
+                                    </a>
+                                </li>
+                            @endcan
                         </ul>
                     </li>
                 @endcan

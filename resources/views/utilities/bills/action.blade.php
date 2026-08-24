@@ -1,6 +1,6 @@
 <div class="vj-inline-actions">
-    @if ($model->payreq_id)
-        <span class="vj-chip vj-chip-neutral" title="Sudah masuk payreq, terkunci">
+    @if ($model->payreq_id || $model->utility_ap_invoice_id)
+        <span class="vj-chip vj-chip-neutral" title="Sudah masuk payreq atau AP Invoice SAP, terkunci">
             <i class="fas fa-lock"></i> Terkunci
         </span>
     @else

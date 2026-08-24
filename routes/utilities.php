@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Utilities\UtilityApInvoiceController;
 use App\Http\Controllers\Utilities\UtilityBillController;
 use App\Http\Controllers\Utilities\UtilityCustomerController;
 use App\Http\Controllers\Utilities\UtilityDashboardController;
+use App\Http\Controllers\Utilities\UtilityVendorController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('utilities')->name('utilities.')->middleware('permission:akses_utilities')->group(function () {
@@ -22,4 +24,13 @@ Route::prefix('utilities')->name('utilities.')->middleware('permission:akses_uti
 
     Route::get('/customers/data', [UtilityCustomerController::class, 'data'])->name('customers.data');
     Route::resource('/customers', UtilityCustomerController::class);
+
+    Route::middleware('permission:submit_sap_ap_invoice_utilities')->group(function () {
+        Route::get('/vendors', [UtilityVendorController::class, 'index'])->name('vendors.index');
+        Route::post('/vendors', [UtilityVendorController::class, 'update'])->name('vendors.update');
+        Route::post('/bills/ap-invoice/preview', [UtilityApInvoiceController::class, 'initiatePreview'])->name('bills.ap-invoice.preview.store');
+        Route::get('/bills/ap-invoice/preview', [UtilityApInvoiceController::class, 'preview'])->name('bills.ap-invoice.preview');
+        Route::post('/bills/ap-invoice/submit', [UtilityApInvoiceController::class, 'submit'])->name('bills.ap-invoice.submit');
+        Route::get('/ap-invoices/{utilityApInvoice}', [UtilityApInvoiceController::class, 'show'])->name('ap-invoices.show');
+    });
 });

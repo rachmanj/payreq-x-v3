@@ -71,44 +71,62 @@
     @enderror
 </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="form-group">
-            <label for="project">Project <span class="text-danger">*</span></label>
-            <select name="project" id="project" class="form-control select2bs4 @error('project') is-invalid @enderror"
-                required>
-                <option value="">Pilih Project</option>
-                @foreach ($projects as $proj)
-                    <option value="{{ $proj->code }}"
-                        {{ old('project', $customer->project ?? '') === $proj->code ? 'selected' : '' }}>
-                        {{ $proj->code }}
-                    </option>
-                @endforeach
-            </select>
-            @error('project')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="project">Project <span class="text-danger">*</span></label>
+                <select name="project" id="project" class="form-control select2bs4 @error('project') is-invalid @enderror"
+                    required>
+                    <option value="">Pilih Project</option>
+                    @foreach ($projects as $proj)
+                        <option value="{{ $proj->code }}"
+                            {{ old('project', $customer->project ?? '') === $proj->code ? 'selected' : '' }}>
+                            {{ $proj->code }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('project')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="department">Department <span class="text-danger">*</span></label>
+                <select name="department" id="department"
+                    class="form-control select2bs4 @error('department') is-invalid @enderror" required>
+                    <option value="">Pilih Department</option>
+                    @foreach ($departments as $dept)
+                        <option value="{{ $dept->sap_code }}"
+                            {{ old('department', $customer->department ?? '') === $dept->sap_code ? 'selected' : '' }}>
+                            {{ $dept->sap_code }} — {{ $dept->department_name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('department')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="account_id">Akun COA</label>
+                <select name="account_id" id="account_id"
+                    class="form-control select2bs4 @error('account_id') is-invalid @enderror">
+                    <option value="">Tanpa Mapping</option>
+                    @foreach ($accounts as $account)
+                        <option value="{{ $account->id }}"
+                            {{ old('account_id', $customer->account_id ?? '') == $account->id ? 'selected' : '' }}>
+                            {{ $account->account_number }} — {{ $account->account_name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('account_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="form-group">
-            <label for="account_id">Akun COA</label>
-            <select name="account_id" id="account_id"
-                class="form-control select2bs4 @error('account_id') is-invalid @enderror">
-                <option value="">Tanpa Mapping</option>
-                @foreach ($accounts as $account)
-                    <option value="{{ $account->id }}"
-                        {{ old('account_id', $customer->account_id ?? '') == $account->id ? 'selected' : '' }}>
-                        {{ $account->account_number }} — {{ $account->account_name }}
-                    </option>
-                @endforeach
-            </select>
-            @error('account_id')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-        </div>
-    </div>
-</div>
 
 <div class="form-group mb-0">
     <div class="custom-control custom-checkbox">

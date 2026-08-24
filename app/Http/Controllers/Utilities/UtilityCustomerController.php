@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Utilities;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\Department;
 use App\Models\Project;
 use App\Models\UtilityCustomer;
 use Illuminate\Http\JsonResponse;
@@ -99,6 +100,12 @@ class UtilityCustomerController extends Controller
             'jenisList' => UtilityCustomer::JENIS_UTILITAS,
             'tipeList' => UtilityCustomer::TIPE,
             'projects' => Project::orderBy('code')->get(),
+            'departments' => Department::query()
+                ->selectable()
+                ->whereNotNull('sap_code')
+                ->where('sap_code', '!=', '')
+                ->orderBy('department_name')
+                ->get(),
             'accounts' => Account::query()->selectable()->orderBy('account_number')->get(),
         ];
     }
@@ -122,6 +129,7 @@ class UtilityCustomerController extends Controller
             'nama' => 'required|string|max:255',
             'lokasi' => 'nullable|string|max:255',
             'project' => 'required|string|max:20',
+            'department' => 'required|string|max:20',
             'account_id' => 'nullable|exists:accounts,id',
             'is_active' => 'nullable|boolean',
         ], [

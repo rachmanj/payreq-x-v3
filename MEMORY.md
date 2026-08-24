@@ -1,3 +1,11 @@
+### [079] SAP B1 AP Invoice from Utilities (2026-08-24) ✅ COMPLETE
+
+**Challenge:** Utility bills (PLN/PDAM/TELKOM) had no direct path to SAP B1 AP Invoice. The existing reimburse-Payreq flow is for employee reimbursement, not vendor payables. A real AP Invoice (e.g. PLN) is a multi-line service document: one vendor, one G/L account per line, with project and department/cost center per location.
+
+**Solution:** Parallel bulk action on the tagihan list. User selects unpaid postpaid bills of one `jenis_utilitas`, previews, then POSTs `PurchaseInvoices` via existing `SapService::createApInvoice()`. New `UtilityApInvoice` header + `UtilityVendor` mapping (jenis → SapBusinessPartner). Department string on `utility_customers` drives `CostingCode`. Payreq reimburse flow is unchanged; a bill can go through either path, never both. Permission: `submit_sap_ap_invoice_utilities`.
+
+---
+
 ### [078] Faster /verifications DataTable (2026-08-13) ✅ COMPLETE
 
 **Challenge:** `/verifications` DataTable advertised `serverSide: true` but `VerificationController@data` loaded every pending realization with `->get()`, then N+1 queried requestor, payreq, and all realization details per row.

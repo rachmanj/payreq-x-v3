@@ -45,7 +45,7 @@ class UtilityBillController extends Controller
         $mendekatiLimit = now()->addDays(3)->toDateString();
 
         $query = UtilityBill::query()
-            ->with(['customer.account', 'payreq'])
+            ->with(['customer.account', 'payreq', 'utilityApInvoice'])
             ->join('utility_customers', 'utility_customers.id', '=', 'utility_bills.utility_customer_id')
             ->select('utility_bills.*');
 
@@ -85,11 +85,23 @@ class UtilityBillController extends Controller
 
         return datatables()->of($query)
             ->addColumn('checkbox', function (UtilityBill $bill) {
-                if ($bill->tanggal_bayar && ! $bill->payreq_id) {
-                    return '<input type="checkbox" class="bill-checkbox" value="'.$bill->id.'" data-amount="'.e($bill->jumlah_tagihan).'">';
+                $eligiblePayreq = $bill->tanggal_bayar && ! $bill->payreq_id && ! $bill->utility_ap_invoice_id;
+                $eligibleApInvoice = auth()->user()?->can('submit_sap_ap_invoice_utilities')
+                    && ! $bill->tanggal_bayar
+                    && ($bill->customer->tipe ?? 'postpaid') === 'postpaid'
+                    && ! $bill->payreq_id
+                    && ! $bill->utility_ap_invoice_id;
+
+                if (! $eligiblePayreq && ! $eligibleApInvoice) {
+                    return '';
                 }
 
-                return '';
+                return '<input type="checkbox" class="bill-checkbox" value="'.$bill->id
+                    .'" data-amount="'.e($bill->jumlah_tagihan)
+                    .'" data-jenis="'.e($bill->customer->jenis_utilitas ?? '')
+                    .'" data-eligible-payreq="'.($eligiblePayreq ? '1' : '0')
+                    .'" data-eligible-ap-invoice="'.($eligibleApInvoice ? '1' : '0')
+                    .'">';
             })
             ->addColumn('id_pelanggan', fn (UtilityBill $bill) => $bill->customer->id_pelanggan ?? '-')
             ->addColumn('nama_customer', fn (UtilityBill $bill) => $bill->customer->nama ?? '-')
@@ -122,8 +134,19 @@ class UtilityBillController extends Controller
 
                 return '';
             })
+            ->addColumn('sap_badge', function (UtilityBill $bill) {
+                if (! $bill->utility_ap_invoice_id || ! $bill->utilityApInvoice) {
+                    return '';
+                }
+
+                $invoice = $bill->utilityApInvoice;
+                $url = route('utilities.ap-invoices.show', $invoice);
+                $label = e($invoice->sap_doc_num ?: $invoice->num_at_card);
+
+                return '<a href="'.$url.'" class="vj-chip vj-chip-info" title="Lihat AP Invoice SAP">SAP '.$label.'</a>';
+            })
             ->addColumn('action', 'utilities.bills.action')
-            ->rawColumns(['checkbox', 'status_badge', 'tipe_badge', 'nomor_token_display', 'payreq_badge', 'action'])
+            ->rawColumns(['checkbox', 'status_badge', 'tipe_badge', 'nomor_token_display', 'payreq_badge', 'sap_badge', 'action'])
             ->toJson();
     }
 
@@ -463,6 +486,7 @@ class UtilityBillController extends Controller
             ->with('customer')
             ->whereIn('id', $validated['bill_ids'])
             ->whereNull('payreq_id')
+            ->whereNull('utility_ap_invoice_id')
             ->get();
 
         if ($bills->isEmpty()) {

@@ -94,6 +94,7 @@
                                     <th>Token</th>
                                     <th>Status</th>
                                     <th>Payreq</th>
+                                    <th>AP Invoice</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -101,17 +102,28 @@
 
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" id="bulk-bar">
                             <div>
-                                <span class="vj-chip vj-chip-neutral">Terpilih: <strong id="selected-count">0</strong> token</span>
+                                <span class="vj-chip vj-chip-neutral">Terpilih: <strong id="selected-count">0</strong></span>
                                 <span class="vj-chip vj-chip-info">Total: <strong id="selected-total">0</strong></span>
                             </div>
-                            <form action="{{ route('utilities.bills.create-payreq') }}" method="POST" id="bulk-form">
-                                @csrf
-                                <input type="hidden" id="bill_ids" value="">
-                                <div id="bill-ids-inputs"></div>
-                                <button type="submit" class="vj-btn vj-btn-success" id="btn-create-payreq" disabled>
-                                    <i class="fas fa-file-invoice-dollar"></i> Buat Payreq Reimburse
-                                </button>
-                            </form>
+                            <div class="d-flex flex-wrap gap-2">
+                                <form action="{{ route('utilities.bills.create-payreq') }}" method="POST" id="bulk-form">
+                                    @csrf
+                                    <div id="bill-ids-inputs"></div>
+                                    <button type="submit" class="vj-btn vj-btn-success" id="btn-create-payreq" disabled>
+                                        <i class="fas fa-file-invoice-dollar"></i> Buat Payreq Reimburse
+                                    </button>
+                                </form>
+                                @can('submit_sap_ap_invoice_utilities')
+                                    <form action="{{ route('utilities.bills.ap-invoice.preview.store') }}" method="POST"
+                                        id="bulk-ap-form">
+                                        @csrf
+                                        <div id="ap-bill-ids-inputs"></div>
+                                        <button type="submit" class="vj-btn vj-btn-primary" id="btn-create-ap-invoice" disabled>
+                                            <i class="fas fa-file-invoice"></i> Buat AP Invoice (SAP)
+                                        </button>
+                                    </form>
+                                @endcan
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -236,6 +248,11 @@
                         searchable: false
                     },
                     {
+                        data: 'sap_badge',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'action',
                         orderable: false,
                         searchable: false
@@ -254,16 +271,36 @@
                 const checked = $('.bill-checkbox:checked');
                 let total = 0;
                 const ids = [];
+                let canPayreq = checked.length > 0;
+                let canApInvoice = checked.length > 0;
+                let jenis = null;
+                let mixedJenis = false;
 
                 checked.each(function() {
                     ids.push($(this).val());
                     total += parseFloat($(this).data('amount')) || 0;
+                    if ($(this).data('eligible-payreq') != 1) {
+                        canPayreq = false;
+                    }
+                    if ($(this).data('eligible-ap-invoice') != 1) {
+                        canApInvoice = false;
+                    }
+                    const rowJenis = $(this).data('jenis');
+                    if (jenis === null) {
+                        jenis = rowJenis;
+                    } else if (jenis !== rowJenis) {
+                        mixedJenis = true;
+                    }
                 });
+
+                if (mixedJenis) {
+                    canApInvoice = false;
+                }
 
                 $('#selected-count').text(ids.length);
                 $('#selected-total').text(formatAmount(total));
-                $('#bill_ids').val(ids.join(','));
                 $('#bill-ids-inputs').empty();
+                $('#ap-bill-ids-inputs').empty();
                 ids.forEach(function(id) {
                     $('#bill-ids-inputs').append(
                         $('<input>').attr({
@@ -272,14 +309,22 @@
                             value: id
                         })
                     );
+                    $('#ap-bill-ids-inputs').append(
+                        $('<input>').attr({
+                            type: 'hidden',
+                            name: 'bill_ids[]',
+                            value: id
+                        })
+                    );
                 });
-                $('#btn-create-payreq').prop('disabled', ids.length === 0);
+                $('#btn-create-payreq').prop('disabled', !canPayreq);
+                $('#btn-create-ap-invoice').prop('disabled', !canApInvoice);
             }
 
             $('#bills-table').on('change', '.bill-checkbox', updateBulkBar);
             table.on('draw', updateBulkBar);
 
-            $('#bulk-form').on('submit', function(e) {
+            $('#bulk-form, #bulk-ap-form').on('submit', function(e) {
                 if ($('.bill-checkbox:checked').length === 0) {
                     e.preventDefault();
                 }

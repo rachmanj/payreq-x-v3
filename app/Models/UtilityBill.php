@@ -26,6 +26,28 @@ class UtilityBill extends Model
         return $this->belongsTo(Payreq::class);
     }
 
+    public function utilityApInvoice(): BelongsTo
+    {
+        return $this->belongsTo(UtilityApInvoice::class);
+    }
+
+    public function getSapStatusAttribute(): ?string
+    {
+        return $this->utilityApInvoice?->status;
+    }
+
+    public function getSapApDocNumAttribute(): ?string
+    {
+        return $this->utilityApInvoice?->sap_doc_num;
+    }
+
+    public function getSapApDocEntryAttribute(): ?string
+    {
+        $docEntry = $this->utilityApInvoice?->sap_doc_entry;
+
+        return $docEntry !== null ? (string) $docEntry : null;
+    }
+
     public function scopeUnclaimed(Builder $query): Builder
     {
         return $query->whereNull('payreq_id');

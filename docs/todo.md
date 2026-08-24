@@ -2,6 +2,13 @@
 
 ## Recently Completed
 
+### SAP B1 AP Invoice from Utilities (2026-08-24)
+
+- [x] Parallel bulk action "Buat AP Invoice (SAP)" on Utilities tagihan (Payreq reimburse stays)
+- [x] `utility_vendors` mapping + `utility_ap_invoices` header; department on `utility_customers`
+- [x] `SapUtilityApInvoiceBuilder` + preview-then-submit via `SapService::createApInvoice()`
+- [x] Permission `submit_sap_ap_invoice_utilities`; tests `SapUtilityApInvoiceBuilderTest` + `UtilityApInvoiceControllerTest`
+
 ### VJ Soft UI on SAP Sync show + VJ validation/rejection UX (2026-07-28)
 
 - [x] **VJ Soft UI** design system on `accounting/sap-sync/{id}/show` (`.vj-show`, chips, stats, actions, timeline, alerts)
