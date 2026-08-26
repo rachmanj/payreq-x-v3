@@ -64,6 +64,15 @@
     white-space: nowrap;
 }
 
+.vj-chip > i.fas,
+.vj-chip > i.far,
+.vj-chip > i.fab {
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-right: 0.25rem;
+}
+
 .vj-chip-info {
     background: #e8f7fa;
     border-color: #b2ebf2;
@@ -213,11 +222,23 @@
 }
 
 .vj-alert {
+    display: flex;
+    align-items: flex-start;
     padding: 0.65rem 0.75rem;
     border-radius: 8px;
     font-size: 0.875rem;
     line-height: 1.45;
     border: 1px solid;
+}
+
+.vj-alert > i.fas,
+.vj-alert > i.far,
+.vj-alert > i.fab {
+    font-size: 0.875rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+    margin-right: 0.5rem;
 }
 
 .vj-alert-danger {
@@ -431,6 +452,17 @@
     font-weight: 500;
     line-height: 1.2;
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.vj-btn > i.fas,
+.vj-btn > i.far,
+.vj-btn > i.fab,
+.vj-btn > i.fal,
+.vj-btn > i.fad {
+    font-size: 0.875rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-right: 0.35rem;
 }
 
 .vj-btn-success {
@@ -939,7 +971,10 @@
 }
 
 .vj-approval-doc-tab i {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-right: 0.35rem;
     opacity: 0.85;
 }
 
