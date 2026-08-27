@@ -114,6 +114,7 @@ return [
                 ],
             ],
         ],
+        'outgoing_payment_entity' => env('SAP_OUTGOING_PAYMENT_ENTITY', 'VendorPayments'),
         'ap_invoice' => [
             'default_account' => env('SAP_AP_INVOICE_DEFAULT_ACCOUNT', '21101'), // Accounts Payable or Loan Liability
             'default_payment_method' => env('SAP_AP_INVOICE_DEFAULT_PAYMENT_METHOD', 'C'), // C=Check, T=Transfer

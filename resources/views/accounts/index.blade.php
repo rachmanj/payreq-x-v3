@@ -26,6 +26,7 @@
           <tr>
             <th>#</th>
             <th>Account No</th>
+            <th>SAP Acc</th>
             <th>Account Name</th>
             <th>Type</th>
             <th>Project</th>
@@ -114,6 +115,19 @@
           </div>
 
           <div class="form-group">
+            <label for="sap_account">SAP Account No</label>
+            <input name="sap_account" id="sap_account" value="{{ old('sap_account') }}"
+              class="form-control @error('sap_account') is-invalid @enderror"
+              placeholder="e.g. 11201001" autocomplete="off">
+            <small class="form-text text-muted">SAP G/L used as the cash/transfer account for outgoing payments.</small>
+            @error('sap_account')
+              <div class="invalid-feedback">
+                {{ $message }}
+              </div>
+            @enderror
+          </div>
+
+          <div class="form-group">
             <label for="description">Description</label>
             <textarea name="description" id="description" rows="3" class="form-control @error('description') is-invalid @enderror">{{ old('description') }}</textarea>
             @error('description')
@@ -191,6 +205,7 @@
         columns: [
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'account_number'},
+          {data: 'sap_account', defaultContent: '-'},
           {data: 'account_name'},
           {data: 'type'},
           {data: 'project'},

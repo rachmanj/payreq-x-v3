@@ -446,15 +446,121 @@ class SapService
         });
     }
 
+    /**
+     * @return array{DocEntry: int, DocNum: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, NumAtCard?: string, DocTotal?: float}|null
+     */
+    public function getPurchaseInvoiceByDocEntry(string|int $docEntry): ?array
+    {
+        $this->ensureSession();
+
+        $docEntry = trim((string) $docEntry);
+        if ($docEntry === '') {
+            return null;
+        }
+
+        return $this->handleSessionExpiration(function () use ($docEntry) {
+            try {
+                $response = $this->client->get("PurchaseInvoices({$docEntry})", [
+                    'query' => [
+                        '$select' => $this->purchaseInvoiceSelectFields(),
+                    ],
+                ]);
+
+                $body = json_decode($response->getBody()->getContents(), true);
+
+                return is_array($body) && isset($body['DocEntry']) ? $body : null;
+            } catch (RequestException $e) {
+                if ($e->getResponse()?->getStatusCode() === 404) {
+                    return null;
+                }
+
+                throw $e;
+            }
+        });
+    }
+
+    /**
+     * @return array{DocEntry: int, DocNum: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, NumAtCard?: string, DocTotal?: float}|null
+     */
+    public function getPurchaseInvoiceByDocNum(string $docNum): ?array
+    {
+        $this->ensureSession();
+
+        $docNum = trim($docNum);
+        if ($docNum === '') {
+            return null;
+        }
+
+        $filterValue = is_numeric($docNum) ? $docNum : "'".str_replace("'", "''", $docNum)."'";
+
+        return $this->findPurchaseInvoice("DocNum eq {$filterValue} and Cancelled eq 'N'");
+    }
+
+    /**
+     * @return array{DocEntry: int, DocNum: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, NumAtCard?: string, DocTotal?: float}|null
+     */
+    public function getPurchaseInvoiceByNumAtCard(string $numAtCard): ?array
+    {
+        $this->ensureSession();
+
+        $numAtCard = trim($numAtCard);
+        if ($numAtCard === '') {
+            return null;
+        }
+
+        $filterValue = str_replace("'", "''", $numAtCard);
+
+        return $this->findPurchaseInvoice("NumAtCard eq '{$filterValue}' and Cancelled eq 'N'");
+    }
+
+    /**
+     * @return array{DocEntry: int, DocNum: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, NumAtCard?: string, DocTotal?: float}|null
+     */
+    protected function findPurchaseInvoice(string $filter): ?array
+    {
+        return $this->handleSessionExpiration(function () use ($filter) {
+            $response = $this->client->get('PurchaseInvoices', [
+                'query' => [
+                    '$filter' => $filter,
+                    '$select' => $this->purchaseInvoiceSelectFields(),
+                    '$orderby' => 'DocEntry desc',
+                    '$top' => 1,
+                ],
+            ]);
+
+            $body = json_decode($response->getBody()->getContents(), true);
+            $rows = $body['value'] ?? [];
+
+            return ! empty($rows) ? $rows[0] : null;
+        });
+    }
+
+    protected function purchaseInvoiceSelectFields(): string
+    {
+        return 'DocEntry,DocNum,CardCode,DocumentStatus,Cancelled,NumAtCard,DocTotal';
+    }
+
+    public function outgoingPaymentEntity(): string
+    {
+        $entity = trim((string) config('services.sap.outgoing_payment_entity', 'VendorPayments'));
+
+        return $entity !== '' ? $entity : 'VendorPayments';
+    }
+
     public function createOutgoingPayment(array $paymentData): array
     {
         $this->ensureSession();
 
         return $this->handleSessionExpiration(function () use ($paymentData) {
             try {
-                Log::debug('SAP B1 Outgoing Payment Request', ['payload' => $paymentData]);
+                $entity = $this->outgoingPaymentEntity();
 
-                $response = $this->client->post('Payments', [
+                Log::debug('SAP B1 Outgoing Payment Request', [
+                    'entity' => $entity,
+                    'payload' => $paymentData,
+                ]);
+
+                $response = $this->client->post($entity, [
                     'json' => $paymentData,
                 ]);
 

@@ -21,9 +21,9 @@ class AccountController extends Controller
             'account_name' => 'required',
             'type' => 'required',
             'project' => 'required',
+            'sap_account' => 'nullable|string|max:50',
         ]);
 
-        // check if account number is exsist
         $account = Account::where('account_number', $validated['account_number'])
             ->first();
 
@@ -31,7 +31,10 @@ class AccountController extends Controller
             return redirect()->route('accounts.index')->with('error', 'Account number already exists!');
         }
 
-        Account::create(array_merge($validated, $request->description ? ['description' => $request->description] : []));
+        Account::create(array_merge($validated, [
+            'description' => $request->description,
+            'sap_account' => $this->normalizedSapAccount($request->input('sap_account')),
+        ]));
 
         return redirect()->route('accounts.index')->with('success', 'Account created successfully!');
     }
@@ -41,10 +44,11 @@ class AccountController extends Controller
         $validated = $request->validate([
             'account_number' => 'required|unique:accounts,account_number,'.$id,
             'account_name' => 'required',
+            'type' => 'nullable|string',
             'project' => 'required',
+            'sap_account' => 'nullable|string|max:50',
         ]);
 
-        // check if account number is exsist
         $account = Account::where('account_number', $validated['account_number'])
             ->where('id', '!=', $id)
             ->first();
@@ -56,6 +60,7 @@ class AccountController extends Controller
         Account::where('id', $id)->update(array_merge($validated, [
             'description' => $request->description,
             'is_active' => $request->has('is_active') ? 1 : 0,
+            'sap_account' => $this->normalizedSapAccount($request->input('sap_account')),
         ]));
 
         return redirect()->route('accounts.index')->with('success', 'Account updated successfully!');
@@ -317,5 +322,12 @@ class AccountController extends Controller
                 'message' => 'Failed to fetch bank accounts: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    private function normalizedSapAccount(?string $sapAccount): ?string
+    {
+        $sapAccount = trim((string) $sapAccount);
+
+        return $sapAccount === '' ? null : $sapAccount;
     }
 }

@@ -231,6 +231,8 @@
                                                 <th>Payment Date</th>
                                                 <th>Days</th>
                                                 <th>Status</th>
+                                                <th>SAP Payment</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                     </table>
@@ -249,7 +251,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="paymentModalLabel">
-                        <i class="fas fa-check-circle text-success"></i> Mark Invoice as Paid
+                        <i class="fas fa-check-circle text-warning"></i> Mark paid without SAP
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -309,6 +311,137 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="sapPaymentModal" tabindex="-1" role="dialog" aria-labelledby="sapPaymentModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sapPaymentModalLabel">
+                        <i class="fas fa-paper-plane text-primary" aria-hidden="true"></i>
+                        Submit Vendor Outgoing Payment to SAP
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="sapPaymentForm">
+                    <div class="modal-body">
+                        <div id="sapPaymentPreviewAlert" class="vj-alert vj-alert-danger mb-3 d-none">
+                            <i class="fas fa-times-circle" aria-hidden="true"></i>
+                            <div>
+                                <strong id="sapPaymentPreviewAlertTitle">Error</strong><br>
+                                <span id="sapPaymentPreviewAlertMessage"></span>
+                            </div>
+                        </div>
+                        <div id="sapPaymentMismatchAlert" class="vj-alert vj-alert-warning mb-3 d-none">
+                            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                            <div>
+                                <strong>Amount mismatch</strong><br>
+                                Invoice amount and SAP AP Invoice DocTotal differ. Review before posting.
+                            </div>
+                        </div>
+                        <div id="sapPaymentAlreadyPostedAlert" class="vj-alert vj-alert-info mb-3 d-none">
+                            <i class="fas fa-info-circle" aria-hidden="true"></i>
+                            <div>
+                                <strong>SAP outgoing payment already posted</strong><br>
+                                <span id="sapPaymentAlreadyPostedMessage"></span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="small text-muted">Invoice Number</label>
+                                    <input type="text" class="form-control" id="sap_invoice_number_display" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="small text-muted">Supplier</label>
+                                    <input type="text" class="form-control" id="sap_supplier_display" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="small text-muted">Invoice Amount</label>
+                                    <input type="text" class="form-control" id="sap_amount_display" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="small text-muted">SAP AP Invoice</label>
+                                    <input type="text" class="form-control" id="sap_ap_doc_display" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="small text-muted">SAP AP DocTotal</label>
+                                    <input type="text" class="form-control" id="sap_ap_total_display" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="sap_payment_date">Payment Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="sap_payment_date" name="payment_date"
+                                        required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="sap_payment_means">Payment Means <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="sap_payment_means" name="payment_means" required>
+                                        <option value="transfer">Transfer</option>
+                                        <option value="cash">Cash</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="sap_account_id">Cash / Bank Account <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="sap_account_id" name="account_id" required>
+                                        <option value="">Select account</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="sap_payment_project">Payment Project</label>
+                                    <input type="text" class="form-control" id="sap_payment_project"
+                                        name="payment_project" placeholder="Project code">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="sap_payment_remarks">Remarks</label>
+                                    <textarea class="form-control" id="sap_payment_remarks" name="remarks" rows="2"
+                                        placeholder="Payment remarks"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="sap_invoice_id">
+                        <input type="hidden" id="sap_supplier_code">
+                        <input type="hidden" id="sap_invoice_amount">
+                        <input type="hidden" id="sap_invoice_sap_doc">
+                        <input type="hidden" id="sap_close_invoice_in_dds" value="0">
+                        <input type="hidden" id="sap_close_dds_only" value="0">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="vj-btn vj-btn-warning" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="vj-btn vj-btn-primary" id="sapPaymentSubmitBtn">
+                            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                            <span id="sapPaymentSubmitBtnLabel">Post to SAP</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('styles')
@@ -330,6 +463,13 @@
         $(document).ready(function() {
             let waitingTable = null;
             let paidTable = null;
+            let sapPaymentContext = 'paid';
+            const canSubmitSapPayment = @json($canSubmitSapPayment ?? false);
+            const canMarkPaidWithoutSap = @json($canMarkPaidWithoutSap ?? false);
+            const sapPreviewUrlTemplate =
+                '{{ route('cashier.invoice-payment.sap-payment.preview', ['invoiceId' => ':invoiceId']) }}';
+            const sapSubmitUrlTemplate =
+                '{{ route('cashier.invoice-payment.sap-payment.submit', ['invoiceId' => ':invoiceId']) }}';
 
             initializeWaitingTable();
             initializePaidTable();
@@ -484,11 +624,7 @@
                             orderable: false,
                             searchable: false,
                             render: function(data, type, row) {
-                                return '<button type="button" class="vj-btn vj-btn-success mark-paid-btn" data-invoice-id="' +
-                                    row.id + '" data-invoice-number="' + escapeAttr(row.invoice_number) +
-                                    '" data-supplier="' + escapeAttr(row.supplier_name) +
-                                    '" data-amount="' + row.amount +
-                                    '"><i class="fas fa-check" aria-hidden="true"></i><span>Mark Paid</span></button>';
+                                return renderWaitingAction(row);
                             }
                         }
                     ],
@@ -570,6 +706,22 @@
                             render: function(data) {
                                 return renderStatusChip(data);
                             }
+                        },
+                        {
+                            data: 'sap_payment',
+                            orderable: false,
+                            searchable: false,
+                            render: function(data) {
+                                return renderSapPaymentChip(data);
+                            }
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            render: function(data, type, row) {
+                                return renderSapPaymentAction(row);
+                            }
                         }
                     ],
                     order: [
@@ -603,6 +755,58 @@
                 const chipClass = chipMap[normalized] || 'vj-chip-warning';
 
                 return '<span class="vj-chip ' + chipClass + '">' + (status || '-') + '</span>';
+            }
+
+            function renderWaitingAction(row) {
+                let html = '';
+
+                if (canSubmitSapPayment) {
+                    if (row.supplier_sap_code) {
+                        html += '<button type="button" class="vj-btn vj-btn-success pay-invoice-btn" title="This will create Outgoing Payment in SAP B1"><i class="fas fa-money-bill-wave" aria-hidden="true"></i><span>PAY</span></button>';
+                    } else {
+                        html += '<button type="button" class="vj-btn vj-btn-success" disabled title="Supplier SAP code is missing"><i class="fas fa-money-bill-wave" aria-hidden="true"></i><span>PAY</span></button>';
+                    }
+
+                    if (canMarkPaidWithoutSap) {
+                        html += '<div class="mt-1"><a href="#" class="mark-paid-without-sap-link small text-muted">Mark paid without SAP</a></div>';
+                    }
+                } else if (canMarkPaidWithoutSap) {
+                    html = '<button type="button" class="vj-btn vj-btn-warning mark-paid-without-sap-btn"><i class="fas fa-check" aria-hidden="true"></i><span>Mark paid without SAP</span></button>';
+                } else {
+                    html = '<span class="text-muted small">-</span>';
+                }
+
+                return html;
+            }
+
+            function renderSapPaymentChip(sapPayment) {
+                if (!sapPayment) {
+                    return '<span class="vj-chip vj-chip-neutral">Not posted</span>';
+                }
+
+                if (sapPayment.status === 'success') {
+                    const docNum = sapPayment.doc_num ? '#' + sapPayment.doc_num : '';
+                    return '<span class="vj-chip vj-chip-success">Posted ' + docNum + '</span>';
+                }
+
+                return '<span class="vj-chip vj-chip-danger" title="' + escapeAttr(sapPayment.error_message ||
+                    '') + '">Failed</span>';
+            }
+
+            function renderSapPaymentAction(row) {
+                if (!canSubmitSapPayment) {
+                    return '-';
+                }
+
+                if (row.sap_payment && row.sap_payment.status === 'success') {
+                    return '<span class="text-muted small">Posted</span>';
+                }
+
+                if (!row.supplier_sap_code) {
+                    return '<button type="button" class="vj-btn vj-btn-warning" disabled title="Supplier SAP code is missing">Submit to SAP</button>';
+                }
+
+                return '<button type="button" class="vj-btn vj-btn-primary submit-sap-btn">Submit to SAP</button>';
             }
 
             function formatCurrency(amount) {
@@ -646,20 +850,30 @@
                 console.error(fallbackMessage, xhr);
             }
 
-            $(document).on('click', '.mark-paid-btn', function() {
-                const invoiceId = $(this).data('invoice-id');
-                const invoiceNumber = $(this).data('invoice-number');
-                const supplier = $(this).data('supplier');
-                const amount = $(this).data('amount');
+            function getDataTableRowData(table, element) {
+                const $row = $(element).closest('tr');
+                if ($row.hasClass('child')) {
+                    return table.row($row.prev()).data();
+                }
 
-                $('#invoice_id').val(invoiceId);
-                $('#invoice_number_display').val(invoiceNumber);
-                $('#supplier_display').val(supplier);
-                $('#amount_display').val(formatCurrency(amount));
-                $('#payment_date').val(new Date().toISOString().split('T')[0]);
-                $('#payment_project').val('');
-                $('#remarks').val('');
-                $('#paymentModal').modal('show');
+                return table.row($row).data();
+            }
+
+            $(document).on('click', '.pay-invoice-btn', function() {
+                const row = getDataTableRowData(waitingTable, this);
+                if (!row) {
+                    return;
+                }
+                openSapPaymentModal(row, 'waiting');
+            });
+
+            $(document).on('click', '.mark-paid-without-sap-link, .mark-paid-without-sap-btn', function(e) {
+                e.preventDefault();
+                const row = getDataTableRowData(waitingTable, this);
+                if (!row) {
+                    return;
+                }
+                openMarkPaidWithoutSapModal(row);
             });
 
             $('#paymentForm').on('submit', function(e) {
@@ -696,15 +910,11 @@
                                 icon: 'success',
                                 title: 'Success!',
                                 text: response.message,
-                                timer: 2000,
+                                timer: 2500,
                                 showConfirmButton: false
                             });
-
                             $('#paymentModal').modal('hide');
-
-                            setTimeout(function() {
-                                applyFilters();
-                            }, 1000);
+                            applyFilters();
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -730,6 +940,210 @@
                     }
                 });
             });
+
+            $(document).on('click', '.submit-sap-btn', function() {
+                const row = getDataTableRowData(paidTable, this);
+                if (!row) {
+                    return;
+                }
+                openSapPaymentModal(row, 'paid');
+            });
+
+            $('#sapPaymentForm').on('submit', function(e) {
+                e.preventDefault();
+                confirmSapPayment();
+            });
+
+            function openMarkPaidWithoutSapModal(row) {
+                $('#invoice_id').val(row.id);
+                $('#invoice_number_display').val(row.invoice_number || '');
+                $('#supplier_display').val(row.supplier_name || '');
+                $('#amount_display').val(formatCurrency(row.amount));
+                $('#payment_date').val(new Date().toISOString().split('T')[0]);
+                $('#payment_project').val(row.payment_project || '');
+                $('#remarks').val(row.remarks || '');
+                $('#paymentModal').modal('show');
+            }
+
+            function openSapPaymentModal(row, context) {
+                sapPaymentContext = context || 'paid';
+                const closeInDds = sapPaymentContext === 'waiting';
+
+                $('#sapPaymentPreviewAlert').addClass('d-none');
+                $('#sapPaymentMismatchAlert').addClass('d-none');
+                $('#sapPaymentAlreadyPostedAlert').addClass('d-none');
+                $('#sap_close_invoice_in_dds').val(closeInDds ? '1' : '0');
+                $('#sap_close_dds_only').val('0');
+                $('#sap_invoice_id').val(row.id);
+                $('#sap_invoice_number_display').val(row.invoice_number || '');
+                $('#sap_supplier_display').val((row.supplier_name || '') + (row.supplier_sap_code ? ' (' +
+                    row.supplier_sap_code + ')' : ''));
+                $('#sap_supplier_code').val(row.supplier_sap_code || '');
+                $('#sap_invoice_amount').val(row.amount || '');
+                $('#sap_amount_display').val(formatCurrency(row.amount));
+                $('#sap_payment_remarks').val(row.remarks || '');
+                $('#sap_payment_project').val(row.payment_project || '');
+                $('#sap_invoice_sap_doc').val(row.sap_doc || '');
+                $('#sap_payment_date').val(row.payment_date || new Date().toISOString().split('T')[0]);
+                $('#sap_payment_means').val('transfer');
+                $('#sap_account_id').html('<option value="">Loading accounts...</option>');
+                $('#sap_ap_doc_display').val('Resolving...');
+                $('#sap_ap_total_display').val('-');
+                $('#sapPaymentSubmitBtn').prop('disabled', true);
+                $('#sapPaymentSubmitBtnLabel').text(closeInDds ? 'Pay' : 'Post to SAP');
+                $('#sapPaymentModalLabel').html(
+                    closeInDds ?
+                    '<i class="fas fa-money-bill-wave text-success" aria-hidden="true"></i> Pay Invoice via SAP B1' :
+                    '<i class="fas fa-paper-plane text-primary" aria-hidden="true"></i> Submit Vendor Outgoing Payment to SAP'
+                );
+                $('#sapPaymentModal').modal('show');
+
+                $.ajax({
+                    url: sapPreviewUrlTemplate.replace(':invoiceId', row.id),
+                    method: 'GET',
+                    data: {
+                        invoice_number: row.invoice_number,
+                        supplier_sap_code: row.supplier_sap_code,
+                        amount: row.amount,
+                        payment_date: row.payment_date || '',
+                        remarks: row.remarks || '',
+                        sap_doc: row.sap_doc || ''
+                    },
+                    success: function(response) {
+                        const preview = response.preview || {};
+                        const apInvoice = preview.ap_invoice || {};
+                        const invoice = preview.invoice || {};
+                        const sapPayment = preview.sap_payment || {};
+
+                        if (response.already_posted) {
+                            $('#sap_ap_doc_display').val(
+                                (sapPayment.doc_num ? '#' + sapPayment.doc_num : '-') +
+                                (sapPayment.doc_entry ? ' / Entry ' + sapPayment.doc_entry : '')
+                            );
+                            $('#sap_ap_total_display').val('-');
+                            $('#sapPaymentAlreadyPostedMessage').text(
+                                'SAP OP #' + (sapPayment.doc_num || '-') +
+                                ' is already posted. Confirm to close this invoice in DDS only.'
+                            );
+                            $('#sapPaymentAlreadyPostedAlert').removeClass('d-none');
+                            $('#sap_close_dds_only').val('1');
+                            $('#sap_payment_means, #sap_account_id').closest('.form-group').addClass('d-none');
+                            $('#sapPaymentSubmitBtn').prop('disabled', false);
+                            $('#sapPaymentSubmitBtnLabel').text('Close in DDS');
+                            if (invoice.payment_date) {
+                                $('#sap_payment_date').val(invoice.payment_date);
+                            }
+                            return;
+                        }
+
+                        $('#sap_payment_means, #sap_account_id').closest('.form-group').removeClass('d-none');
+                        $('#sap_ap_doc_display').val(
+                            (apInvoice.doc_num ? '#' + apInvoice.doc_num : '-') +
+                            (apInvoice.doc_entry ? ' / Entry ' + apInvoice.doc_entry : '')
+                        );
+                        $('#sap_ap_total_display').val(apInvoice.doc_total != null ? formatCurrency(
+                            apInvoice.doc_total) : '-');
+                        if (invoice.payment_date) {
+                            $('#sap_payment_date').val(invoice.payment_date);
+                        }
+
+                        const accounts = response.accounts || [];
+                        let options = '<option value="">Select account</option>';
+                        accounts.forEach(function(account) {
+                            options += '<option value="' + account.id + '">' + escapeAttr(
+                                account.label) + '</option>';
+                        });
+                        $('#sap_account_id').html(options);
+
+                        if (preview.amount_mismatch) {
+                            $('#sapPaymentMismatchAlert').removeClass('d-none');
+                        }
+
+                        $('#sapPaymentSubmitBtn').prop('disabled', accounts.length === 0);
+                        if (accounts.length === 0) {
+                            showSapPreviewError('No accounts',
+                                'No cash/bank accounts with SAP mapping are available.');
+                        }
+                    },
+                    error: function(xhr) {
+                        const response = xhr.responseJSON || {};
+                        showSapPreviewError(response.error || 'Preview failed', response.message ||
+                            'Could not resolve the SAP AP Invoice.');
+                        $('#sap_ap_doc_display').val('-');
+                        $('#sap_account_id').html('<option value="">Select account</option>');
+                        $('#sapPaymentSubmitBtn').prop('disabled', true);
+                    }
+                });
+            }
+
+            function confirmSapPayment() {
+                const invoiceId = $('#sap_invoice_id').val();
+                const closeDdsOnly = $('#sap_close_dds_only').val() === '1';
+                const submitBtn = $('#sapPaymentSubmitBtn');
+                const originalHtml = submitBtn.html();
+                const postingLabel = closeDdsOnly ? 'Closing...' : (sapPaymentContext === 'waiting' ?
+                    'Paying...' : 'Posting...');
+                submitBtn.html('<i class="fas fa-spinner fa-spin"></i> ' + postingLabel).prop('disabled', true);
+
+                const payload = {
+                    invoice_number: $('#sap_invoice_number_display').val(),
+                    supplier_sap_code: $('#sap_supplier_code').val(),
+                    amount: $('#sap_invoice_amount').val(),
+                    payment_date: $('#sap_payment_date').val(),
+                    remarks: $('#sap_payment_remarks').val(),
+                    payment_project: $('#sap_payment_project').val(),
+                    sap_doc: $('#sap_invoice_sap_doc').val(),
+                    close_invoice_in_dds: $('#sap_close_invoice_in_dds').val() === '1' ? 1 : 0,
+                    close_dds_only: closeDdsOnly ? 1 : 0
+                };
+
+                if (!closeDdsOnly) {
+                    payload.payment_means = $('#sap_payment_means').val();
+                    payload.account_id = $('#sap_account_id').val();
+                }
+
+                $.ajax({
+                    url: sapSubmitUrlTemplate.replace(':invoiceId', invoiceId),
+                    method: 'POST',
+                    data: payload,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        const icon = response.warning ? 'warning' : 'success';
+                        const title = response.warning ? 'Posted with warning' : (closeDdsOnly ?
+                            'Invoice closed' : (sapPaymentContext === 'waiting' ? 'Paid' :
+                                'Posted to SAP'));
+
+                        Swal.fire({
+                            icon: icon,
+                            title: title,
+                            text: response.message,
+                            timer: response.warning ? 5000 : 2500,
+                            showConfirmButton: !!response.warning
+                        });
+                        $('#sapPaymentModal').modal('hide');
+                        applyFilters();
+                    },
+                    error: function(xhr) {
+                        const response = xhr.responseJSON || {};
+                        Swal.fire({
+                            icon: 'error',
+                            title: response.error || 'SAP posting failed',
+                            text: response.message || 'Failed to post outgoing payment to SAP B1.'
+                        });
+                    },
+                    complete: function() {
+                        submitBtn.html(originalHtml).prop('disabled', false);
+                    }
+                });
+            }
+
+            function showSapPreviewError(title, message) {
+                $('#sapPaymentPreviewAlertTitle').text(title || 'Error');
+                $('#sapPaymentPreviewAlertMessage').text(message || 'An unexpected error occurred.');
+                $('#sapPaymentPreviewAlert').removeClass('d-none');
+            }
         });
     </script>
 @endpush

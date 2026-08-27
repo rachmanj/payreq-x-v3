@@ -9,11 +9,15 @@ class SapSubmissionLog extends Model
 {
     use HasFactory;
 
+    public const DOCUMENT_TYPE_INVOICE_PAYMENT = 'invoice_payment';
+
     protected $fillable = [
         'verification_journal_id',
         'journal_entry_id',
         'faktur_id',
         'utility_ap_invoice_id',
+        'dds_invoice_id',
+        'dds_invoice_number',
         'document_type',
         'user_id',
         'submitted_by',

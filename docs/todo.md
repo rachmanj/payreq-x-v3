@@ -2,6 +2,13 @@
 
 ## Recently Completed
 
+### Vendor Outgoing Payment for DDS Invoice Payments (2026-08-26)
+
+- [x] Preview-then-submit Vendor Outgoing Payment to SAP B1 from Paid Invoices tab
+- [x] Resolve existing AP Invoice by `NumAtCard` / `sap_doc`; `SapVendorPaymentBuilder` with cash vs transfer
+- [x] `SapSubmissionLog` `dds_invoice_id` + permission `submit_sap_invoice_payment`
+- [x] DDS remarks write-back (`SAP OP #<DocNum>`); tests `SapVendorPaymentBuilderTest` + `InvoicePaymentControllerTest`
+
 ### SAP B1 AP Invoice from Utilities (2026-08-24)
 
 - [x] Parallel bulk action "Buat AP Invoice (SAP)" on Utilities tagihan (Payreq reimburse stays)

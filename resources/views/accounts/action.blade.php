@@ -78,6 +78,19 @@
             @enderror
           </div>
           <div class="form-group">
+            <label for="sap_account_{{ $model->id }}">SAP Account No</label>
+            <input name="sap_account" id="sap_account_{{ $model->id }}"
+              value="{{ old('sap_account', $model->sap_account) }}"
+              class="form-control @error('sap_account') is-invalid @enderror"
+              placeholder="e.g. 11201001" autocomplete="off">
+            <small class="form-text text-muted">SAP G/L used as the cash/transfer account for outgoing payments.</small>
+            @error('sap_account')
+              <div class="invalid-feedback">
+                {{ $message }}
+              </div>
+            @enderror
+          </div>
+          <div class="form-group">
             <label for="description">Description</label>
             <textarea name="description" id="description" rows="3" class="form-control @error('description') is-invalid @enderror">{{ old('description', $model->description) }}</textarea>
             @error('description')

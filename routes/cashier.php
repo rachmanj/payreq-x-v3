@@ -241,5 +241,11 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/waiting-payment', [InvoicePaymentController::class, 'waitingPayment'])->name('waiting');
         Route::get('/paid-invoices', [InvoicePaymentController::class, 'paidInvoices'])->name('paid');
         Route::put('/invoices/{invoiceId}/payment', [InvoicePaymentController::class, 'updatePayment'])->name('update-payment');
+        Route::get('/invoices/{invoiceId}/sap-payment/preview', [InvoicePaymentController::class, 'previewSapPayment'])
+            ->middleware('permission:submit_sap_invoice_payment')
+            ->name('sap-payment.preview');
+        Route::post('/invoices/{invoiceId}/sap-payment/submit', [InvoicePaymentController::class, 'submitSapPayment'])
+            ->middleware('permission:submit_sap_invoice_payment')
+            ->name('sap-payment.submit');
     });
 });
