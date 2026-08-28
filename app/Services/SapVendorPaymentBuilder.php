@@ -39,6 +39,8 @@ class SapVendorPaymentBuilder
         $paymentDate = $this->resolvePaymentDate()->format('Y-m-d');
         $cashAccount = (string) ($this->account?->sap_account ?? '');
 
+        $journalRemarks = $this->buildJournalRemarks();
+
         $payment = [
             'CardCode' => $this->partner->code,
             'DocDate' => $paymentDate,
@@ -50,7 +52,8 @@ class SapVendorPaymentBuilder
                     'SumApplied' => $amount,
                 ],
             ],
-            'JournalRemarks' => $this->buildJournalRemarks(),
+            'JournalRemarks' => $journalRemarks,
+            'Comments' => $journalRemarks,
             'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
             'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
         ];
