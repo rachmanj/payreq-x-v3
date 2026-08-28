@@ -42,6 +42,9 @@ class SubmitSapInvoicePaymentRequest extends FormRequest
             'sap_doc' => 'nullable|string|max:50',
             'close_invoice_in_dds' => 'sometimes|boolean',
             'close_dds_only' => 'sometimes|boolean',
+            'payment_amount' => 'required_without:close_dds_only|numeric|min:0.01',
+            'prepared_by' => 'required|string|max:100',
+            'approved_by' => 'required|string|max:100',
             'payment_means' => ['required', Rule::in([SapVendorPaymentBuilder::MEANS_CASH, SapVendorPaymentBuilder::MEANS_TRANSFER])],
             'account_id' => 'required|integer|exists:accounts,id',
         ];

@@ -29,6 +29,7 @@ class SapSubmissionLog extends Model
         'sap_journal_number',
         'sap_doc_num',
         'sap_doc_entry',
+        'amount',
         'attempt_number',
     ];
 

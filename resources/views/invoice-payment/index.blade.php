@@ -202,6 +202,7 @@
                                                 <th>Receive Date</th>
                                                 <th>Days</th>
                                                 <th>Status</th>
+                                                <th>SAP Payment</th>
                                                 <th>Action</th>
                                             </tr>
                                         </thead>
@@ -344,8 +345,23 @@
                         <div id="sapPaymentAlreadyPostedAlert" class="vj-alert vj-alert-info mb-3 d-none">
                             <i class="fas fa-info-circle" aria-hidden="true"></i>
                             <div>
-                                <strong>SAP outgoing payment already posted</strong><br>
+                                <strong>SAP AP Invoice fully paid</strong><br>
                                 <span id="sapPaymentAlreadyPostedMessage"></span>
+                            </div>
+                        </div>
+                        <div id="sapPaymentHistorySection" class="mb-3 d-none">
+                            <label class="small text-muted d-block mb-2">Payment History</label>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0" id="sapPaymentHistoryTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th class="text-right">Amount</th>
+                                            <th>SAP OP #</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sapPaymentHistoryBody"></tbody>
+                                </table>
                             </div>
                         </div>
                         <div class="row">
@@ -363,12 +379,33 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label class="small text-muted">Invoice Amount</label>
                                     <input type="text" class="form-control" id="sap_amount_display" readonly>
                                 </div>
                             </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="small text-muted">Paid to Date (SAP)</label>
+                                    <input type="text" class="form-control" id="sap_paid_to_date_display" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="small text-muted">Remaining Balance</label>
+                                    <input type="text" class="form-control" id="sap_remaining_balance_display" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="sap_payment_amount">Amount to Pay <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control text-right" id="sap_payment_amount"
+                                        name="payment_amount" min="1" step="1" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="small text-muted">SAP AP Invoice</label>
@@ -379,6 +416,14 @@
                                 <div class="form-group">
                                     <label class="small text-muted">SAP AP DocTotal</label>
                                     <input type="text" class="form-control" id="sap_ap_total_display" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-md-0">
+                                    <label class="small text-muted">&nbsp;</label>
+                                    <div id="sapPartialPaymentHint" class="small text-muted d-none">
+                                        Partial payment — invoice stays open in DDS until fully paid in SAP.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -424,6 +469,22 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="sap_prepared_by">Prepared by <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="sap_prepared_by" name="prepared_by"
+                                        maxlength="100" placeholder="Name of preparer" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="sap_approved_by">Approved by <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="sap_approved_by" name="approved_by"
+                                        maxlength="100" placeholder="Name of approver" required>
+                                </div>
+                            </div>
+                        </div>
                         <input type="hidden" id="sap_invoice_id">
                         <input type="hidden" id="sap_supplier_code">
                         <input type="hidden" id="sap_invoice_amount">
@@ -466,6 +527,7 @@
             let sapPaymentContext = 'paid';
             const canSubmitSapPayment = @json($canSubmitSapPayment ?? false);
             const canMarkPaidWithoutSap = @json($canMarkPaidWithoutSap ?? false);
+            const defaultPreparedBy = @json($defaultPreparedBy ?? '');
             const sapPreviewUrlTemplate =
                 '{{ route('cashier.invoice-payment.sap-payment.preview', ['invoiceId' => ':invoiceId']) }}';
             const sapSubmitUrlTemplate =
@@ -617,6 +679,14 @@
                             data: 'status',
                             render: function(data) {
                                 return renderStatusChip(data);
+                            }
+                        },
+                        {
+                            data: 'sap_payment',
+                            orderable: false,
+                            searchable: false,
+                            render: function(data) {
+                                return renderSapPaymentChip(data);
                             }
                         },
                         {
@@ -786,6 +856,16 @@
 
                 if (sapPayment.status === 'success') {
                     const docNum = sapPayment.doc_num ? '#' + sapPayment.doc_num : '';
+                    const totalPaid = parseFloat(sapPayment.total_paid || 0);
+                    const invoiceAmount = parseFloat(sapPayment.invoice_amount || 0);
+                    const paymentCount = parseInt(sapPayment.payment_count || 1, 10);
+
+                    if (sapPayment.is_partial && invoiceAmount > 0) {
+                        return '<span class="vj-chip vj-chip-warning" title="Latest OP ' + escapeAttr(docNum) + '">' +
+                            'Paid ' + formatCurrency(totalPaid) + ' / ' + formatCurrency(invoiceAmount) +
+                            ' (' + paymentCount + ')</span>';
+                    }
+
                     return '<span class="vj-chip vj-chip-success">Posted ' + docNum + '</span>';
                 }
 
@@ -798,7 +878,7 @@
                     return '-';
                 }
 
-                if (row.sap_payment && row.sap_payment.status === 'success') {
+                if (row.sap_payment && row.sap_payment.status === 'success' && row.sap_payment.is_fully_paid) {
                     return '<span class="text-muted small">Posted</span>';
                 }
 
@@ -806,7 +886,29 @@
                     return '<button type="button" class="vj-btn vj-btn-warning" disabled title="Supplier SAP code is missing">Submit to SAP</button>';
                 }
 
-                return '<button type="button" class="vj-btn vj-btn-primary submit-sap-btn">Submit to SAP</button>';
+                const label = row.sap_payment && row.sap_payment.is_partial ? 'Pay remaining' : 'Submit to SAP';
+
+                return '<button type="button" class="vj-btn vj-btn-primary submit-sap-btn">' + label + '</button>';
+            }
+
+            function renderPaymentHistory(history) {
+                const rows = history || [];
+                if (rows.length === 0) {
+                    $('#sapPaymentHistorySection').addClass('d-none');
+                    $('#sapPaymentHistoryBody').empty();
+                    return;
+                }
+
+                let html = '';
+                rows.forEach(function(item) {
+                    html += '<tr>' +
+                        '<td>' + (item.date ? formatDate(item.date) : '-') + '</td>' +
+                        '<td class="text-right">' + (item.amount != null ? formatCurrency(item.amount) : '-') + '</td>' +
+                        '<td>' + (item.doc_num ? '#' + escapeAttr(item.doc_num) : '-') + '</td>' +
+                        '</tr>';
+                });
+                $('#sapPaymentHistoryBody').html(html);
+                $('#sapPaymentHistorySection').removeClass('d-none');
             }
 
             function formatCurrency(amount) {
@@ -968,10 +1070,12 @@
             function openSapPaymentModal(row, context) {
                 sapPaymentContext = context || 'paid';
                 const closeInDds = sapPaymentContext === 'waiting';
+                let sapRemainingBalance = 0;
 
                 $('#sapPaymentPreviewAlert').addClass('d-none');
                 $('#sapPaymentMismatchAlert').addClass('d-none');
                 $('#sapPaymentAlreadyPostedAlert').addClass('d-none');
+                $('#sapPartialPaymentHint').addClass('d-none');
                 $('#sap_close_invoice_in_dds').val(closeInDds ? '1' : '0');
                 $('#sap_close_dds_only').val('0');
                 $('#sap_invoice_id').val(row.id);
@@ -981,14 +1085,20 @@
                 $('#sap_supplier_code').val(row.supplier_sap_code || '');
                 $('#sap_invoice_amount').val(row.amount || '');
                 $('#sap_amount_display').val(formatCurrency(row.amount));
+                $('#sap_paid_to_date_display').val('-');
+                $('#sap_remaining_balance_display').val('-');
+                $('#sap_payment_amount').val('');
                 $('#sap_payment_remarks').val(row.remarks || '');
                 $('#sap_payment_project').val(row.payment_project || '');
+                $('#sap_prepared_by').val(defaultPreparedBy);
+                $('#sap_approved_by').val('');
                 $('#sap_invoice_sap_doc').val(row.sap_doc || '');
                 $('#sap_payment_date').val(row.payment_date || new Date().toISOString().split('T')[0]);
                 $('#sap_payment_means').val('transfer');
                 $('#sap_account_id').html('<option value="">Loading accounts...</option>');
                 $('#sap_ap_doc_display').val('Resolving...');
                 $('#sap_ap_total_display').val('-');
+                renderPaymentHistory([]);
                 $('#sapPaymentSubmitBtn').prop('disabled', true);
                 $('#sapPaymentSubmitBtnLabel').text(closeInDds ? 'Pay' : 'Post to SAP');
                 $('#sapPaymentModalLabel').html(
@@ -1015,19 +1125,28 @@
                         const invoice = preview.invoice || {};
                         const sapPayment = preview.sap_payment || {};
 
-                        if (response.already_posted) {
+                        renderPaymentHistory(response.payment_history || []);
+
+                        if (response.fully_paid) {
                             $('#sap_ap_doc_display').val(
-                                (sapPayment.doc_num ? '#' + sapPayment.doc_num : '-') +
-                                (sapPayment.doc_entry ? ' / Entry ' + sapPayment.doc_entry : '')
+                                (apInvoice.doc_num ? '#' + apInvoice.doc_num : '-') +
+                                (apInvoice.doc_entry ? ' / Entry ' + apInvoice.doc_entry : '')
                             );
-                            $('#sap_ap_total_display').val('-');
+                            $('#sap_ap_total_display').val(apInvoice.doc_total != null ? formatCurrency(
+                                apInvoice.doc_total) : '-');
+                            $('#sap_paid_to_date_display').val(apInvoice.paid_to_date != null ? formatCurrency(
+                                apInvoice.paid_to_date) : '-');
+                            $('#sap_remaining_balance_display').val(formatCurrency(0));
+                            $('#sap_payment_amount').val(0).prop('disabled', true);
                             $('#sapPaymentAlreadyPostedMessage').text(
-                                'SAP OP #' + (sapPayment.doc_num || '-') +
-                                ' is already posted. Confirm to close this invoice in DDS only.'
+                                'SAP AP Invoice is fully paid' +
+                                (sapPayment.doc_num ? ' (latest OP #' + sapPayment.doc_num + ').' : '.') +
+                                ' Confirm to close this invoice in DDS only.'
                             );
                             $('#sapPaymentAlreadyPostedAlert').removeClass('d-none');
                             $('#sap_close_dds_only').val('1');
-                            $('#sap_payment_means, #sap_account_id').closest('.form-group').addClass('d-none');
+                            $('#sap_payment_means, #sap_account_id, #sap_payment_amount, #sap_prepared_by, #sap_approved_by')
+                                .closest('.form-group').addClass('d-none');
                             $('#sapPaymentSubmitBtn').prop('disabled', false);
                             $('#sapPaymentSubmitBtnLabel').text('Close in DDS');
                             if (invoice.payment_date) {
@@ -1036,15 +1155,26 @@
                             return;
                         }
 
-                        $('#sap_payment_means, #sap_account_id').closest('.form-group').removeClass('d-none');
+                        $('#sap_payment_means, #sap_account_id, #sap_payment_amount, #sap_prepared_by, #sap_approved_by')
+                            .closest('.form-group').removeClass('d-none');
+                        $('#sap_payment_amount').prop('disabled', false);
                         $('#sap_ap_doc_display').val(
                             (apInvoice.doc_num ? '#' + apInvoice.doc_num : '-') +
                             (apInvoice.doc_entry ? ' / Entry ' + apInvoice.doc_entry : '')
                         );
                         $('#sap_ap_total_display').val(apInvoice.doc_total != null ? formatCurrency(
                             apInvoice.doc_total) : '-');
+                        $('#sap_paid_to_date_display').val(apInvoice.paid_to_date != null ? formatCurrency(
+                            apInvoice.paid_to_date) : formatCurrency(0));
+                        sapRemainingBalance = Math.round(parseFloat(apInvoice.remaining_balance || 0));
+                        $('#sap_remaining_balance_display').val(formatCurrency(sapRemainingBalance));
+                        $('#sap_payment_amount').attr('max', sapRemainingBalance).val(sapRemainingBalance);
                         if (invoice.payment_date) {
                             $('#sap_payment_date').val(invoice.payment_date);
+                        }
+
+                        if (preview.is_partial || sapRemainingBalance < parseFloat(row.amount || 0) - 0.5) {
+                            $('#sapPartialPaymentHint').removeClass('d-none');
                         }
 
                         const accounts = response.accounts || [];
@@ -1089,6 +1219,7 @@
                     invoice_number: $('#sap_invoice_number_display').val(),
                     supplier_sap_code: $('#sap_supplier_code').val(),
                     amount: $('#sap_invoice_amount').val(),
+                    payment_amount: $('#sap_payment_amount').val(),
                     payment_date: $('#sap_payment_date').val(),
                     remarks: $('#sap_payment_remarks').val(),
                     payment_project: $('#sap_payment_project').val(),
@@ -1100,6 +1231,8 @@
                 if (!closeDdsOnly) {
                     payload.payment_means = $('#sap_payment_means').val();
                     payload.account_id = $('#sap_account_id').val();
+                    payload.prepared_by = $('#sap_prepared_by').val();
+                    payload.approved_by = $('#sap_approved_by').val();
                 }
 
                 $.ajax({

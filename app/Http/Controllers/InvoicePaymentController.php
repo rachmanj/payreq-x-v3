@@ -44,6 +44,7 @@ class InvoicePaymentController extends Controller
             'departmentValidation' => $this->getDepartmentValidationState(),
             'canSubmitSapPayment' => auth()->user()?->can('submit_sap_invoice_payment') ?? false,
             'canMarkPaidWithoutSap' => auth()->user()?->can('mark_invoice_paid_without_sap') ?? false,
+            'defaultPreparedBy' => auth()->user()?->name ?? '',
         ]);
     }
 
@@ -103,6 +104,8 @@ class InvoicePaymentController extends Controller
                 if ($request->filled('search')) {
                     $waitingInvoices = $this->filterInvoicesBySearch($waitingInvoices, $request->search);
                 }
+
+                $waitingInvoices = $this->attachSapPaymentStatus($waitingInvoices);
 
                 return response()->json(['invoices' => array_values($waitingInvoices)]);
             }
@@ -199,27 +202,8 @@ class InvoicePaymentController extends Controller
     {
         try {
             $invoice = $this->invoicePayloadFromRequest($request, $invoiceId);
-            $existing = $this->successfulSapPaymentLog($invoiceId);
+            $paymentHistory = $this->paymentHistoryForInvoice($invoiceId);
 
-            if ($existing) {
-                return response()->json([
-                    'success' => true,
-                    'already_posted' => true,
-                    'preview' => [
-                        'invoice' => [
-                            'invoice_number' => $invoice['invoice_number'],
-                            'amount' => (float) ($invoice['amount'] ?? 0),
-                            'payment_date' => $invoice['payment_date'] ?? Carbon::today()->format('Y-m-d'),
-                            'remarks' => $invoice['remarks'] ?? null,
-                        ],
-                        'sap_payment' => [
-                            'doc_num' => $existing->sap_doc_num,
-                            'doc_entry' => $existing->sap_doc_entry,
-                        ],
-                    ],
-                    'accounts' => [],
-                ]);
-            }
             $partner = $this->resolveSupplierPartner($invoice['supplier_sap_code']);
             if (! $partner) {
                 return response()->json([
@@ -237,7 +221,52 @@ class InvoicePaymentController extends Controller
                 ], 422);
             }
 
-            $builder = new SapVendorPaymentBuilder($invoice, $apInvoice, $partner);
+            $remaining = $this->remainingFromApInvoice($apInvoice);
+            $latestSuccess = $this->latestSuccessfulSapPaymentLog($invoiceId);
+
+            if ($remaining <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE) {
+                return response()->json([
+                    'success' => true,
+                    'fully_paid' => true,
+                    'preview' => [
+                        'invoice' => [
+                            'invoice_number' => $invoice['invoice_number'],
+                            'amount' => (float) ($invoice['amount'] ?? 0),
+                            'payment_date' => $invoice['payment_date'] ?? Carbon::today()->format('Y-m-d'),
+                            'remarks' => $invoice['remarks'] ?? null,
+                        ],
+                        'ap_invoice' => [
+                            'doc_entry' => $apInvoice['DocEntry'] ?? null,
+                            'doc_num' => $apInvoice['DocNum'] ?? null,
+                            'doc_total' => isset($apInvoice['DocTotal']) ? (float) $apInvoice['DocTotal'] : null,
+                            'paid_to_date' => (float) ($apInvoice['PaidToDate'] ?? 0),
+                            'remaining_balance' => $remaining,
+                        ],
+                        'sap_payment' => $latestSuccess ? [
+                            'doc_num' => $latestSuccess->sap_doc_num,
+                            'doc_entry' => $latestSuccess->sap_doc_entry,
+                        ] : null,
+                    ],
+                    'payment_history' => $paymentHistory,
+                    'accounts' => [],
+                ]);
+            }
+
+            $paymentAmount = $request->filled('payment_amount')
+                ? (float) $request->input('payment_amount')
+                : $remaining;
+
+            $builder = new SapVendorPaymentBuilder(
+                $invoice,
+                $apInvoice,
+                $partner,
+                null,
+                SapVendorPaymentBuilder::MEANS_TRANSFER,
+                $request->input('payment_date'),
+                $paymentAmount,
+                $request->input('prepared_by'),
+                $request->input('approved_by'),
+            );
             $errors = $builder->validate();
             if ($errors !== []) {
                 return response()->json([
@@ -248,7 +277,9 @@ class InvoicePaymentController extends Controller
 
             return response()->json([
                 'success' => true,
+                'fully_paid' => false,
                 'preview' => $builder->getPreviewData(),
+                'payment_history' => $paymentHistory,
                 'accounts' => $this->eligiblePaymentAccounts(),
             ]);
         } catch (\Exception $e) {
@@ -260,18 +291,19 @@ class InvoicePaymentController extends Controller
     {
         try {
             $invoice = $this->invoicePayloadFromRequest($request, $invoiceId);
-            $existing = $this->successfulSapPaymentLog($invoiceId);
 
-            if ($existing) {
-                if ($request->boolean('close_dds_only') && $request->boolean('close_invoice_in_dds')) {
+            if ($request->boolean('close_dds_only') && $request->boolean('close_invoice_in_dds')) {
+                $existing = $this->latestSuccessfulSapPaymentLog($invoiceId);
+                if ($existing) {
                     return $this->closeInvoiceInDdsAfterSap($invoice, $existing);
                 }
 
                 return response()->json([
                     'error' => 'Already posted',
-                    'message' => 'This invoice already has a successful SAP outgoing payment (DocNum '.$existing->sap_doc_num.'). Resubmission is blocked.',
+                    'message' => 'No successful SAP outgoing payment was found for this invoice.',
                 ], 422);
             }
+
             $partner = $this->resolveSupplierPartner($invoice['supplier_sap_code']);
             if (! $partner) {
                 return response()->json([
@@ -286,6 +318,15 @@ class InvoicePaymentController extends Controller
                 return response()->json([
                     'error' => 'AP Invoice not found',
                     'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            $remaining = $this->remainingFromApInvoice($apInvoice);
+
+            if ($remaining <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE) {
+                return response()->json([
+                    'error' => 'Already posted',
+                    'message' => 'This invoice is already fully paid in SAP B1. Use Close in DDS if DDS still shows it open.',
                 ], 422);
             }
 
@@ -301,6 +342,8 @@ class InvoicePaymentController extends Controller
                 ], 422);
             }
 
+            $paymentAmount = (float) $request->input('payment_amount');
+
             $builder = new SapVendorPaymentBuilder(
                 $invoice,
                 $apInvoice,
@@ -308,6 +351,9 @@ class InvoicePaymentController extends Controller
                 $account,
                 (string) $request->input('payment_means'),
                 (string) $request->input('payment_date'),
+                $paymentAmount,
+                (string) $request->input('prepared_by'),
+                (string) $request->input('approved_by'),
             );
 
             $errors = $builder->validate(requirePaymentAccount: true);
@@ -341,10 +387,14 @@ class InvoicePaymentController extends Controller
                 ], 422);
             }
 
-            $this->logInvoicePaymentSubmission($invoice, 'success', null, $sapResult);
+            $this->logInvoicePaymentSubmission($invoice, 'success', null, $sapResult, $paymentAmount);
 
-            if ($request->boolean('close_invoice_in_dds')) {
-                $ddsResult = $this->closeInvoiceInDds($invoice, $sapResult);
+            $remainingAfter = $remaining - $paymentAmount;
+            $shouldCloseDds = $request->boolean('close_invoice_in_dds')
+                && $remainingAfter <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE;
+
+            if ($shouldCloseDds) {
+                $ddsResult = $this->closeInvoiceInDds($invoice, $sapResult, $paymentAmount, $remainingAfter);
                 if (! $ddsResult['success']) {
                     return response()->json([
                         'success' => true,
@@ -352,6 +402,8 @@ class InvoicePaymentController extends Controller
                         'message' => 'Outgoing payment posted to SAP B1 (DocNum '.($sapResult['doc_num'] ?? '-').'), but closing the invoice in DDS failed. Use PAY again to close it in DDS.',
                         'sap_doc_num' => $sapResult['doc_num'] ?? null,
                         'sap_doc_entry' => $sapResult['doc_entry'] ?? null,
+                        'payment_amount' => $paymentAmount,
+                        'remaining_balance' => max(0, $remainingAfter),
                         'dds_error' => $ddsResult['message'] ?? null,
                     ]);
                 }
@@ -361,16 +413,22 @@ class InvoicePaymentController extends Controller
                     'message' => 'Outgoing payment posted to SAP B1 and invoice closed. DocNum: '.($sapResult['doc_num'] ?? '-'),
                     'sap_doc_num' => $sapResult['doc_num'] ?? null,
                     'sap_doc_entry' => $sapResult['doc_entry'] ?? null,
+                    'payment_amount' => $paymentAmount,
+                    'remaining_balance' => max(0, $remainingAfter),
+                    'fully_paid' => true,
                 ]);
             }
 
-            $this->appendSapPaymentRemarkOnly($invoice, $sapResult);
+            $this->appendSapPaymentRemarkOnly($invoice, $sapResult, $paymentAmount, $remainingAfter);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Outgoing payment posted to SAP B1. DocNum: '.($sapResult['doc_num'] ?? '-'),
+                'message' => 'Partial outgoing payment posted to SAP B1. DocNum: '.($sapResult['doc_num'] ?? '-'),
                 'sap_doc_num' => $sapResult['doc_num'] ?? null,
                 'sap_doc_entry' => $sapResult['doc_entry'] ?? null,
+                'payment_amount' => $paymentAmount,
+                'remaining_balance' => max(0, $remainingAfter),
+                'fully_paid' => false,
             ]);
         } catch (\Exception $e) {
             return $this->exceptionResponse($e, 'Invoice Payment SAP Submit Error');
@@ -694,22 +752,46 @@ class InvoicePaymentController extends Controller
         $logs = SapSubmissionLog::query()
             ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT)
             ->whereIn('dds_invoice_id', $ids)
+            ->where('status', 'success')
             ->orderByDesc('id')
             ->get()
-            ->unique('dds_invoice_id')
-            ->keyBy('dds_invoice_id');
+            ->groupBy('dds_invoice_id');
 
         return array_map(function ($invoice) use ($logs) {
-            $log = $logs->get($invoice['id'] ?? null);
-            $invoice['sap_payment'] = $log ? [
-                'status' => $log->status,
-                'doc_num' => $log->sap_doc_num,
-                'doc_entry' => $log->sap_doc_entry,
-                'error_message' => $log->error_message,
-            ] : null;
+            $invoiceLogs = $logs->get($invoice['id'] ?? null);
+            $invoice['sap_payment'] = $this->buildSapPaymentSummary($invoice, $invoiceLogs);
 
             return $invoice;
         }, $invoices);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, SapSubmissionLog>|null  $logs
+     * @return array<string, mixed>|null
+     */
+    private function buildSapPaymentSummary(array $invoice, $logs): ?array
+    {
+        if ($logs === null || $logs->isEmpty()) {
+            return null;
+        }
+
+        $latest = $logs->first();
+        $totalPaid = (float) $logs->sum(fn (SapSubmissionLog $log) => (float) ($log->amount ?? 0));
+        $invoiceAmount = (float) ($invoice['amount'] ?? 0);
+        $paymentCount = $logs->count();
+        $tolerance = SapVendorPaymentBuilder::AMOUNT_TOLERANCE;
+
+        return [
+            'status' => $latest->status,
+            'doc_num' => $latest->sap_doc_num,
+            'doc_entry' => $latest->sap_doc_entry,
+            'error_message' => $latest->error_message,
+            'total_paid' => $totalPaid,
+            'payment_count' => $paymentCount,
+            'invoice_amount' => $invoiceAmount,
+            'is_fully_paid' => $invoiceAmount > 0 && $totalPaid >= $invoiceAmount - $tolerance,
+            'is_partial' => $paymentCount > 0 && ($invoiceAmount <= 0 || $totalPaid < $invoiceAmount - $tolerance),
+        ];
     }
 
     /**
@@ -739,7 +821,7 @@ class InvoicePaymentController extends Controller
 
     /**
      * @param  array<string, mixed>  $invoice
-     * @return array{DocEntry: int, DocNum?: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, NumAtCard?: string, DocTotal?: float}
+     * @return array{DocEntry: int, DocNum?: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, NumAtCard?: string, DocTotal?: float, PaidToDate?: float}
      */
     private function resolveApInvoice(SapService $sapService, array $invoice): array
     {
@@ -766,7 +848,7 @@ class InvoicePaymentController extends Controller
         );
     }
 
-    private function successfulSapPaymentLog(int|string $invoiceId): ?SapSubmissionLog
+    private function latestSuccessfulSapPaymentLog(int|string $invoiceId): ?SapSubmissionLog
     {
         return SapSubmissionLog::query()
             ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT)
@@ -774,6 +856,38 @@ class InvoicePaymentController extends Controller
             ->where('status', 'success')
             ->latest('id')
             ->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $apInvoice
+     */
+    private function remainingFromApInvoice(array $apInvoice): float
+    {
+        $docTotal = (float) ($apInvoice['DocTotal'] ?? 0);
+        $paidToDate = (float) ($apInvoice['PaidToDate'] ?? 0);
+
+        return max(0.0, $docTotal - $paidToDate);
+    }
+
+    /**
+     * @return list<array{date: string|null, amount: float|null, doc_num: string|null, doc_entry: int|null}>
+     */
+    private function paymentHistoryForInvoice(int|string $invoiceId): array
+    {
+        return SapSubmissionLog::query()
+            ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT)
+            ->where('dds_invoice_id', $invoiceId)
+            ->where('status', 'success')
+            ->orderBy('id')
+            ->get(['created_at', 'amount', 'sap_doc_num', 'sap_doc_entry'])
+            ->map(fn (SapSubmissionLog $log) => [
+                'date' => $log->created_at?->format('Y-m-d'),
+                'amount' => $log->amount !== null ? (float) $log->amount : null,
+                'doc_num' => $log->sap_doc_num,
+                'doc_entry' => $log->sap_doc_entry,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -804,8 +918,13 @@ class InvoicePaymentController extends Controller
      * @param  array<string, mixed>  $invoice
      * @param  array<string, mixed>|null  $sapResult
      */
-    private function logInvoicePaymentSubmission(array $invoice, string $status, ?string $errorMessage, ?array $sapResult = null): void
-    {
+    private function logInvoicePaymentSubmission(
+        array $invoice,
+        string $status,
+        ?string $errorMessage,
+        ?array $sapResult = null,
+        ?float $paymentAmount = null,
+    ): void {
         SapSubmissionLog::create([
             'dds_invoice_id' => $invoice['id'] ?? null,
             'dds_invoice_number' => $invoice['invoice_number'] ?? null,
@@ -816,6 +935,7 @@ class InvoicePaymentController extends Controller
             'sap_error' => $errorMessage,
             'sap_doc_num' => $sapResult['doc_num'] ?? null,
             'sap_doc_entry' => $sapResult['doc_entry'] ?? null,
+            'amount' => $paymentAmount,
             'sap_response' => $sapResult['data'] ?? $sapResult,
             'attempt_number' => 1,
             'submitted_by' => auth()->id(),
@@ -828,8 +948,12 @@ class InvoicePaymentController extends Controller
      * @param  array<string, mixed>  $sapResult
      * @return array{success: bool, message?: string}
      */
-    private function closeInvoiceInDds(array $invoice, array $sapResult): array
-    {
+    private function closeInvoiceInDds(
+        array $invoice,
+        array $sapResult,
+        ?float $paymentAmount = null,
+        ?float $remainingAfter = null,
+    ): array {
         if (! $this->apiUrl || ! $this->apiKey) {
             return [
                 'success' => false,
@@ -838,7 +962,7 @@ class InvoicePaymentController extends Controller
         }
 
         $invoiceId = $invoice['id'] ?? null;
-        $remarks = $this->buildDdsRemarksWithSapNote($invoice, $sapResult);
+        $remarks = $this->buildDdsRemarksWithSapNote($invoice, $sapResult, $paymentAmount, $remainingAfter);
 
         try {
             $response = Http::withHeaders($this->ddsHeaders())
@@ -904,23 +1028,23 @@ class InvoicePaymentController extends Controller
      * @param  array<string, mixed>  $invoice
      * @param  array<string, mixed>  $sapResult
      */
-    private function appendSapPaymentRemarkOnly(array $invoice, array $sapResult): void
-    {
+    private function appendSapPaymentRemarkOnly(
+        array $invoice,
+        array $sapResult,
+        ?float $paymentAmount = null,
+        ?float $remainingAfter = null,
+    ): void {
         if (! $this->apiUrl || ! $this->apiKey) {
             return;
         }
 
         $invoiceId = $invoice['id'] ?? null;
-        $remarks = $this->buildDdsRemarksWithSapNote($invoice, $sapResult);
+        $remarks = $this->buildDdsRemarksWithSapNote($invoice, $sapResult, $paymentAmount, $remainingAfter);
 
         try {
             $response = Http::withHeaders($this->ddsHeaders())
                 ->put("{$this->apiUrl}/api/v1/invoices/{$invoiceId}/payment", array_filter([
-                    'payment_date' => $invoice['payment_date'] ?? Carbon::today()->format('Y-m-d'),
-                    'payment_status' => 'paid',
-                    'status' => 'closed',
                     'remarks' => $remarks,
-                    'payment_project' => $invoice['payment_project'] ?? null,
                 ], fn ($value) => $value !== null && $value !== ''));
 
             if (! $response->successful()) {
@@ -942,13 +1066,25 @@ class InvoicePaymentController extends Controller
      * @param  array<string, mixed>  $invoice
      * @param  array<string, mixed>  $sapResult
      */
-    private function buildDdsRemarksWithSapNote(array $invoice, array $sapResult): string
-    {
+    private function buildDdsRemarksWithSapNote(
+        array $invoice,
+        array $sapResult,
+        ?float $paymentAmount = null,
+        ?float $remainingAfter = null,
+    ): string {
         $docNum = (string) ($sapResult['doc_num'] ?? '');
         $docEntry = $sapResult['doc_entry'] ?? null;
         $note = 'SAP OP #'.($docNum !== '' ? $docNum : '-');
         if ($docEntry !== null && $docEntry !== '') {
             $note .= ' (DocEntry '.$docEntry.')';
+        }
+
+        if ($paymentAmount !== null) {
+            $note .= ' | Paid Rp '.number_format($paymentAmount, 0, ',', '.');
+        }
+
+        if ($remainingAfter !== null && $remainingAfter > SapVendorPaymentBuilder::AMOUNT_TOLERANCE) {
+            $note .= ' | Remaining Rp '.number_format($remainingAfter, 0, ',', '.');
         }
 
         $existing = trim((string) ($invoice['remarks'] ?? ''));

@@ -12,9 +12,11 @@ class SapVendorPaymentBuilder
 
     public const MEANS_TRANSFER = 'transfer';
 
+    public const AMOUNT_TOLERANCE = 0.5;
+
     /**
      * @param  array{invoice_number?: string, amount?: float|int|string, payment_date?: string|null, remarks?: string|null}  $invoice
-     * @param  array{DocEntry?: int, DocNum?: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, DocTotal?: float|int|string}  $apInvoice
+     * @param  array{DocEntry?: int, DocNum?: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, DocTotal?: float|int|string, PaidToDate?: float|int|string}  $apInvoice
      */
     public function __construct(
         protected array $invoice,
@@ -23,6 +25,9 @@ class SapVendorPaymentBuilder
         protected ?Account $account = null,
         protected string $paymentMeans = self::MEANS_TRANSFER,
         protected ?string $paymentDate = null,
+        protected ?float $paymentAmount = null,
+        protected ?string $preparedBy = null,
+        protected ?string $approvedBy = null,
     ) {}
 
     /**
@@ -30,7 +35,7 @@ class SapVendorPaymentBuilder
      */
     public function build(): array
     {
-        $amount = $this->amount();
+        $amount = $this->paymentAmountValue();
         $paymentDate = $this->resolvePaymentDate()->format('Y-m-d');
         $cashAccount = (string) ($this->account?->sap_account ?? '');
 
@@ -46,6 +51,8 @@ class SapVendorPaymentBuilder
                 ],
             ],
             'JournalRemarks' => $this->buildJournalRemarks(),
+            'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
+            'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
         ];
 
         if ($this->paymentMeans === self::MEANS_CASH) {
@@ -84,15 +91,28 @@ class SapVendorPaymentBuilder
             $errors[] = 'Invoice number is required to resolve the SAP AP Invoice.';
         }
 
-        if ($this->amount() <= 0) {
-            $errors[] = 'Invoice amount must be greater than zero.';
+        if ($this->paymentAmountValue() <= 0) {
+            $errors[] = 'Payment amount must be greater than zero.';
         }
 
         $errors = array_merge($errors, $this->validateApInvoice());
 
+        $remaining = $this->remainingBalance();
+        if ($remaining !== null && $this->paymentAmountValue() > $remaining + self::AMOUNT_TOLERANCE) {
+            $errors[] = 'Payment amount exceeds the remaining SAP balance of Rp '.number_format($remaining, 0, ',', '.').'.';
+        }
+
         if ($requirePaymentAccount) {
             if (! in_array($this->paymentMeans, [self::MEANS_CASH, self::MEANS_TRANSFER], true)) {
                 $errors[] = 'Payment means must be cash or transfer.';
+            }
+
+            if ($this->trimmedSignature($this->preparedBy) === '') {
+                $errors[] = 'Prepared by is required.';
+            }
+
+            if ($this->trimmedSignature($this->approvedBy) === '') {
+                $errors[] = 'Approved by is required.';
             }
 
             if (! $this->account) {
@@ -110,14 +130,16 @@ class SapVendorPaymentBuilder
      */
     public function getPreviewData(): array
     {
-        $amount = $this->amount();
+        $amount = $this->paymentAmountValue();
         $apTotal = isset($this->apInvoice['DocTotal']) ? (float) $this->apInvoice['DocTotal'] : null;
-        $amountMismatch = $apTotal !== null && abs($apTotal - $amount) > 0.5;
+        $paidToDate = $this->paidToDate();
+        $remaining = $this->remainingBalance();
+        $amountMismatch = $apTotal !== null && abs($apTotal - $this->invoiceAmount()) > self::AMOUNT_TOLERANCE;
 
         return [
             'invoice' => [
                 'invoice_number' => $this->invoice['invoice_number'] ?? null,
-                'amount' => $amount,
+                'amount' => $this->invoiceAmount(),
                 'payment_date' => $this->resolvePaymentDate()->format('Y-m-d'),
                 'remarks' => $this->invoice['remarks'] ?? null,
             ],
@@ -129,11 +151,18 @@ class SapVendorPaymentBuilder
                 'doc_entry' => $this->apInvoice['DocEntry'] ?? null,
                 'doc_num' => $this->apInvoice['DocNum'] ?? null,
                 'doc_total' => $apTotal,
+                'paid_to_date' => $paidToDate,
+                'remaining_balance' => $remaining,
                 'card_code' => $this->apInvoice['CardCode'] ?? null,
                 'status' => $this->apInvoice['DocumentStatus'] ?? null,
             ],
+            'payment_amount' => $amount,
+            'is_partial' => $remaining !== null && $amount < $remaining - self::AMOUNT_TOLERANCE,
+            'fully_paid_after' => $remaining !== null && $amount >= $remaining - self::AMOUNT_TOLERANCE,
             'amount_mismatch' => $amountMismatch,
             'payment_means' => $this->paymentMeans,
+            'prepared_by' => $this->trimmedSignature($this->preparedBy),
+            'approved_by' => $this->trimmedSignature($this->approvedBy),
             'account' => $this->account ? [
                 'id' => $this->account->id,
                 'account_number' => $this->account->account_number,
@@ -141,6 +170,20 @@ class SapVendorPaymentBuilder
                 'sap_account' => $this->account->sap_account,
             ] : null,
         ];
+    }
+
+    public function remainingBalance(): ?float
+    {
+        if (! isset($this->apInvoice['DocTotal'])) {
+            return null;
+        }
+
+        return max(0.0, (float) $this->apInvoice['DocTotal'] - $this->paidToDate());
+    }
+
+    public function paidToDate(): float
+    {
+        return (float) ($this->apInvoice['PaidToDate'] ?? 0);
     }
 
     /**
@@ -171,12 +214,31 @@ class SapVendorPaymentBuilder
             $errors[] = "Linked SAP AP Invoice is not open for payment (status: {$status}).";
         }
 
+        $remaining = $this->remainingBalance();
+        if ($remaining !== null && $remaining <= self::AMOUNT_TOLERANCE) {
+            $errors[] = 'Linked SAP AP Invoice is already fully paid in SAP B1.';
+        }
+
         return $errors;
     }
 
-    protected function amount(): float
+    protected function invoiceAmount(): float
     {
         return (float) ($this->invoice['amount'] ?? 0);
+    }
+
+    protected function paymentAmountValue(): float
+    {
+        if ($this->paymentAmount !== null) {
+            return $this->paymentAmount;
+        }
+
+        $remaining = $this->remainingBalance();
+        if ($remaining !== null && $remaining > 0) {
+            return $remaining;
+        }
+
+        return $this->invoiceAmount();
     }
 
     protected function resolvePaymentDate(): Carbon
@@ -191,5 +253,10 @@ class SapVendorPaymentBuilder
         $invoiceNumber = (string) ($this->invoice['invoice_number'] ?? '');
 
         return mb_substr(trim('Payment for Invoice '.$invoiceNumber), 0, 254);
+    }
+
+    protected function trimmedSignature(?string $value): string
+    {
+        return mb_substr(trim((string) $value), 0, 100);
     }
 }

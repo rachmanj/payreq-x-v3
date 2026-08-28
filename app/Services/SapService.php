@@ -537,7 +537,7 @@ class SapService
 
     protected function purchaseInvoiceSelectFields(): string
     {
-        return 'DocEntry,DocNum,CardCode,DocumentStatus,Cancelled,NumAtCard,DocTotal';
+        return 'DocEntry,DocNum,CardCode,DocumentStatus,Cancelled,NumAtCard,DocTotal,PaidToDate';
     }
 
     public function outgoingPaymentEntity(): string

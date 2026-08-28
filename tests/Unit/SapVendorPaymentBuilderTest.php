@@ -87,6 +87,8 @@ class SapVendorPaymentBuilderTest extends TestCase
             ],
         ], $payload['PaymentInvoices']);
         $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
+        $this->assertSame('John Preparer', $payload['U_MIS_Signature1']);
+        $this->assertSame('Jane Approver', $payload['U_MIS_Signature2']);
         $this->assertArrayNotHasKey('Comments', $payload);
     }
 
@@ -150,6 +152,54 @@ class SapVendorPaymentBuilderTest extends TestCase
         $this->assertSame(1500000.0, $preview['invoice']['amount']);
     }
 
+    public function test_validate_rejects_payment_above_remaining_balance(): void
+    {
+        $this->apInvoice['DocTotal'] = 1500000;
+        $this->apInvoice['PaidToDate'] = 500000;
+        $builder = new SapVendorPaymentBuilder(
+            $this->invoice,
+            $this->apInvoice,
+            $this->partner->fresh(),
+            $this->account->fresh(),
+            SapVendorPaymentBuilder::MEANS_TRANSFER,
+            $this->invoice['payment_date'],
+            1200000,
+            'John Preparer',
+            'Jane Approver',
+        );
+
+        $errors = $builder->validate();
+
+        $this->assertNotEmpty($errors);
+        $this->assertTrue(
+            collect($errors)->contains(fn (string $error) => str_contains($error, 'remaining SAP balance'))
+        );
+    }
+
+    public function test_preview_data_exposes_remaining_balance_and_partial_flags(): void
+    {
+        $this->apInvoice['DocTotal'] = 1500000;
+        $this->apInvoice['PaidToDate'] = 500000;
+        $builder = new SapVendorPaymentBuilder(
+            $this->invoice,
+            $this->apInvoice,
+            $this->partner->fresh(),
+            $this->account->fresh(),
+            SapVendorPaymentBuilder::MEANS_TRANSFER,
+            $this->invoice['payment_date'],
+            400000,
+            'John Preparer',
+            'Jane Approver',
+        );
+
+        $preview = $builder->getPreviewData();
+
+        $this->assertSame(500000.0, $preview['ap_invoice']['paid_to_date']);
+        $this->assertSame(1000000.0, $preview['ap_invoice']['remaining_balance']);
+        $this->assertTrue($preview['is_partial']);
+        $this->assertFalse($preview['fully_paid_after']);
+    }
+
     protected function makeBuilder(string $paymentMeans = SapVendorPaymentBuilder::MEANS_TRANSFER): SapVendorPaymentBuilder
     {
         return new SapVendorPaymentBuilder(
@@ -159,6 +209,9 @@ class SapVendorPaymentBuilderTest extends TestCase
             $this->account->fresh(),
             $paymentMeans,
             $this->invoice['payment_date'],
+            (float) $this->invoice['amount'],
+            'John Preparer',
+            'Jane Approver',
         );
     }
 }
