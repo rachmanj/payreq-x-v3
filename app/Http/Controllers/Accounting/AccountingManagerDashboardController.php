@@ -28,9 +28,20 @@ class AccountingManagerDashboardController extends Controller
             fn () => $this->buildDashboardData($year, $month),
         );
 
+        // Unit yang punya data realisasi (untuk dropdown chart Section C)
+        $units = RealizationDetail::query()
+            ->leftJoin('equipments', 'equipments.unit_code', '=', 'realization_details.unit_no')
+            ->whereNotNull('realization_details.unit_no')
+            ->where('realization_details.unit_no', '!=', '')
+            ->groupBy('realization_details.unit_no', 'equipments.model', 'equipments.nomor_polisi')
+            ->orderBy('realization_details.unit_no')
+            ->selectRaw('realization_details.unit_no, equipments.model as unit_model, equipments.nomor_polisi as unit_nopol')
+            ->get();
+
         return view('accounting.manager-dashboard.index', array_merge($data, [
             'month' => $month,
             'year' => $year,
+            'units' => $units,
         ]));
     }
 
@@ -124,6 +135,72 @@ class AccountingManagerDashboardController extends Controller
             ->rawColumns(['account_info'])
             ->addIndexColumn()
             ->toJson();
+    }
+
+    public function unitExpense(string $unit): JsonResponse
+    {
+        return response()->json(Cache::remember(
+            'accounting_manager_dashboard_unit_expense_'.$unit,
+            self::CACHE_TTL,
+            fn () => $this->buildUnitExpenseData($unit),
+        ));
+    }
+
+    /**
+     * Monthly sum per expense type (12 bulan terakhir) untuk 1 unit.
+     *
+     * @return array{labels: array<int,string>, datasets: array<int,array<string,mixed>>}
+     */
+    private function buildUnitExpenseData(string $unit): array
+    {
+        // hitung dari tanggal 1 bulan berjalan, hindari overflow (mis. 30-Feb-2026 -> Mar)
+        $current = now()->startOfMonth();
+        $start = $current->copy()->subMonths(11);
+
+        $rows = RealizationDetail::query()
+            ->where('unit_no', $unit)
+            ->whereNotNull('expense_date')
+            ->where('expense_date', '>=', $start)
+            ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, COALESCE(NULLIF(type, ''), 'lainnya') as type, SUM(amount) as total")
+            ->groupBy('month', 'type')
+            ->get();
+
+        $monthKeys = [];
+        $labels = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $monthKeys[] = $current->copy()->subMonths($i)->format('Y-m');
+            $labels[] = $current->copy()->subMonths($i)->format('M Y');
+        }
+
+        $typeConfig = [
+            'fuel' => ['label' => 'Fuel', 'color' => '#0d9488'],
+            'service' => ['label' => 'Service', 'color' => '#10b981'],
+            'tax' => ['label' => 'Tax', 'color' => '#f59e0b'],
+            'other' => ['label' => 'Other', 'color' => '#6366f1'],
+            'lainnya' => ['label' => 'Lainnya', 'color' => '#94a3b8'],
+        ];
+
+        $datasets = $rows->pluck('type')
+            ->unique()
+            ->values()
+            ->map(function (string $type) use ($rows, $monthKeys, $typeConfig) {
+                $data = array_fill(0, count($monthKeys), 0);
+
+                foreach ($rows->where('type', $type) as $row) {
+                    $idx = array_search($row->month, $monthKeys, true);
+
+                    if ($idx !== false) {
+                        $data[$idx] = round((float) $row->total, 2);
+                    }
+                }
+
+                $cfg = $typeConfig[$type] ?? ['label' => ucfirst((string) $type), 'color' => '#94a3b8'];
+
+                return ['type' => $type, 'label' => $cfg['label'], 'color' => $cfg['color'], 'data' => $data];
+            })
+            ->values();
+
+        return ['labels' => $labels, 'datasets' => $datasets];
     }
 
     /**

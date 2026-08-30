@@ -177,6 +177,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/project/{project}/advances', [AccountingManagerDashboardController::class, 'advances'])->name('project.advances');
         Route::get('/project/{project}/unpaid', [AccountingManagerDashboardController::class, 'unpaid'])->name('project.unpaid');
         Route::get('/project/{project}/realizations', [AccountingManagerDashboardController::class, 'realizations'])->name('project.realizations');
+        Route::get('/unit/{unit}/expense', [AccountingManagerDashboardController::class, 'unitExpense'])->name('unit.expense');
     });
 
     // EXCHANGE RATES

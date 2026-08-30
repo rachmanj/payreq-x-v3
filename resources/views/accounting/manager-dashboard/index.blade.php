@@ -213,6 +213,34 @@
         </div>
     </div>
 
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card card-outline card-info">
+                <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h3 class="card-title">Section C — Biaya per Unit</h3>
+                    <small class="text-muted">Monthly sum per tipe expense (12 bulan terakhir)</small>
+                    <div style="width: 340px;">
+                        <select id="unitSelect" class="form-control form-control-sm">
+                            <option value="">-- Pilih Unit --</option>
+                            @foreach ($units as $u)
+                                <option value="{{ $u->unit_no }}">{{ $u->unit_no }}{{ $u->unit_model ? ' — '.$u->unit_model : '' }}{{ $u->unit_nopol ? ' ('.$u->unit_nopol.')' : '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="unitChartEmpty" class="text-center text-muted py-5">
+                        <i class="fas fa-chart-bar fa-2x mb-2 d-block"></i>
+                        Pilih unit untuk melihat biaya bulanan per tipe expense.
+                    </div>
+                    <div id="unitChartWrap" style="display: none;">
+                        <canvas id="unitExpenseChart" style="height: 320px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="drilldown-modal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
@@ -240,6 +268,7 @@
 @section('scripts')
     <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/chart.js/Chart.min.js') }}"></script>
     <script>
         $(function() {
             const month = @json($month);
@@ -391,6 +420,83 @@
                     drilldownTable = null;
                 }
             });
+        });
+    </script>
+
+    <script>
+        // Section C — Biaya per Unit (stacked bar: monthly sum per expense type)
+        const moneyFmt = (v) => {
+            const n = Math.abs(v);
+            if (n >= 1e9) return 'Rp ' + (v / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' M';
+            if (n >= 1e6) return 'Rp ' + (v / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' jt';
+            if (n >= 1e3) return 'Rp ' + (v / 1e3).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' rb';
+            return 'Rp ' + Math.round(v).toLocaleString('id-ID');
+        };
+
+        const unitSelect = document.getElementById('unitSelect');
+        const unitChartWrap = document.getElementById('unitChartWrap');
+        const unitChartEmpty = document.getElementById('unitChartEmpty');
+        let unitChart = null;
+
+        function loadUnitChart(unitNo) {
+            fetch(@json(url('/accounting/manager-dashboard/unit')) + '/' + encodeURIComponent(unitNo) + '/expense')
+                .then(r => r.json())
+                .then(data => {
+                    unitChartEmpty.style.display = 'none';
+                    unitChartWrap.style.display = 'block';
+
+                    if (unitChart) {
+                        unitChart.destroy();
+                    }
+
+                    unitChart = new Chart(document.getElementById('unitExpenseChart').getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: data.labels,
+                            datasets: data.datasets.map(ds => ({
+                                label: ds.label,
+                                data: ds.data,
+                                backgroundColor: ds.color,
+                            })),
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            legend: { position: 'bottom' },
+                            tooltips: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function (tooltipItem, d) {
+                                        return d.datasets[tooltipItem.datasetIndex].label + ': ' + moneyFmt(tooltipItem.yLabel);
+                                    },
+                                },
+                            },
+                            scales: {
+                                xAxes: [{ stacked: true }],
+                                yAxes: [{
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    ticks: { callback: function (value) { return moneyFmt(value); } },
+                                }],
+                            },
+                        },
+                    });
+                })
+                .catch(() => {
+                    unitChartWrap.style.display = 'none';
+                    unitChartEmpty.style.display = 'block';
+                });
+        }
+
+        unitSelect.addEventListener('change', function() {
+            const unitNo = this.value;
+            if (!unitNo) {
+                unitChartWrap.style.display = 'none';
+                unitChartEmpty.style.display = 'block';
+                return;
+            }
+            loadUnitChart(unitNo);
         });
     </script>
 @endsection
