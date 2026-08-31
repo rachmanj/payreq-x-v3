@@ -9,11 +9,13 @@
 @endsection
 
 @section('content')
+<div class="vj-show">
 <div class="row">
   <div class="col-12">
 
-    <div class="card">
-      <div class="card-header">
+    <div class="card card-outline card-primary">
+      <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h3 class="card-title mb-0"><i class="fas fa-check-circle"></i> Approved Payment Request</h3>
       </div>
       <!-- /.card-header -->
       <div class="card-body">
@@ -40,10 +42,12 @@
   <!-- /.col -->
 </div>
 <!-- /.row -->
+</div>
 
 @endsection
 
 @section('styles')
+    @include('partials.vj-soft-ui-styles')
     <!-- DataTables -->
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">

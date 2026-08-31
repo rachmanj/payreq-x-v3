@@ -715,7 +715,8 @@
 .vj-show #details-table thead th,
 .vj-show #vj_details thead th,
 .vj-show #bills-table thead th,
-.vj-show #customers-table thead th {
+.vj-show #customers-table thead th,
+.vj-show #approveds thead th {
     background: #f8f9fa;
     border-color: #e9ecef;
     color: #495057;

@@ -26,10 +26,10 @@ class OutgoingAttachment extends Model
     public function getVerificationStatusBadgeAttribute(): string
     {
         return match ($this->verification_status) {
-            'verified' => '<span class="badge badge-success">✓ Sesuai</span>',
-            'mismatch' => '<span class="badge badge-danger">✗ Tidak Sesuai</span>',
-            'failed' => '<span class="badge badge-warning">⚠️ Gagal Verifikasi</span>',
-            default => '<span class="badge badge-secondary">⏳ Memverifikasi</span>',
+            'verified' => '<span class="vj-chip vj-chip-success">✓ Sesuai</span>',
+            'mismatch' => '<span class="vj-chip vj-chip-danger">✗ Tidak Sesuai</span>',
+            'failed' => '<span class="vj-chip vj-chip-warning">⚠️ Gagal Verifikasi</span>',
+            default => '<span class="vj-chip vj-chip-neutral">⏳ Memverifikasi</span>',
         };
     }
 }

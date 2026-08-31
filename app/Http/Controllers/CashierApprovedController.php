@@ -192,7 +192,7 @@ class CashierApprovedController extends Controller
                     $applied_amount = $outgoings->sum('amount');
                     $amount_due = $approved->amount - $outgoings->sum('amount');
 
-                    return '<span class="badge badge-warning">split</span><small>Original: '.number_format($original_amount, 2).
+                    return '<span class="vj-chip vj-chip-warning">split</span><small>Original: '.number_format($original_amount, 2).
                         '</small><br><small>applied: '.number_format($applied_amount, 2).'</small><br>'.'<small>Due: '.number_format($amount_due, 2).'</small>';
                 }
 

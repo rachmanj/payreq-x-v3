@@ -130,9 +130,9 @@ class Payreq extends Model
         }
 
         return match ($this->payment_method) {
-            'transfer' => '<span class="badge badge-info"'.$tooltip.'>Transfer</span>',
-            'cash' => '<span class="badge badge-secondary">Cash</span>',
-            default => '<span class="badge badge-light">-</span>',
+            'transfer' => '<span class="vj-chip vj-chip-info"'.$tooltip.'>Transfer</span>',
+            'cash' => '<span class="vj-chip vj-chip-neutral">Cash</span>',
+            default => '<span class="vj-chip vj-chip-neutral">-</span>',
         };
     }
 }
