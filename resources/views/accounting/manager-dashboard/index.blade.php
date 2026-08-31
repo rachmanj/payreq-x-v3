@@ -361,7 +361,7 @@
                 realizations: {
                     title: 'Realisasi by Akun',
                     url: project => @json(url('/accounting/manager-dashboard/project')) + '/' + encodeURIComponent(
-                            project) + '/realizations') + '?month=' + month + '&year=' + year,
+                            project) + '/realizations' + '?month=' + month + '&year=' + year,
                     columns: [{
                             data: 'DT_RowIndex',
                             name: 'DT_RowIndex',
@@ -500,8 +500,10 @@
                 });
         }
 
-        unitSelect.addEventListener('change', function() {
-            const unitNo = this.value;
+        // Section C — pilih unit: pakai jQuery .on('change') karena select2
+        // hanya me-trigger event jQuery, bukan native DOM change
+        $('#unitSelect').on('change', function() {
+            const unitNo = $(this).val();
             if (!unitNo) {
                 unitChartWrap.style.display = 'none';
                 unitChartEmpty.style.display = 'block';
