@@ -29,6 +29,27 @@ class TransferProofVerifier
                 continue;
             }
 
+            // Nomor rekening: bukti transfer bank sering me-mask rekening
+            // (hanya digit akhir yang terlihat, mis. "8000"). Bandingkan suffix.
+            if ($field === 'account_number') {
+                $extractedDigits = preg_replace('/\D/', '', (string) $extractedValue) ?? '';
+                $expectedDigits = preg_replace('/\D/', '', (string) $expectedValue) ?? '';
+                $suffixLength = strlen($extractedDigits);
+
+                $match = $suffixLength > 0
+                    && $expectedDigits !== ''
+                    && substr($expectedDigits, -$suffixLength) === $extractedDigits;
+
+                if (! $match) {
+                    $details[$field] = [
+                        'extracted' => $extractedValue,
+                        'expected' => $expectedValue,
+                    ];
+                }
+
+                continue;
+            }
+
             $normalizedExtracted = self::normalizeField($field, $extractedValue);
             $normalizedExpected = self::normalizeField($field, $expectedValue);
 

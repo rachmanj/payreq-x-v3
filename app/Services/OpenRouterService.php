@@ -173,7 +173,7 @@ PROMPT;
     public function verifyTransferProofFromImageBase64(string $base64Image, string $mimeType): array
     {
         $prompt = <<<'PROMPT'
-Kamu membaca bukti transfer bank Indonesia (foto/screenshot m-banking atau slip transfer). Ekstrak: bank_name (nama bank pengirim atau penerima yang terbaca, mis. 'BCA', 'Mandiri'), account_number (nomor rekening tujuan yang terlihat), account_name (nama pemilik rekening tujuan), amount (nominal transfer integer rupiah tanpa pemisah), transaction_date (Y-m-d|null), confidence (0-1). Return ONLY JSON: {"bank_name":..., "account_number":..., "account_name":..., "amount":..., "transaction_date":..., "confidence":...}. Jika ada field yang tidak terbaca, null.
+Kamu membaca bukti transfer bank Indonesia (foto/screenshot m-banking atau slip transfer). Ekstrak: bank_name (nama bank pengirim atau penerima yang terbaca, mis. 'BCA', 'Mandiri'), account_number (nomor rekening tujuan yang terlihat — JIKA di-mask dengan bintang, kembalikan HANYA digit terakhir yang terlihat, misal "8000" dari "*********8000"; jika penuh, kembalikan angka penuh tanpa spasi/titik), account_name (nama pemilik rekening tujuan), amount (nominal transfer integer rupiah tanpa pemisah), transaction_date (Y-m-d|null), confidence (0-1). Return ONLY JSON: {"bank_name":..., "account_number":..., "account_name":..., "amount":..., "transaction_date":..., "confidence":...}. Jika ada field yang tidak terbaca, null.
 PROMPT;
 
         $messages = [
