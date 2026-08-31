@@ -37,7 +37,7 @@ class OutgoingAttachmentController extends Controller
         ]);
 
         $mime = (string) ($attachment->mime ?? '');
-        if ($mime !== '' && str_starts_with($mime, 'image/')) {
+        if ($mime !== '' && (str_starts_with($mime, 'image/') || $mime === 'application/pdf')) {
             VerifyTransferProofJob::dispatch($attachment);
         }
 

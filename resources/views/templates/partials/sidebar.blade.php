@@ -161,6 +161,13 @@
                                     </li>
                                 @endif
                                 <li class="nav-item">
+                                    <a href="{{ route('cashier.outgoings.index') }}"
+                                        class="nav-link {{ request()->routeIs('cashier.outgoings.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Outgoing List</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a href="{{ route('verifications.index') }}"
                                         class="nav-link {{ request()->routeIs('verifications.index') ? 'active' : '' }}">
                                         <i class="far fa-circle nav-icon"></i>
