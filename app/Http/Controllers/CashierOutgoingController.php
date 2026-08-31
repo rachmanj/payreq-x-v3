@@ -68,9 +68,15 @@ class CashierOutgoingController extends Controller
                 ->orderBy('outgoing_date', 'desc')
                 ->get();
         } else {
-            // user hanya melihat outgoing project sendiri (seluruh histori)
+            // user hanya melihat outgoing project sendiri, histori 12 bulan terakhir
+            // (outgoing manual yg belum dibayar — outgoing_date null — tetap tampil)
+            $limit_date = Carbon::now()->subMonths(12)->format('Y-m-d');
             $outgoings = Outgoing::with('attachments')
                 ->where('project', auth()->user()->project)
+                ->where(function ($q) use ($limit_date) {
+                    $q->whereNull('outgoing_date')
+                        ->orWhere('outgoing_date', '>=', $limit_date);
+                })
                 ->orderBy('outgoing_date', 'desc')
                 ->get();
         }
