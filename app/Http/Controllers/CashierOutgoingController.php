@@ -104,9 +104,7 @@ class CashierOutgoingController extends Controller
                 return $outgoing->cashier->name;
             })
             ->addColumn('remarks', function ($outgoing) {
-                return $outgoing->payreq_id !== null
-                    ? $outgoing->payreq->remarks
-                    : $outgoing->description;
+                return $outgoing->payreq?->remarks;
             })
             ->addColumn('transfer_proof', function ($outgoing) {
                 if ($outgoing->payment_method !== 'transfer') {
