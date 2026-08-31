@@ -41,6 +41,7 @@ return [
         'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
         'model' => env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001'),
         'bank_statement_model' => env('OPENROUTER_BANK_STATEMENT_MODEL', 'google/gemini-3-flash-preview'),
+        'transfer_proof_model' => env('OPENROUTER_TRANSFER_PROOF_MODEL', env('OPENROUTER_BANK_STATEMENT_MODEL', 'google/gemini-3-flash-preview')),
         'help_model' => env('OPENROUTER_HELP_MODEL', env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001')),
         'notulen_model' => env('OPENROUTER_NOTULEN_MODEL', env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001')),
         'notulen_ocr_model' => env('OPENROUTER_NOTULEN_OCR_MODEL', env('OPENROUTER_BANK_STATEMENT_MODEL', 'google/gemini-3-flash-preview')),

@@ -40,6 +40,11 @@ class Outgoing extends Model
         return $this->belongsTo(CashJournal::class);
     }
 
+    public function attachments()
+    {
+        return $this->hasMany(OutgoingAttachment::class);
+    }
+
     /**
      * Get full description including remarks from payreq document
      *

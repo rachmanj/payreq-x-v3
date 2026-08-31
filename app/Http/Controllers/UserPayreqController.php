@@ -97,6 +97,7 @@ class UserPayreqController extends Controller
                 'anggaranAllocations.anggaran',
                 'anggaran',
                 'transferAccount.bank',
+                'outgoings.attachments',
             ])
             ->findOrFail($id);
 

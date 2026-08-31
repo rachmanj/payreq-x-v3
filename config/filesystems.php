@@ -62,6 +62,12 @@ return [
             'throw' => false,
         ],
 
+        'outgoing_attachments' => [
+            'driver' => 'local',
+            'root' => storage_path('app/outgoing_attachments'),
+            'throw' => false,
+        ],
+
         'notulen' => [
             'driver' => 'local',
             'root' => storage_path('app/notulen'),

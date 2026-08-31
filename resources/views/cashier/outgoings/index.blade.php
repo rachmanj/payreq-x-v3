@@ -29,6 +29,7 @@
             <th>Payment Date</th>
             <th>IDR</th>
             <th>Account</th>
+            <th>Bukti Transfer</th>
             <th></th>
           </tr>
           </thead>
@@ -78,6 +79,7 @@
         {data: 'outgoing_date'},
         {data: 'amount'},
         {data: 'account'},
+        {data: 'transfer_proof', orderable: false, searchable: false},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,

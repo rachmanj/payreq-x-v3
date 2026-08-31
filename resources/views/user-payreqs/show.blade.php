@@ -73,6 +73,26 @@
                         @endif
                         <dt class="col-sm-4">Created at</dt>
                         <dd class="col-sm-8">: {{ $payreq->created_at->format('d-M-Y H:i:s') . ' wita' }}</dd>
+                        @php
+                            $transferAttachments = $payreq->payment_method === 'transfer'
+                                ? $payreq->outgoings->flatMap(fn ($outgoing) => $outgoing->attachments)
+                                : collect();
+                        @endphp
+                        @if ($payreq->payment_method === 'transfer' && $transferAttachments->isNotEmpty())
+                            <dt class="col-sm-4">Bukti Transfer</dt>
+                            <dd class="col-sm-8">
+                                <ul class="list-unstyled mb-0">
+                                    @foreach ($transferAttachments as $attachment)
+                                        <li class="mb-1">
+                                            {!! $attachment->verification_status_badge !!}
+                                            <a href="{{ route('cashier.outgoing-attachments.download', $attachment) }}">
+                                                {{ $attachment->original_name }}
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </dd>
+                        @endif
                     </div>
                 </div>
 

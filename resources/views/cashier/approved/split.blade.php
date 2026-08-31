@@ -105,6 +105,7 @@
                                 <th>#</th>
                                 <th>Date</th>
                                 <th class="text-right">IDR</th>
+                                <th>Bukti Transfer</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -114,15 +115,71 @@
                                         <td>{{ $loop->iteration }}</td>
                                         <td>{{ date('d-M-Y', strtotime($item->outgoing_date)) }}</td>
                                         <td class="text-right">{{ number_format($item->amount, 0) }}</td>
+                                        <td>
+                                            @if ($item->payment_method === 'transfer')
+                                                @if ($item->attachments->where('verification_status', 'mismatch')->isNotEmpty())
+                                                    <div class="alert alert-warning py-1 px-2 mb-2 small">
+                                                        Ada bukti transfer yang tidak sesuai — mohon cek
+                                                    </div>
+                                                @endif
+
+                                                @forelse ($item->attachments as $attachment)
+                                                    <div class="d-flex align-items-center mb-1 flex-wrap">
+                                                        <span class="mr-1">{!! $attachment->verification_status_badge !!}</span>
+                                                        <a href="{{ route('cashier.outgoing-attachments.download', $attachment) }}"
+                                                            class="small mr-2">{{ $attachment->original_name }}</a>
+                                                        @if ((int) $attachment->created_by === (int) auth()->id())
+                                                            <form action="{{ route('cashier.outgoing-attachments.destroy', $attachment) }}"
+                                                                method="POST" class="d-inline"
+                                                                onsubmit="return confirm('Hapus bukti transfer ini?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn btn-xs btn-danger">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                        @if (in_array($attachment->verification_status, ['failed', 'pending'], true))
+                                                            <form action="{{ route('cashier.outgoing-attachments.reverify', $attachment) }}"
+                                                                method="POST" class="d-inline ml-1">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-xs btn-secondary"
+                                                                    title="Verifikasi ulang">
+                                                                    <i class="fas fa-redo"></i>
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                    </div>
+                                                @empty
+                                                    <small class="text-muted d-block mb-1">Belum ada bukti transfer</small>
+                                                @endforelse
+
+                                                <form action="{{ route('cashier.outgoing-attachments.store', $item) }}"
+                                                    method="POST" enctype="multipart/form-data"
+                                                    id="upload-transfer-proof-{{ $item->id }}" class="mt-1">
+                                                    @csrf
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="file" name="file" class="form-control form-control-sm"
+                                                            accept=".jpg,.jpeg,.png,.pdf" required>
+                                                        <div class="input-group-append">
+                                                            <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                                 <tr>
                                     <th colspan="2">Total</th>
                                     <th class="text-right">{{ number_format($outgoings->sum('amount'), 0) }}</th>
+                                    <th></th>
                                 </tr>
                             @else
                                 <tr>
-                                    <td colspan="3" class="text-center">No data</td>
+                                    <td colspan="4" class="text-center">No data</td>
                                 </tr>
                             @endif
                         </tbody>

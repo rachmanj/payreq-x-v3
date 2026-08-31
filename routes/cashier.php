@@ -10,6 +10,7 @@ use App\Http\Controllers\Cashier\CashierDokumenController;
 use App\Http\Controllers\Cashier\CashierModalController;
 use App\Http\Controllers\Cashier\CashOnHandTransactionController;
 use App\Http\Controllers\Cashier\KoranController;
+use App\Http\Controllers\Cashier\OutgoingAttachmentController;
 use App\Http\Controllers\Cashier\PcbcController;
 use App\Http\Controllers\Cashier\RealizationAttachmentController;
 use App\Http\Controllers\Cashier\SapTransactionController;
@@ -79,6 +80,13 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/', [RealizationAttachmentController::class, 'index'])->name('index');
         Route::post('/{realization}/attachments', [RealizationAttachmentController::class, 'store'])->name('attachments.store');
         Route::get('/{realization}', [RealizationAttachmentController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('outgoing-attachments')->name('outgoing-attachments.')->group(function () {
+        Route::post('/outgoings/{outgoing}', [OutgoingAttachmentController::class, 'store'])->name('store');
+        Route::get('/{attachment}/download', [OutgoingAttachmentController::class, 'download'])->name('download');
+        Route::delete('/{attachment}', [OutgoingAttachmentController::class, 'destroy'])->name('destroy');
+        Route::post('/{attachment}/reverify', [OutgoingAttachmentController::class, 'reverify'])->name('reverify');
     });
 
     Route::prefix('modal')->name('modal.')->group(function () {

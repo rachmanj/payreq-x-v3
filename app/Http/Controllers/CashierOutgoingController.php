@@ -58,10 +58,12 @@ class CashierOutgoingController extends Controller
         $limit_date = Carbon::now()->subMonths(5)->format('Y-m-d');
 
         if (array_intersect(['superadmin', 'admin'], $roles)) {
-            $outgoings = Outgoing::orderBy('outgoing_date', 'desc')
+            $outgoings = Outgoing::with('attachments')
+                ->orderBy('outgoing_date', 'desc')
                 ->get();
         } else {
-            $outgoings = Outgoing::where('cashier_id', auth()->user()->id)
+            $outgoings = Outgoing::with('attachments')
+                ->where('cashier_id', auth()->user()->id)
                 ->where('created_at', '>=', $limit_date)
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -97,9 +99,48 @@ class CashierOutgoingController extends Controller
                     return $outgoing->description;
                 }
             })
+            ->addColumn('transfer_proof', function ($outgoing) {
+                if ($outgoing->payment_method !== 'transfer') {
+                    return '<span class="text-muted">-</span>';
+                }
+
+                $attachments = $outgoing->attachments;
+                if ($attachments->isEmpty()) {
+                    return '<span class="text-muted">Belum ada</span>';
+                }
+
+                $verified = $attachments->where('verification_status', 'verified')->count();
+                $mismatch = $attachments->where('verification_status', 'mismatch')->count();
+                $pending = $attachments->where('verification_status', 'pending')->count();
+                $failed = $attachments->where('verification_status', 'failed')->count();
+
+                $summary = [];
+                if ($verified > 0) {
+                    $summary[] = $verified.' ✓';
+                }
+                if ($mismatch > 0) {
+                    $summary[] = $mismatch.' ✗';
+                }
+                if ($pending > 0) {
+                    $summary[] = $pending.' ⏳';
+                }
+                if ($failed > 0) {
+                    $summary[] = $failed.' ⚠️';
+                }
+
+                $first = $attachments->first();
+                $downloadLink = $first
+                    ? '<a href="'.route('cashier.outgoing-attachments.download', $first).'" class="btn btn-xs btn-outline-primary ml-1" title="Unduh">'
+                        .'<i class="fas fa-download"></i></a>'
+                    : '';
+
+                return '<span class="badge badge-info">'.$attachments->count().'</span> '
+                    .e(implode(', ', $summary))
+                    .$downloadLink;
+            })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.outgoings.action')
-            ->rawColumns(['action', 'amount'])
+            ->rawColumns(['action', 'amount', 'transfer_proof'])
             ->toJson();
     }
 }
