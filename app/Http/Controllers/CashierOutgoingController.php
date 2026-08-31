@@ -42,6 +42,14 @@ class CashierOutgoingController extends Controller
     {
         // update incomings table
         $outgoing = Outgoing::findOrFail($request->incoming_id);
+
+        $roles = app(ToolController::class)->getUserRoles();
+        abort_if(
+            ! array_intersect(['superadmin', 'admin'], $roles) && $outgoing->project !== auth()->user()->project,
+            403,
+            'Anda tidak memiliki akses ke outgoing project lain.'
+        );
+
         $outgoing->outgoing_date = $request->receive_date;
         $outgoing->save();
 
@@ -54,18 +62,16 @@ class CashierOutgoingController extends Controller
     public function data()
     {
         $roles = app(ToolController::class)->getUserRoles();
-        // limit date is 5 months ago
-        $limit_date = Carbon::now()->subMonths(5)->format('Y-m-d');
 
         if (array_intersect(['superadmin', 'admin'], $roles)) {
             $outgoings = Outgoing::with('attachments')
                 ->orderBy('outgoing_date', 'desc')
                 ->get();
         } else {
+            // user hanya melihat outgoing project sendiri (seluruh histori)
             $outgoings = Outgoing::with('attachments')
-                ->where('cashier_id', auth()->user()->id)
-                ->where('created_at', '>=', $limit_date)
-                ->orderBy('created_at', 'desc')
+                ->where('project', auth()->user()->project)
+                ->orderBy('outgoing_date', 'desc')
                 ->get();
         }
 

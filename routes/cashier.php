@@ -35,7 +35,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::put('/{id}/pay', [CashierApprovedController::class, 'store_pay'])->name('store_pay');
     });
 
-    Route::prefix('outgoings')->name('outgoings.')->group(function () {
+    Route::prefix('outgoings')->name('outgoings.')->middleware('permission:akses_transaksi_cashier')->group(function () {
         Route::get('/data', [CashierOutgoingController::class, 'data'])->name('data');
         Route::get('/', [CashierOutgoingController::class, 'index'])->name('index');
         Route::get('/create', [CashierOutgoingController::class, 'create'])->name('create');
