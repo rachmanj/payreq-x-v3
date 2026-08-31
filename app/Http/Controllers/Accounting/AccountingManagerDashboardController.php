@@ -173,11 +173,11 @@ class AccountingManagerDashboardController extends Controller
         }
 
         $typeConfig = [
-            'fuel' => ['label' => 'Fuel', 'color' => '#0d9488'],
-            'service' => ['label' => 'Service', 'color' => '#10b981'],
+            'fuel' => ['label' => 'Fuel', 'color' => '#2563eb'],
+            'service' => ['label' => 'Service', 'color' => '#16a34a'],
             'tax' => ['label' => 'Tax', 'color' => '#f59e0b'],
-            'other' => ['label' => 'Other', 'color' => '#6366f1'],
-            'lainnya' => ['label' => 'Lainnya', 'color' => '#94a3b8'],
+            'other' => ['label' => 'Other', 'color' => '#dc2626'],
+            'lainnya' => ['label' => 'Lainnya', 'color' => '#6b7280'],
         ];
 
         $datasets = $rows->pluck('type')
