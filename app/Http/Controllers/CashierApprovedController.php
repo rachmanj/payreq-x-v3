@@ -25,9 +25,18 @@ class CashierApprovedController extends Controller
         $request['payreq_id'] = $id;
         $request['amount'] = $payreq->amount;
         $request['cashier_id'] = $cashier->id;
-        $request['account_id'] = Account::where('type', 'cash')->where('project', $cashier->project)->first()->id;
+        if ($payreq->payment_method === 'transfer') {
+            $account = Account::where('type', 'bank')->where('project', $cashier->project)->first()
+                ?? Account::where('type', 'cash')->where('project', $cashier->project)->first();
+        } else {
+            $account = Account::where('type', 'cash')->where('project', $cashier->project)->first();
+        }
+
+        $request['account_id'] = $account->id;
         $request['project'] = $cashier->project;
         $request['outgoing_date'] = now();
+        $request['payment_method'] = $payreq->payment_method ?? 'cash';
+        $request['transfer_account_id'] = $payreq->transfer_account_id;
 
         $outgoing = app(OutgoingController::class)->store($request);
 
@@ -44,12 +53,29 @@ class CashierApprovedController extends Controller
 
     public function pay($id)
     {
-        $payreq = Payreq::findOrfail($id);
+        $payreq = Payreq::with('transferAccount')->findOrfail($id);
         $outgoings = Outgoing::where('payreq_id', $id)->get();
         $cashier = auth()->user();
-        $accounts = Account::where('type', 'cash')
-            ->where('project', $cashier->project)
-            ->get();
+
+        if ($payreq->payment_method === 'transfer') {
+            $accounts = Account::where('type', 'bank')
+                ->where('project', $cashier->project)
+                ->get();
+            if ($accounts->isEmpty()) {
+                $accounts = Account::where('type', 'cash')
+                    ->where('project', $cashier->project)
+                    ->get();
+            }
+        } else {
+            $accounts = Account::where('type', 'cash')
+                ->where('project', $cashier->project)
+                ->get();
+            if ($accounts->isEmpty()) {
+                $accounts = Account::where('type', 'bank')
+                    ->where('project', $cashier->project)
+                    ->get();
+            }
+        }
 
         $available_amount = $payreq->amount - $outgoings->sum('amount');
 
@@ -81,6 +107,8 @@ class CashierApprovedController extends Controller
         $outgoing->account_id = $request->account_id;
         $outgoing->project = auth()->user()->project;
         $outgoing->outgoing_date = $request->date;
+        $outgoing->payment_method = $payreq->payment_method ?? 'cash';
+        $outgoing->transfer_account_id = $payreq->transfer_account_id;
         $outgoing->save();
 
         // create transaksi
@@ -118,17 +146,20 @@ class CashierApprovedController extends Controller
         $status_includes = ['approved', 'split'];
 
         if (array_intersect(['superadmin', 'admin'], $roles)) {
-            $approveds = Payreq::whereIn('status', $status_includes)
+            $approveds = Payreq::with('transferAccount')
+                ->whereIn('status', $status_includes)
                 ->orderBy('approved_at', 'asc')
                 ->get();
         } elseif (in_array('cashier', $roles)) {
             $project_includes = ['000H', 'APS'];
-            $approveds = Payreq::whereIn('status', $status_includes)
+            $approveds = Payreq::with('transferAccount')
+                ->whereIn('status', $status_includes)
                 ->whereIn('project', $project_includes)
                 ->orderBy('approved_at', 'asc')
                 ->get();
         } else {
-            $approveds = Payreq::whereIn('status', $status_includes)
+            $approveds = Payreq::with('transferAccount')
+                ->whereIn('status', $status_includes)
                 ->where('project', auth()->user()->project)
                 ->orderBy('approved_at', 'asc')
                 ->get();
@@ -167,9 +198,17 @@ class CashierApprovedController extends Controller
 
                 return number_format($approved->amount, 2);
             })
+            ->addColumn('payment_method', function ($approved) {
+                $badge = $approved->payment_method_badge;
+                if ($approved->payment_method === 'transfer' && $approved->transferAccount) {
+                    $badge .= '<div class="small text-muted">'.$approved->transferAccount->displayLabel.'</div>';
+                }
+
+                return $badge;
+            })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.approved.action')
-            ->rawColumns(['action', 'amount', 'nomor'])
+            ->rawColumns(['action', 'amount', 'nomor', 'payment_method'])
             ->toJson();
     }
 

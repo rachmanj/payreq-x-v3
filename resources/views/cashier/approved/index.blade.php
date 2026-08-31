@@ -26,6 +26,7 @@
             <th>Type</th>
             <th>Aprvd at (wita)</th>
             <th>IDR</th>
+            <th>Metode</th>
             <th>Days</th>
             <th></th>
           </tr>
@@ -76,13 +77,14 @@
         {data: 'type'},
         {data: 'approved_at'},
         {data: 'amount'},
+        {data: 'payment_method', orderable: false, searchable: false},
         {data: 'days'},
         {data: 'action', orderable: false, searchable: false},
       ],
       fixedHeader: true,
       columnDefs: [
               {
-                "targets": [0, 5, 6],
+                "targets": [0, 5, 7],
                 "className": "text-right"
               },
               {

@@ -30,25 +30,30 @@ class Outgoing extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function transferAccount()
+    {
+        return $this->belongsTo(TransferAccount::class);
+    }
+
     public function cash_journal()
     {
         return $this->belongsTo(CashJournal::class);
     }
-    
+
     /**
      * Get full description including remarks from payreq document
-     * 
+     *
      * @return string
      */
     public function getFullDescriptionAttribute()
     {
         $description = $this->description ?? '';
         $payreqRemarks = $this->payreq->remarks ?? '';
-        
-        if (!empty($payreqRemarks) && !str_contains($description, $payreqRemarks)) {
-            return trim($description . ' - ' . $payreqRemarks);
+
+        if (! empty($payreqRemarks) && ! str_contains($description, $payreqRemarks)) {
+            return trim($description.' - '.$payreqRemarks);
         }
-        
+
         return $description;
     }
 }

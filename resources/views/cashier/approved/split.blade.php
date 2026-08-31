@@ -20,7 +20,36 @@
                                 class="fas fa-arrow-left"></i> Back</a>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('cashier.approveds.store_pay', $payreq->id) }}" method="POST" id="split-update">
+                    <div class="card card-outline card-secondary mb-3">
+                        <div class="card-header py-2">
+                            <h6 class="card-title mb-0">Metode Pembayaran</h6>
+                        </div>
+                        <div class="card-body py-2">
+                            {!! $payreq->payment_method_badge !!}
+                            @if ($payreq->payment_method === 'transfer')
+                                <div class="alert alert-info py-2 mt-2 mb-0">
+                                    <strong>Tujuan Transfer:</strong><br>
+                                    {{ $payreq->transferAccount->displayLabel ?? 'Akun transfer tidak ditemukan' }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    @php
+                        if ($payreq->payment_method === 'transfer' && $payreq->transferAccount) {
+                            $saveConfirm = "return confirm('Transfer ke: {$payreq->transferAccount->displayLabel} - Rp " . number_format($available_amount, 0) . "?')";
+                        } elseif ($payreq->payment_method === 'transfer') {
+                            $saveConfirm = "return confirm('Transfer (akun tidak ditemukan) - Rp " . number_format($available_amount, 0) . "?')";
+                        } else {
+                            $saveConfirm = "return confirm('Bayar payreq ini?')";
+                        }
+                        $sourceAccountLabel = $payreq->payment_method === 'transfer'
+                            ? 'Akun sumber: Rekening Bank'
+                            : 'Akun sumber: Kas';
+                    @endphp
+
+                    <form action="{{ route('cashier.approveds.store_pay', $payreq->id) }}" method="POST" id="split-update"
+                        onsubmit="{{ $saveConfirm }}">
                         @csrf @method('PUT')
 
                         <div class="form-group">
@@ -29,6 +58,7 @@
                         </div>
 
                         <div class="form-group">
+                            <small class="text-muted d-block mb-1">{{ $sourceAccountLabel }}</small>
                             <label for="account_id">Account No</label>
                             <select name="account_id" id="account_id" class="form-control">
                                 {{-- <option value="">-- select account no --</option> --}}
