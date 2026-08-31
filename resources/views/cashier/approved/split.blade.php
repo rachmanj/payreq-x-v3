@@ -132,8 +132,7 @@
                                                                 class="small mr-2">{{ $attachment->original_name }}</a>
                                                             @if ((int) $attachment->created_by === (int) auth()->id())
                                                                 <form action="{{ route('cashier.outgoing-attachments.destroy', $attachment) }}"
-                                                                    method="POST" class="vj-action-item-form"
-                                                                    onsubmit="return confirm('Hapus bukti transfer ini?')">
+                                                                    method="POST" class="vj-action-item-form js-delete-attachment">
                                                                     @csrf
                                                                     @method('DELETE')
                                                                     <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel">
@@ -216,6 +215,26 @@
                     confirmButtonText: 'Ya, Bayar',
                     cancelButtonText: 'Batal',
                     confirmVariant: 'success',
+                    reverseButtons: true,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+
+            // Konfirmasi hapus bukti transfer via SweetAlert
+            $(document).on('submit', '.js-delete-attachment', function (e) {
+                e.preventDefault();
+                const form = this;
+                VjSwal.fire({
+                    title: 'Hapus Bukti Transfer',
+                    html: '<p>Hapus file bukti transfer ini?</p>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Hapus',
+                    cancelButtonText: 'Batal',
+                    confirmVariant: 'danger',
                     reverseButtons: true,
                 }).then((result) => {
                     if (result.isConfirmed) {

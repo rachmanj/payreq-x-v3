@@ -107,4 +107,27 @@
     })
   }) 
 </script>
+@include('partials.vj-soft-ui-swal')
+<script>
+  // Konfirmasi tombol auto bayar (DataTables rows) via SweetAlert
+  $(document).on('click', '.js-auto-pay', function (e) {
+    e.preventDefault();
+    const $btn = $(this);
+    const form = this.closest('form');
+    VjSwal.fire({
+      title: $btn.data('title'),
+      html: '<p>' + $btn.data('text') + '</p>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Bayar',
+      cancelButtonText: 'Batal',
+      confirmVariant: 'success',
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.submit();
+      }
+    });
+  });
+</script>
 @endsection
