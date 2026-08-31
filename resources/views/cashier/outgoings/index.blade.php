@@ -30,7 +30,7 @@
             <th>Payreq No</th>
             <th>Payment Date</th>
             <th>IDR</th>
-            <th>Account</th>
+            <th>Remarks</th>
             <th>Bukti Transfer</th>
             <th></th>
           </tr>
@@ -82,7 +82,7 @@
         {data: 'payreq_no'},
         {data: 'outgoing_date'},
         {data: 'amount'},
-        {data: 'account'},
+        {data: 'remarks'},
         {data: 'transfer_proof', orderable: false, searchable: false},
         {data: 'action', orderable: false, searchable: false},
       ],

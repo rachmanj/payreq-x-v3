@@ -103,13 +103,10 @@ class CashierOutgoingController extends Controller
             ->addColumn('cashier', function ($outgoing) {
                 return $outgoing->cashier->name;
             })
-            ->addColumn('account', function ($outgoing) {
-                // if account id not null
-                if ($outgoing->account_id) {
-                    return $outgoing->account->account_number.' - '.$outgoing->account->account_name;
-                } else {
-                    return $outgoing->description;
-                }
+            ->addColumn('remarks', function ($outgoing) {
+                return $outgoing->payreq_id !== null
+                    ? $outgoing->payreq->remarks
+                    : $outgoing->description;
             })
             ->addColumn('transfer_proof', function ($outgoing) {
                 if ($outgoing->payment_method !== 'transfer') {
