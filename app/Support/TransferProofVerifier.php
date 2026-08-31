@@ -86,8 +86,11 @@ class TransferProofVerifier
 
         if ($field === 'account_name') {
             $normalized = strtolower(trim((string) $value));
+            // buang tanda baca (apostrof, titik, koma) — "FA'IZAH. R" == "faizah r"
+            $normalized = preg_replace('/[^a-z0-9\s]/', '', $normalized) ?? '';
+            $normalized = preg_replace('/\s+/', ' ', $normalized) ?? '';
 
-            return preg_replace('/\s+/', ' ', $normalized) ?? '';
+            return trim($normalized);
         }
 
         return $value;

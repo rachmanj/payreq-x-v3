@@ -39,10 +39,13 @@ class VerifyTransferProofJob implements ShouldQueue
             }
 
             $mime = (string) ($this->attachment->mime ?? '');
-            if ($mime !== '' && ! str_starts_with($mime, 'image/')) {
+            $isImage = $mime !== '' && str_starts_with($mime, 'image/');
+            $isPdf = $mime === 'application/pdf' || str_ends_with(strtolower($this->attachment->original_name), '.pdf');
+
+            if (! $isImage && ! $isPdf) {
                 $this->attachment->update([
                     'verification_status' => 'failed',
-                    'verification_result' => ['error' => 'PDF tidak diverifikasi otomatis'],
+                    'verification_result' => ['error' => 'Tipe file tidak didukung untuk verifikasi otomatis'],
                 ]);
 
                 return;
@@ -61,7 +64,7 @@ class VerifyTransferProofJob implements ShouldQueue
             $base64 = base64_encode($disk->get($this->attachment->stored_path));
             $extracted = app(OpenRouterService::class)->verifyTransferProofFromImageBase64(
                 $base64,
-                $mime !== '' ? $mime : 'image/jpeg'
+                $mime !== '' ? $mime : ($isPdf ? 'application/pdf' : 'image/jpeg')
             );
 
             $expected = [
