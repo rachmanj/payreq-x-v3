@@ -6,12 +6,15 @@ use App\Http\Controllers\ApprovalPlanController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\DocumentNumberController;
 use App\Http\Requests\UserPayreq\ProcessAdvancePayreqRequest;
+use App\Models\Bank;
 use App\Models\Payreq;
 use App\Models\PayreqAnggaranAllocation;
 use App\Models\Realization;
+use App\Models\TransferAccount;
 use App\Services\LotService;
 use App\Services\PayreqBudgetSubmitValidator;
 use App\Support\PayreqBudgetLinkMode;
+use App\Support\PayreqPaymentMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,18 +29,22 @@ class PayreqAdvanceController extends Controller
     {
         $payreq_no = app(DocumentNumberController::class)->generate_draft_document_number(auth()->user()->project);
         $rabs = app(UserAnggaranController::class)->getAvailableRabs();
+        $transferAccounts = TransferAccount::where('user_id', Auth::id())->with('bank')->orderBy('label')->get();
+        $banks = Bank::orderBy('name')->get();
 
-        return view('user-payreqs.advance.create', compact(['payreq_no', 'rabs']));
+        return view('user-payreqs.advance.create', compact(['payreq_no', 'rabs', 'transferAccounts', 'banks']));
     }
 
     public function edit($id)
     {
-        $payreq = Payreq::with(['anggaranAllocations'])
+        $payreq = Payreq::with(['anggaranAllocations', 'transferAccount.bank'])
             ->where('user_id', Auth::id())
             ->findOrFail($id);
         $rabs = app(UserAnggaranController::class)->getAvailableRabs();
+        $transferAccounts = TransferAccount::where('user_id', Auth::id())->with('bank')->orderBy('label')->get();
+        $banks = Bank::orderBy('name')->get();
 
-        return view('user-payreqs.advance.edit', compact(['payreq', 'rabs']));
+        return view('user-payreqs.advance.edit', compact(['payreq', 'rabs', 'transferAccounts', 'banks']));
     }
 
     public function proses(ProcessAdvancePayreqRequest $request): \Illuminate\Http\RedirectResponse
@@ -118,6 +125,7 @@ class PayreqAdvanceController extends Controller
             'budget_link_mode' => $mode,
             'lot_no' => $validated['lot_no'] ?? null,
             'user_id' => (int) $validated['employee_id'],
+            ...PayreqPaymentMethod::normalizedAttributes($validated),
         ];
     }
 

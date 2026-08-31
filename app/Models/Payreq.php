@@ -107,4 +107,32 @@ class Payreq extends Model
     {
         return $this->hasOne(PayreqMigrasi::class);
     }
+
+    public function transferAccount()
+    {
+        return $this->belongsTo(TransferAccount::class);
+    }
+
+    public function getPaymentMethodLabelAttribute(): string
+    {
+        return match ($this->payment_method) {
+            'transfer' => 'Transfer',
+            'cash' => 'Cash',
+            default => '-',
+        };
+    }
+
+    public function getPaymentMethodBadgeAttribute(): string
+    {
+        $tooltip = '';
+        if ($this->payment_method === 'transfer' && $this->transferAccount) {
+            $tooltip = ' title="'.e($this->transferAccount->displayLabel).'"';
+        }
+
+        return match ($this->payment_method) {
+            'transfer' => '<span class="badge badge-info"'.$tooltip.'>Transfer</span>',
+            'cash' => '<span class="badge badge-secondary">Cash</span>',
+            default => '<span class="badge badge-light">-</span>',
+        };
+    }
 }

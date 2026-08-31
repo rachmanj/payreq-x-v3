@@ -59,6 +59,7 @@
                                     <th>#</th>
                                     <th>Payreq No</th>
                                     <th>Type</th>
+                                    <th>Metode Bayar</th>
                                     <th>Status</th>
                                     <th>Date</th>
                                     <th>IDR</th>
@@ -128,6 +129,11 @@
                     },
                     {
                         data: 'type'
+                    },
+                    {
+                        data: 'payment_method',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'status'

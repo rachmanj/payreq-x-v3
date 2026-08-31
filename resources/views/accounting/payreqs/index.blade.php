@@ -37,6 +37,7 @@
                                     <th width="10%">RealzNo</th>
                                     <th width="10%">CreatedD</th>
                                     <th width="10%">Type</th>
+                                    <th width="8%">Metode Bayar</th>
                                     <th width="10%">Status</th>
                                     <th width="10%">IDR</th>
                                     <th width="10%"></th>
@@ -44,7 +45,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="10" class="text-center">Loading data...</td>
+                                    <td colspan="11" class="text-center">Loading data...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -145,6 +146,11 @@
                         },
                         {
                             data: 'type'
+                        },
+                        {
+                            data: 'payment_method',
+                            orderable: false,
+                            searchable: false
                         },
                         {
                             data: 'status'

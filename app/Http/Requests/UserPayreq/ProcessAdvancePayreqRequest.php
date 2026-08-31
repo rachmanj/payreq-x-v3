@@ -4,6 +4,7 @@ namespace App\Http\Requests\UserPayreq;
 
 use App\Models\Payreq;
 use App\Support\PayreqBudgetLinkMode;
+use App\Support\PayreqPaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -50,6 +51,10 @@ class ProcessAdvancePayreqRequest extends FormRequest
             $normalized[] = $row;
         }
         $this->merge(['allocations' => $normalized]);
+
+        if (! $this->filled('payment_method')) {
+            $this->merge(['payment_method' => 'cash']);
+        }
     }
 
     /**
@@ -69,6 +74,8 @@ class ProcessAdvancePayreqRequest extends FormRequest
             'lot_no' => ['nullable', 'string', 'max:255'],
             'rab_id' => ['nullable'],
         ];
+
+        $rules = array_merge($rules, PayreqPaymentMethod::rules());
 
         if ($this->input('budget_link_mode') === PayreqBudgetLinkMode::MULTI_ALLOCATION) {
             $rules['amount'] = ['required', 'numeric', 'min:0.01'];
@@ -118,6 +125,12 @@ class ProcessAdvancePayreqRequest extends FormRequest
                     $validator->errors()->add('rab_id', 'RAB wajib diisi untuk submit.');
                 }
             }
+
+            PayreqPaymentMethod::assertTransferAccountOwnership(
+                $validator,
+                $this->input('payment_method') === 'transfer' ? (int) $this->input('transfer_account_id') : null,
+                (int) Auth::id()
+            );
 
             if ($this->input('budget_link_mode') !== PayreqBudgetLinkMode::MULTI_ALLOCATION) {
                 return;

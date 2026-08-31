@@ -358,6 +358,8 @@
                             @enderror
                         </div>
 
+                        @include('user-payreqs.partials.payment-method', ['paymentEditable' => true])
+
                         @php
                             $allocationRowsOld = old('allocations');
                             if (! is_array($allocationRowsOld)) {
@@ -924,4 +926,5 @@
             });
         });
     </script>
+    @include('user-payreqs.partials.payment-method-scripts')
 @endsection

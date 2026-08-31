@@ -66,6 +66,8 @@
                                 @enderror
                             </div>
 
+                            @include('user-payreqs.partials.payment-method', ['paymentEditable' => true])
+
                             <div class="vj-form-panel">
                                 <div class="form-group mb-0">
                                     <label for="rab_id">RAB No</label>
@@ -116,4 +118,5 @@
             })
         })
     </script>
+    @include('user-payreqs.partials.payment-method-scripts')
 @endsection

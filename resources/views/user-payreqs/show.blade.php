@@ -27,6 +27,21 @@
                         <dd class="col-sm-8">: IDR {{ number_format($payreq->amount, 2) }}</dd>
                         <dt class="col-sm-4">Purpose</dt>
                         <dd class="col-sm-8">: {{ $payreq->remarks }}</dd>
+                        @if (in_array($payreq->type, ['advance', 'reimburse'], true))
+                            <dt class="col-sm-4">Metode Pembayaran</dt>
+                            <dd class="col-sm-8">:
+                                @if ($payreq->payment_method === 'transfer' && $payreq->transferAccount)
+                                    Transfer — {{ $payreq->transferAccount->label }}
+                                    ({{ $payreq->transferAccount->bank->name ?? 'n/a' }},
+                                    {{ $payreq->transferAccount->account_number }},
+                                    a/n {{ $payreq->transferAccount->account_name }})
+                                @elseif ($payreq->payment_method === 'cash')
+                                    Cash
+                                @else
+                                    -
+                                @endif
+                            </dd>
+                        @endif
                         <dt class="col-sm-4">LOT No</dt>
                         <dd class="col-sm-8">: {{ $payreq->lot_no ?? ' - ' }}
                             @if ($payreq->lot_no)

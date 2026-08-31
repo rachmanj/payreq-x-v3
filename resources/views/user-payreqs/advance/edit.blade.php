@@ -396,6 +396,10 @@
                             @enderror
                         </div>
 
+                        @include('user-payreqs.partials.payment-method', [
+                            'paymentEditable' => in_array($payreq->status, ['draft', 'revise'], true),
+                        ])
+
                         <div class="form-group">
                             <label for="amount">Amount</label>
                             <input type="text" name="amount" id="amount" class="form-control"
@@ -855,4 +859,5 @@
             });
         });
     </script>
+    @include('user-payreqs.partials.payment-method-scripts')
 @endsection

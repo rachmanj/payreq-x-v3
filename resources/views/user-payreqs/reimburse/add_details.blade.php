@@ -102,6 +102,23 @@
                             </div>
                         </div>
                     </div>
+
+                    @php
+                        $payreq->loadMissing('transferAccount.bank');
+                    @endphp
+                    @include('user-payreqs.partials.payment-method', [
+                        'paymentEditable' => in_array($payreq->status, ['draft', 'revise'], true),
+                    ])
+
+                    @if (in_array($payreq->status, ['draft', 'revise'], true))
+                        @cannot('rab_select')
+                            <button type="button" id="update_payment_method"
+                                class="btn btn-sm btn-outline-primary mb-3">
+                                Simpan Metode Pembayaran
+                            </button>
+                        @endcannot
+                    @endif
+
                     @can('rab_select')
                         <div class="row">
                             <div class="col-12">
@@ -1021,6 +1038,8 @@
                 var rab_id = $('#rab_id').val();
                 var remarks = $('#remarks').val();
                 var payreq_id = '{{ $payreq->id }}';
+                var payment_method = $('input[name="payment_method"]:checked').val() || 'cash';
+                var transfer_account_id = $('#transfer_account_id').val();
 
                 $.ajax({
                     url: '{{ route('user-payreqs.reimburse.update_rab') }}',
@@ -1030,6 +1049,8 @@
                         rab_id: rab_id,
                         remarks: remarks,
                         payreq_id: payreq_id,
+                        payment_method: payment_method,
+                        transfer_account_id: transfer_account_id,
                     },
                     success: function(response) {
                         $button.prop('disabled', false).html('update');
@@ -1043,6 +1064,36 @@
                         $button.prop('disabled', false).html('update');
                         showAlert('Error updating RAB: ' + (xhr.responseJSON?.message ||
                             'An error occurred'), 'error');
+                    }
+                });
+            });
+
+            $('#update_payment_method').click(function() {
+                var $button = $(this);
+                $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+                $.ajax({
+                    url: '{{ route('user-payreqs.reimburse.update_rab') }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        rab_id: '{{ $payreq->rab_id }}',
+                        remarks: $('#remarks').val(),
+                        payreq_id: '{{ $payreq->id }}',
+                        payment_method: $('input[name="payment_method"]:checked').val() || 'cash',
+                        transfer_account_id: $('#transfer_account_id').val(),
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).html('Simpan Metode Pembayaran');
+                        if (response.status == 'success') {
+                            showAlert('Metode pembayaran berhasil disimpan', 'success');
+                        } else {
+                            showAlert('Gagal menyimpan: ' + response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        $button.prop('disabled', false).html('Simpan Metode Pembayaran');
+                        showAlert('Gagal menyimpan metode pembayaran', 'error');
                     }
                 });
             });
@@ -1266,4 +1317,5 @@
             attachEventHandlers();
         });
     </script>
+    @include('user-payreqs.partials.payment-method-scripts')
 @endsection

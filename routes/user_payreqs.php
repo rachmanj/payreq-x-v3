@@ -79,6 +79,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
 
     // PAYREQS INDEX
     Route::get('/data', [UserPayreqController::class, 'data'])->name('data');
+    Route::post('/transfer-accounts', [UserPayreqController::class, 'storeTransferAccount'])->name('transfer_accounts.store');
     Route::get('/overdue-documents', [UserPayreqController::class, 'overdueDocuments'])->name('overdue-documents.index');
     Route::get('/', [UserPayreqController::class, 'index'])->name('index');
     Route::get('/{id}', [UserPayreqController::class, 'show'])->name('show');

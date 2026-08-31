@@ -7,6 +7,8 @@ use App\Models\Outgoing;
 use App\Models\OverdueExtension;
 use App\Models\Payreq;
 use App\Models\Realization;
+use App\Models\TransferAccount;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class UserPayreqController extends Controller
@@ -94,6 +96,7 @@ class UserPayreqController extends Controller
             ->with([
                 'anggaranAllocations.anggaran',
                 'anggaran',
+                'transferAccount.bank',
             ])
             ->findOrFail($id);
 
@@ -159,6 +162,7 @@ class UserPayreqController extends Controller
                 'department',
                 'anggaran',
                 'anggaranAllocations.anggaran',
+                'transferAccount.bank',
             ])
             ->findOrFail($id);
         $terbilang = app(ToolController::class)->terbilang($payreq->amount);
@@ -239,14 +243,14 @@ class UserPayreqController extends Controller
         $status_include = ['draft', 'submitted', 'approved', 'revise', 'split', 'paid', 'rejected', 'realization'];
 
         if (in_array('superadmin', $userRoles)) {
-            $payreqs = Payreq::with('realization')
+            $payreqs = Payreq::with(['realization', 'transferAccount.bank'])
                 ->whereIn('status', $status_include)
                 ->orderBy('status', 'asc')
                 ->orderBy('approved_at', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
-            $payreqs = Payreq::with('realization')
+            $payreqs = Payreq::with(['realization', 'transferAccount.bank'])
                 ->where('user_id', auth()->user()->id)
                 ->whereIn('status', $status_include)
                 ->orderBy('status', 'asc')
@@ -277,6 +281,13 @@ class UserPayreqController extends Controller
                 };
 
                 return '<span class="vj-chip '.$chipClass.'">'.ucfirst($payreq->type).'</span>';
+            })
+            ->addColumn('payment_method', function ($payreq) {
+                if (! in_array($payreq->type, ['advance', 'reimburse'], true)) {
+                    return '-';
+                }
+
+                return $payreq->payment_method_badge;
             })
             ->editColumn('status', function ($payreq) {
                 $chips = [];
@@ -357,7 +368,7 @@ class UserPayreqController extends Controller
                 return 'Submit at '.$submit_date->format('d-M-Y H:i').' wita';
             })
             ->addColumn('action', 'user-payreqs.action')
-            ->rawColumns(['action', 'nomor', 'type', 'status'])
+            ->rawColumns(['action', 'nomor', 'type', 'status', 'payment_method'])
             ->addIndexColumn()
             ->toJson();
     }
@@ -396,5 +407,31 @@ class UserPayreqController extends Controller
         ];
 
         return $result;
+    }
+
+    public function storeTransferAccount(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'label' => 'required|string|max:255',
+            'bank_id' => 'required|integer|exists:banks,id',
+            'account_number' => 'required|string|max:50',
+            'account_name' => 'required|string|max:255',
+        ]);
+
+        $account = TransferAccount::create([
+            'user_id' => auth()->id(),
+            'bank_id' => $validated['bank_id'],
+            'account_number' => $validated['account_number'],
+            'account_name' => $validated['account_name'],
+            'label' => $validated['label'],
+        ]);
+
+        $account->load('bank');
+
+        return response()->json([
+            'status' => 'success',
+            'id' => $account->id,
+            'label' => $account->displayLabel,
+        ]);
     }
 }

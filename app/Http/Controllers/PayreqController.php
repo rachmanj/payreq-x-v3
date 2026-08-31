@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Payreq;
 use App\Support\PayreqBudgetLinkMode;
+use App\Support\PayreqPaymentMethod;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -14,6 +15,11 @@ class PayreqController extends Controller
         $budgetLinkMode = (($data->payreq_type ?? null) === 'advance')
             ? ($data->budget_link_mode ?? PayreqBudgetLinkMode::LEGACY)
             : null;
+
+        $paymentAttrs = PayreqPaymentMethod::normalizedAttributes([
+            'payment_method' => $data->payment_method ?? 'cash',
+            'transfer_account_id' => $data->transfer_account_id ?? null,
+        ]);
 
         $payreq = Payreq::create([
             'remarks' => $data->remarks,
@@ -27,6 +33,8 @@ class PayreqController extends Controller
             'budget_link_mode' => $budgetLinkMode,
             'lot_no' => $data->lot_no,
             'user_id' => $data->employee_id,
+            'payment_method' => $paymentAttrs['payment_method'],
+            'transfer_account_id' => $paymentAttrs['transfer_account_id'],
         ]);
 
         return $payreq;
