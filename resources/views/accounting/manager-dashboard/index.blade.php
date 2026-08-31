@@ -220,8 +220,8 @@
                     <h3 class="card-title">Section C — Biaya per Unit</h3>
                     <small class="text-muted">Monthly sum per tipe expense (12 bulan terakhir)</small>
                     <div style="width: 340px;">
-                        <select id="unitSelect" class="form-control form-control-sm">
-                            <option value="">-- Pilih Unit --</option>
+                        <select id="unitSelect" class="form-control form-control-sm select2bs4" data-placeholder="Pilih Unit">
+                            <option value=""></option>
                             @foreach ($units as $u)
                                 <option value="{{ $u->unit_no }}">{{ $u->unit_no }}{{ $u->unit_model ? ' — '.$u->unit_model : '' }}{{ $u->unit_nopol ? ' ('.$u->unit_nopol.')' : '' }}</option>
                             @endforeach
@@ -263,12 +263,15 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
 @endsection
 
 @section('scripts')
     <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/chart.js/Chart.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
     <script>
         $(function() {
             const month = @json($month);
@@ -437,6 +440,14 @@
         const unitChartWrap = document.getElementById('unitChartWrap');
         const unitChartEmpty = document.getElementById('unitChartEmpty');
         let unitChart = null;
+
+        // Select2 bootstrap4
+        $('#unitSelect').select2({
+            theme: 'bootstrap4',
+            placeholder: 'Pilih Unit',
+            allowClear: true,
+            width: '100%',
+        });
 
         function loadUnitChart(unitNo) {
             fetch(@json(url('/accounting/manager-dashboard/unit')) + '/' + encodeURIComponent(unitNo) + '/expense')
