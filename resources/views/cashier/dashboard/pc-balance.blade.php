@@ -1,7 +1,7 @@
 <div class="col-12">
-    <div class="card card-info">
-        <div class="card-header">
-            <h3 class="card-title">PC Balance Check</h3>
+    <div class="card card-outline card-primary">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <h3 class="card-title mb-0"><i class="fas fa-calculator"></i> PC Balance Check</h3>
         </div>
       <div class="card-body">
         <table class="table table-striped">

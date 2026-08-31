@@ -9,15 +9,20 @@
 @endsection
 
 @section('content')
+    <div class="vj-show">
     <div class="row">
         <div class="col-12">
 
-            <div class="card">
-                <div class="card-header">
-                    <a href="#" style="color: black">NOT RECEIVE YET</a> |
-                    <a href="{{ route('cashier.incomings.received.index') }}">Has Received</a>
-                    <a href="{{ route('cashier.incomings.create') }}" class="btn btn-sm btn-success float-right"> New Incoming
-                        Payment</a>
+            <div class="card card-outline card-primary">
+                <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <h3 class="card-title mb-0"><i class="fas fa-arrow-circle-down"></i> Incoming Payment</h3>
+                        <span>
+                            <a href="#" style="color: black">NOT RECEIVE YET</a> |
+                            <a href="{{ route('cashier.incomings.received.index') }}">Has Received</a>
+                        </span>
+                    </div>
+                    <a href="{{ route('cashier.incomings.create') }}" class="vj-btn vj-btn-success"><i class="fas fa-plus"></i> New Incoming Payment</a>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
@@ -43,9 +48,11 @@
         <!-- /.col -->
     </div>
     <!-- /.row -->
+    </div>
 @endsection
 
 @section('styles')
+    @include('partials.vj-soft-ui-styles')
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">

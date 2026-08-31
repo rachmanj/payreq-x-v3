@@ -134,7 +134,7 @@ class CashierOutgoingController extends Controller
                         .'<i class="fas fa-download"></i></a>'
                     : '';
 
-                return '<span class="badge badge-info">'.$attachments->count().'</span> '
+                return '<span class="vj-chip vj-chip-info">'.$attachments->count().'</span> '
                     .e(implode(', ', $summary))
                     .$downloadLink;
             })

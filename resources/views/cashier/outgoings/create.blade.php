@@ -9,13 +9,14 @@
 @endsection
 
 @section('content')
+<div class="vj-show">
 <div class="row">
     <div class="col-12">
 
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">New Outgoing Payment</h3>
-          <a href="{{ route('cashier.outgoings.index') }}" class="btn btn-sm btn-primary float-right"><i class="fas fa-arrow-left"></i> Back</a>
+      <div class="card card-outline card-primary">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <h3 class="card-title mb-0"><i class="fas fa-plus-circle"></i> New Outgoing Payment</h3>
+          <a href="{{ route('cashier.outgoings.index') }}" class="vj-action-item vj-action-back"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
         <div class="card-body">
           <form action="{{ route('cashier.outgoings.store') }}" method="POST">
@@ -79,7 +80,7 @@
             <div class="card-footer">
               <div class="row">
                 <div class="col-6">
-                  <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-save"></i> Save</button>
+                  <button type="submit" class="vj-btn vj-btn-primary"><i class="fas fa-save"></i> Save</button>
                 </div>
               </div>
             </div>
@@ -89,4 +90,9 @@
       </div>
     </div>
   </div>
+</div>
+@endsection
+
+@section('styles')
+    @include('partials.vj-soft-ui-styles')
 @endsection

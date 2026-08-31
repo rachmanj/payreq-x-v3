@@ -1,12 +1,14 @@
 {{-- button call modal to update --}}
 
-<form action="{{ route('cashier.outgoings.destroy', $model->id) }}" class="d-inline" method="POST">
+<div class="vj-inline-actions">
+<form action="{{ route('cashier.outgoings.destroy', $model->id) }}" class="vj-action-item-form" method="POST">
     @csrf @method('DELETE')
     @if($model->payreq_id == null && $model->outgoing_date == null)
-        <button type="button" class="btn btn-xs btn-success" data-toggle="modal" data-target="#outgoing-{{ $model->id }}">payment</button>
-        <button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('Are you sure you want delete this record?')">delete</button>
+        <button type="button" class="vj-action-item vj-action-item-xs vj-action-success" data-toggle="modal" data-target="#outgoing-{{ $model->id }}">payment</button>
+        <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel" onclick="return confirm('Are you sure you want delete this record?')">delete</button>
     @endif
 </form>
+</div>
 
 {{-- modal receive --}}
 <div class="modal fade" id="outgoing-{{ $model->id }}">

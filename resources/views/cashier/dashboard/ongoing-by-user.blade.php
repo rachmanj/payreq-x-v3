@@ -1,7 +1,7 @@
 <div class="col-12">
-    <div class="card card-info">
-      <div class="card-header">
-        <h3 class="card-title">Ongoing Payreq by user</h3>
+    <div class="card card-outline card-primary">
+      <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h3 class="card-title mb-0"><i class="fas fa-users"></i> Ongoing Payreq by user</h3>
       </div>
 
       <div class="card-body">
@@ -10,7 +10,7 @@
 
           @foreach ($dashboard_report['ongoing_documents_by_user'] as $user)
             @if($user->display)
-          <div class="card">
+          <div class="card card-outline card-primary">
             <div class="card-header">
               <h4 class="card-title w-100">
                 <a class="d-block w-100" data-toggle="collapse" href="#collapse{{ $user->index }}">

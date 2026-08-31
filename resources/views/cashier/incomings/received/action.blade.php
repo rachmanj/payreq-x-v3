@@ -1,5 +1,7 @@
 {{-- button call modal to update --}}
-<button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#receive-incoming-{{ $model->id }}">edit</button>
+<div class="vj-inline-actions">
+<button type="button" class="vj-action-item vj-action-item-xs vj-action-edit" data-toggle="modal" data-target="#receive-incoming-{{ $model->id }}">edit</button>
+</div>
 
 {{-- modal receive --}}
 <div class="modal fade" id="receive-incoming-{{ $model->id }}">

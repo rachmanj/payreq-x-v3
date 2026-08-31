@@ -1,88 +1,32 @@
 <div class="col-lg-6">
-    <div class="card card-info">
-        <div class="card-header">
-            <h3 class="card-title">Info</h3>
+    <div class="card card-outline card-primary">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <h3 class="card-title mb-0"><i class="fas fa-info-circle"></i> Info</h3>
         </div>
         <div class="card-body">
-
-            <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
-                <p class="d-flex flex-column">
-                    <span class="font-weight-bold">
-                    PC Balance
-                    </span>
-                </p>
-                <p class="d-flex flex-column text-right">
-                <span>
-                   Rp. {{ number_format($dashboard_data['today_pc_balance'], 2) }} 
-                </span>
-                </p>
+            <div class="vj-stat-grid mb-0">
+                <div class="vj-stat vj-stat-info">
+                    <div class="vj-stat-icon"><i class="fas fa-wallet"></i></div>
+                    <div class="vj-stat-body">
+                        <span class="vj-stat-label">PC Balance</span>
+                        <span class="vj-stat-value">Rp. {{ number_format($dashboard_data['today_pc_balance'], 2) }}</span>
+                    </div>
+                </div>
+                <div class="vj-stat vj-stat-success">
+                    <div class="vj-stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="vj-stat-body">
+                        <span class="vj-stat-label">Approved / Ready to Pay</span>
+                        <span class="vj-stat-value">Rp. {{ number_format($dashboard_data['ready_to_pay']['amount'], 0) }} | {{ $dashboard_data['ready_to_pay']['count'] }} payreqs</span>
+                    </div>
+                </div>
+                <div class="vj-stat vj-stat-danger">
+                    <div class="vj-stat-icon"><i class="fas fa-inbox"></i></div>
+                    <div class="vj-stat-body">
+                        <span class="vj-stat-label">Incoming not received yet</span>
+                        <span class="vj-stat-value">Rp. {{ number_format($dashboard_data['incoming']['amount'], 0) }} | {{ $dashboard_data['incoming']['count'] }} payreqs</span>
+                    </div>
+                </div>
             </div>
-           
-            <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
-                <p class="d-flex flex-column">
-                    <span class="font-weight-bold">
-                    Approved / Ready to Pay
-                    </span>
-                </p>
-                <p class="d-flex flex-column text-right">
-                <span>
-                    Rp. {{ number_format($dashboard_data['ready_to_pay']['amount'], 0) }} | {{ $dashboard_data['ready_to_pay']['count'] }} payreqs 
-                </span>
-                </p>
-            </div>
-
-            <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
-                <p class="d-flex flex-column">
-                    <span class="font-weight-bold">
-                    Incoming not received yet
-                    </span>
-                </p>
-                <p class="d-flex flex-column text-right">
-                <span>
-                    Rp. {{ number_format($dashboard_data['incoming']['amount'], 0) }} | {{ $dashboard_data['incoming']['count'] }} payreqs 
-                </span>
-                </p>
-            </div>
-
-            {{-- <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
-                <p class="d-flex flex-column">
-                    <span class="font-weight-bold">
-                    Cash-Out Journal Pending
-                    </span>
-                </p>
-                <p class="d-flex flex-column text-right">
-                <span>
-                    Rp. {{ number_format($dashboard_data['cj_to_create']['outgoings_amount'], 0) }} | {{ $dashboard_data['cj_to_create']['outgoings_count'] }} payreqs 
-                </span>
-                </p>
-            </div> --}}
-
-            {{-- <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
-                <p class="d-flex flex-column">
-                    <span class="font-weight-bold">
-                    Cash-In Journal Pending
-                    </span>
-                </p>
-                <p class="d-flex flex-column text-right">
-                <span>
-                    Rp. {{ number_format($dashboard_data['cj_to_create']['incomings_amount'], 0) }} | {{ $dashboard_data['cj_to_create']['incomings_count'] }} payreqs 
-                </span>
-                </p>
-            </div> --}}
-
-            {{-- <div class="d-flex justify-content-between align-items-center border-bottom mb-1">
-                <p class="d-flex flex-column">
-                    <span class="font-weight-bold">
-                    Cash Journal Pending
-                    </span>
-                </p>
-                <p class="d-flex flex-column text-right">
-                <span>
-                    Rp. {{ number_format($dashboard_data['cj_to_create']['pending_posting_amount'], 0) }} | {{ $dashboard_data['cj_to_create']['pending_posting_count'] }} journals 
-                </span>
-                </p>
-            </div> --}}
-            
         </div>
     </div>
 </div>

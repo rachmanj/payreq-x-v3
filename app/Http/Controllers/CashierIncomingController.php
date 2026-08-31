@@ -238,9 +238,9 @@ class CashierIncomingController extends Controller
             })
             ->addColumn('status', function ($incoming) {
                 if ($incoming->receive_date == null) {
-                    return '<span class="badge badge-danger">NOT RECEIVE</span>';
+                    return '<span class="vj-chip vj-chip-danger">NOT RECEIVE</span>';
                 } else {
-                    return '<span class="badge badge-success">RECEIVED</span>';
+                    return '<span class="vj-chip vj-chip-success">RECEIVED</span>';
                 }
             })
             ->addIndexColumn()
