@@ -17,15 +17,15 @@
                         <h3 class="card-title mb-0">
                             <i class="fas fa-file-invoice-dollar"></i> Daftar Tagihan
                         </h3>
-                        <div class="d-flex flex-wrap gap-2">
-                            <button type="button" class="vj-btn vj-btn-warning" data-toggle="modal"
+                        <div class="d-flex flex-wrap align-items-center">
+                            <button type="button" class="vj-btn vj-btn-warning mr-2 mb-2" data-toggle="modal"
                                 data-target="#modal-copy-month">
                                 <i class="fas fa-copy"></i> Copy Bulan Lalu
                             </button>
-                            <a href="{{ route('utilities.bills.upload') }}" class="vj-btn vj-btn-primary">
+                            <a href="{{ route('utilities.bills.upload') }}" class="vj-btn vj-btn-primary mr-2 mb-2">
                                 <i class="fas fa-camera"></i> Upload Struk
                             </a>
-                            <a href="{{ route('utilities.bills.create') }}" class="vj-btn vj-btn-success">
+                            <a href="{{ route('utilities.bills.create') }}" class="vj-btn vj-btn-success mb-2">
                                 <i class="fas fa-plus"></i> Tambah Tagihan
                             </a>
                         </div>
@@ -105,8 +105,8 @@
                                 <span class="vj-chip vj-chip-neutral">Terpilih: <strong id="selected-count">0</strong></span>
                                 <span class="vj-chip vj-chip-info">Total: <strong id="selected-total">0</strong></span>
                             </div>
-                            <div class="d-flex flex-wrap gap-2">
-                                <form action="{{ route('utilities.bills.create-payreq') }}" method="POST" id="bulk-form">
+                            <div class="d-flex flex-wrap align-items-center">
+                                <form action="{{ route('utilities.bills.create-payreq') }}" method="POST" id="bulk-form" class="mr-2 mb-2">
                                     @csrf
                                     <div id="bill-ids-inputs"></div>
                                     <button type="submit" class="vj-btn vj-btn-success" id="btn-create-payreq" disabled>
@@ -115,7 +115,7 @@
                                 </form>
                                 @can('submit_sap_ap_invoice_utilities')
                                     <form action="{{ route('utilities.bills.ap-invoice.preview.store') }}" method="POST"
-                                        id="bulk-ap-form">
+                                        id="bulk-ap-form" class="mb-2">
                                         @csrf
                                         <div id="ap-bill-ids-inputs"></div>
                                         <button type="submit" class="vj-btn vj-btn-primary" id="btn-create-ap-invoice" disabled>
