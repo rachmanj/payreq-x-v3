@@ -490,6 +490,15 @@
                                     <p>Tagihan</p>
                                 </a>
                             </li>
+                            @can('submit_sap_ap_invoice_utilities')
+                                <li class="nav-item">
+                                    <a href="{{ route('utilities.ap-invoices.index') }}"
+                                        class="nav-link {{ request()->routeIs('utilities.ap-invoices.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AP Invoice</p>
+                                    </a>
+                                </li>
+                            @endcan
                             <li class="nav-item">
                                 <a href="{{ route('utilities.customers.index') }}"
                                     class="nav-link {{ request()->routeIs('utilities.customers.*') ? 'active' : '' }}">

@@ -33,6 +33,7 @@ Route::prefix('utilities')->name('utilities.')->middleware('permission:akses_uti
         Route::post('/bills/ap-invoice/preview', [UtilityApInvoiceController::class, 'initiatePreview'])->name('bills.ap-invoice.preview.store');
         Route::get('/bills/ap-invoice/preview', [UtilityApInvoiceController::class, 'preview'])->name('bills.ap-invoice.preview');
         Route::post('/bills/ap-invoice/submit', [UtilityApInvoiceController::class, 'submit'])->name('bills.ap-invoice.submit');
+        Route::get('/ap-invoices', [UtilityApInvoiceController::class, 'index'])->name('ap-invoices.index');
         Route::get('/ap-invoices/{utilityApInvoice}', [UtilityApInvoiceController::class, 'show'])->name('ap-invoices.show');
     });
 });
