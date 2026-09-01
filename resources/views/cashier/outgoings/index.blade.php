@@ -30,7 +30,7 @@
             <th>Payreq No</th>
             <th>Payment Date</th>
             <th>IDR</th>
-            <th>Account</th>
+            <th>Remarks</th>
             <th>Bukti Transfer</th>
             <th></th>
           </tr>
@@ -82,7 +82,7 @@
         {data: 'payreq_no'},
         {data: 'outgoing_date'},
         {data: 'amount'},
-        {data: 'account'},
+        {data: 'remarks'},
         {data: 'transfer_proof', orderable: false, searchable: false},
         {data: 'action', orderable: false, searchable: false},
       ],
@@ -107,5 +107,27 @@
       theme: 'bootstrap4'
     })
   }) 
+</script>
+@include('partials.vj-soft-ui-swal')
+<script>
+  // Konfirmasi hapus bukti transfer via SweetAlert (DataTables rows)
+  $(document).on('submit', '.js-delete-attachment', function (e) {
+    e.preventDefault();
+    const form = this;
+    VjSwal.fire({
+      title: 'Hapus Bukti Transfer',
+      html: '<p>Hapus file bukti transfer ini?</p>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal',
+      confirmVariant: 'danger',
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.submit();
+      }
+    });
+  });
 </script>
 @endsection

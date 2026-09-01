@@ -216,6 +216,79 @@ class UtilityBillController extends Controller
         return redirect()->route('utilities.bills.index')->with('success', 'Tagihan berhasil disimpan.');
     }
 
+    public function edit(UtilityBill $bill): View
+    {
+        abort_if($bill->tanggal_bayar, 403, 'Tagihan yang sudah lunas tidak dapat diedit.');
+        abort_if($bill->payreq_id || $bill->utility_ap_invoice_id, 403, 'Tagihan yang sudah masuk payreq / AP Invoice tidak dapat diedit.');
+
+        return view('utilities.bills.edit', [
+            'bill' => $bill,
+            'customers' => UtilityCustomer::active()->with('account')->orderBy('nama')->get(),
+            'tipeList' => UtilityCustomer::TIPE,
+        ]);
+    }
+
+    public function update(Request $request, UtilityBill $bill): RedirectResponse
+    {
+        abort_if($bill->tanggal_bayar, 403, 'Tagihan yang sudah lunas tidak dapat diedit.');
+        abort_if($bill->payreq_id || $bill->utility_ap_invoice_id, 403, 'Tagihan yang sudah masuk payreq / AP Invoice tidak dapat diedit.');
+
+        $validated = $request->validate([
+            'utility_customer_id' => 'required|exists:utility_customers,id',
+            'periode' => 'required|date_format:Y-m',
+            'jumlah_tagihan' => 'required|numeric|min:0',
+            'tipe' => 'required|in:postpaid,prepaid',
+            'tanggal_jatuh_tempo' => 'nullable|required_if:tipe,postpaid|date',
+            'tanggal_bayar' => 'nullable|date',
+            'nomor_token' => 'nullable|string|max:255',
+            'nomor_tagihan' => 'nullable|string|max:255',
+            'meter_awal' => 'nullable|integer|min:0',
+            'meter_akhir' => 'nullable|integer|min:0',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        $customer = UtilityCustomer::query()->findOrFail($validated['utility_customer_id']);
+
+        if ($customer->tipe !== $validated['tipe']) {
+            return back()->withInput()->withErrors([
+                'tipe' => 'Tipe tagihan tidak sesuai dengan tipe ID pelanggan.',
+            ]);
+        }
+
+        if ($customer->tipe === 'postpaid') {
+            $exists = UtilityBill::query()
+                ->where('utility_customer_id', $validated['utility_customer_id'])
+                ->where('periode', $validated['periode'])
+                ->where('id', '!=', $bill->id)
+                ->exists();
+
+            if ($exists) {
+                return back()->withInput()->withErrors([
+                    'periode' => 'Tagihan bulan ini sudah ada.',
+                ]);
+            }
+        }
+
+        $isPrepaid = $customer->tipe === 'prepaid';
+
+        $bill->update([
+            'utility_customer_id' => $validated['utility_customer_id'],
+            'periode' => $validated['periode'],
+            'jumlah_tagihan' => $validated['jumlah_tagihan'],
+            'nomor_tagihan' => $validated['nomor_tagihan'] ?? null,
+            'nomor_token' => $isPrepaid ? ($validated['nomor_token'] ?? null) : null,
+            'tanggal_jatuh_tempo' => $isPrepaid ? null : $validated['tanggal_jatuh_tempo'],
+            'tanggal_bayar' => $isPrepaid
+                ? ($validated['tanggal_bayar'] ?? now()->toDateString())
+                : null,
+            'meter_awal' => $validated['meter_awal'] ?? null,
+            'meter_akhir' => $validated['meter_akhir'] ?? null,
+            'keterangan' => $validated['keterangan'] ?? null,
+        ]);
+
+        return redirect()->route('utilities.bills.index')->with('success', 'Tagihan berhasil diperbarui.');
+    }
+
     public function markPaid(Request $request, UtilityBill $bill): RedirectResponse
     {
         $validated = $request->validate([

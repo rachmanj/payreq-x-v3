@@ -143,6 +143,19 @@ class UtilityApInvoiceController extends Controller
             ->with('success', 'AP Invoice SAP berhasil dibuat. DocNum: '.($postedInvoice->sap_doc_num ?? '-'));
     }
 
+    public function index(): View
+    {
+        $invoices = UtilityApInvoice::query()
+            ->with(['sapBusinessPartner', 'submittedBy', 'bills.customer'])
+            ->orderByDesc('id')
+            ->get();
+
+        return view('utilities.ap_invoices.index', [
+            'invoices' => $invoices,
+            'jenisLabel' => UtilityCustomer::JENIS_UTILITAS,
+        ]);
+    }
+
     public function show(UtilityApInvoice $utilityApInvoice): View
     {
         $utilityApInvoice->load(['bills.customer.account', 'sapBusinessPartner', 'submittedBy']);

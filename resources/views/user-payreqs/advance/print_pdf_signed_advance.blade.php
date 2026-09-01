@@ -87,7 +87,19 @@
                                 </tr>
                                 <tr>
                                     <td colspan="3" style="border: 1px solid black;">Transfer Info (Bank / Acc No /
-                                        Acc Name) :</td>
+                                        Acc Name) :
+                                        @if ($payreq->payment_method === 'transfer' && $payreq->transferAccount)
+                                            <b>Transfer</b> —
+                                            {{ $payreq->transferAccount->bank->name ?? 'n/a' }} /
+                                            {{ $payreq->transferAccount->account_number }} /
+                                            {{ $payreq->transferAccount->account_name }}
+                                            ({{ $payreq->transferAccount->label }})
+                                        @elseif ($payreq->payment_method === 'cash')
+                                            <b>Cash</b>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                 </tr>
                             </tfoot>
                         </table>

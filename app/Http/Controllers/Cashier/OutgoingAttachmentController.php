@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ToolController;
 use App\Jobs\VerifyTransferProofJob;
 use App\Models\Outgoing;
 use App\Models\OutgoingAttachment;
@@ -16,6 +17,7 @@ class OutgoingAttachmentController extends Controller
     public function store(Request $request, Outgoing $outgoing)
     {
         abort_if($outgoing->payment_method !== 'transfer', 403);
+        abort_if(! $this->canAccessProject($outgoing), 403, 'Anda tidak memiliki akses ke outgoing project lain.');
 
         $request->validate([
             'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -37,7 +39,7 @@ class OutgoingAttachmentController extends Controller
         ]);
 
         $mime = (string) ($attachment->mime ?? '');
-        if ($mime !== '' && str_starts_with($mime, 'image/')) {
+        if ($mime !== '' && (str_starts_with($mime, 'image/') || $mime === 'application/pdf')) {
             VerifyTransferProofJob::dispatch($attachment);
         }
 
@@ -58,6 +60,7 @@ class OutgoingAttachmentController extends Controller
     public function destroy(OutgoingAttachment $attachment)
     {
         abort_if((int) $attachment->created_by !== (int) Auth::id(), 403);
+        abort_if(! $this->canAccessProject($attachment->outgoing), 403, 'Anda tidak memiliki akses ke outgoing project lain.');
 
         $disk = Storage::disk('outgoing_attachments');
         if ($disk->exists($attachment->stored_path)) {
@@ -71,6 +74,8 @@ class OutgoingAttachmentController extends Controller
 
     public function reverify(OutgoingAttachment $attachment)
     {
+        abort_if(! $this->canAccessProject($attachment->outgoing), 403, 'Anda tidak memiliki akses ke outgoing project lain.');
+
         $attachment->update([
             'verification_status' => 'pending',
             'verification_result' => null,
@@ -79,5 +84,13 @@ class OutgoingAttachmentController extends Controller
         VerifyTransferProofJob::dispatch($attachment);
 
         return redirect()->back()->with('success', 'Verifikasi bukti transfer dijalankan ulang.');
+    }
+
+    private function canAccessProject(Outgoing $outgoing): bool
+    {
+        $roles = app(ToolController::class)->getUserRoles();
+
+        return array_intersect(['superadmin', 'admin'], $roles)
+            || $outgoing->project === auth()->user()->project;
     }
 }

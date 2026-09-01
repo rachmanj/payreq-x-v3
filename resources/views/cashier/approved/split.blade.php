@@ -36,19 +36,21 @@
 
                         @php
                             if ($payreq->payment_method === 'transfer' && $payreq->transferAccount) {
-                                $saveConfirm = "return confirm('Transfer ke: {$payreq->transferAccount->displayLabel} - Rp " . number_format($available_amount, 0) . "?')";
+                                $confirmTitle = 'Konfirmasi Transfer';
+                                $confirmHtml = '<p>Transfer ke: <strong>'.e($payreq->transferAccount->displayLabel).'</strong></p><p class="mb-0">Nominal: <strong>Rp '.number_format($available_amount, 0).'</strong></p>';
                             } elseif ($payreq->payment_method === 'transfer') {
-                                $saveConfirm = "return confirm('Transfer (akun tidak ditemukan) - Rp " . number_format($available_amount, 0) . "?')";
+                                $confirmTitle = 'Konfirmasi Transfer';
+                                $confirmHtml = '<p>Transfer (akun tidak ditemukan) — Nominal: <strong>Rp '.number_format($available_amount, 0).'</strong></p>';
                             } else {
-                                $saveConfirm = "return confirm('Bayar payreq ini?')";
+                                $confirmTitle = 'Konfirmasi Pembayaran';
+                                $confirmHtml = '<p>Bayar payreq ini? Nominal: <strong>Rp '.number_format($available_amount, 0).'</strong></p>';
                             }
                             $sourceAccountLabel = $payreq->payment_method === 'transfer'
                                 ? 'Akun sumber: Rekening Bank'
                                 : 'Akun sumber: Kas';
                         @endphp
 
-                        <form action="{{ route('cashier.approveds.store_pay', $payreq->id) }}" method="POST" id="split-update"
-                            onsubmit="{{ $saveConfirm }}">
+                        <form action="{{ route('cashier.approveds.store_pay', $payreq->id) }}" method="POST" id="split-update">
                             @csrf @method('PUT')
 
                             <div class="form-group">
@@ -130,8 +132,7 @@
                                                                 class="small mr-2">{{ $attachment->original_name }}</a>
                                                             @if ((int) $attachment->created_by === (int) auth()->id())
                                                                 <form action="{{ route('cashier.outgoing-attachments.destroy', $attachment) }}"
-                                                                    method="POST" class="vj-action-item-form"
-                                                                    onsubmit="return confirm('Hapus bukti transfer ini?')">
+                                                                    method="POST" class="vj-action-item-form js-delete-attachment">
                                                                     @csrf
                                                                     @method('DELETE')
                                                                     <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel">
@@ -197,4 +198,50 @@
 
 @section('styles')
     @include('partials.vj-soft-ui-styles')
+@endsection
+
+@section('scripts')
+    @include('partials.vj-soft-ui-swal')
+    <script>
+        $(function() {
+            $('#split-update').on('submit', function(e) {
+                e.preventDefault();
+                const form = this;
+                VjSwal.fire({
+                    title: @json($confirmTitle),
+                    html: @json($confirmHtml),
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Bayar',
+                    cancelButtonText: 'Batal',
+                    confirmVariant: 'success',
+                    reverseButtons: true,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+
+            // Konfirmasi hapus bukti transfer via SweetAlert
+            $(document).on('submit', '.js-delete-attachment', function (e) {
+                e.preventDefault();
+                const form = this;
+                VjSwal.fire({
+                    title: 'Hapus Bukti Transfer',
+                    html: '<p>Hapus file bukti transfer ini?</p>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Hapus',
+                    cancelButtonText: 'Batal',
+                    confirmVariant: 'danger',
+                    reverseButtons: true,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
 @endsection

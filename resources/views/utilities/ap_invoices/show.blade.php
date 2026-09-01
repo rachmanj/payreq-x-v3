@@ -17,8 +17,8 @@
                         <h3 class="card-title mb-0">
                             <i class="fas fa-file-invoice"></i> AP Invoice SAP — {{ $jenisLabel }}
                         </h3>
-                        <a href="{{ route('utilities.bills.index') }}" class="vj-action-item vj-action-back">
-                            <i class="fas fa-arrow-left"></i> Daftar Tagihan
+                        <a href="{{ route('utilities.ap-invoices.index') }}" class="vj-action-item vj-action-back">
+                            <i class="fas fa-arrow-left"></i> Daftar AP Invoice
                         </a>
                     </div>
                     <div class="card-body">

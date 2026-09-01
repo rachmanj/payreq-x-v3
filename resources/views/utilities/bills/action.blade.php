@@ -5,6 +5,10 @@
         </span>
     @else
         @if (! $model->tanggal_bayar)
+            <a href="{{ route('utilities.bills.edit', $model->id) }}"
+                class="vj-action-item vj-action-item-xs vj-action-edit" title="Edit Tagihan">
+                <i class="fas fa-edit"></i><span>edit</span>
+            </a>
             <button type="button" class="vj-action-item vj-action-item-xs vj-action-success btn-mark-paid" data-toggle="modal"
                 data-target="#modal-mark-paid-{{ $model->id }}" title="Tandai Lunas">
                 <i class="fas fa-check"></i><span>lunas</span>

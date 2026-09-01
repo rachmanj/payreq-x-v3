@@ -161,6 +161,13 @@
                                     </li>
                                 @endif
                                 <li class="nav-item">
+                                    <a href="{{ route('cashier.outgoings.index') }}"
+                                        class="nav-link {{ request()->routeIs('cashier.outgoings.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Outgoing List</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a href="{{ route('verifications.index') }}"
                                         class="nav-link {{ request()->routeIs('verifications.index') ? 'active' : '' }}">
                                         <i class="far fa-circle nav-icon"></i>
@@ -483,6 +490,15 @@
                                     <p>Tagihan</p>
                                 </a>
                             </li>
+                            @can('submit_sap_ap_invoice_utilities')
+                                <li class="nav-item">
+                                    <a href="{{ route('utilities.ap-invoices.index') }}"
+                                        class="nav-link {{ request()->routeIs('utilities.ap-invoices.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AP Invoice</p>
+                                    </a>
+                                </li>
+                            @endcan
                             <li class="nav-item">
                                 <a href="{{ route('utilities.customers.index') }}"
                                     class="nav-link {{ request()->routeIs('utilities.customers.*') ? 'active' : '' }}">

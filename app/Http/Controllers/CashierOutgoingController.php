@@ -42,6 +42,14 @@ class CashierOutgoingController extends Controller
     {
         // update incomings table
         $outgoing = Outgoing::findOrFail($request->incoming_id);
+
+        $roles = app(ToolController::class)->getUserRoles();
+        abort_if(
+            ! array_intersect(['superadmin', 'admin'], $roles) && $outgoing->project !== auth()->user()->project,
+            403,
+            'Anda tidak memiliki akses ke outgoing project lain.'
+        );
+
         $outgoing->outgoing_date = $request->receive_date;
         $outgoing->save();
 
@@ -54,18 +62,22 @@ class CashierOutgoingController extends Controller
     public function data()
     {
         $roles = app(ToolController::class)->getUserRoles();
-        // limit date is 5 months ago
-        $limit_date = Carbon::now()->subMonths(5)->format('Y-m-d');
 
         if (array_intersect(['superadmin', 'admin'], $roles)) {
             $outgoings = Outgoing::with('attachments')
                 ->orderBy('outgoing_date', 'desc')
                 ->get();
         } else {
+            // user hanya melihat outgoing project sendiri, histori 12 bulan terakhir
+            // (outgoing manual yg belum dibayar — outgoing_date null — tetap tampil)
+            $limit_date = Carbon::now()->subMonths(12)->format('Y-m-d');
             $outgoings = Outgoing::with('attachments')
-                ->where('cashier_id', auth()->user()->id)
-                ->where('created_at', '>=', $limit_date)
-                ->orderBy('created_at', 'desc')
+                ->where('project', auth()->user()->project)
+                ->where(function ($q) use ($limit_date) {
+                    $q->whereNull('outgoing_date')
+                        ->orWhere('outgoing_date', '>=', $limit_date);
+                })
+                ->orderBy('outgoing_date', 'desc')
                 ->get();
         }
 
@@ -91,13 +103,8 @@ class CashierOutgoingController extends Controller
             ->addColumn('cashier', function ($outgoing) {
                 return $outgoing->cashier->name;
             })
-            ->addColumn('account', function ($outgoing) {
-                // if account id not null
-                if ($outgoing->account_id) {
-                    return $outgoing->account->account_number.' - '.$outgoing->account->account_name;
-                } else {
-                    return $outgoing->description;
-                }
+            ->addColumn('remarks', function ($outgoing) {
+                return $outgoing->payreq?->remarks;
             })
             ->addColumn('transfer_proof', function ($outgoing) {
                 if ($outgoing->payment_method !== 'transfer') {
