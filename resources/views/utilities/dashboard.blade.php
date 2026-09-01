@@ -83,12 +83,12 @@
 
         <div class="row">
             <div class="col-12">
-                <div class="card card-outline card-primary">
+                <div class="card card-outline card-warning">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <h3 class="card-title mb-0">
                             <i class="fas fa-bolt mr-2"></i> PLN
                         </h3>
-                        <span class="text-muted font-weight-bold" id="plnLatest">—</span>
+                        <span class="font-weight-bold utility-chart-total utility-chart-total-pln" id="plnLatest">—</span>
                     </div>
                     <div class="card-body pt-2 pb-2">
                         <canvas id="plnChart" style="height: 90px;"></canvas>
@@ -99,12 +99,12 @@
 
         <div class="row">
             <div class="col-12">
-                <div class="card card-outline card-primary">
+                <div class="card card-outline card-info">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <h3 class="card-title mb-0">
                             <i class="fas fa-tint mr-2"></i> PDAM
                         </h3>
-                        <span class="text-muted font-weight-bold" id="pdamLatest">—</span>
+                        <span class="font-weight-bold utility-chart-total utility-chart-total-pdam" id="pdamLatest">—</span>
                     </div>
                     <div class="card-body pt-2 pb-2">
                         <canvas id="pdamChart" style="height: 90px;"></canvas>
@@ -120,7 +120,7 @@
                         <h3 class="card-title mb-0">
                             <i class="fas fa-phone mr-2"></i> TELKOM
                         </h3>
-                        <span class="text-muted font-weight-bold" id="telkomLatest">—</span>
+                        <span class="font-weight-bold utility-chart-total utility-chart-total-telkom" id="telkomLatest">—</span>
                     </div>
                     <div class="card-body pt-2 pb-2">
                         <canvas id="telkomChart" style="height: 90px;"></canvas>
@@ -131,13 +131,13 @@
 
         <div class="row">
             <div class="col-12">
-                <div class="card card-outline card-primary">
+                <div class="card card-outline card-secondary utility-chart-card-customer">
                     <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h3 class="card-title mb-0">
                             <i class="fas fa-user-tag mr-2"></i> Per ID Pelanggan
                         </h3>
                         <div class="d-flex align-items-center">
-                            <span class="text-muted font-weight-bold mr-3" id="custLatest">—</span>
+                            <span class="font-weight-bold mr-3 utility-chart-total utility-chart-total-customer" id="custLatest">—</span>
                             <div style="width: 280px;">
                                 <select id="customerSelect" class="form-control form-control-sm">
                                     <option value="">-- Pilih ID Pelanggan --</option>
@@ -160,6 +160,15 @@
 
 @section('styles')
     @include('partials.vj-soft-ui-styles')
+    <style>
+        .utility-chart-total-pln { color: #b45309; }
+        .utility-chart-total-pdam { color: #0e7490; }
+        .utility-chart-total-telkom { color: #1d4ed8; }
+        .utility-chart-total-customer { color: #6d28d9; }
+        .utility-chart-card-customer.card-outline.card-secondary {
+            border-top: 3px solid #7c3aed;
+        }
+    </style>
 @endsection
 
 @section('scripts')
@@ -178,19 +187,24 @@
             return 'Rp ' + Math.round(v).toLocaleString('id-ID');
         };
 
-        // Chart per kategori (PLN / PDAM / TELKOM) — sparkline minimalis
+        const sumValues = (values) => values.reduce((total, value) => total + (Number(value) || 0), 0);
+
+        const chartPalette = {
+            pln: { border: '#d97706', fill: 'rgba(217, 119, 6, 0.88)' },
+            pdam: { border: '#0891b2', fill: 'rgba(8, 145, 178, 0.88)' },
+            telkom: { border: '#2563eb', fill: 'rgba(37, 99, 235, 0.88)' },
+            customer: { border: '#7c3aed', fill: 'rgba(124, 58, 237, 0.88)' },
+        };
+
+        // Chart per kategori (PLN / PDAM / TELKOM) — bar chart
         function makeCategoryChart(canvasId, badgeId, label, data, borderColor, fillColor) {
-            // nilai bulan terakhir (non-zero)
-            let latest = 0;
-            for (let i = data.length - 1; i >= 0; i--) {
-                if (data[i]) { latest = data[i]; break; }
-            }
+            const total = sumValues(data);
             const badge = document.getElementById(badgeId);
-            if (badge) badge.textContent = moneyFmt(latest);
+            if (badge) badge.textContent = moneyFmt(total);
 
             const ctx = document.getElementById(canvasId).getContext('2d');
             return new Chart(ctx, {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: monthLabels,
                     datasets: [{
@@ -198,12 +212,7 @@
                         data: data,
                         borderColor: borderColor,
                         backgroundColor: fillColor,
-                        borderWidth: 1.5,
-                        lineTension: 0.35,
-                        fill: true,
-                        pointRadius: 0,
-                        pointHoverRadius: 4,
-                        pointHoverBackgroundColor: borderColor,
+                        borderWidth: 1,
                     }],
                 },
                 options: {
@@ -227,14 +236,14 @@
             });
         }
 
-        makeCategoryChart('plnChart', 'plnLatest', 'PLN', categoryData.pln, '#f39c12', 'rgba(243,156,18,0.15)');
-        makeCategoryChart('pdamChart', 'pdamLatest', 'PDAM', categoryData.pdam, '#00a65a', 'rgba(0,166,90,0.15)');
-        makeCategoryChart('telkomChart', 'telkomLatest', 'TELKOM', categoryData.telkom, '#3c8dbc', 'rgba(60,141,188,0.15)');
+        makeCategoryChart('plnChart', 'plnLatest', 'PLN', categoryData.pln, chartPalette.pln.border, chartPalette.pln.fill);
+        makeCategoryChart('pdamChart', 'pdamLatest', 'PDAM', categoryData.pdam, chartPalette.pdam.border, chartPalette.pdam.fill);
+        makeCategoryChart('telkomChart', 'telkomLatest', 'TELKOM', categoryData.telkom, chartPalette.telkom.border, chartPalette.telkom.fill);
 
         // Chart B: per ID pelanggan (dropdown)
         const custCtx = document.getElementById('customerChart').getContext('2d');
         const customerChart = new Chart(custCtx, {
-            type: 'line',
+            type: 'bar',
             data: { labels: monthLabels, datasets: [] },
             options: {
                 responsive: true,
@@ -263,25 +272,24 @@
             if (!found) {
                 customerChart.data.datasets = [];
                 customerChart.update();
-                if (badge) badge.textContent = '—';
+                if (badge) {
+                    badge.textContent = '—';
+                    badge.className = 'font-weight-bold mr-3 utility-chart-total utility-chart-total-customer';
+                }
                 return;
             }
-            // nilai bulan terakhir (non-zero)
-            let latest = 0;
-            for (let i = found.data.length - 1; i >= 0; i--) {
-                if (found.data[i]) { latest = found.data[i]; break; }
+            const total = sumValues(found.data);
+            const palette = chartPalette[found.jenis] || chartPalette.customer;
+            if (badge) {
+                badge.textContent = moneyFmt(total);
+                badge.className = 'font-weight-bold mr-3 utility-chart-total utility-chart-total-' + (found.jenis || 'customer');
             }
-            if (badge) badge.textContent = moneyFmt(latest);
             customerChart.data.datasets = [{
                 label: found.idpel + ' — ' + found.nama,
                 data: found.data,
-                borderColor: '#3c8dbc',
-                backgroundColor: 'rgba(60,141,188,0.12)',
-                lineTension: 0.3,
-                fill: true,
-                pointRadius: 0,
-                pointHoverRadius: 4,
-                pointHoverBackgroundColor: '#3c8dbc',
+                borderColor: palette.border,
+                backgroundColor: palette.fill,
+                borderWidth: 1,
             }];
             customerChart.update();
         });
