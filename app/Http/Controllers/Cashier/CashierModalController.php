@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Reports\ReportCashierController;
 use App\Http\Controllers\UserController;
 use App\Models\Account;
 use App\Models\CashierModal;
@@ -10,7 +11,6 @@ use App\Models\Incoming;
 use App\Models\Outgoing;
 use App\Models\User;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Reports\ReportCashierController;
 
 class CashierModalController extends Controller
 {
@@ -30,18 +30,24 @@ class CashierModalController extends Controller
             'max_modal',
             'head_cashiers',
             'cashier_button',
-            'closing_balance'
+            'closing_balance',
         ]));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            "date" => "required",
-            "type" => "required",
-            "submit_amount" => "required",
-            "receiver" => "required",
+            'date' => 'required|date',
+            'type' => 'required|in:bod,eod',
+            'submit_amount' => 'required|numeric|min:0',
+            'receiver' => 'required',
         ]);
+
+        if ($request->type === 'bod') {
+            abort_unless($request->user()->hasAnyRole(['superadmin', 'admin', 'head_cashier']), 403);
+        } elseif ($request->type === 'eod') {
+            abort_unless($request->user()->hasAnyRole(['cashier']), 403);
+        }
 
         // check if submit amount is more than cashier app balance
         $max_modal = $this->cashier_app_balance();
@@ -61,15 +67,15 @@ class CashierModalController extends Controller
         }
 
         CashierModal::create([
-            "date" => $request->date,
-            "type" => $request->type,
-            "submit_amount" => $request->submit_amount,
-            "project" => auth()->user()->project,
-            "submitter" => auth()->user()->id,
-            "submitter_remarks" => $request->remarks,
-            "receiver" => $request->receiver,
-            "tx_in" => $request->type == 'eod' ? $tx_in : null,
-            "tx_out" => $request->type == 'eod' ? $tx_out : null,
+            'date' => $request->date,
+            'type' => $request->type,
+            'submit_amount' => $request->submit_amount,
+            'project' => auth()->user()->project,
+            'submitter' => auth()->user()->id,
+            'submitter_remarks' => $request->remarks,
+            'receiver' => $request->receiver,
+            'tx_in' => $request->type == 'eod' ? $tx_in : null,
+            'tx_out' => $request->type == 'eod' ? $tx_out : null,
         ]);
 
         return redirect()->route('cashier.modal.index')->with('success', 'Data berhasil disimpan');
@@ -78,19 +84,26 @@ class CashierModalController extends Controller
     public function receive(Request $request, $id)
     {
         $request->validate([
-            "receive_amount" => "required",
+            'receive_amount' => 'required|numeric|min:0',
         ]);
 
+        $modal = CashierModal::where('id', $id)->where('status', 'open')->first();
+        if ($modal === null) {
+            abort(403, 'Modal tidak ditemukan atau sudah ditutup.');
+        }
+
+        $userRoles = app(UserController::class)->getUserRoles();
+        $isAdmin = count(array_intersect(['superadmin', 'admin'], $userRoles)) > 0;
+        abort_if((int) $modal->receiver !== (int) $request->user()->id && ! $isAdmin, 403, 'Anda bukan penerima modal ini.');
+
         // if receive_amount is not equal to submit_amount then return error
-        if ($request->receive_amount != CashierModal::find($id)->submit_amount) {
+        if ($request->receive_amount != $modal->submit_amount) {
             return redirect()->back()->with('error', 'Jumlah modal yang diterima harus sama dengan jumlah modal yang diserahkan');
         }
 
-        $modal = CashierModal::find($id);
         $modal->update([
-            "receive_amount" => $request->receive_amount,
-            "receiver" => auth()->user()->id,
-            "receiver_remarks" => $request->remarks,
+            'receive_amount' => $request->receive_amount,
+            'receiver_remarks' => $request->remarks,
             'status' => 'close',
         ]);
 
@@ -101,7 +114,7 @@ class CashierModalController extends Controller
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
-        if (in_array(['superadmin', 'admin'], $userRoles)) {
+        if (count(array_intersect(['superadmin', 'admin'], $userRoles)) > 0) {
             $modals = CashierModal::orderBy('created_at', 'desc')
                 ->limit(500)
                 ->get();
@@ -120,9 +133,10 @@ class CashierModalController extends Controller
                 } else {
                     if ($modal->type == 'eod') {
                         $mutasi = $modal->tx_in - $modal->tx_out;
-                        return $modal->submittedBy->name . '<br><small><b>Mutasi: Rp.' . number_format($mutasi, 2) . '<br>Rp.' . number_format($modal->submit_amount, 2) . '</b></small>';
+
+                        return $modal->submittedBy->name.'<br><small><b>Mutasi: Rp.'.number_format($mutasi, 2).'<br>Rp.'.number_format($modal->submit_amount, 2).'</b></small>';
                     } else {
-                        return $modal->submittedBy->name . '<br><small><b>Rp.' . number_format($modal->submit_amount, 2) . '</b></small>';
+                        return $modal->submittedBy->name.'<br><small><b>Rp.'.number_format($modal->submit_amount, 2).'</b></small>';
                     }
                 }
             })
@@ -130,16 +144,18 @@ class CashierModalController extends Controller
                 if ($modal->receiver == null) {
                     return '-';
                 } else {
-                    return $modal->receivedBy->name . '<br><small><b>Rp.' . number_format($modal->receive_amount, 2) . '</b></small>';
+                    return $modal->receivedBy->name.'<br><small><b>Rp.'.number_format($modal->receive_amount, 2).'</b></small>';
                 }
             })
             ->addColumn('mutasi', function ($modal) {
                 $mutasi = $modal->tx_in - $modal->tx_out;
+
                 return number_format($mutasi, 2);
             })
             ->addColumn('saldo', function ($modal) {
                 $mutasi = $modal->tx_in - $modal->tx_out;
                 $saldo = $modal->submit_amount + $mutasi;
+
                 return number_format($saldo, 2);
             })
             ->editColumn('type', function ($modal) {

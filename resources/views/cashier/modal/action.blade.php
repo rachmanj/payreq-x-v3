@@ -26,7 +26,7 @@
                 <div class="col-6">
                     <div class="form-group">
                         <label for="type">Type</label>
-                        <input type="text" name="type" id="type" class="form-control" value="{{ $model->type ? ($model->type == 'begin' ? 'BOD' : 'EOD') : '-' }}" disabled>
+                        <input type="text" name="type" id="type" class="form-control" value="{{ $model->type ? ($model->type == 'bod' ? 'BOD' : 'EOD') : '-' }}" disabled>
                     </div>
                 </div>
             </div>
