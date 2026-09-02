@@ -313,4 +313,50 @@ class ApprovalDecideCommandTest extends TestCase
             '--decision' => 'approve',
         ])->assertFailed();
     }
+
+    public function test_approve_rab_via_command_keeps_usage_intact(): void
+    {
+        $department = \App\Models\Department::create([
+            'department_name' => 'Test Department',
+            'akronim' => 'TD',
+            'sap_code' => 'TD',
+        ]);
+
+        $anggaran = \App\Models\Anggaran::create([
+            'nomor' => 'RAB-TEST-001',
+            'project' => '000H',
+            'department_id' => $department->id,
+            'type' => 'operational',
+            'amount' => 10000000,
+            'balance' => 10000000,
+            'usage' => 'user',
+            'status' => 'submitted',
+            'created_by' => $this->requestor->id,
+            'submit_at' => now(),
+            'editable' => 0,
+            'deletable' => 0,
+        ]);
+
+        $plan = ApprovalPlan::create([
+            'document_id' => $anggaran->id,
+            'document_type' => 'rab',
+            'approver_id' => $this->actor->id,
+            'status' => 0,
+            'is_open' => 1,
+        ]);
+
+        $this->artisan('approval:decide', [
+            'plan_id' => $plan->id,
+            '--decision' => 'approve',
+        ])->assertSuccessful();
+
+        $anggaran->refresh();
+        $plan->refresh();
+
+        $this->assertSame(1, $plan->status);
+        $this->assertSame('approved', $anggaran->status);
+        $this->assertSame('user', $anggaran->usage, 'usage harus tetap utuh, tidak di-null-kan');
+        $this->assertSame(1, (int) $anggaran->printable);
+        $this->assertSame(0, (int) $anggaran->editable);
+    }
 }

@@ -145,10 +145,12 @@ class ApprovalDecisionService
                 app(UserRealizationController::class)->check_realization_amount($document->id);
             }
 
-            if ($documentType === 'rab') {
+            if ($documentType === 'rab' && is_array($rabFields)) {
+                // Hanya update field RAB kalau ada input (UI kirim usage+periode dari form).
+                // Command (rabFields=null) TIDAK menyentuh field ini — usage NOT NULL, jangan di-null-kan.
                 $document->update([
                     'periode_ofr' => $rabFields['periode_ofr'] ?? null,
-                    'usage' => $rabFields['usage'] ?? null,
+                    'usage' => $rabFields['usage'] ?? $document->usage,
                     'periode_anggaran' => $rabFields['periode_anggaran'] ?? null,
                 ]);
             }
