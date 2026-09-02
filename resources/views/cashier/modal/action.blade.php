@@ -1,5 +1,7 @@
 @if($model->receive_amount == null)
-    <button class="btn btn-xs btn-success" data-toggle="modal" data-target="#receive-modal-{{ $model->id }}">receive</button>
+    <div class="vj-inline-actions">
+        <button type="button" class="vj-action-item vj-action-item-xs vj-action-success" data-toggle="modal" data-target="#receive-modal-{{ $model->id }}"><i class="fas fa-check-circle"></i> receive</button>
+    </div>
 @endif
 
 {{-- Modal create --}}
@@ -76,8 +78,8 @@
             
         </div> <!-- /.modal-body -->
         <div class="modal-footer float-left">
-          <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"> Close</button>
-          <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+          <button type="button" class="vj-btn vj-btn-neutral" data-dismiss="modal"> Close</button>
+          <button type="submit" class="vj-btn vj-btn-primary"><i class="fas fa-save"></i> Save</button>
         </div>
       </form>
       </div> <!-- /.modal-content -->

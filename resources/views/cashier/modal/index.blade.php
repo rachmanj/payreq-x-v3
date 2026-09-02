@@ -9,20 +9,23 @@
 @endsection
 
 @section('content')
+<div class="vj-show">
 <div class="row">
     <div class="col-12">
   
-      <div class="card">
-        <div class="card-header">
-        <h3 class="card-title">Serah Terima Modal Cashier</h3>
+      <div class="card card-outline card-primary">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h3 class="card-title mb-0"><i class="fas fa-coins"></i> Serah Terima Modal Cashier</h3>
+        <div class="d-flex gap-2">
         @hasanyrole('superadmin|admin|head_cashier')
-        <button href="#" class="btn btn-sm btn-primary float-right" data-toggle="modal" data-target="#modal-head_cashier"><i class="fas fa-plus"></i> Awal Hari</button>
+        <button type="button" class="vj-btn vj-btn-success" data-toggle="modal" data-target="#modal-head_cashier"><i class="fas fa-plus"></i> Awal Hari</button>
         @endhasanyrole
         @hasanyrole('cashier')
         @if ($cashier_button)
-          <button href="#" class="btn btn-sm btn-primary float-right" data-toggle="modal" data-target="#modal-cashier"><i class="fas fa-plus"></i> Akhir Hari</button>
+          <button type="button" class="vj-btn vj-btn-primary" data-toggle="modal" data-target="#modal-cashier"><i class="fas fa-plus"></i> Akhir Hari</button>
         @endif
         @endhasanyrole
+        </div>
         </div>  <!-- /.card-header -->
        
         <div class="card-body">
@@ -41,8 +44,9 @@
           </table>
         </div> <!-- /.card-body -->
       </div> <!-- /.card -->
-    </div> <!-- /.col -->
+    </div>  <!-- /.col -->
   </div>  <!-- /.row -->
+</div> <!-- /.vj-show -->
   
   {{-- Modal head cashier --}}
   <div class="modal fade" id="modal-head_cashier">
@@ -114,8 +118,8 @@
   
         </div> <!-- /.modal-body -->
         <div class="modal-footer float-left">
-          <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"> Close</button>
-          <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+          <button type="button" class="vj-btn vj-btn-neutral" data-dismiss="modal"> Close</button>
+          <button type="submit" class="vj-btn vj-btn-primary"><i class="fas fa-save"></i> Save</button>
         </div>
       </form>
       </div> <!-- /.modal-content -->
@@ -192,8 +196,8 @@
   
         </div> <!-- /.modal-body -->
         <div class="modal-footer float-left">
-          <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"> Close</button>
-          <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+          <button type="button" class="vj-btn vj-btn-neutral" data-dismiss="modal"> Close</button>
+          <button type="submit" class="vj-btn vj-btn-primary"><i class="fas fa-save"></i> Save</button>
         </div>
       </form>
       </div> <!-- /.modal-content -->
@@ -202,6 +206,7 @@
 @endsection
 
 @section('styles')
+    @include('partials.vj-soft-ui-styles')
     <!-- DataTables -->
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">

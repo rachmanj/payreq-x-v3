@@ -161,12 +161,19 @@ class CashierModalController extends Controller
             ->editColumn('type', function ($modal) {
                 return ($modal->type == 'bod') ? 'BOD' : 'EOD';
             })
+            ->editColumn('status', function ($modal) {
+                return match ($modal->status) {
+                    'open' => '<span class="vj-chip vj-chip-warning">Open</span>',
+                    'close' => '<span class="vj-chip vj-chip-success">Close</span>',
+                    default => '<span class="vj-chip vj-chip-neutral">'.e((string) $modal->status).'</span>',
+                };
+            })
             ->editColumn('date', function ($modal) {
                 return date('d-M-Y', strtotime($modal->date));
             })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.modal.action')
-            ->rawColumns(['action', 'submitter', 'receiver'])
+            ->rawColumns(['action', 'submitter', 'receiver', 'status'])
             ->toJson();
     }
 
