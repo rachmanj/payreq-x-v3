@@ -13,7 +13,7 @@ class ToolController extends Controller
 {
     public function getApiProjects() // api call to arkFleet
     {
-        $url = env('URL_PROJECTS');
+        $url = config('services.projects_url');
         $client = new \GuzzleHttp\Client;
         $response = $client->request('GET', $url);
         $projects = json_decode($response->getBody()->getContents(), true)['data'];

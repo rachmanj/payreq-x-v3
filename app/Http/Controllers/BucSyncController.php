@@ -25,7 +25,7 @@ class BucSyncController extends Controller
 
     public function get_rabs_count()
     {
-        $url = env('URL_RABS');
+        $url = config('services.rabs_url');
         $client = new Client(['timeout' => 30]); // Set timeout to 2 minutes (120 seconds)
         try {
             $response = $client->get($url);
@@ -39,7 +39,7 @@ class BucSyncController extends Controller
 
     public function sync_rabs()
     {
-        $url = env('URL_RABS');
+        $url = config('services.rabs_url');
         $response = json_decode(file_get_contents($url));
         $rabs_data = $response->data;
 

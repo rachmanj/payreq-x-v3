@@ -126,4 +126,13 @@ return [
         ],
     ],
 
+    // Integrasi lintas app (dipindah dari env() langsung di controller agar aman utk config:cache)
+    'rabs_url' => env('URL_RABS'),
+    'projects_url' => env('URL_PROJECTS'),
+    'dds' => [
+        'api_url' => env('DDS_API_URL'),
+        'api_key' => env('DDS_API_KEY'),
+        'department_code' => env('DDS_DEPARTMENT_CODE'),
+    ],
+
 ];

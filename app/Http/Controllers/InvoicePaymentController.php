@@ -28,13 +28,13 @@ class InvoicePaymentController extends Controller
 
     public function __construct()
     {
-        $this->apiUrl = env('DDS_API_URL');
-        $this->apiKey = env('DDS_API_KEY');
+        $this->apiUrl = config('services.dds.api_url');
+        $this->apiKey = config('services.dds.api_key');
 
         if (auth()->check() && auth()->user()->dds_department_code) {
             $this->departmentCode = auth()->user()->dds_department_code;
         } else {
-            $this->departmentCode = env('DDS_DEPARTMENT_CODE');
+            $this->departmentCode = config('services.dds.department_code');
         }
     }
 
