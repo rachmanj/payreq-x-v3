@@ -134,6 +134,15 @@ class SapSyncController extends Controller
             foreach ($realizations as $realization) {
                 $realization->status = 'close';
                 $realization->save();
+
+                // Tutup juga payreq advance terkait — kalau tidak, payreq nyangkut di status
+                // 'paid'/'split' dan masih dihitung sebagai "belum realisasi" di rekap/dashboard.
+                $payreq = $realization->payreq;
+                if ($payreq && in_array($payreq->status, ['paid', 'split'], true)) {
+                    $payreq->status = 'close';
+                    $payreq->deletable = 0;
+                    $payreq->save();
+                }
             }
 
             // Commit the transaction
