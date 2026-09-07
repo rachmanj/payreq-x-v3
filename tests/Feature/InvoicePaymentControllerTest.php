@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\BpjsApInvoice;
 use App\Models\SapBusinessPartner;
 use App\Models\SapSubmissionLog;
 use App\Models\User;
@@ -20,9 +21,11 @@ class InvoicePaymentControllerTest extends TestCase
     {
         parent::setUp();
 
-        putenv('DDS_API_URL=http://dds.test');
-        putenv('DDS_API_KEY=test-api-key');
-        putenv('DDS_DEPARTMENT_CODE=');
+        config([
+            'services.dds.api_url' => 'http://dds.test',
+            'services.dds.api_key' => 'test-api-key',
+            'services.dds.department_code' => '',
+        ]);
 
         Permission::firstOrCreate(['name' => 'submit_sap_invoice_payment', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'mark_invoice_paid_without_sap', 'guard_name' => 'web']);
@@ -714,5 +717,221 @@ class InvoicePaymentControllerTest extends TestCase
             'DocTotal' => 1500000,
             'PaidToDate' => 1500000,
         ];
+    }
+
+    public function test_waiting_payment_includes_bpjs_posted_invoices(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake($this->ddsDepartmentFake());
+
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'amount' => 2000000,
+            'paid_amount' => 0,
+            'doc_date' => '2026-09-01',
+        ]);
+
+        $this->assertDatabaseHas('bpjs_ap_invoices', [
+            'id' => $bpjs->id,
+            'status' => BpjsApInvoice::STATUS_POSTED,
+        ]);
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.waiting'))
+            ->assertOk()
+            ->assertJsonFragment([
+                'source' => 'bpjs',
+                'local_id' => $bpjs->id,
+                'invoice_number' => $bpjs->invoiceNumber(),
+            ]);
+    }
+
+    public function test_submit_sap_payment_bpjs_full_payment_marks_invoice_paid(): void
+    {
+        $account = $this->seedVendorAndAccount();
+
+        SapBusinessPartner::query()->create([
+            'code' => 'VBPKEIDR01',
+            'name' => 'BPJS KESEHATAN',
+            'type' => SapBusinessPartner::TYPE_SUPPLIER,
+            'active' => true,
+        ]);
+
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'jenis' => BpjsApInvoice::JENIS_KESEHATAN,
+            'unit' => '000H',
+            'amount' => 2000000,
+            'paid_amount' => 0,
+            'sap_doc_entry' => 28625,
+            'sap_doc_num' => '55001',
+            'num_at_card' => '10/26',
+        ]);
+
+        $this->mock(SapService::class, function ($mock) {
+            $mock->shouldReceive('getPurchaseInvoiceByDocEntry')
+                ->once()
+                ->with(28625)
+                ->andReturn([
+                    'DocEntry' => 28625,
+                    'DocNum' => 55001,
+                    'CardCode' => 'VBPKEIDR01',
+                    'DocumentStatus' => 'bost_Open',
+                    'Cancelled' => 'N',
+                    'NumAtCard' => '10/26',
+                    'DocTotal' => 2000000,
+                    'PaidToDate' => 0,
+                ]);
+
+            $mock->shouldReceive('createOutgoingPayment')
+                ->once()
+                ->andReturn([
+                    'success' => true,
+                    'doc_entry' => 99,
+                    'doc_num' => '88001',
+                    'data' => ['DocEntry' => 99, 'DocNum' => 88001],
+                ]);
+        });
+
+        $this->actingAs($this->authorizedUser())
+            ->postJson(route('cashier.invoice-payment.sap-payment.submit', ['invoiceId' => 'bpjs:'.$bpjs->id]), [
+                'invoice_number' => $bpjs->invoiceNumber(),
+                'supplier_sap_code' => 'VBPKEIDR01',
+                'amount' => 2000000,
+                'payment_amount' => 2000000,
+                'payment_date' => '2026-09-07',
+                'payment_means' => 'transfer',
+                'prepared_by' => 'Preparer',
+                'approved_by' => 'Approver',
+                'account_id' => $account->id,
+                'close_invoice_in_dds' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('fully_paid', true)
+            ->assertJsonPath('source', 'bpjs');
+
+        $bpjs->refresh();
+        $this->assertSame(BpjsApInvoice::STATUS_PAID, $bpjs->status);
+        $this->assertSame(2000000.0, (float) $bpjs->paid_amount);
+
+        $this->assertDatabaseHas('sap_submission_logs', [
+            'bpjs_ap_invoice_id' => $bpjs->id,
+            'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT,
+            'status' => 'success',
+        ]);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_submit_sap_payment_bpjs_partial_payment_keeps_posted_status(): void
+    {
+        $account = $this->seedVendorAndAccount();
+
+        SapBusinessPartner::query()->create([
+            'code' => 'VBPKEIDR01',
+            'name' => 'BPJS KESEHATAN',
+            'type' => SapBusinessPartner::TYPE_SUPPLIER,
+            'active' => true,
+        ]);
+
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'amount' => 2000000,
+            'paid_amount' => 0,
+            'sap_doc_entry' => 28625,
+            'sap_doc_num' => '55001',
+            'num_at_card' => '10/26',
+        ]);
+
+        $this->mock(SapService::class, function ($mock) {
+            $mock->shouldReceive('getPurchaseInvoiceByDocEntry')
+                ->once()
+                ->andReturn([
+                    'DocEntry' => 28625,
+                    'DocNum' => 55001,
+                    'CardCode' => 'VBPKEIDR01',
+                    'DocumentStatus' => 'bost_Open',
+                    'Cancelled' => 'N',
+                    'NumAtCard' => '10/26',
+                    'DocTotal' => 2000000,
+                    'PaidToDate' => 0,
+                ]);
+
+            $mock->shouldReceive('createOutgoingPayment')
+                ->once()
+                ->andReturn([
+                    'success' => true,
+                    'doc_entry' => 100,
+                    'doc_num' => '88002',
+                    'data' => ['DocEntry' => 100, 'DocNum' => 88002],
+                ]);
+        });
+
+        $this->actingAs($this->authorizedUser())
+            ->postJson(route('cashier.invoice-payment.sap-payment.submit', ['invoiceId' => 'bpjs:'.$bpjs->id]), [
+                'invoice_number' => $bpjs->invoiceNumber(),
+                'supplier_sap_code' => 'VBPKEIDR01',
+                'amount' => 2000000,
+                'payment_amount' => 1000000,
+                'payment_date' => '2026-09-07',
+                'payment_means' => 'transfer',
+                'prepared_by' => 'Preparer',
+                'approved_by' => 'Approver',
+                'account_id' => $account->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('fully_paid', false);
+
+        $bpjs->refresh();
+        $this->assertSame(BpjsApInvoice::STATUS_POSTED, $bpjs->status);
+        $this->assertSame(1000000.0, (float) $bpjs->paid_amount);
+    }
+
+    public function test_update_payment_marks_bpjs_invoice_paid_without_sap(): void
+    {
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'amount' => 1500000,
+            'paid_amount' => 0,
+        ]);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('mark_invoice_paid_without_sap');
+
+        $this->actingAs($user)
+            ->putJson(route('cashier.invoice-payment.update-payment', ['invoiceId' => 'bpjs:'.$bpjs->id]), [
+                'payment_date' => '2026-09-07',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $bpjs->refresh();
+        $this->assertSame(BpjsApInvoice::STATUS_PAID, $bpjs->status);
+        $this->assertSame(1500000.0, (float) $bpjs->paid_amount);
+    }
+
+    protected function ddsDepartmentFake(): callable
+    {
+        return function ($request) {
+            $url = $request->url();
+
+            if (str_ends_with($url, '/api/v1/departments')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        'departments' => [
+                            ['location_code' => '000HCASHO', 'name' => 'Cashier HO'],
+                        ],
+                    ],
+                ]);
+            }
+
+            if (str_contains($url, '/wait-payment-invoices')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => ['invoices' => []],
+                ]);
+            }
+
+            return Http::response(['success' => false], 404);
+        };
     }
 }

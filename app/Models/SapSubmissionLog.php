@@ -11,11 +11,16 @@ class SapSubmissionLog extends Model
 
     public const DOCUMENT_TYPE_INVOICE_PAYMENT = 'invoice_payment';
 
+    public const DOCUMENT_TYPE_BPJS_AP_INVOICE = 'bpjs_ap_invoice';
+
+    public const DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT = 'bpjs_ap_invoice_payment';
+
     protected $fillable = [
         'verification_journal_id',
         'journal_entry_id',
         'faktur_id',
         'utility_ap_invoice_id',
+        'bpjs_ap_invoice_id',
         'dds_invoice_id',
         'dds_invoice_number',
         'document_type',
@@ -55,6 +60,11 @@ class SapSubmissionLog extends Model
     public function utilityApInvoice()
     {
         return $this->belongsTo(UtilityApInvoice::class);
+    }
+
+    public function bpjsApInvoice()
+    {
+        return $this->belongsTo(BpjsApInvoice::class);
     }
 
     public function user()

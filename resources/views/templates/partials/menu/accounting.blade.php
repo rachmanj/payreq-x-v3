@@ -48,6 +48,10 @@
             <li><a href="{{ route('accounting.daily-tx.index') }}" class="dropdown-item">Daily Tx Upload</a></li>
         @endhasanyrole
 
+        @can('akses_ap_invoice_bpjs')
+            <li><a href="{{ route('bpjs-ap-invoices.index') }}" class="dropdown-item">AP Invoice BPJS</a></li>
+        @endcan
+
         @can('akses_wtax23')
             <li><a href="{{ route('accounting.vat.index', ['page' => 'dashboard']) }}" class="dropdown-item">VAT</a>
             </li>

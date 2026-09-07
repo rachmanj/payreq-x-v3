@@ -194,6 +194,7 @@
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Sumber</th>
                                                 <th>Invoice #</th>
                                                 <th>Faktur #</th>
                                                 <th>Supplier</th>
@@ -223,6 +224,7 @@
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Sumber</th>
                                                 <th>Invoice #</th>
                                                 <th>Faktur #</th>
                                                 <th>Supplier</th>
@@ -629,12 +631,19 @@
                             handleApiError(xhr, 'Failed to load waiting payment invoices');
                         }
                     },
-                    columns: [{
+                    columns: [                        {
                             data: null,
                             orderable: false,
                             searchable: false,
                             render: function(data, type, row, meta) {
                                 return meta.row + meta.settings._iDisplayStart + 1;
+                            }
+                        },
+                        {
+                            data: 'source',
+                            defaultContent: 'dds',
+                            render: function(data) {
+                                return renderSourceBadge(data);
                             }
                         },
                         {
@@ -699,7 +708,7 @@
                         }
                     ],
                     order: [
-                        [6, 'desc']
+                        [8, 'desc']
                     ],
                     pageLength: 25,
                     responsive: true,
@@ -721,12 +730,19 @@
                             handleApiError(xhr, 'Failed to load paid invoices');
                         }
                     },
-                    columns: [{
+                    columns: [                        {
                             data: null,
                             orderable: false,
                             searchable: false,
                             render: function(data, type, row, meta) {
                                 return meta.row + meta.settings._iDisplayStart + 1;
+                            }
+                        },
+                        {
+                            data: 'source',
+                            defaultContent: 'dds',
+                            render: function(data) {
+                                return renderSourceBadge(data);
                             }
                         },
                         {
@@ -795,7 +811,7 @@
                         }
                     ],
                     order: [
-                        [7, 'desc']
+                        [8, 'desc']
                     ],
                     pageLength: 25,
                     responsive: true,
@@ -825,6 +841,14 @@
                 const chipClass = chipMap[normalized] || 'vj-chip-warning';
 
                 return '<span class="vj-chip ' + chipClass + '">' + (status || '-') + '</span>';
+            }
+
+            function renderSourceBadge(source) {
+                if ((source || 'dds') === 'bpjs') {
+                    return '<span class="vj-chip vj-chip-success">BPJS</span>';
+                }
+
+                return '<span class="vj-chip vj-chip-neutral">DDS</span>';
             }
 
             function renderWaitingAction(row) {
@@ -1069,7 +1093,8 @@
 
             function openSapPaymentModal(row, context) {
                 sapPaymentContext = context || 'paid';
-                const closeInDds = sapPaymentContext === 'waiting';
+                const isBpjs = (row.source || 'dds') === 'bpjs';
+                const closeInDds = sapPaymentContext === 'waiting' && !isBpjs;
                 let sapRemainingBalance = 0;
 
                 $('#sapPaymentPreviewAlert').addClass('d-none');
@@ -1138,6 +1163,17 @@
                                 apInvoice.paid_to_date) : '-');
                             $('#sap_remaining_balance_display').val(formatCurrency(0));
                             $('#sap_payment_amount').val(0).prop('disabled', true);
+
+                            if ((response.source || row.source || 'dds') === 'bpjs') {
+                                $('#sapPaymentAlreadyPostedMessage').text(
+                                    'SAP AP Invoice sudah lunas.' +
+                                    (sapPayment.doc_num ? ' (latest OP #' + sapPayment.doc_num + ').' : '.')
+                                );
+                                $('#sapPaymentAlreadyPostedAlert').removeClass('d-none');
+                                $('#sapPaymentSubmitBtn').prop('disabled', true);
+                                return;
+                            }
+
                             $('#sapPaymentAlreadyPostedMessage').text(
                                 'SAP AP Invoice is fully paid' +
                                 (sapPayment.doc_num ? ' (latest OP #' + sapPayment.doc_num + ').' : '.') +

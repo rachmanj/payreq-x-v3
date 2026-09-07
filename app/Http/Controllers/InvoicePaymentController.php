@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PreviewSapInvoicePaymentRequest;
 use App\Http\Requests\SubmitSapInvoicePaymentRequest;
 use App\Models\Account;
+use App\Models\BpjsApInvoice;
 use App\Models\SapBusinessPartner;
 use App\Models\SapSubmissionLog;
 use App\Services\SapService;
@@ -72,6 +73,12 @@ class InvoicePaymentController extends Controller
                     $invoices = $this->filterInvoicesBySearch($invoices, $request->search);
                 }
 
+                $invoices = array_merge($invoices, $this->fetchBpjsInvoicesForDashboard($request));
+
+                if ($request->filled('search')) {
+                    $invoices = $this->filterInvoicesBySearch($invoices, $request->search);
+                }
+
                 return response()->json($this->calculateDashboardData($invoices));
             }
 
@@ -100,12 +107,15 @@ class InvoicePaymentController extends Controller
             if ($response->successful()) {
                 $invoices = $response->json()['data']['invoices'] ?? [];
                 $waitingInvoices = $this->addDaysCalculation($invoices);
+                $bpjsWaiting = $this->fetchBpjsWaitingInvoices($request);
+                $waitingInvoices = array_merge($waitingInvoices, $this->addDaysCalculation($bpjsWaiting));
 
                 if ($request->filled('search')) {
                     $waitingInvoices = $this->filterInvoicesBySearch($waitingInvoices, $request->search);
                 }
 
                 $waitingInvoices = $this->attachSapPaymentStatus($waitingInvoices);
+                usort($waitingInvoices, fn ($a, $b) => ($b['days_diff'] ?? 0) <=> ($a['days_diff'] ?? 0));
 
                 return response()->json(['invoices' => array_values($waitingInvoices)]);
             }
@@ -135,6 +145,8 @@ class InvoicePaymentController extends Controller
             if ($response->successful()) {
                 $invoices = $response->json()['data']['invoices'] ?? [];
                 $paidInvoices = $this->addDaysCalculation($invoices);
+                $paidInvoices = array_merge($paidInvoices, $this->fetchBpjsPaidInvoices($request));
+                $paidInvoices = $this->addDaysCalculation($paidInvoices);
 
                 if ($request->filled('search')) {
                     $paidInvoices = $this->filterInvoicesBySearch($paidInvoices, $request->search);
@@ -171,6 +183,26 @@ class InvoicePaymentController extends Controller
                 'payment_project' => 'nullable|string|max:50',
             ]);
 
+            $parsed = $this->parseInvoiceRouteId($invoiceId);
+            if ($parsed['source'] === 'bpjs') {
+                $bpjsInvoice = BpjsApInvoice::query()->findOrFail($parsed['id']);
+
+                $bpjsInvoice->update([
+                    'status' => BpjsApInvoice::STATUS_PAID,
+                    'paid_amount' => $bpjsInvoice->amount,
+                    'paid_at' => $request->payment_date,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'BPJS AP Invoice marked as paid locally.',
+                    'data' => [
+                        'id' => $bpjsInvoice->id,
+                        'source' => 'bpjs',
+                    ],
+                ]);
+            }
+
             $paymentData = array_filter([
                 'payment_date' => $request->payment_date,
                 'payment_status' => 'paid',
@@ -202,7 +234,8 @@ class InvoicePaymentController extends Controller
     {
         try {
             $invoice = $this->invoicePayloadFromRequest($request, $invoiceId);
-            $paymentHistory = $this->paymentHistoryForInvoice($invoiceId);
+            $isBpjs = ($invoice['source'] ?? 'dds') === 'bpjs';
+            $paymentHistory = $this->paymentHistoryForInvoice($invoice);
 
             $partner = $this->resolveSupplierPartner($invoice['supplier_sap_code']);
             if (! $partner) {
@@ -222,12 +255,13 @@ class InvoicePaymentController extends Controller
             }
 
             $remaining = $this->remainingFromApInvoice($apInvoice);
-            $latestSuccess = $this->latestSuccessfulSapPaymentLog($invoiceId);
+            $latestSuccess = $this->latestSuccessfulSapPaymentLog($invoice);
 
             if ($remaining <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE) {
                 return response()->json([
                     'success' => true,
                     'fully_paid' => true,
+                    'source' => $invoice['source'] ?? 'dds',
                     'preview' => [
                         'invoice' => [
                             'invoice_number' => $invoice['invoice_number'],
@@ -291,9 +325,10 @@ class InvoicePaymentController extends Controller
     {
         try {
             $invoice = $this->invoicePayloadFromRequest($request, $invoiceId);
+            $isBpjs = ($invoice['source'] ?? 'dds') === 'bpjs';
 
-            if ($request->boolean('close_dds_only') && $request->boolean('close_invoice_in_dds')) {
-                $existing = $this->latestSuccessfulSapPaymentLog($invoiceId);
+            if (! $isBpjs && $request->boolean('close_dds_only') && $request->boolean('close_invoice_in_dds')) {
+                $existing = $this->latestSuccessfulSapPaymentLog($invoice);
                 if ($existing) {
                     return $this->closeInvoiceInDdsAfterSap($invoice, $existing);
                 }
@@ -390,6 +425,34 @@ class InvoicePaymentController extends Controller
             $this->logInvoicePaymentSubmission($invoice, 'success', null, $sapResult, $paymentAmount);
 
             $remainingAfter = $remaining - $paymentAmount;
+
+            if ($isBpjs) {
+                $bpjsInvoice = BpjsApInvoice::query()->findOrFail($invoice['local_id']);
+                $newPaidAmount = (float) $bpjsInvoice->paid_amount + $paymentAmount;
+                $remainingLocal = (float) $bpjsInvoice->amount - $newPaidAmount;
+                $update = ['paid_amount' => $newPaidAmount];
+
+                if ($remainingLocal <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE) {
+                    $update['status'] = BpjsApInvoice::STATUS_PAID;
+                    $update['paid_at'] = (string) $request->input('payment_date', Carbon::today()->format('Y-m-d'));
+                }
+
+                $bpjsInvoice->update($update);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $remainingLocal <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE
+                        ? 'Outgoing payment posted to SAP B1 and BPJS invoice marked paid. DocNum: '.($sapResult['doc_num'] ?? '-')
+                        : 'Partial outgoing payment posted to SAP B1. DocNum: '.($sapResult['doc_num'] ?? '-'),
+                    'sap_doc_num' => $sapResult['doc_num'] ?? null,
+                    'sap_doc_entry' => $sapResult['doc_entry'] ?? null,
+                    'payment_amount' => $paymentAmount,
+                    'remaining_balance' => max(0, $remainingAfter),
+                    'fully_paid' => $remainingLocal <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE,
+                    'source' => 'bpjs',
+                ]);
+            }
+
             $shouldCloseDds = $request->boolean('close_invoice_in_dds')
                 && $remainingAfter <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE;
 
@@ -713,6 +776,7 @@ class InvoicePaymentController extends Controller
                 $invoice['receive_project'] ?? '',
                 $invoice['invoice_project'] ?? '',
                 $invoice['payment_project'] ?? '',
+                $invoice['source'] ?? '',
             ];
 
             foreach ($fields as $field) {
@@ -740,25 +804,50 @@ class InvoicePaymentController extends Controller
      */
     private function attachSapPaymentStatus(array $invoices): array
     {
-        $ids = array_values(array_filter(array_map(
-            fn ($invoice) => $invoice['id'] ?? null,
-            $invoices
-        )));
+        $ddsIds = [];
+        $bpjsIds = [];
 
-        if ($ids === []) {
-            return $invoices;
+        foreach ($invoices as $invoice) {
+            if (($invoice['source'] ?? 'dds') === 'bpjs') {
+                $bpjsIds[] = $invoice['local_id'] ?? null;
+            } else {
+                $ddsIds[] = $invoice['id'] ?? null;
+            }
         }
 
-        $logs = SapSubmissionLog::query()
-            ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT)
-            ->whereIn('dds_invoice_id', $ids)
-            ->where('status', 'success')
-            ->orderByDesc('id')
-            ->get()
-            ->groupBy('dds_invoice_id');
+        $ddsIds = array_values(array_filter($ddsIds));
+        $bpjsIds = array_values(array_filter($bpjsIds));
 
-        return array_map(function ($invoice) use ($logs) {
-            $invoiceLogs = $logs->get($invoice['id'] ?? null);
+        $ddsLogs = collect();
+        if ($ddsIds !== []) {
+            $ddsLogs = SapSubmissionLog::query()
+                ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT)
+                ->whereIn('dds_invoice_id', $ddsIds)
+                ->where('status', 'success')
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy('dds_invoice_id');
+        }
+
+        $bpjsLogs = collect();
+        if ($bpjsIds !== []) {
+            $bpjsLogs = SapSubmissionLog::query()
+                ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT)
+                ->whereIn('bpjs_ap_invoice_id', $bpjsIds)
+                ->where('status', 'success')
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy('bpjs_ap_invoice_id');
+        }
+
+        return array_map(function ($invoice) use ($ddsLogs, $bpjsLogs) {
+            if (($invoice['source'] ?? 'dds') === 'bpjs') {
+                $localId = $invoice['local_id'] ?? null;
+                $invoiceLogs = $bpjsLogs->get($localId);
+            } else {
+                $invoiceLogs = $ddsLogs->get($invoice['id'] ?? null);
+            }
+
             $invoice['sap_payment'] = $this->buildSapPaymentSummary($invoice, $invoiceLogs);
 
             return $invoice;
@@ -799,8 +888,12 @@ class InvoicePaymentController extends Controller
      */
     private function invoicePayloadFromRequest(Request $request, $invoiceId): array
     {
-        return [
-            'id' => (int) $invoiceId,
+        $parsed = $this->parseInvoiceRouteId($invoiceId);
+
+        $payload = [
+            'source' => $parsed['source'],
+            'id' => $parsed['source'] === 'bpjs' ? 'bpjs:'.$parsed['id'] : $parsed['id'],
+            'local_id' => $parsed['source'] === 'bpjs' ? $parsed['id'] : null,
             'invoice_number' => (string) $request->input('invoice_number'),
             'supplier_sap_code' => (string) $request->input('supplier_sap_code'),
             'amount' => $request->input('amount'),
@@ -809,6 +902,8 @@ class InvoicePaymentController extends Controller
             'payment_project' => $request->input('payment_project'),
             'sap_doc' => $request->input('sap_doc'),
         ];
+
+        return $payload;
     }
 
     private function resolveSupplierPartner(string $supplierSapCode): ?SapBusinessPartner
@@ -825,6 +920,28 @@ class InvoicePaymentController extends Controller
      */
     private function resolveApInvoice(SapService $sapService, array $invoice): array
     {
+        if (($invoice['source'] ?? 'dds') === 'bpjs') {
+            $bpjsInvoice = BpjsApInvoice::query()->findOrFail($invoice['local_id']);
+
+            if ($bpjsInvoice->sap_doc_entry) {
+                $document = $sapService->getPurchaseInvoiceByDocEntry($bpjsInvoice->sap_doc_entry);
+                if ($document) {
+                    return $document;
+                }
+            }
+
+            return [
+                'DocEntry' => $bpjsInvoice->sap_doc_entry,
+                'DocNum' => $bpjsInvoice->sap_doc_num,
+                'CardCode' => $bpjsInvoice->supplierSapCode(),
+                'DocumentStatus' => 'bost_Open',
+                'Cancelled' => 'N',
+                'NumAtCard' => $bpjsInvoice->num_at_card,
+                'DocTotal' => (float) $bpjsInvoice->amount,
+                'PaidToDate' => (float) $bpjsInvoice->paid_amount,
+            ];
+        }
+
         $invoiceNumber = trim((string) ($invoice['invoice_number'] ?? ''));
         $sapDoc = trim((string) ($invoice['sap_doc'] ?? ''));
 
@@ -848,8 +965,33 @@ class InvoicePaymentController extends Controller
         );
     }
 
-    private function latestSuccessfulSapPaymentLog(int|string $invoiceId): ?SapSubmissionLog
+    private function latestSuccessfulSapPaymentLog(array|int|string $invoice): ?SapSubmissionLog
     {
+        if (is_array($invoice)) {
+            if (($invoice['source'] ?? 'dds') === 'bpjs') {
+                return SapSubmissionLog::query()
+                    ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT)
+                    ->where('bpjs_ap_invoice_id', $invoice['local_id'])
+                    ->where('status', 'success')
+                    ->latest('id')
+                    ->first();
+            }
+
+            $invoiceId = $invoice['id'] ?? null;
+        } else {
+            $parsed = $this->parseInvoiceRouteId($invoice);
+            if ($parsed['source'] === 'bpjs') {
+                return SapSubmissionLog::query()
+                    ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT)
+                    ->where('bpjs_ap_invoice_id', $parsed['id'])
+                    ->where('status', 'success')
+                    ->latest('id')
+                    ->first();
+            }
+
+            $invoiceId = $parsed['id'];
+        }
+
         return SapSubmissionLog::query()
             ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT)
             ->where('dds_invoice_id', $invoiceId)
@@ -872,8 +1014,49 @@ class InvoicePaymentController extends Controller
     /**
      * @return list<array{date: string|null, amount: float|null, doc_num: string|null, doc_entry: int|null}>
      */
-    private function paymentHistoryForInvoice(int|string $invoiceId): array
+    private function paymentHistoryForInvoice(array|int|string $invoice): array
     {
+        if (is_array($invoice)) {
+            if (($invoice['source'] ?? 'dds') === 'bpjs') {
+                return SapSubmissionLog::query()
+                    ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT)
+                    ->where('bpjs_ap_invoice_id', $invoice['local_id'])
+                    ->where('status', 'success')
+                    ->orderBy('id')
+                    ->get(['created_at', 'amount', 'sap_doc_num', 'sap_doc_entry'])
+                    ->map(fn (SapSubmissionLog $log) => [
+                        'date' => $log->created_at?->format('Y-m-d'),
+                        'amount' => $log->amount !== null ? (float) $log->amount : null,
+                        'doc_num' => $log->sap_doc_num,
+                        'doc_entry' => $log->sap_doc_entry,
+                    ])
+                    ->values()
+                    ->all();
+            }
+
+            $invoiceId = $invoice['id'] ?? null;
+        } else {
+            $parsed = $this->parseInvoiceRouteId($invoice);
+            if ($parsed['source'] === 'bpjs') {
+                return SapSubmissionLog::query()
+                    ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT)
+                    ->where('bpjs_ap_invoice_id', $parsed['id'])
+                    ->where('status', 'success')
+                    ->orderBy('id')
+                    ->get(['created_at', 'amount', 'sap_doc_num', 'sap_doc_entry'])
+                    ->map(fn (SapSubmissionLog $log) => [
+                        'date' => $log->created_at?->format('Y-m-d'),
+                        'amount' => $log->amount !== null ? (float) $log->amount : null,
+                        'doc_num' => $log->sap_doc_num,
+                        'doc_entry' => $log->sap_doc_entry,
+                    ])
+                    ->values()
+                    ->all();
+            }
+
+            $invoiceId = $parsed['id'];
+        }
+
         return SapSubmissionLog::query()
             ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT)
             ->where('dds_invoice_id', $invoiceId)
@@ -925,10 +1108,8 @@ class InvoicePaymentController extends Controller
         ?array $sapResult = null,
         ?float $paymentAmount = null,
     ): void {
-        SapSubmissionLog::create([
-            'dds_invoice_id' => $invoice['id'] ?? null,
+        $base = [
             'dds_invoice_number' => $invoice['invoice_number'] ?? null,
-            'document_type' => SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT,
             'status' => $status,
             'action' => 'submission',
             'error_message' => $errorMessage,
@@ -940,7 +1121,21 @@ class InvoicePaymentController extends Controller
             'attempt_number' => 1,
             'submitted_by' => auth()->id(),
             'user_id' => auth()->id(),
-        ]);
+        ];
+
+        if (($invoice['source'] ?? 'dds') === 'bpjs') {
+            SapSubmissionLog::create(array_merge($base, [
+                'bpjs_ap_invoice_id' => $invoice['local_id'],
+                'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT,
+            ]));
+
+            return;
+        }
+
+        SapSubmissionLog::create(array_merge($base, [
+            'dds_invoice_id' => $invoice['id'] ?? null,
+            'document_type' => SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT,
+        ]));
     }
 
     /**
@@ -1094,5 +1289,149 @@ class InvoicePaymentController extends Controller
         }
 
         return $existing.' | '.$note;
+    }
+
+    /**
+     * @return array{source: string, id: int}
+     */
+    private function parseInvoiceRouteId(int|string $invoiceId): array
+    {
+        if (is_string($invoiceId) && str_starts_with($invoiceId, 'bpjs:')) {
+            return [
+                'source' => 'bpjs',
+                'id' => (int) substr($invoiceId, 5),
+            ];
+        }
+
+        return [
+            'source' => 'dds',
+            'id' => (int) $invoiceId,
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchBpjsInvoicesForDashboard(Request $request): array
+    {
+        $query = BpjsApInvoice::query()
+            ->whereIn('status', [BpjsApInvoice::STATUS_POSTED, BpjsApInvoice::STATUS_PAID]);
+
+        $this->applyBpjsInvoiceFilters($query, $request);
+
+        return $query->get()
+            ->map(fn (BpjsApInvoice $invoice) => $this->mapBpjsInvoiceToRow($invoice))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchBpjsWaitingInvoices(Request $request): array
+    {
+        $tolerance = SapVendorPaymentBuilder::AMOUNT_TOLERANCE;
+        $query = BpjsApInvoice::query()
+            ->where('status', BpjsApInvoice::STATUS_POSTED);
+
+        $this->applyBpjsInvoiceFilters($query, $request);
+
+        return $query->get()
+            ->filter(fn (BpjsApInvoice $invoice) => $invoice->remainingAmount() > $tolerance)
+            ->map(fn (BpjsApInvoice $invoice) => $this->mapBpjsInvoiceToRow($invoice, 'open'))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchBpjsPaidInvoices(Request $request): array
+    {
+        $query = BpjsApInvoice::query()
+            ->where('status', BpjsApInvoice::STATUS_PAID);
+
+        $this->applyBpjsInvoiceFilters($query, $request);
+
+        return $query->get()
+            ->map(fn (BpjsApInvoice $invoice) => $this->mapBpjsInvoiceToRow($invoice, 'closed'))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<BpjsApInvoice>  $query
+     */
+    private function applyBpjsInvoiceFilters($query, Request $request): void
+    {
+        if ($request->filled('project')) {
+            $query->where('unit', $request->input('project'));
+        }
+
+        if ($request->filled('supplier')) {
+            $supplier = strtolower((string) $request->input('supplier'));
+            $query->where(function ($inner) use ($supplier) {
+                $inner->whereRaw('LOWER(label) LIKE ?', ['%'.$supplier.'%'])
+                    ->orWhereIn('jenis', $this->matchingBpjsJenisFromSupplierSearch($supplier));
+            });
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('doc_date', '>=', $request->input('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('doc_date', '<=', $request->input('date_to'));
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function matchingBpjsJenisFromSupplierSearch(string $supplier): array
+    {
+        $matches = [];
+
+        foreach (BpjsApInvoice::SUPPLIER_NAMES as $jenis => $name) {
+            if (str_contains(strtolower($name), $supplier) || str_contains(strtolower($jenis), $supplier)) {
+                $matches[] = $jenis;
+            }
+        }
+
+        foreach (BpjsApInvoice::CARD_CODES as $jenis => $code) {
+            if (str_contains(strtolower($code), $supplier)) {
+                $matches[] = $jenis;
+            }
+        }
+
+        return array_values(array_unique($matches));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapBpjsInvoiceToRow(BpjsApInvoice $invoice, ?string $statusOverride = null): array
+    {
+        $isPaid = $invoice->status === BpjsApInvoice::STATUS_PAID;
+
+        return [
+            'id' => 'bpjs:'.$invoice->id,
+            'local_id' => $invoice->id,
+            'source' => 'bpjs',
+            'invoice_number' => $invoice->invoiceNumber(),
+            'faktur_no' => '-',
+            'supplier_name' => BpjsApInvoice::SUPPLIER_NAMES[$invoice->jenis] ?? strtoupper($invoice->jenis),
+            'supplier_sap_code' => $invoice->supplierSapCode(),
+            'amount' => (float) $invoice->amount,
+            'receive_date' => $invoice->doc_date?->format('Y-m-d'),
+            'payment_date' => $isPaid ? $invoice->paid_at?->format('Y-m-d') : null,
+            'status' => $statusOverride ?? ($isPaid ? 'closed' : 'open'),
+            'invoice_project' => $invoice->unit,
+            'receive_project' => $invoice->unit,
+            'payment_project' => $invoice->unit,
+            'remarks' => $invoice->label,
+            'sap_doc' => $invoice->sap_doc_num,
+            'sap_doc_entry' => $invoice->sap_doc_entry,
+        ];
     }
 }
