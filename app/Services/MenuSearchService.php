@@ -25,6 +25,7 @@ class MenuSearchService
         $this->pushApprovals($user, $items);
         $this->pushAdmin($user, $items);
         $this->pushNotulen($user, $items);
+        $this->pushUtilities($user, $items);
         $this->pushSearch($user, $items);
 
         return $items;
@@ -298,6 +299,16 @@ class MenuSearchService
             );
         }
 
+        if ($user->can('akses_ap_invoice_bpjs')) {
+            $items[] = $this->makeItem(
+                'AP Invoice BPJS',
+                route('bpjs-ap-invoices.index'),
+                'far fa-circle',
+                $cat,
+                ['bpjs', 'kesehatan', 'ketenagakerjaan', 'ap', 'invoice', 'sap']
+            );
+        }
+
         if ($user->can('akses_wtax23')) {
             $items[] = $this->makeItem(
                 'VAT',
@@ -539,6 +550,62 @@ class MenuSearchService
             $cat,
             ['notulen', 'pdf', 'upload', 'documents']
         );
+    }
+
+    /**
+     * @param  array<int, array{title: string, route: string, icon: string, category: string, breadcrumb: string, keywords: array<int, string>, searchText: string}>  $items
+     */
+    protected function pushUtilities(User $user, array &$items): void
+    {
+        if (! $user->can('akses_utilities')) {
+            return;
+        }
+
+        $cat = 'Utilities';
+
+        $items[] = $this->makeItem(
+            'Utilities Dashboard',
+            route('utilities.dashboard'),
+            'far fa-circle',
+            $cat,
+            ['pln', 'pdam', 'telkom', 'listrik', 'air', 'telepon', 'token']
+        );
+
+        $items[] = $this->makeItem(
+            'Tagihan',
+            route('utilities.bills.index'),
+            'far fa-circle',
+            $cat,
+            ['bill', 'tagihan', 'struk', 'periode']
+        );
+
+        if ($user->can('submit_sap_ap_invoice_utilities')) {
+            $items[] = $this->makeItem(
+                'AP Invoice',
+                route('utilities.ap-invoices.index'),
+                'far fa-circle',
+                $cat,
+                ['ap', 'invoice', 'sap', 'utilitas']
+            );
+        }
+
+        $items[] = $this->makeItem(
+            'ID Pelanggan',
+            route('utilities.customers.index'),
+            'far fa-circle',
+            $cat,
+            ['customer', 'idpel', 'pelanggan']
+        );
+
+        if ($user->can('submit_sap_ap_invoice_utilities')) {
+            $items[] = $this->makeItem(
+                'Vendor Mapping',
+                route('utilities.vendors.index'),
+                'far fa-circle',
+                $cat,
+                ['vendor', 'mapping', 'sap']
+            );
+        }
     }
 
     /**
