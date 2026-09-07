@@ -156,6 +156,8 @@ class UtilityBillController extends Controller
             'customers' => UtilityCustomer::active()->with('account')->orderBy('nama')->get(),
             'tipeList' => UtilityCustomer::TIPE,
             'periodeDefault' => now()->format('Y-m'),
+            // Aturan bisnis: jatuh tempo tagihan utilitas = tanggal 20 bulan periode
+            'tanggalJatuhTempoDefault' => now()->format('Y-m').'-20',
         ]);
     }
 
@@ -344,7 +346,7 @@ class UtilityBillController extends Controller
                 'jumlah_tagihan' => $sourceBill->jumlah_tagihan,
                 'nomor_tagihan' => null,
                 'tanggal_jatuh_tempo' => Carbon::createFromFormat('Y-m', $validated['periode_target'])
-                    ->endOfMonth()
+                    ->day(20)
                     ->toDateString(),
                 'tanggal_bayar' => null,
                 'meter_awal' => $sourceBill->meter_akhir,
@@ -451,7 +453,7 @@ class UtilityBillController extends Controller
         $periode = $meta['periode'];
         $tipe = $meta['tipe'] ?? 'postpaid';
         $tanggalJatuhTempo = $tipe === 'postpaid'
-            ? Carbon::createFromFormat('Y-m', $periode)->endOfMonth()->toDateString()
+            ? Carbon::createFromFormat('Y-m', $periode)->day(20)->toDateString()
             : null;
 
         return view('utilities.bills.preview', [
