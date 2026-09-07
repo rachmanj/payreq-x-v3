@@ -416,6 +416,15 @@
                                     </a>
                                 </li>
                             @endhasanyrole
+                            @can('akses_ap_invoice_bpjs')
+                                <li class="nav-item">
+                                    <a href="{{ route('bpjs-ap-invoices.index') }}"
+                                        class="nav-link {{ request()->routeIs('bpjs-ap-invoices.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AP Invoice BPJS</p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('akses_wtax23')
                                 <li class="nav-item">
                                     <a href="{{ route('accounting.vat.index', ['page' => 'dashboard']) }}"
