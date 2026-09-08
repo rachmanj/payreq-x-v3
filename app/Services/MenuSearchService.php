@@ -26,6 +26,7 @@ class MenuSearchService
         $this->pushAdmin($user, $items);
         $this->pushNotulen($user, $items);
         $this->pushUtilities($user, $items);
+        $this->pushLoanInstallment($user, $items);
         $this->pushSearch($user, $items);
 
         return $items;
@@ -336,10 +337,6 @@ class MenuSearchService
             );
         }
 
-        if ($user->can('akses_loan_report')) {
-            $items[] = $this->makeItem('Loan List', route('accounting.loans.index'), 'far fa-circle', $cat, ['loan', 'pinjaman']);
-        }
-
         if ($user->can('akses_reports')) {
             $items[] = $this->makeItem('Reports', route('reports.index'), 'far fa-circle', $cat, ['report']);
         }
@@ -604,6 +601,45 @@ class MenuSearchService
                 'far fa-circle',
                 $cat,
                 ['vendor', 'mapping', 'sap']
+            );
+        }
+    }
+
+    /**
+     * @param  array<int, array{title: string, route: string, icon: string, category: string, breadcrumb: string, keywords: array<int, string>, searchText: string}>  $items
+     */
+    protected function pushLoanInstallment(User $user, array &$items): void
+    {
+        if (! $user->can('akses_loan_report')) {
+            return;
+        }
+
+        $cat = 'Installment';
+        $keywords = ['angsuran', 'installment', 'leasing', 'loan', 'bilyet', 'giro'];
+
+        $items[] = $this->makeItem(
+            'Installment Dashboard',
+            route('accounting.loans.dashboard'),
+            'far fa-circle',
+            $cat,
+            $keywords
+        );
+
+        $items[] = $this->makeItem(
+            'Installment',
+            route('accounting.loans.index'),
+            'far fa-circle',
+            $cat,
+            $keywords
+        );
+
+        if ($user->can('akses_bilyet')) {
+            $items[] = $this->makeItem(
+                'Administrasi Bilyet',
+                route('cashier.bilyets.index'),
+                'far fa-circle',
+                $cat,
+                $keywords
             );
         }
     }

@@ -455,7 +455,7 @@
                                     <a href="{{ route('accounting.loans.index') }}"
                                         class="nav-link {{ request()->routeIs('accounting.loans.*') ? 'active' : '' }}">
                                         <i class="far fa-circle nav-icon"></i>
-                                        <p>Loan List</p>
+                                        <p>Installment</p>
                                     </a>
                                 </li>
                             @endcan

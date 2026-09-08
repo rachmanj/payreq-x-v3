@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\Installment;
 use App\Models\Loan;
-use App\Models\Giro;
+use App\Services\InstallmentOpService;
 use App\Services\InstallmentPaymentService;
+use App\Services\InstallmentSapSubmissionService;
 use App\Services\LoanSapIntegrationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -19,6 +21,7 @@ class InstallmentController extends Controller
     {
         $this->installmentPaymentService = $installmentPaymentService;
     }
+
     public function generate($loan_id)
     {
         $loan = Loan::find($loan_id);
@@ -38,7 +41,7 @@ class InstallmentController extends Controller
 
         $first_installment_date = new \DateTime($first_installment_date);
         for ($i = 1; $i <= $tenor; $i++) {
-            $installment = new Installment();
+            $installment = new Installment;
             $installment->loan_id = $loan_id;
             $installment->due_date = $first_installment_date->format('Y-m-d');
             $installment->bilyet_amount = $installment_amount;
@@ -81,7 +84,6 @@ class InstallmentController extends Controller
         return redirect()->route('accounting.loans.show', $loan_id)->with('success', 'Angsuran berhasil dihapus');
     }
 
-
     public function data($loan_id)
     {
         $instalments = Installment::where('loan_id', $loan_id)->orderBy('due_date', 'asc')->get();
@@ -95,6 +97,34 @@ class InstallmentController extends Controller
             })
             ->editColumn('bilyet_amount', function ($instalment) {
                 return number_format($instalment->bilyet_amount, 2, ',', '.');
+            })
+            ->addColumn('principal_amount', function ($instalment) {
+                if ($instalment->principal_amount === null) {
+                    return '<span class="text-muted">—</span> <span class="badge badge-warning">isi split</span>';
+                }
+
+                return number_format((float) $instalment->principal_amount, 0, ',', '.');
+            })
+            ->addColumn('interest_amount', function ($instalment) {
+                if ($instalment->interest_amount === null) {
+                    return '<span class="text-muted">—</span>';
+                }
+
+                return number_format((float) $instalment->interest_amount, 0, ',', '.');
+            })
+            ->addColumn('paid_status', function ($instalment) {
+                if ($instalment->isPaid()) {
+                    return '<span class="badge badge-success">Paid</span>';
+                }
+
+                return '<span class="badge badge-secondary">Open</span>';
+            })
+            ->addColumn('sap_ap_badge', function ($instalment) {
+                if ($instalment->sap_ap_doc_num) {
+                    return '<span class="badge badge-info">AP '.$instalment->sap_ap_doc_num.'</span>';
+                }
+
+                return '<span class="badge badge-light">Belum AP</span>';
             })
             ->addColumn('created_by', function ($instalment) {
                 return $instalment->user->name;
@@ -113,24 +143,33 @@ class InstallmentController extends Controller
                     'completed' => '<span class="badge badge-success">Completed</span>',
                 ];
                 $status = $instalment->sap_sync_status ?? 'pending';
-                return $badges[$status] ?? '<span class="badge badge-secondary">' . ucfirst($status) . '</span>';
+
+                return $badges[$status] ?? '<span class="badge badge-secondary">'.ucfirst($status).'</span>';
             })
             ->addColumn('sap_documents', function ($instalment) {
                 $html = '';
                 if ($instalment->sap_ap_doc_num) {
-                    $html .= '<small class="text-muted">AP: ' . $instalment->sap_ap_doc_num . '</small><br>';
+                    $html .= '<small class="text-muted">AP: '.$instalment->sap_ap_doc_num.'</small><br>';
                 }
                 if ($instalment->sap_payment_doc_num) {
-                    $html .= '<small class="text-muted">Payment: ' . $instalment->sap_payment_doc_num . '</small>';
+                    $html .= '<small class="text-muted">Payment: '.$instalment->sap_payment_doc_num.'</small>';
                 }
                 if (empty($html)) {
                     $html = '<small class="text-muted">-</small>';
                 }
+
                 return $html;
             })
             ->addIndexColumn()
-            ->addColumn('action', 'accounting.loans.installments.action')
-            ->rawColumns(['sap_status', 'sap_documents', 'action'])
+            ->addColumn('select', function ($instalment) {
+                if ($instalment->isPaid() || $instalment->hasSapAp() || $instalment->principal_amount === null) {
+                    return '';
+                }
+
+                return '<input type="checkbox" class="installment-bulk-check" value="'.$instalment->id.'">';
+            })
+            ->addColumn('action', 'accounting.loans.partials.installment_action')
+            ->rawColumns(['principal_amount', 'interest_amount', 'paid_status', 'sap_ap_badge', 'sap_status', 'sap_documents', 'select', 'action'])
             ->toJson();
     }
 
@@ -153,7 +192,7 @@ class InstallmentController extends Controller
 
             return redirect()->back()->with('success', 'Bilyet created and linked to installment successfully');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to create bilyet: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to create bilyet: '.$e->getMessage());
         }
     }
 
@@ -174,7 +213,8 @@ class InstallmentController extends Controller
                 'bilyet_id' => $request->bilyet_id,
                 'error' => $e->getMessage(),
             ]);
-            return redirect()->back()->with('error', 'Failed to link bilyet: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Failed to link bilyet: '.$e->getMessage());
         }
     }
 
@@ -190,7 +230,7 @@ class InstallmentController extends Controller
 
             return redirect()->back()->with('success', 'Installment marked as paid via auto-debit');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to mark as paid: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to mark as paid: '.$e->getMessage());
         }
     }
 
@@ -204,7 +244,7 @@ class InstallmentController extends Controller
                 return redirect()->back()->with('error', 'Cannot create AP Invoice for paid installment');
             }
 
-            if (!in_array($installment->payment_method, ['bilyet', 'auto_debit'])) {
+            if (! in_array($installment->payment_method, ['bilyet', 'auto_debit'])) {
                 return redirect()->back()->with('error', 'AP Invoice can only be created for bilyet or auto-debit payment methods');
             }
 
@@ -215,13 +255,14 @@ class InstallmentController extends Controller
             $integrationService = app(LoanSapIntegrationService::class);
             $result = $integrationService->createApInvoiceForInstallment($installment_id);
 
-            return redirect()->back()->with('success', 'SAP AP Invoice created successfully. DocNum: ' . $result['doc_num']);
+            return redirect()->back()->with('success', 'SAP AP Invoice created successfully. DocNum: '.$result['doc_num']);
         } catch (\Exception $e) {
             Log::error('Failed to create SAP AP Invoice', [
                 'installment_id' => $installment_id,
                 'error' => $e->getMessage(),
             ]);
-            return redirect()->back()->with('error', 'Failed to create SAP AP Invoice: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Failed to create SAP AP Invoice: '.$e->getMessage());
         }
     }
 
@@ -249,13 +290,116 @@ class InstallmentController extends Controller
             $installment->sap_error_message = null;
             $installment->save();
 
-            return redirect()->back()->with('success', 'SAP AP Invoice linked successfully. DocNum: ' . $request->sap_ap_doc_num);
+            return redirect()->back()->with('success', 'SAP AP Invoice linked successfully. DocNum: '.$request->sap_ap_doc_num);
         } catch (\Exception $e) {
             Log::error('Failed to link SAP AP Invoice', [
                 'installment_id' => $installment_id,
                 'error' => $e->getMessage(),
             ]);
-            return redirect()->back()->with('error', 'Failed to link SAP AP Invoice: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Failed to link SAP AP Invoice: '.$e->getMessage());
         }
+    }
+
+    public function submitSapAp(Request $request, int $installment, InstallmentSapSubmissionService $service): JsonResponse
+    {
+        $result = $service->submitAp($installment, $request->user());
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
+    }
+
+    public function bulkSubmitSapAp(Request $request, InstallmentSapSubmissionService $service): JsonResponse
+    {
+        $validated = $request->validate([
+            'installment_ids' => 'required|array|min:1',
+            'installment_ids.*' => 'integer|exists:installments,id',
+        ]);
+
+        $result = $service->submitApBulk($validated['installment_ids'], $request->user());
+
+        return response()->json($result);
+    }
+
+    public function createSapOp(Request $request, int $installment, InstallmentOpService $service): JsonResponse
+    {
+        $validated = $request->validate([
+            'payment_date' => 'required|date',
+            'prepared_by' => 'nullable|string|max:100',
+            'approved_by' => 'nullable|string|max:100',
+            'payment_means' => 'nullable|string|max:50',
+            'confirm_bilyet_cair' => 'nullable|boolean',
+            'confirm_auto_debit' => 'nullable|boolean',
+        ]);
+
+        $result = $service->createOp($installment, $validated, $request->user());
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
+    }
+
+    public function opPreview(Request $request, int $installment): JsonResponse
+    {
+        $installmentModel = Installment::with(['loan.creditor.sapBusinessPartner', 'bilyet', 'account', 'loan.account'])
+            ->findOrFail($installment);
+
+        $bankAccount = $installmentModel->account_id
+            ? $installmentModel->account
+            : ($installmentModel->loan?->account);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'installment_id' => $installmentModel->id,
+                'angsuran_ke' => $installmentModel->angsuran_ke,
+                'vendor' => $installmentModel->loan?->creditor?->name,
+                'vendor_code' => $installmentModel->loan?->creditor?->sapBusinessPartner?->code
+                    ?? $installmentModel->loan?->creditor?->sap_code,
+                'sap_ap_doc_num' => $installmentModel->sap_ap_doc_num,
+                'sap_ap_doc_entry' => $installmentModel->sap_ap_doc_entry,
+                'amount' => (float) ($installmentModel->bilyet_amount ?? 0),
+                'amount_formatted' => number_format((float) ($installmentModel->bilyet_amount ?? 0), 0, ',', '.'),
+                'bank_account_id' => $bankAccount?->id,
+                'bank_account_label' => $bankAccount
+                    ? $bankAccount->account_number.' — '.($bankAccount->account_name ?? '')
+                    : null,
+                'payment_method' => $installmentModel->payment_method,
+                'payment_method_label' => $installmentModel->payment_method_label,
+                'bilyet_status' => $installmentModel->bilyet?->status,
+                'bilyet_no' => $installmentModel->bilyet_no ?? $installmentModel->bilyet?->full_nomor,
+                'default_payment_date' => now()->format('Y-m-d'),
+            ],
+        ]);
+    }
+
+    public function saveSplit(Request $request, int $installment): JsonResponse
+    {
+        $validated = $request->validate([
+            'principal_amount' => 'required|numeric|min:0',
+            'interest_amount' => 'required|numeric|min:0',
+        ]);
+
+        $installmentModel = Installment::findOrFail($installment);
+        $principal = (float) $validated['principal_amount'];
+        $interest = (float) $validated['interest_amount'];
+        $splitTotal = $principal + $interest;
+
+        if ($installmentModel->bilyet_amount !== null) {
+            $bilyetAmount = (float) $installmentModel->bilyet_amount;
+            if (abs($splitTotal - $bilyetAmount) > 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jumlah pokok + bunga ('.number_format($splitTotal, 0, ',', '.').') harus sama dengan nominal angsuran ('.number_format($bilyetAmount, 0, ',', '.').').',
+                ], 422);
+            }
+        }
+
+        $installmentModel->update([
+            'principal_amount' => $principal,
+            'interest_amount' => $interest,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Split pokok/bunga berhasil disimpan.',
+        ]);
     }
 }

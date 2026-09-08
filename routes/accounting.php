@@ -78,8 +78,8 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
             ->name('reverse_to_sap');
     });
 
-    // ANGSURAN
-    Route::prefix('/loans')->name('loans.')->group(function () {
+    // ANGSURAN / INSTALLMENT
+    Route::prefix('/loans')->name('loans.')->middleware('permission:akses_loan_report')->group(function () {
         Route::get('/dashboard', [LoanController::class, 'dashboard'])->name('dashboard');
         Route::get('/data', [LoanController::class, 'data'])->name('data');
         Route::get('/', [LoanController::class, 'index'])->name('index');
@@ -90,6 +90,9 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::put('/{id}', [LoanController::class, 'update'])->name('update');
         Route::post('/', [LoanController::class, 'store'])->name('store');
         Route::delete('/{id}', [LoanController::class, 'destroy'])->name('destroy');
+        Route::post('/sync-paid', [LoanController::class, 'syncPaid'])->name('sync_paid');
+        Route::post('/{loan}/import-schedule/preview', [LoanController::class, 'importSchedulePreview'])->name('import_schedule_preview');
+        Route::post('/{loan}/import-schedule', [LoanController::class, 'importSchedule'])->name('import_schedule');
 
         Route::prefix('/audit')->name('audit.')->group(function () {
             Route::get('/', [LoanController::class, 'auditIndex'])->name('index');
@@ -109,6 +112,17 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
             Route::post('/{installment_id}/mark-auto-debit', [InstallmentController::class, 'markAsAutoDebitPaid'])->name('mark_auto_debit');
             Route::post('/{installment_id}/create-sap-ap-invoice', [InstallmentController::class, 'createSapApInvoice'])->name('create_sap_ap_invoice');
             Route::post('/{installment_id}/link-sap-ap-invoice', [InstallmentController::class, 'linkSapApInvoice'])->name('link_sap_ap_invoice');
+            Route::post('/bulk-submit-sap-ap', [InstallmentController::class, 'bulkSubmitSapAp'])
+                ->middleware('permission:submit_sap_ap_invoice_installment')
+                ->name('bulk_submit_sap_ap');
+            Route::post('/{installment}/submit-sap-ap', [InstallmentController::class, 'submitSapAp'])
+                ->middleware('permission:submit_sap_ap_invoice_installment')
+                ->name('submit_sap_ap');
+            Route::get('/{installment}/op-preview', [InstallmentController::class, 'opPreview'])->name('op_preview');
+            Route::post('/{installment}/create-sap-op', [InstallmentController::class, 'createSapOp'])
+                ->middleware('permission:submit_sap_op_installment')
+                ->name('create_sap_op');
+            Route::post('/{installment}/save-split', [InstallmentController::class, 'saveSplit'])->name('save_split');
         });
     });
 

@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Creditor;
-use App\Models\Loan;
-use App\Models\Installment;
-use App\Models\LoanAudit;
 use App\Events\LoanCreated;
-use App\Events\LoanUpdated;
 use App\Events\LoanStatusChanged;
+use App\Events\LoanUpdated;
+use App\Models\Creditor;
+use App\Models\Installment;
+use App\Models\Loan;
+use App\Models\LoanAudit;
+use App\Services\InstallmentImport\InstallmentScheduleImportService;
+use App\Services\InstallmentOpService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LoanController extends Controller
 {
@@ -20,75 +24,84 @@ class LoanController extends Controller
 
     public function dashboard()
     {
-        $statistics = [
-            'total_loans' => Loan::count(),
-            'installments_due_this_month' => Installment::whereMonth('due_date', now()->month)
-                ->whereYear('due_date', now()->year)
-                ->unpaid()
-                ->count(),
-            'total_outstanding' => Installment::unpaid()->sum('bilyet_amount'),
-            'overdue_installments' => Installment::where('due_date', '<', now())
-                ->unpaid()
-                ->count(),
+        $today = now()->startOfDay();
+        $weekEnd = now()->addDays(7)->endOfDay();
+
+        $dueWeekQuery = Installment::query()
+            ->whereBetween('due_date', [$today, $weekEnd])
+            ->unpaid();
+
+        $dueTodayQuery = Installment::query()
+            ->whereDate('due_date', $today)
+            ->unpaid();
+
+        $dueWeek = [
+            'count' => (clone $dueWeekQuery)->count(),
+            'total' => (float) (clone $dueWeekQuery)->sum('bilyet_amount'),
         ];
 
-        $upcoming_installments = Installment::with(['loan.creditor'])
-            ->whereBetween('due_date', [now(), now()->addDays(7)])
+        $dueToday = [
+            'count' => (clone $dueTodayQuery)->count(),
+            'total' => (float) (clone $dueTodayQuery)->sum('bilyet_amount'),
+        ];
+
+        $fundsPerBank = Installment::query()
+            ->select(
+                DB::raw('COALESCE(installments.account_id, loans.account_id) as bank_account_id'),
+                DB::raw('COUNT(*) as installment_count'),
+                DB::raw('SUM(installments.bilyet_amount) as total_amount')
+            )
+            ->join('loans', 'loans.id', '=', 'installments.loan_id')
+            ->whereBetween('installments.due_date', [$today, $weekEnd])
             ->unpaid()
-            ->orderBy('due_date', 'asc')
-            ->limit(10)
-            ->get();
-
-        $recent_payments = Installment::with(['loan.creditor', 'bilyet'])
-            ->whereMonth('paid_date', now()->month)
-            ->whereYear('paid_date', now()->year)
-            ->paid()
-            ->orderBy('paid_date', 'desc')
-            ->limit(10)
-            ->get();
-
-        $payment_method_stats = Installment::whereMonth('paid_date', now()->month)
-            ->whereYear('paid_date', now()->year)
-            ->paid()
-            ->selectRaw('payment_method, COUNT(*) as count')
-            ->groupBy('payment_method')
-            ->pluck('count', 'payment_method')
-            ->toArray();
-
-        $loans_by_creditor = Loan::with(['creditor', 'installments'])
+            ->groupBy(DB::raw('COALESCE(installments.account_id, loans.account_id)'))
             ->get()
-            ->groupBy('creditor_id')
-            ->map(function ($loans) {
-                $creditor = $loans->first()->creditor;
+            ->map(function ($row) {
+                $account = \App\Models\Account::query()->find($row->bank_account_id);
+
                 return [
-                    'name' => $creditor->name,
-                    'loan_count' => $loans->count(),
-                    'outstanding' => $loans->sum(function ($loan) {
-                        return $loan->installments()->unpaid()->sum('bilyet_amount');
-                    }),
-                    'unpaid_installments' => $loans->sum(function ($loan) {
-                        return $loan->installments()->unpaid()->count();
-                    }),
-                    'loans' => $loans->map(function ($loan) {
-                        return [
-                            'id' => $loan->id,
-                            'code' => $loan->loan_code,
-                            'description' => $loan->description,
-                            'principal' => $loan->principal,
-                            'unpaid_count' => $loan->installments()->unpaid()->count(),
-                        ];
-                    })->toArray()
+                    'account_id' => $row->bank_account_id,
+                    'account_label' => $account
+                        ? $account->account_number.' — '.($account->account_name ?? '')
+                        : 'Belum di-set',
+                    'count' => (int) $row->installment_count,
+                    'total' => (float) $row->total_amount,
                 ];
             })
+            ->sortByDesc('total')
             ->values()
-            ->toArray();
+            ->all();
+
+        $bilyetCairTanpaOp = Installment::query()
+            ->whereNotNull('sap_ap_doc_num')
+            ->whereNull('sap_payment_doc_num')
+            ->unpaid()
+            ->where(function ($query) {
+                $query->where('payment_method', 'auto_debit')
+                    ->orWhereHas('bilyet', function ($bilyetQuery) {
+                        $bilyetQuery->where('status', 'cair');
+                    });
+            })
+            ->count();
+
+        $remainingPerContract = Loan::query()
+            ->withCount(['installments as unpaid_count' => function ($query) {
+                $query->unpaid();
+            }])
+            ->withSum(['installments as unpaid_total' => function ($query) {
+                $query->unpaid();
+            }], 'bilyet_amount')
+            ->having('unpaid_count', '>', 0)
+            ->orderByDesc('unpaid_total')
+            ->limit(10)
+            ->get();
 
         return view('accounting.loans.dashboard', compact(
-            'statistics',
-            'upcoming_installments',
-            'recent_payments',
-            'payment_method_stats',
-            'loans_by_creditor'
+            'dueWeek',
+            'dueToday',
+            'fundsPerBank',
+            'bilyetCairTanpaOp',
+            'remainingPerContract'
         ));
     }
 
@@ -108,7 +121,7 @@ class LoanController extends Controller
             'tenor' => 'required',
         ]);
 
-        $loan = new Loan();
+        $loan = new Loan;
         $loan->loan_code = $request->loan_code;
         $loan->creditor_id = $request->creditor_id;
         $loan->start_date = $request->start_date;
@@ -227,7 +240,7 @@ class LoanController extends Controller
         }
 
         if ($request->date_to) {
-            $query->where('created_at', '<=', $request->date_to . ' 23:59:59');
+            $query->where('created_at', '<=', $request->date_to.' 23:59:59');
         }
 
         $audits = $query->paginate(50);
@@ -240,5 +253,61 @@ class LoanController extends Controller
         $audit = LoanAudit::with(['loan.creditor', 'user'])->findOrFail($id);
 
         return view('accounting.loans.audit_detail', compact('audit'));
+    }
+
+    public function syncPaid(Request $request, InstallmentOpService $opService): JsonResponse
+    {
+        $validated = $request->validate([
+            'loan_id' => 'nullable|integer|exists:loans,id',
+        ]);
+
+        $query = Installment::query()
+            ->whereNotNull('sap_ap_doc_entry')
+            ->unpaid();
+
+        if (! empty($validated['loan_id'])) {
+            $query->where('loan_id', $validated['loan_id']);
+        }
+
+        $installmentIds = $query->pluck('id')->all();
+
+        if ($installmentIds === []) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada angsuran dengan AP yang perlu disinkronkan.',
+                'results' => [],
+            ]);
+        }
+
+        $result = $opService->syncPaidFromSap($installmentIds);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sinkronisasi selesai.',
+            'results' => $result['results'],
+        ]);
+    }
+
+    public function importSchedulePreview(Request $request, Loan $loan, InstallmentScheduleImportService $importService): JsonResponse
+    {
+        $validated = $request->validate([
+            'format' => 'required|string',
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
+        ]);
+
+        $result = $importService->preview($validated['file'], $loan, $validated['format']);
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
+    }
+
+    public function importSchedule(Request $request, Loan $loan, InstallmentScheduleImportService $importService): JsonResponse
+    {
+        $validated = $request->validate([
+            'preview_token' => 'required|string',
+        ]);
+
+        $result = $importService->import($validated['preview_token'], $loan);
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
     }
 }
