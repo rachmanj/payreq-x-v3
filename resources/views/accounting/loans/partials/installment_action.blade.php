@@ -14,7 +14,6 @@
                 data-angsuran="{{ $model->angsuran_ke }}"
                 title="Split Pokok/Bunga">
                 <i class="fas fa-divide"></i>
-                <span>split</span>
             </button>
         @endif
 
@@ -25,7 +24,6 @@
                 data-amount="{{ number_format((float) $model->bilyet_amount, 0, ',', '.') }}"
                 title="Submit AP ke SAP">
                 <i class="fas fa-file-invoice-dollar"></i>
-                <span>submit ap</span>
             </button>
         @endif
 
@@ -35,7 +33,6 @@
                 data-angsuran="{{ $model->angsuran_ke }}"
                 title="Buat Outgoing Payment">
                 <i class="fas fa-money-check-alt"></i>
-                <span>buat op</span>
             </button>
         @endif
 
@@ -43,7 +40,6 @@
             <button type="button" class="vj-action-item vj-action-item-xs vj-action-export" data-toggle="modal"
                 data-target="#payment-method-{{ $model->id }}" title="Set Payment Method">
                 <i class="fas fa-credit-card"></i>
-                <span>payment</span>
             </button>
         @endif
 
@@ -51,14 +47,12 @@
             <button type="button" class="vj-action-item vj-action-item-xs vj-action-export" data-toggle="modal"
                 data-target="#link-sap-ap-{{ $model->id }}" title="Link SAP AP Invoice">
                 <i class="fas fa-link"></i>
-                <span>link ap</span>
             </button>
         @endif
 
         <button type="button" class="vj-action-item vj-action-item-xs vj-action-edit" data-toggle="modal"
-            data-target="#installment-edit-{{ $model->id }}">
+            data-target="#installment-edit-{{ $model->id }}" title="Edit Installment">
             <i class="fas fa-edit"></i>
-            <span>edit</span>
         </button>
     </div>
 @endhasanyrole
@@ -66,10 +60,9 @@
 @hasanyrole('superadmin')
     <form action="{{ route('accounting.loans.installments.destroy', $model->id) }}" method="POST" class="vj-action-item-form d-inline">
         @csrf @method('DELETE')
-        <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel"
+        <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel" title="Delete Installment"
             onclick="return confirm('Are You sure You want to delete this record?')">
             <i class="fas fa-trash"></i>
-            <span>delete</span>
         </button>
     </form>
 @endhasanyrole
