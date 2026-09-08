@@ -638,6 +638,12 @@
     margin: 0;
 }
 
+/* gap utilities (BS5-style; BS4 tidak punya) — dipakai d-flex flex-wrap gap-* di header/toolbar */
+.gap-1 { gap: 0.35rem; }
+.gap-2 { gap: 0.75rem; }
+.gap-3 { gap: 1rem; }
+.gap-4 { gap: 1.5rem; }
+
 .vj-inline-actions {
     display: inline-flex;
     align-items: center;
