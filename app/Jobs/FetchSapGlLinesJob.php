@@ -61,13 +61,35 @@ class FetchSapGlLinesJob implements ShouldQueue
                 return;
             }
 
-            $fallbackAccount = Account::query()
-                ->where('project', $reconciliation->giro->project)
-                ->where('type', 'bank')
-                ->orderBy('account_number')
-                ->first();
+            // Fallback cerdas: cari akun bank project yang nomor rekeningnya cocok dengan giro
+            // (cegah salah ambil akun bank lain — kasus nyata: Danamon/BSI/Niaga ter-fetch GL Mandiri).
+            $accNoDigits = preg_replace('/\D+/', '', (string) ($reconciliation->giro->acc_no ?? ''));
 
-            $accountCode = $fallbackAccount !== null ? trim((string) $fallbackAccount->account_number) : '';
+            if ($accNoDigits !== '') {
+                $matchingAccount = Account::query()
+                    ->where('project', $reconciliation->giro->project)
+                    ->where('type', 'bank')
+                    ->where(function ($q) use ($accNoDigits): void {
+                        $q->where('account_name', 'like', '%'.$accNoDigits.'%')
+                            ->orWhere('account_number', 'like', '%'.$accNoDigits.'%');
+                    })
+                    ->orderBy('account_number')
+                    ->first();
+
+                if ($matchingAccount !== null) {
+                    $accountCode = trim((string) $matchingAccount->account_number);
+                }
+            }
+
+            if ($accountCode === '') {
+                $fallbackAccount = Account::query()
+                    ->where('project', $reconciliation->giro->project)
+                    ->where('type', 'bank')
+                    ->orderBy('account_number')
+                    ->first();
+
+                $accountCode = $fallbackAccount !== null ? trim((string) $fallbackAccount->account_number) : '';
+            }
         }
 
         if ($accountCode === '') {
