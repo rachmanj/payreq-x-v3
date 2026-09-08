@@ -16,11 +16,16 @@ class SapTransactionController extends Controller
 
     public function index()
     {
-        $accounts = Account::where('project', auth()->user()->project)
-            ->whereIn('type', ['cash', 'bank'])
+        $accountsQuery = Account::whereIn('type', ['cash', 'bank'])
             ->select('account_number', 'account_name')
-            ->orderBy('account_number')
-            ->get();
+            ->orderBy('account_number');
+
+        // approver, superadmin & cashier boleh lihat SEMUA akun; role lain dibatasi project sendiri.
+        if (! auth()->user()->hasAnyRole(['superadmin', 'approver', 'cashier'])) {
+            $accountsQuery->where('project', auth()->user()->project);
+        }
+
+        $accounts = $accountsQuery->get();
 
         return view('cashier.sap-transactions.index', compact('accounts'));
     }
