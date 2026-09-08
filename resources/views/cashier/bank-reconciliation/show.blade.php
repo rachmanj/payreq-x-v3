@@ -69,6 +69,8 @@
             \App\Models\SapGlLine::TYPE_OUTSTANDING_PAYMENT => 'Outstanding payment',
             \App\Models\SapGlLine::TYPE_BOOK_ERROR => 'Book error',
         ];
+        $currencyCode = strtolower(trim((string) ($bankReconciliation->currency ?? 'idr')));
+        $currencySuffix = $currencyCode !== 'idr' ? ' '.strtoupper($currencyCode) : '';
     @endphp
 
     <div class="row pb-5 mb-5">
@@ -108,6 +110,9 @@
                         {{ $bankReconciliation->giro?->acc_name }}
                         <span class="badge badge-secondary">{{ $bankReconciliation->giro?->project }}</span>
                         <span class="badge badge-primary">{{ $bankReconciliation->periode?->format('M Y') }}</span>
+                        @if ($currencyCode !== 'idr')
+                            <span class="badge badge-light border">{{ strtoupper($currencyCode) }}</span>
+                        @endif
                         <span class="badge badge-dark" id="br-status">{{ $bankReconciliation->status }}</span>
                         <span class="badge badge-light border">{{ $bankReconciliation->source_mode }}</span>
                         @if ($bankReconciliation->validation_status)
@@ -135,11 +140,11 @@
                         @endif
                     </div>
                     <div class="d-flex flex-wrap align-items-center small">
-                        <span class="mr-3">Closing bank: <strong id="br-closing-bank">{{ $statement['closing_balance_bank'] !== null ? number_format($statement['closing_balance_bank'], 2) : '—' }}</strong></span>
-                        <span class="mr-3">Closing book: <strong id="br-closing-book">{{ $statement['closing_balance_book'] !== null ? number_format($statement['closing_balance_book'], 2) : '—' }}</strong></span>
-                        <span class="mr-3">Adjusted bank: <strong id="br-adjusted-bank">{{ $statement['adjusted_bank'] !== null ? number_format($statement['adjusted_bank'], 2) : '—' }}</strong></span>
-                        <span class="mr-3">Adjusted book: <strong id="br-adjusted-book">{{ $statement['adjusted_book'] !== null ? number_format($statement['adjusted_book'], 2) : '—' }}</strong></span>
-                        <span class="mr-3">Unexplained: <strong id="br-unexplained" class="{{ $isReconciled ? 'text-success' : 'text-danger' }}">{{ $statement['unexplained_difference'] !== null ? number_format($statement['unexplained_difference'], 2) : '—' }}</strong></span>
+                        <span class="mr-3">Closing bank: <strong id="br-closing-bank">{{ $statement['closing_balance_bank'] !== null ? number_format($statement['closing_balance_bank'], 2).$currencySuffix : '—' }}</strong></span>
+                        <span class="mr-3">Closing book: <strong id="br-closing-book">{{ $statement['closing_balance_book'] !== null ? number_format($statement['closing_balance_book'], 2).$currencySuffix : '—' }}</strong></span>
+                        <span class="mr-3">Adjusted bank: <strong id="br-adjusted-bank">{{ $statement['adjusted_bank'] !== null ? number_format($statement['adjusted_bank'], 2).$currencySuffix : '—' }}</strong></span>
+                        <span class="mr-3">Adjusted book: <strong id="br-adjusted-book">{{ $statement['adjusted_book'] !== null ? number_format($statement['adjusted_book'], 2).$currencySuffix : '—' }}</strong></span>
+                        <span class="mr-3">Unexplained: <strong id="br-unexplained" class="{{ $isReconciled ? 'text-success' : 'text-danger' }}">{{ $statement['unexplained_difference'] !== null ? number_format($statement['unexplained_difference'], 2).$currencySuffix : '—' }}</strong></span>
                     </div>
                     @if (! empty($statement['diagnostic']))
                         <div class="small text-danger mt-1" id="br-diagnostic">{{ $statement['diagnostic'] }}</div>
@@ -147,9 +152,9 @@
                         <div class="small text-danger mt-1 d-none" id="br-diagnostic"></div>
                     @endif
                     <div class="small text-muted mt-1">
-                        Movement totals (legacy): Bank net <span id="br-bank-net">{{ number_format($balanceSummary['bank_net'], 2) }}</span>
-                        | Book net <span id="br-book-net">{{ number_format($balanceSummary['book_net'], 2) }}</span>
-                        | Diff <span id="br-diff">{{ number_format($balanceSummary['difference'], 2) }}</span>
+                        Movement totals (legacy): Bank net <span id="br-bank-net">{{ number_format($balanceSummary['bank_net'], 2).$currencySuffix }}</span>
+                        | Book net <span id="br-book-net">{{ number_format($balanceSummary['book_net'], 2).$currencySuffix }}</span>
+                        | Diff <span id="br-diff">{{ number_format($balanceSummary['difference'], 2).$currencySuffix }}</span>
                     </div>
                 </div>
             </div>
@@ -166,22 +171,22 @@
                             @csrf
                             @method('PUT')
                             <div class="form-group col-md-3 mb-2">
-                                <label class="small mb-0">Opening — Bank</label>
+                                <label class="small mb-0">Opening — Bank{{ $currencySuffix }}</label>
                                 <input type="number" step="0.01" name="opening_balance_bank" class="form-control form-control-sm"
                                     value="{{ old('opening_balance_bank', $bankReconciliation->opening_balance_bank) }}">
                             </div>
                             <div class="form-group col-md-3 mb-2">
-                                <label class="small mb-0">Closing — Bank</label>
+                                <label class="small mb-0">Closing — Bank{{ $currencySuffix }}</label>
                                 <input type="number" step="0.01" name="closing_balance_bank" class="form-control form-control-sm"
                                     value="{{ old('closing_balance_bank', $bankReconciliation->closing_balance_bank) }}">
                             </div>
                             <div class="form-group col-md-3 mb-2">
-                                <label class="small mb-0">Opening — Book</label>
+                                <label class="small mb-0">Opening — Book{{ $currencySuffix }}</label>
                                 <input type="number" step="0.01" name="opening_balance_book" class="form-control form-control-sm"
                                     value="{{ old('opening_balance_book', $bankReconciliation->opening_balance_book) }}">
                             </div>
                             <div class="form-group col-md-3 mb-2">
-                                <label class="small mb-0">Closing — Book</label>
+                                <label class="small mb-0">Closing — Book{{ $currencySuffix }}</label>
                                 <input type="number" step="0.01" name="closing_balance_book" class="form-control form-control-sm"
                                     value="{{ old('closing_balance_book', $bankReconciliation->closing_balance_book) }}">
                             </div>

@@ -77,6 +77,9 @@
                                         <small>
                                             {{ $row->giro?->acc_no }} — {{ $row->giro?->acc_name }}
                                             <span class="badge badge-secondary">{{ $row->giro?->project }}</span>
+                                            @if (strtolower(trim((string) ($row->currency ?? 'idr'))) !== 'idr')
+                                                <span class="badge badge-light border">{{ strtoupper($row->currency) }}</span>
+                                            @endif
                                         </small>
                                     </td>
                                     <td>{{ $row->periode?->format('M Y') }}</td>

@@ -725,8 +725,12 @@ class SapService
      *     summary: array{total_debit: float, total_credit: float, transaction_count: int}
      * }
      */
-    public function getAccountStatement(string $accountCode, string $startDate, string $endDate): array
-    {
+    public function getAccountStatement(
+        string $accountCode,
+        string $startDate,
+        string $endDate,
+        ?string $currency = null
+    ): array {
         $accountCode = trim($accountCode);
         if ($accountCode === '') {
             throw new \InvalidArgumentException('Account code is required.');
@@ -735,16 +739,16 @@ class SapService
         $mode = strtolower((string) config('services.sap.account_statement.mode', 'auto'));
 
         if ($mode === 'sql') {
-            return $this->getAccountStatementViaSql($accountCode, $startDate, $endDate);
+            return $this->getAccountStatementViaSql($accountCode, $startDate, $endDate, $currency);
         }
 
         if ($mode === 'odata') {
-            return $this->getAccountStatementViaOdata($accountCode, $startDate, $endDate);
+            return $this->getAccountStatementViaOdata($accountCode, $startDate, $endDate, $currency);
         }
 
         if ($this->sqlQueriesAvailable()) {
             try {
-                return $this->getAccountStatementViaSql($accountCode, $startDate, $endDate);
+                return $this->getAccountStatementViaSql($accountCode, $startDate, $endDate, $currency);
             } catch (\Throwable $exception) {
                 Log::warning('SAP SQLQueries account statement failed, falling back to OData', [
                     'account_code' => $accountCode,
@@ -753,7 +757,7 @@ class SapService
             }
         }
 
-        return $this->getAccountStatementViaOdata($accountCode, $startDate, $endDate);
+        return $this->getAccountStatementViaOdata($accountCode, $startDate, $endDate, $currency);
     }
 
     /**
@@ -813,34 +817,69 @@ class SapService
      *     summary: array{total_debit: float, total_credit: float, transaction_count: int}
      * }
      */
-    protected function getAccountStatementViaSql(string $accountCode, string $startDate, string $endDate): array
-    {
+    protected function getAccountStatementViaSql(
+        string $accountCode,
+        string $startDate,
+        string $endDate,
+        ?string $currency = null
+    ): array {
         $this->ensureSession();
 
         $unitUdf = $this->normalizeUnitUdfColumn(
             (string) config('services.sap.account_statement.unit_udf', '')
         );
 
-        $this->ensureSqlQuery(
-            'AO_OPEN3',
-            'AccountingOne account opening balance',
-            'SELECT SUM(Debit) AS TotalDebit, SUM(Credit) AS TotalCredit'
-            .' FROM JDT1 WHERE Account = :accountCode AND RefDate < :startDate'
-        );
+        $useForeignCurrency = $this->isForeignCurrencyMode($currency);
+
+        if ($useForeignCurrency) {
+            $sapCurrency = strtoupper(trim((string) $currency));
+
+            $this->ensureSqlQuery(
+                'AO_OPEN3FC',
+                'AccountingOne account opening balance (foreign currency)',
+                'SELECT SUM(T1.DebitFC) AS TotalDebit, SUM(T1.CreditFC) AS TotalCredit'
+                .' FROM JDT1 T1 WHERE T1.Account = :accountCode AND T1.Currency = :currency AND T1.RefDate < :startDate'
+            );
+
+            $txSqlCode = $this->ensureAccountStatementLinesFcSql();
+            $openingSqlCode = 'AO_OPEN3FC';
+            $txParams = [
+                'accountCode' => $accountCode,
+                'currency' => $sapCurrency,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+            ];
+            $openingParams = [
+                'accountCode' => $accountCode,
+                'currency' => $sapCurrency,
+                'startDate' => $startDate,
+            ];
+        } else {
+            $this->ensureSqlQuery(
+                'AO_OPEN3',
+                'AccountingOne account opening balance',
+                'SELECT SUM(Debit) AS TotalDebit, SUM(Credit) AS TotalCredit'
+                .' FROM JDT1 WHERE Account = :accountCode AND RefDate < :startDate'
+            );
+
+            $txSqlCode = $this->ensureAccountStatementLinesSql();
+            $openingSqlCode = 'AO_OPEN3';
+            $txParams = [
+                'accountCode' => $accountCode,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+            ];
+            $openingParams = [
+                'accountCode' => $accountCode,
+                'startDate' => $startDate,
+            ];
+        }
 
         // Lines from OJDT/JDT1 only — OIGE/ODLN are not accessible via SQLQueries on this SL.
         // unit_no is enriched afterwards from InventoryGenExits / DeliveryNotes OData.
-        $txSqlCode = $this->ensureAccountStatementLinesSql();
-        $rawRows = $this->executeSqlQuery($txSqlCode, [
-            'accountCode' => $accountCode,
-            'startDate' => $startDate,
-            'endDate' => $endDate,
-        ]);
+        $rawRows = $this->executeSqlQuery($txSqlCode, $txParams);
 
-        $openingRows = $this->executeSqlQuery('AO_OPEN3', [
-            'accountCode' => $accountCode,
-            'startDate' => $startDate,
-        ]);
+        $openingRows = $this->executeSqlQuery($openingSqlCode, $openingParams);
         $openingBalance = (float) ($openingRows[0]['TotalDebit'] ?? 0) - (float) ($openingRows[0]['TotalCredit'] ?? 0);
 
         $unitMap = $this->buildUnitNoMap($rawRows, $unitUdf);
@@ -908,8 +947,13 @@ class SapService
      *     summary: array{total_debit: float, total_credit: float, transaction_count: int}
      * }
      */
-    protected function getAccountStatementViaOdata(string $accountCode, string $startDate, string $endDate): array
-    {
+    protected function getAccountStatementViaOdata(
+        string $accountCode,
+        string $startDate,
+        string $endDate,
+        ?string $currency = null
+    ): array {
+        // TODO: OData JournalEntries uses system-currency Debit/Credit only; foreign-currency amounts require SQL path.
         $this->ensureSession();
 
         $unitUdf = $this->normalizeUnitUdfColumn(
@@ -1230,6 +1274,35 @@ class SapService
         );
 
         return $txSqlCode;
+    }
+
+    protected function ensureAccountStatementLinesFcSql(): string
+    {
+        $txSqlCode = 'AO_TX5FC';
+
+        $this->ensureSqlQuery(
+            $txSqlCode,
+            'AccountingOne account statement lines (foreign currency)',
+            'SELECT T0.BaseRef AS DocNum, T1.TransType AS DocType, T0.Memo AS HeaderMemo,'
+            .' T1.TransId AS TxNum, T1.RefDate AS PostingDate, T1.LineMemo AS LineMemo,'
+            .' T1.Project AS ProjectCode, T1.DebitFC AS DebitAmount, T1.CreditFC AS CreditAmount,'
+            .' T1.Line_ID AS LineId'
+            .' FROM OJDT T0 INNER JOIN JDT1 T1 ON T0.TransId = T1.TransId'
+            .' WHERE T1.Account = :accountCode AND T1.Currency = :currency'
+            .' AND T1.RefDate >= :startDate AND T1.RefDate <= :endDate'
+            .' ORDER BY T1.RefDate, T1.TransId, T1.Line_ID'
+        );
+
+        return $txSqlCode;
+    }
+
+    protected function isForeignCurrencyMode(?string $currency): bool
+    {
+        if ($currency === null || trim($currency) === '') {
+            return false;
+        }
+
+        return strtolower(trim($currency)) !== 'idr';
     }
 
     /**

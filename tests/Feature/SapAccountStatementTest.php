@@ -157,7 +157,7 @@ class SapAccountStatementTest extends TestCase
         $this->mock(SapService::class, function ($mock) {
             $mock->shouldReceive('getAccountStatement')
                 ->once()
-                ->with('11501004', '2026-01-01', '2026-01-31')
+                ->with('11501004', '2026-01-01', '2026-01-31', 'IDR')
                 ->andReturn($this->sampleStatement());
         });
 

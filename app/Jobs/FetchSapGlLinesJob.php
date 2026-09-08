@@ -46,9 +46,21 @@ class FetchSapGlLinesJob implements ShouldQueue
         $start = $reconciliation->periode->copy()->startOfMonth()->format('Y-m-d');
         $end = $reconciliation->periode->copy()->endOfMonth()->format('Y-m-d');
 
+        $currency = strtoupper(trim((string) $reconciliation->giro->curr)) ?: null;
+        $isValas = $currency !== null && strtolower($currency) !== 'idr';
+
         $accountCode = trim((string) ($reconciliation->giro->sap_account ?? ''));
 
         if ($accountCode === '') {
+            if ($isValas) {
+                $this->markFailed(
+                    $reconciliation,
+                    'giro valas butuh sap_account GL valas yang terkonfigurasi; fallback akun bank IDR tidak digunakan.'
+                );
+
+                return;
+            }
+
             $fallbackAccount = Account::query()
                 ->where('project', $reconciliation->giro->project)
                 ->where('type', 'bank')
@@ -68,7 +80,7 @@ class FetchSapGlLinesJob implements ShouldQueue
         }
 
         try {
-            $statement = $sapService->getAccountStatement($accountCode, $start, $end);
+            $statement = $sapService->getAccountStatement($accountCode, $start, $end, $currency);
         } catch (\Throwable $exception) {
             Log::warning('SAP Service Layer account statement fetch failed', [
                 'bank_reconciliation_id' => $this->bankReconciliationId,
@@ -91,8 +103,14 @@ class FetchSapGlLinesJob implements ShouldQueue
             $opening = data_get($statement, 'opening_balance');
             $closing = data_get($statement, 'closing_balance');
 
+            $reconciliationCurrency = strtolower(trim((string) ($reconciliation->giro->curr ?? 'idr')));
+            if ($reconciliationCurrency === '') {
+                $reconciliationCurrency = 'idr';
+            }
+
             $updates = [
                 'notes' => null,
+                'currency' => $reconciliationCurrency,
             ];
 
             if ($opening !== null || $closing !== null) {

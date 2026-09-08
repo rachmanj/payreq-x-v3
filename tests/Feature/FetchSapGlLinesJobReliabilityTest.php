@@ -235,7 +235,7 @@ class FetchSapGlLinesJobReliabilityTest extends TestCase
         $this->mock(SapService::class, function ($mock) {
             $mock->shouldReceive('getAccountStatement')
                 ->once()
-                ->with('11501004', '2026-01-01', '2026-01-31')
+                ->with('11501004', '2026-01-01', '2026-01-31', 'IDR')
                 ->andReturn($this->sampleStatement());
         });
 
@@ -257,5 +257,63 @@ class FetchSapGlLinesJobReliabilityTest extends TestCase
             'transaction_id' => '5001',
             'matched_status' => SapGlLine::MATCH_UNMATCHED,
         ]);
+    }
+
+    public function test_valas_giro_without_sap_account_skips_idr_fallback(): void
+    {
+        $user = $this->createCashier();
+        $giro = $this->createGiro(null);
+        $giro->update(['curr' => 'usd']);
+
+        $reconciliation = BankReconciliation::query()->create([
+            'giro_id' => $giro->id,
+            'periode' => '2026-01-01',
+            'source_mode' => BankReconciliation::SOURCE_MANUAL,
+            'status' => BankReconciliation::STATUS_IN_REVIEW,
+            'created_by' => $user->id,
+        ]);
+
+        $this->mock(SapService::class, function ($mock) {
+            $mock->shouldNotReceive('getAccountStatement');
+        });
+
+        (new FetchSapGlLinesJob($reconciliation->id))->handle(
+            app(SapService::class),
+            app(\App\Services\ReconciliationMatchingService::class)
+        );
+
+        $reconciliation->refresh();
+        $this->assertSame(BankReconciliation::STATUS_FAILED, $reconciliation->status);
+        $this->assertStringContainsString('giro valas butuh sap_account', (string) $reconciliation->notes);
+    }
+
+    public function test_valas_giro_passes_currency_to_sap_service(): void
+    {
+        $user = $this->createCashier();
+        $giro = $this->createGiro('11201015');
+        $giro->update(['curr' => 'usd']);
+
+        $reconciliation = BankReconciliation::query()->create([
+            'giro_id' => $giro->id,
+            'periode' => '2026-01-01',
+            'source_mode' => BankReconciliation::SOURCE_MANUAL,
+            'status' => BankReconciliation::STATUS_IN_REVIEW,
+            'created_by' => $user->id,
+        ]);
+
+        $this->mock(SapService::class, function ($mock) {
+            $mock->shouldReceive('getAccountStatement')
+                ->once()
+                ->with('11201015', '2026-01-01', '2026-01-31', 'USD')
+                ->andReturn($this->sampleStatement());
+        });
+
+        (new FetchSapGlLinesJob($reconciliation->id))->handle(
+            app(SapService::class),
+            app(\App\Services\ReconciliationMatchingService::class)
+        );
+
+        $reconciliation->refresh();
+        $this->assertSame('usd', $reconciliation->currency);
     }
 }

@@ -129,11 +129,17 @@ class BankReconciliationController extends Controller
         $periode = Carbon::parse((string) $validated['periode'])->startOfMonth()->format('Y-m-d');
         $sourceMode = $validated['source_mode'];
 
+        $currency = strtolower(trim((string) ($giro->curr ?? 'idr')));
+        if ($currency === '') {
+            $currency = 'idr';
+        }
+
         $reconciliation = BankReconciliation::create([
             'giro_id' => $giro->id,
             'dokumen_id' => isset($validated['dokumen_id']) ? (int) $validated['dokumen_id'] : null,
             'periode' => $periode,
             'source_mode' => $sourceMode,
+            'currency' => $currency,
             'status' => $sourceMode === BankReconciliation::SOURCE_MANUAL
                 ? BankReconciliation::STATUS_IN_REVIEW
                 : BankReconciliation::STATUS_PROCESSING,
