@@ -11,19 +11,27 @@ class Installment extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'due_date' => 'date',
+        'paid_date' => 'date',
+        'bilyet_amount' => 'decimal:2',
+        'principal_amount' => 'decimal:2',
+        'interest_amount' => 'decimal:2',
+    ];
+
     const PAYMENT_METHODS = [
         'bilyet' => 'Bilyet Payment',
         'auto_debit' => 'Auto Debit',
         'cash' => 'Cash',
         'transfer' => 'Bank Transfer',
-        'other' => 'Other'
+        'other' => 'Other',
     ];
 
     const SAP_SYNC_STATUSES = [
         'pending' => 'Pending',
         'ap_created' => 'AP Invoice Created',
         'payment_created' => 'Payment Created',
-        'completed' => 'Completed'
+        'completed' => 'Completed',
     ];
 
     public function loan()
@@ -39,7 +47,14 @@ class Installment extends Model
     public function account()
     {
         return $this->belongsTo(Account::class)->withDefault([
-            'account_number' => '-'
+            'account_number' => '-',
+        ]);
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(Account::class, 'account_id')->withDefault([
+            'account_number' => '-',
         ]);
     }
 
@@ -53,9 +68,18 @@ class Installment extends Model
         return self::PAYMENT_METHODS[$this->payment_method] ?? '-';
     }
 
-    public function isPaid()
+    public function isPaid(): bool
     {
-        return !is_null($this->paid_date);
+        return $this->status === 'paid' || ! is_null($this->paid_date);
+    }
+
+    public function getTotalAmountAttribute(): float
+    {
+        if ($this->principal_amount !== null && $this->interest_amount !== null) {
+            return (float) $this->principal_amount + (float) $this->interest_amount;
+        }
+
+        return (float) ($this->bilyet_amount ?? 0);
     }
 
     public function scopePaid($query)
@@ -90,12 +114,17 @@ class Installment extends Model
 
     public function hasSapApInvoice(): bool
     {
-        return !is_null($this->sap_ap_doc_num);
+        return ! is_null($this->sap_ap_doc_num);
+    }
+
+    public function hasSapAp(): bool
+    {
+        return $this->hasSapApInvoice();
     }
 
     public function hasSapPayment(): bool
     {
-        return !is_null($this->sap_payment_doc_num);
+        return ! is_null($this->sap_payment_doc_num);
     }
 
     public function canCreateSapApInvoice(): bool
@@ -104,11 +133,11 @@ class Installment extends Model
             return false;
         }
 
-        if (!$this->loan_id) {
+        if (! $this->loan_id) {
             return false;
         }
 
-        if (!$this->loan || !$this->loan->creditor_id) {
+        if (! $this->loan || ! $this->loan->creditor_id) {
             return false;
         }
 
@@ -121,7 +150,7 @@ class Installment extends Model
             return false;
         }
 
-        if (!$this->hasSapApInvoice()) {
+        if (! $this->hasSapApInvoice()) {
             return false;
         }
 
@@ -130,7 +159,7 @@ class Installment extends Model
         }
 
         if ($this->payment_method === 'auto_debit') {
-            return !is_null($this->paid_date);
+            return ! is_null($this->paid_date);
         }
 
         return false;

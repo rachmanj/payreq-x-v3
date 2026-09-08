@@ -11,6 +11,8 @@ class Creditor extends Model
 
     protected $fillable = [
         'name',
+        'nama_singkat',
+        'akun_pokok_default',
         'sap_business_partner_id',
     ];
 

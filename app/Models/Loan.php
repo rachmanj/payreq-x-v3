@@ -11,6 +11,19 @@ class Loan extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'start_date' => 'date',
+        'principal' => 'decimal:2',
+        'total_bunga' => 'decimal:2',
+    ];
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class)->withDefault([
+            'account_number' => '-',
+        ]);
+    }
+
     public function installments()
     {
         return $this->hasMany(Installment::class);
@@ -19,14 +32,14 @@ class Loan extends Model
     public function user()
     {
         return $this->belongsTo(User::class)->withDefault([
-            'name' => 'Unknown'
+            'name' => 'Unknown',
         ]);
     }
 
     public function creditor()
     {
         return $this->belongsTo(Creditor::class)->withDefault([
-            'name' => 'Unknown'
+            'name' => 'Unknown',
         ]);
     }
 

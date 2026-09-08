@@ -15,6 +15,10 @@ class SapSubmissionLog extends Model
 
     public const DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT = 'bpjs_ap_invoice_payment';
 
+    public const DOCUMENT_TYPE_AP_INVOICE_INSTALLMENT = 'ap_invoice_installment';
+
+    public const DOCUMENT_TYPE_AP_OUTGOING_INSTALLMENT = 'ap_outgoing_installment';
+
     protected $fillable = [
         'verification_journal_id',
         'journal_entry_id',
