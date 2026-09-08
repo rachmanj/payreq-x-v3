@@ -750,6 +750,12 @@ class SapService
             try {
                 return $this->getAccountStatementViaSql($accountCode, $startDate, $endDate, $currency);
             } catch (\Throwable $exception) {
+                // FC (foreign-currency) hanya bisa lewat SQL path — jangan fallback ke OData
+                // yang system-currency (salah satuan) & lambat; lempar cepat ke job.
+                if ($this->isForeignCurrencyMode($currency)) {
+                    throw $exception;
+                }
+
                 Log::warning('SAP SQLQueries account statement failed, falling back to OData', [
                     'account_code' => $accountCode,
                     'error' => $exception->getMessage(),
@@ -837,8 +843,8 @@ class SapService
             $this->ensureSqlQuery(
                 'AO_OPEN3FC',
                 'AccountingOne account opening balance (foreign currency)',
-                'SELECT SUM(T1.DebitFC) AS TotalDebit, SUM(T1.CreditFC) AS TotalCredit'
-                .' FROM JDT1 T1 WHERE T1.Account = :accountCode AND T1.Currency = :currency AND T1.RefDate < :startDate'
+                'SELECT SUM(T1.FCDebit) AS TotalDebit, SUM(T1.FCCredit) AS TotalCredit'
+                .' FROM JDT1 T1 WHERE T1.Account = :accountCode AND T1.FcCurrency = :currency AND T1.RefDate < :startDate'
             );
 
             $txSqlCode = $this->ensureAccountStatementLinesFcSql();
@@ -1285,10 +1291,10 @@ class SapService
             'AccountingOne account statement lines (foreign currency)',
             'SELECT T0.BaseRef AS DocNum, T1.TransType AS DocType, T0.Memo AS HeaderMemo,'
             .' T1.TransId AS TxNum, T1.RefDate AS PostingDate, T1.LineMemo AS LineMemo,'
-            .' T1.Project AS ProjectCode, T1.DebitFC AS DebitAmount, T1.CreditFC AS CreditAmount,'
+            .' T1.Project AS ProjectCode, T1.FCDebit AS DebitAmount, T1.FCCredit AS CreditAmount,'
             .' T1.Line_ID AS LineId'
             .' FROM OJDT T0 INNER JOIN JDT1 T1 ON T0.TransId = T1.TransId'
-            .' WHERE T1.Account = :accountCode AND T1.Currency = :currency'
+            .' WHERE T1.Account = :accountCode AND T1.FcCurrency = :currency'
             .' AND T1.RefDate >= :startDate AND T1.RefDate <= :endDate'
             .' ORDER BY T1.RefDate, T1.TransId, T1.Line_ID'
         );
