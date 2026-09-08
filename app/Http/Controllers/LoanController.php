@@ -223,6 +223,7 @@ class LoanController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'accounting.loans.action')
+            ->rawColumns(['status', 'action'])
             ->toJson();
     }
 
