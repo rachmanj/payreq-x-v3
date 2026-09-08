@@ -721,6 +721,8 @@
 .vj-show #incomings thead th,
 .vj-show #loans thead th,
 .vj-show #installments-table thead th,
+.vj-show #unpaid-table thead th,
+.vj-show #paid-table thead th,
 .vj-show #cashier-modal thead th {
     background: #f8f9fa;
     border-color: #e9ecef;

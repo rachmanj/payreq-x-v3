@@ -56,7 +56,7 @@ class LoanController extends Controller
             if ($akun) {
                 $akun_id = $akun->id;
             } else {
-                $akun_id = "";
+                $akun_id = '';
             }
 
             $installments = Installment::with('loan')
@@ -79,6 +79,7 @@ class LoanController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'reports.loan.action')
+            ->rawColumns(['action'])
             ->toJson();
     }
 
@@ -96,7 +97,7 @@ class LoanController extends Controller
             if ($akun) {
                 $akun_id = $akun->id;
             } else {
-                $akun_id = "";
+                $akun_id = '';
             }
 
             $installments = Installment::with('loan')
@@ -122,6 +123,7 @@ class LoanController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'reports.loan.action')
+            ->rawColumns(['action'])
             ->toJson();
     }
 
@@ -199,6 +201,7 @@ class LoanController extends Controller
         // Add index to the collection
         $installments = $installments->map(function ($item, $index) {
             $item->index = $index + 1;
+
             return $item;
         });
 
@@ -222,6 +225,7 @@ class LoanController extends Controller
             // Add index to the collection
             $installments = $installments->map(function ($item, $index) {
                 $item->index = $index + 1;
+
                 return $item;
             });
 
