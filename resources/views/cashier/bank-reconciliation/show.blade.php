@@ -263,9 +263,38 @@
                 </div>
             @endif
 
-            <div class="mb-2">
+            <div class="mb-2 d-flex flex-wrap align-items-center">
                 <a href="{{ route('cashier.bank-reconciliation.report', $bankReconciliation) }}"
-                    class="btn btn-sm btn-default">Report</a>
+                    class="btn btn-sm btn-default mr-1 mb-1">Report</a>
+                @php
+                    $previewDocs = collect();
+                    if ($bankReconciliation->dokumen) {
+                        $previewDocs->push($bankReconciliation->dokumen);
+                    }
+                    $previewDocs = $previewDocs->merge($koranDokumens)->unique('id')->values();
+                @endphp
+                @if ($previewDocs->count() === 1)
+                    <a href="{{ asset('dokumens/'.basename((string) $previewDocs->first()->getRawOriginal('filename1'))) }}"
+                        target="_blank" rel="noopener"
+                        class="btn btn-sm btn-outline-info mr-1 mb-1"><i class="fa fa-file-pdf-o mr-1"></i>Preview koran PDF</a>
+                @elseif ($previewDocs->isNotEmpty())
+                    <div class="d-inline-flex align-items-center mr-1 mb-1">
+                        <select id="koran-preview-select" class="form-control form-control-sm mr-1" style="min-width:220px">
+                            @foreach ($previewDocs as $doc)
+                                @php
+                                    $rawPeriode = $doc->getRawOriginal('periode');
+                                    $periodeLabel = $rawPeriode ? \Carbon\Carbon::parse($rawPeriode)->format('Y-m') : '-';
+                                    $fname = basename((string) $doc->getRawOriginal('filename1'));
+                                @endphp
+                                <option value="{{ asset('dokumens/'.$fname) }}"
+                                    @selected($bankReconciliation->dokumen_id === $doc->id)>
+                                    {{ $periodeLabel }} — {{ $fname }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="window.open(document.getElementById('koran-preview-select').value, '_blank')"><i class="fa fa-file-pdf-o mr-1"></i>Preview koran PDF</button>
+                    </div>
+                @endif
             </div>
 
             @if ($errors->any())
