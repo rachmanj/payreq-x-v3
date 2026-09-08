@@ -641,8 +641,22 @@
 .vj-inline-actions {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.6rem;
     vertical-align: middle;
+}
+
+.vj-inline-actions + .vj-inline-actions,
+.vj-inline-actions + .vj-action-item,
+.vj-action-item + .vj-inline-actions {
+    margin-left: 0.5rem;
+}
+
+/* jarak antar tombol di footer modal & grup tombol non-flex */
+.modal-footer .vj-action-item + .vj-action-item,
+.modal-footer .vj-action-item + .vj-btn,
+.modal-footer .vj-btn + .vj-btn,
+.modal-footer .vj-btn + .vj-action-item {
+    margin-left: 0.5rem;
 }
 
 .vj-action-item-xs {
