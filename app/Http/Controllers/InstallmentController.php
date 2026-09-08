@@ -100,7 +100,7 @@ class InstallmentController extends Controller
             })
             ->addColumn('principal_amount', function ($instalment) {
                 if ($instalment->principal_amount === null) {
-                    return '<span class="text-muted">—</span> <span class="badge badge-warning">isi split</span>';
+                    return '<span class="text-muted">—</span> <span class="vj-chip vj-chip-warning">isi split</span>';
                 }
 
                 return number_format((float) $instalment->principal_amount, 0, ',', '.');
@@ -114,17 +114,17 @@ class InstallmentController extends Controller
             })
             ->addColumn('paid_status', function ($instalment) {
                 if ($instalment->isPaid()) {
-                    return '<span class="badge badge-success">Paid</span>';
+                    return '<span class="vj-chip vj-chip-success">Paid</span>';
                 }
 
-                return '<span class="badge badge-secondary">Open</span>';
+                return '<span class="vj-chip vj-chip-neutral">Open</span>';
             })
             ->addColumn('sap_ap_badge', function ($instalment) {
                 if ($instalment->sap_ap_doc_num) {
-                    return '<span class="badge badge-info">AP '.$instalment->sap_ap_doc_num.'</span>';
+                    return '<span class="vj-chip vj-chip-info">AP '.$instalment->sap_ap_doc_num.'</span>';
                 }
 
-                return '<span class="badge badge-light">Belum AP</span>';
+                return '<span class="vj-chip vj-chip-neutral">Belum AP</span>';
             })
             ->addColumn('created_by', function ($instalment) {
                 return $instalment->user->name;
@@ -137,14 +137,14 @@ class InstallmentController extends Controller
             })
             ->addColumn('sap_status', function ($instalment) {
                 $badges = [
-                    'pending' => '<span class="badge badge-secondary">Pending</span>',
-                    'ap_created' => '<span class="badge badge-info">AP Created</span>',
-                    'payment_created' => '<span class="badge badge-warning">Payment Created</span>',
-                    'completed' => '<span class="badge badge-success">Completed</span>',
+                    'pending' => '<span class="vj-chip vj-chip-neutral">Pending</span>',
+                    'ap_created' => '<span class="vj-chip vj-chip-info">AP Created</span>',
+                    'payment_created' => '<span class="vj-chip vj-chip-warning">Payment Created</span>',
+                    'completed' => '<span class="vj-chip vj-chip-success">Completed</span>',
                 ];
                 $status = $instalment->sap_sync_status ?? 'pending';
 
-                return $badges[$status] ?? '<span class="badge badge-secondary">'.ucfirst($status).'</span>';
+                return $badges[$status] ?? '<span class="vj-chip vj-chip-neutral">'.e(ucfirst($status)).'</span>';
             })
             ->addColumn('sap_documents', function ($instalment) {
                 $html = '';

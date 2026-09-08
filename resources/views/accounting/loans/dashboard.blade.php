@@ -66,10 +66,18 @@
             </div>
         </div>
 
+        <div class="vj-note mb-3">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Ringkasan Operasional</strong>
+                <div>Data diambil dari kontrak aktif dan jadwal angsuran yang belum lunas. Dana per rekening mencakup angsuran jatuh tempo dalam 7 hari ke depan.</div>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-md-6">
                 <div class="card card-outline card-primary">
-                    <div class="card-header">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h3 class="card-title mb-0"><i class="fas fa-university"></i> Dana Perlu Disiapkan per Rekening (≤7 hari)</h3>
                     </div>
                     <div class="card-body table-responsive p-0">
@@ -101,9 +109,11 @@
 
             <div class="col-md-6">
                 <div class="card card-outline card-primary">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h3 class="card-title mb-0"><i class="fas fa-file-contract"></i> Sisa Angsuran per Kontrak (Top 10)</h3>
-                        <a href="{{ route('accounting.loans.index') }}" class="btn btn-sm btn-primary">Lihat Semua</a>
+                        <a href="{{ route('accounting.loans.index') }}" class="vj-btn vj-btn-primary">
+                            <i class="fas fa-list"></i> Lihat Semua
+                        </a>
                     </div>
                     <div class="card-body table-responsive p-0">
                         <table class="table table-sm table-striped mb-0">
@@ -125,7 +135,7 @@
                                         <td class="text-right">{{ $loan->unpaid_count }}</td>
                                         <td class="text-right">{{ $fmtCompact((float) ($loan->unpaid_total ?? 0)) }}</td>
                                         <td>
-                                            <a href="{{ route('accounting.loans.show', $loan->id) }}" class="btn btn-xs btn-primary">
+                                            <a href="{{ route('accounting.loans.show', $loan->id) }}" class="vj-action-item vj-action-item-xs vj-action-export" title="Lihat kontrak">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         </td>

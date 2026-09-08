@@ -204,6 +204,17 @@ class LoanController extends Controller
             ->editColumn('principal', function ($loan) {
                 return number_format($loan->principal, 0, ',', '.');
             })
+            ->editColumn('status', function ($loan) {
+                $status = $loan->status ?: 'active';
+                $chip = match (strtolower((string) $status)) {
+                    'active', 'aktif' => 'success',
+                    'closed', 'lunas', 'paid' => 'info',
+                    'cancelled', 'canceled' => 'danger',
+                    default => 'neutral',
+                };
+
+                return '<span class="vj-chip vj-chip-'.$chip.'">'.e(ucfirst($status)).'</span>';
+            })
             ->addColumn('creditor_name', function ($loan) {
                 return $loan->creditor->name;
             })

@@ -74,9 +74,9 @@
 
                 </div> <!-- /.modal-body -->
 
-                <div class="modal-footer float-left">
-                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"> Close</button>
-                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+                <div class="modal-footer">
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal"> Close</button>
+                    <button type="submit" class="vj-btn vj-btn-primary"><i class="fas fa-save"></i> Save</button>
                 </div>
 
             </form>
@@ -279,9 +279,9 @@
                 </div>
             </div>
 
-            <div class="modal-footer float-left">
-                <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-sm btn-primary" id="submit-payment-{{ $model->id }}">
+            <div class="modal-footer">
+                <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">Close</button>
+                <button type="button" class="vj-btn vj-btn-primary" id="submit-payment-{{ $model->id }}">
                     <i class="fas fa-save"></i> Save Payment Method
                 </button>
             </div>
@@ -386,9 +386,9 @@
                     </div>
                 </div>
 
-                <div class="modal-footer float-left">
-                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Create AP
+                <div class="modal-footer">
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">Close</button>
+                    <button type="submit" class="vj-btn vj-btn-primary"><i class="fas fa-save"></i> Create AP
                         Invoice</button>
                 </div>
             </form>
@@ -429,7 +429,7 @@
                             @if ($model->sap_ap_doc_num)
                                 <dt class="col-sm-5">Current AP DocNum:</dt>
                                 <dd class="col-sm-7"><span
-                                        class="badge badge-info">{{ $model->sap_ap_doc_num }}</span></dd>
+                                        class="vj-chip vj-chip-info">{{ $model->sap_ap_doc_num }}</span></dd>
                             @endif
                         </dl>
                     </div>
@@ -449,9 +449,9 @@
                     </div>
                 </div>
 
-                <div class="modal-footer float-left">
-                    <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-sm btn-secondary"><i class="fas fa-link"></i> Link AP
+                <div class="modal-footer">
+                    <button type="button" class="vj-action-item vj-action-print" data-dismiss="modal">Close</button>
+                    <button type="submit" class="vj-btn vj-btn-primary"><i class="fas fa-link"></i> Link AP
                         Invoice</button>
                 </div>
             </form>

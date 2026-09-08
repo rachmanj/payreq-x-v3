@@ -9,137 +9,139 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Generate Installment for Loan {{ $loan->loan_code }}</h3>
-                    <a href="{{ route('accounting.loans.show', $loan->id) }}" class="btn btn-sm btn-primary float-right"><i
-                            class="fas fa-arrow-left"></i> Back</a>
-                </div>
-                <div class="card-body">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-cog"></i> Generate Installment for Loan {{ $loan->loan_code }}
+                        </h3>
+                        <a href="{{ route('accounting.loans.show', $loan->id) }}" class="vj-action-item vj-action-back">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                    </div>
                     <form action="{{ route('accounting.loans.installments.store_generate') }}" method="POST">
                         @csrf
 
                         <input type="hidden" name="loan_id" value="{{ $loan->id }}">
 
-                        <div class="alert alert-info">
-                            <strong><i class="fas fa-info-circle"></i> Loan Information:</strong><br>
-                            <strong>Principal:</strong> IDR {{ number_format($loan->principal, 0) }}<br>
-                            <strong>Tenor:</strong> {{ $loan->tenor }} months<br>
-                            <strong>Creditor:</strong> {{ $loan->creditor->name ?? 'N/A' }}
-                        </div>
+                        <div class="card-body">
+                            <div class="vj-alert vj-alert-secondary mb-3">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <strong>Loan Information:</strong><br>
+                                    <strong>Principal:</strong> IDR {{ number_format($loan->principal, 0) }}<br>
+                                    <strong>Tenor:</strong> {{ $loan->tenor }} months<br>
+                                    <strong>Creditor:</strong> {{ $loan->creditor->name ?? 'N/A' }}
+                                </div>
+                            </div>
 
-                        <div class="row">
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="start_due_date">Tanggal Jatuh Tempo Pertama <span
-                                            class="text-danger">*</span></label>
-                                    <input type="date" name="start_due_date"
-                                        class="form-control @error('start_due_date') is-invalid @enderror"
-                                        value="{{ old('start_due_date', now()->addMonth()->startOfMonth()->format('Y-m-d')) }}"
-                                        required>
-                                    @error('start_due_date')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="form-text text-muted">Tanggal angsuran pertama jatuh tempo</small>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="tenor">Jumlah Angsuran (Tenor) <span class="text-danger">*</span></label>
-                                    <input type="number" name="tenor" value="{{ old('tenor', $loan->tenor) }}"
-                                        class="form-control @error('tenor') is-invalid @enderror" min="1"
-                                        max="360" required>
-                                    @error('tenor')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="form-text text-muted">Berapa kali angsuran (dalam bulan)</small>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="installment_amount">Jumlah per Angsuran <span
-                                            class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text">IDR</span>
+                            <div class="vj-form-panel">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="start_due_date">Tanggal Jatuh Tempo Pertama <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="date" name="start_due_date"
+                                                class="form-control @error('start_due_date') is-invalid @enderror"
+                                                value="{{ old('start_due_date', now()->addMonth()->startOfMonth()->format('Y-m-d')) }}"
+                                                required>
+                                            @error('start_due_date')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <small class="form-text text-muted">Tanggal angsuran pertama jatuh tempo</small>
                                         </div>
-                                        <input type="number" name="installment_amount"
-                                            value="{{ old('installment_amount', $loan->principal > 0 && $loan->tenor > 0 ? round($loan->principal / $loan->tenor, 0) : '') }}"
-                                            class="form-control @error('installment_amount') is-invalid @enderror"
-                                            step="0.01" min="0" required>
                                     </div>
-                                    @error('installment_amount')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="form-text text-muted">Nilai rupiah per angsuran (auto-calculated dari
-                                        principal ÷ tenor)</small>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="tenor">Jumlah Angsuran (Tenor) <span class="text-danger">*</span></label>
+                                            <input type="number" name="tenor" value="{{ old('tenor', $loan->tenor) }}"
+                                                class="form-control @error('tenor') is-invalid @enderror" min="1"
+                                                max="360" required>
+                                            @error('tenor')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <small class="form-text text-muted">Berapa kali angsuran (dalam bulan)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="installment_amount">Jumlah per Angsuran <span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">IDR</span>
+                                                </div>
+                                                <input type="number" name="installment_amount"
+                                                    value="{{ old('installment_amount', $loan->principal > 0 && $loan->tenor > 0 ? round($loan->principal / $loan->tenor, 0) : '') }}"
+                                                    class="form-control @error('installment_amount') is-invalid @enderror"
+                                                    step="0.01" min="0" required>
+                                            </div>
+                                            @error('installment_amount')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <small class="form-text text-muted">Nilai rupiah per angsuran (auto-calculated dari
+                                                principal ÷ tenor)</small>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-4">
-                                <div class="form-group">
-                                    <label for="start_angsuran_ke">Mulai Angsuran ke</label>
-                                    <input type="number" name="start_angsuran_ke"
-                                        class="form-control @error('start_angsuran_ke') is-invalid @enderror"
-                                        value="{{ old('start_angsuran_ke', 1) }}" min="1">
-                                    @error('start_angsuran_ke')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="form-text text-muted">Angsuran mulai dari nomor berapa</small>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="start_angsuran_ke">Mulai Angsuran ke</label>
+                                            <input type="number" name="start_angsuran_ke"
+                                                class="form-control @error('start_angsuran_ke') is-invalid @enderror"
+                                                value="{{ old('start_angsuran_ke', 1) }}" min="1">
+                                            @error('start_angsuran_ke')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <small class="form-text text-muted">Angsuran mulai dari nomor berapa</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="form-group mb-0">
+                                            <label for="account_id">Account Pembebanan</label>
+                                            <select name="account_id"
+                                                class="form-control select2bs4 @error('account_id') is-invalid @enderror">
+                                                <option value="">-- pilih bank account untuk pembayaran (opsional) --</option>
+                                                @foreach ($accounts as $account)
+                                                    <option value="{{ $account->id }}"
+                                                        {{ $account->id == old('account_id') ? 'selected' : '' }}>
+                                                        {{ $account->account_number }} - {{ $account->account_name ?? 'N/A' }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('account_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <small class="form-text text-muted">Rekening bank akan otomatis terisi saat linking dengan bilyet giro atau auto debit. Kosongkan jika akan di-link kemudian.</small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-8">
-                                <div class="form-group">
-                                    <label for="account_id">Account Pembebanan</label>
-                                    <select name="account_id"
-                                        class="form-control select2bs4 @error('account_id') is-invalid @enderror">
-                                        <option value="">-- pilih bank account untuk pembayaran (opsional) --</option>
-                                        @foreach ($accounts as $account)
-                                            <option value="{{ $account->id }}"
-                                                {{ $account->id == old('account_id') ? 'selected' : '' }}>
-                                                {{ $account->account_number }} - {{ $account->account_name ?? 'N/A' }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('account_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="form-text text-muted">Rekening bank akan otomatis terisi saat linking dengan bilyet giro atau auto debit. Kosongkan jika akan di-link kemudian.</small>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="alert alert-warning" id="generation-summary" style="display:none;">
-                                    <h5><i class="fas fa-calculator"></i> Generation Summary:</h5>
+                            <div class="vj-alert vj-alert-warning mt-3" id="generation-summary" style="display:none;">
+                                <i class="fas fa-calculator"></i>
+                                <div>
+                                    <h5 class="mb-2">Generation Summary:</h5>
                                     <div id="summary-content"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="card-footer">
-                            <div class="row">
-                                <div class="col-6">
-                                    <a href="{{ route('accounting.loans.show', $loan->id) }}"
-                                        class="btn btn-secondary btn-sm">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </a>
-                                </div>
-                                <div class="col-6 text-right">
-                                    <button type="submit" class="btn btn-success btn-sm" id="generate-btn">
-                                        <i class="fas fa-cog"></i> Generate Installments
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <a href="{{ route('accounting.loans.show', $loan->id) }}"
+                                class="vj-action-item vj-action-back">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="vj-btn vj-btn-primary" id="generate-btn">
+                                <i class="fas fa-cog"></i> Generate Installments
+                            </button>
                         </div>
                     </form>
-
                 </div>
             </div>
         </div>
@@ -150,6 +152,7 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    @include('partials.vj-soft-ui-styles')
     <style>
         .select2-container {
             width: 100% !important;

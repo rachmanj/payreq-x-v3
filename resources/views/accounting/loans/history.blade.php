@@ -3,125 +3,121 @@
 @section('title_page', 'Loan History')
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <x-loan-links page="history" />
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <x-loan-links page="history" />
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-history"></i> History for {{ $loan->loan_code }}
-                    </h3>
-                    <div class="card-tools">
-                        <a href="{{ route('accounting.loans.show', $loan->id) }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-arrow-left"></i> Back to Loan
-                        </a>
+                <div class="vj-stat-grid mb-3">
+                    <div class="vj-stat vj-stat-info">
+                        <div class="vj-stat-icon"><i class="fas fa-file-contract"></i></div>
+                        <div class="vj-stat-body">
+                            <span class="vj-stat-label">Loan Code</span>
+                            <span class="vj-stat-value">{{ $loan->loan_code }}</span>
+                        </div>
+                    </div>
+                    <div class="vj-stat vj-stat-success">
+                        <div class="vj-stat-icon"><i class="fas fa-building"></i></div>
+                        <div class="vj-stat-body">
+                            <span class="vj-stat-label">Creditor</span>
+                            <span class="vj-stat-value">{{ $loan->creditor->name ?? 'N/A' }}</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card-body">
-                    <!-- Loan Info -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-info">
-                                    <i class="fas fa-file-contract"></i>
-                                </span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Loan Code</span>
-                                    <span class="info-box-number">{{ $loan->loan_code }}</span>
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-history"></i> History for {{ $loan->loan_code }}
+                        </h3>
+                        <a href="{{ route('accounting.loans.show', $loan->id) }}" class="vj-action-item vj-action-back">
+                            <i class="fas fa-arrow-left"></i> Back to Loan
+                        </a>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="vj-note mb-4">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <strong>Current Status</strong>
+                                <div>
+                                    <strong>Principal:</strong> IDR {{ number_format($loan->principal, 2) }}<br>
+                                    <strong>Tenor:</strong> {{ $loan->tenor }} months<br>
+                                    <strong>Status:</strong> {{ ucfirst($loan->status ?? 'Active') }}<br>
+                                    <strong>Description:</strong> {{ $loan->description }}<br>
+                                    <strong>Created:</strong> {{ $loan->created_at->format('d M Y H:i:s') }} by
+                                    {{ $loan->user->name ?? 'Unknown' }}
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-success">
-                                    <i class="fas fa-building"></i>
-                                </span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Creditor</span>
-                                    <span class="info-box-number">{{ $loan->creditor->name ?? 'N/A' }}</span>
+
+                        <h5 class="mb-3"><i class="fas fa-stream"></i> Change History</h5>
+                        <div class="timeline">
+                            @foreach ($audits as $audit)
+                                <div class="time-label">
+                                    <span
+                                        class="bg-{{ $audit->action == 'created' ? 'green' : ($audit->action == 'deleted' ? 'red' : 'blue') }}">
+                                        {{ $audit->created_at->format('d M Y') }}
+                                    </span>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Current Status -->
-                    <div class="alert alert-info">
-                        <h5><i class="fas fa-info-circle"></i> Current Status</h5>
-                        <p class="mb-0">
-                            <strong>Principal:</strong> IDR {{ number_format($loan->principal, 2) }}
-                            <br>
-                            <strong>Tenor:</strong> {{ $loan->tenor }} months
-                            <br>
-                            <strong>Status:</strong> {{ ucfirst($loan->status ?? 'Active') }}
-                            <br>
-                            <strong>Description:</strong> {{ $loan->description }}
-                            <br>
-                            <strong>Created:</strong> {{ $loan->created_at->format('d M Y H:i:s') }} by
-                            {{ $loan->user->name ?? 'Unknown' }}
-                        </p>
-                    </div>
-
-                    <!-- History Timeline -->
-                    <h5><i class="fas fa-timeline"></i> Change History</h5>
-                    <div class="timeline">
-                        @foreach ($audits as $audit)
-                            <div class="time-label">
-                                <span
-                                    class="bg-{{ $audit->action == 'created' ? 'green' : ($audit->action == 'deleted' ? 'red' : 'blue') }}">
-                                    {{ $audit->created_at->format('d M Y') }}
-                                </span>
-                            </div>
+                                <div>
+                                    <i
+                                        class="fas fa-{{ $audit->action == 'created' ? 'plus' : ($audit->action == 'deleted' ? 'times' : 'edit') }} bg-{{ $audit->action == 'created' ? 'green' : ($audit->action == 'deleted' ? 'red' : 'blue') }}"></i>
+                                    <div class="timeline-item">
+                                        <span class="time">
+                                            <i class="fas fa-clock"></i> {{ $audit->created_at->format('H:i:s') }}
+                                        </span>
+                                        <h3 class="timeline-header">
+                                            <span
+                                                class="vj-chip vj-chip-{{ $audit->action == 'created' ? 'success' : ($audit->action == 'deleted' ? 'danger' : 'info') }}">
+                                                {{ $audit->action_label }}
+                                            </span>
+                                            by {{ $audit->user->name ?? 'Unknown' }}
+                                        </h3>
+                                        <div class="timeline-body">
+                                            <p><strong>Changes:</strong> {{ $audit->changes_summary }}</p>
+                                            @if ($audit->notes)
+                                                <p><strong>Notes:</strong> {{ $audit->notes }}</p>
+                                            @endif
+                                            @if ($audit->ip_address)
+                                                <p><small class="text-muted">IP: {{ $audit->ip_address }}</small></p>
+                                            @endif
+                                        </div>
+                                        <div class="timeline-footer">
+                                            <a href="{{ route('accounting.loans.audit.show', $audit->id) }}"
+                                                class="vj-action-item vj-action-item-xs vj-action-export">
+                                                <i class="fas fa-eye"></i>
+                                                <span>view details</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
 
                             <div>
-                                <i
-                                    class="fas fa-{{ $audit->action == 'created' ? 'plus' : ($audit->action == 'deleted' ? 'times' : 'edit') }} bg-{{ $audit->action == 'created' ? 'green' : ($audit->action == 'deleted' ? 'red' : 'blue') }}"></i>
-                                <div class="timeline-item">
-                                    <span class="time">
-                                        <i class="fas fa-clock"></i> {{ $audit->created_at->format('H:i:s') }}
-                                    </span>
-                                    <h3 class="timeline-header">
-                                        <span
-                                            class="badge badge-{{ $audit->action == 'created' ? 'success' : ($audit->action == 'deleted' ? 'danger' : 'info') }}">
-                                            {{ $audit->action_label }}
-                                        </span>
-                                        by {{ $audit->user->name ?? 'Unknown' }}
-                                    </h3>
-                                    <div class="timeline-body">
-                                        <p><strong>Changes:</strong> {{ $audit->changes_summary }}</p>
-                                        @if ($audit->notes)
-                                            <p><strong>Notes:</strong> {{ $audit->notes }}</p>
-                                        @endif
-                                        @if ($audit->ip_address)
-                                            <p><small class="text-muted">IP: {{ $audit->ip_address }}</small></p>
-                                        @endif
-                                    </div>
-                                    <div class="timeline-footer">
-                                        <a href="{{ route('accounting.loans.audit.show', $audit->id) }}"
-                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i> View Details
-                                        </a>
-                                    </div>
+                                <i class="fas fa-clock bg-gray"></i>
+                            </div>
+                        </div>
+
+                        @if ($audits->isEmpty())
+                            <div class="vj-note">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div>
+                                    <strong>No history records</strong>
+                                    <div>No history records found for this loan.</div>
                                 </div>
                             </div>
-                        @endforeach
-
-                        <div>
-                            <i class="fas fa-clock bg-gray"></i>
-                        </div>
+                        @endif
                     </div>
-
-                    @if ($audits->isEmpty())
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i> No history records found for this loan.
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
     </div>
+@endsection
 
+@section('styles')
+    @include('partials.vj-soft-ui-styles')
     <style>
         .timeline {
             position: relative;
@@ -178,7 +174,7 @@
             margin-bottom: 15px;
             background: #fff;
             border: 1px solid #dee2e6;
-            border-radius: 4px;
+            border-radius: 10px;
             padding: 15px;
         }
 
@@ -241,15 +237,6 @@
             margin-top: 10px;
             border-top: 1px solid #f4f4f4;
             padding-top: 10px;
-        }
-    </style>
-@endsection
-
-@section('styles')
-    <style>
-        .card-header .active {
-            color: black;
-            text-transform: uppercase;
         }
     </style>
 @endsection

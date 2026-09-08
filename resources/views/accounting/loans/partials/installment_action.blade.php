@@ -5,62 +5,71 @@
 @endphp
 
 @hasanyrole('superadmin|admin|cashier|approver|approver_bo|cashier_bo')
-    @if (!$model->paid_date && !$hasSplit)
-        <button type="button" class="btn btn-xs btn-outline-secondary btn-split-installment"
-            data-id="{{ $model->id }}"
-            data-principal="{{ $model->principal_amount ?? '' }}"
-            data-interest="{{ $model->interest_amount ?? '' }}"
-            data-angsuran="{{ $model->angsuran_ke }}"
-            title="Split Pokok/Bunga">
-            <i class="fas fa-divide"></i> Split
-        </button>
-    @endif
+    <div class="vj-inline-actions">
+        @if (!$model->paid_date && !$hasSplit)
+            <button type="button" class="vj-action-item vj-action-item-xs vj-action-print btn-split-installment"
+                data-id="{{ $model->id }}"
+                data-principal="{{ $model->principal_amount ?? '' }}"
+                data-interest="{{ $model->interest_amount ?? '' }}"
+                data-angsuran="{{ $model->angsuran_ke }}"
+                title="Split Pokok/Bunga">
+                <i class="fas fa-divide"></i>
+                <span>split</span>
+            </button>
+        @endif
 
-    @if ($canSubmitAp && !$model->paid_date && $hasSplit && !$model->hasSapAp())
-        <button type="button" class="btn btn-xs btn-primary btn-submit-ap"
-            data-id="{{ $model->id }}"
-            data-angsuran="{{ $model->angsuran_ke }}"
-            data-amount="{{ number_format((float) $model->bilyet_amount, 0, ',', '.') }}"
-            title="Submit AP ke SAP">
-            <i class="fas fa-file-invoice-dollar"></i> Submit AP
-        </button>
-    @endif
+        @if ($canSubmitAp && !$model->paid_date && $hasSplit && !$model->hasSapAp())
+            <button type="button" class="vj-action-item vj-action-item-xs vj-action-sap btn-submit-ap"
+                data-id="{{ $model->id }}"
+                data-angsuran="{{ $model->angsuran_ke }}"
+                data-amount="{{ number_format((float) $model->bilyet_amount, 0, ',', '.') }}"
+                title="Submit AP ke SAP">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>submit ap</span>
+            </button>
+        @endif
 
-    @if ($canSubmitOp && !$model->paid_date && $model->hasSapAp() && !$model->hasSapPayment())
-        <button type="button" class="btn btn-xs btn-success btn-create-op"
-            data-id="{{ $model->id }}"
-            data-angsuran="{{ $model->angsuran_ke }}"
-            title="Buat Outgoing Payment">
-            <i class="fas fa-money-check-alt"></i> Buat OP
-        </button>
-    @endif
+        @if ($canSubmitOp && !$model->paid_date && $model->hasSapAp() && !$model->hasSapPayment())
+            <button type="button" class="vj-action-item vj-action-item-xs vj-action-success btn-create-op"
+                data-id="{{ $model->id }}"
+                data-angsuran="{{ $model->angsuran_ke }}"
+                title="Buat Outgoing Payment">
+                <i class="fas fa-money-check-alt"></i>
+                <span>buat op</span>
+            </button>
+        @endif
 
-    @if (!$model->paid_date)
-        <button type="button" class="btn btn-xs btn-primary" data-toggle="modal"
-            data-target="#payment-method-{{ $model->id }}" title="Set Payment Method">
-            <i class="fas fa-credit-card"></i> Payment
-        </button>
-    @endif
+        @if (!$model->paid_date)
+            <button type="button" class="vj-action-item vj-action-item-xs vj-action-export" data-toggle="modal"
+                data-target="#payment-method-{{ $model->id }}" title="Set Payment Method">
+                <i class="fas fa-credit-card"></i>
+                <span>payment</span>
+            </button>
+        @endif
 
-    @if (!$model->paid_date && in_array($model->payment_method, ['bilyet', 'auto_debit']) && !$model->sap_ap_doc_num)
-        <button type="button" class="btn btn-xs btn-outline-primary" data-toggle="modal"
-            data-target="#link-sap-ap-{{ $model->id }}" title="Link SAP AP Invoice">
-            <i class="fas fa-link"></i> Link AP
-        </button>
-    @endif
+        @if (!$model->paid_date && in_array($model->payment_method, ['bilyet', 'auto_debit']) && !$model->sap_ap_doc_num)
+            <button type="button" class="vj-action-item vj-action-item-xs vj-action-export" data-toggle="modal"
+                data-target="#link-sap-ap-{{ $model->id }}" title="Link SAP AP Invoice">
+                <i class="fas fa-link"></i>
+                <span>link ap</span>
+            </button>
+        @endif
 
-    <button type="button" class="btn btn-xs btn-warning" data-toggle="modal"
-        data-target="#installment-edit-{{ $model->id }}">
-        <i class="fas fa-edit"></i>
-    </button>
+        <button type="button" class="vj-action-item vj-action-item-xs vj-action-edit" data-toggle="modal"
+            data-target="#installment-edit-{{ $model->id }}">
+            <i class="fas fa-edit"></i>
+            <span>edit</span>
+        </button>
+    </div>
 @endhasanyrole
 
 @hasanyrole('superadmin')
-    <form action="{{ route('accounting.loans.installments.destroy', $model->id) }}" method="POST" style="display: inline;">
+    <form action="{{ route('accounting.loans.installments.destroy', $model->id) }}" method="POST" class="vj-action-item-form d-inline">
         @csrf @method('DELETE')
-        <button type="submit" class="btn btn-xs btn-danger"
+        <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel"
             onclick="return confirm('Are You sure You want to delete this record?')">
             <i class="fas fa-trash"></i>
+            <span>delete</span>
         </button>
     </form>
 @endhasanyrole

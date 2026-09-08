@@ -9,38 +9,39 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <x-loan-links page="index" />
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <x-loan-links page="index" />
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Installment</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('accounting.loans.create') }}" class="btn btn-primary btn-sm">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-file-contract"></i> Installment
+                        </h3>
+                        <a href="{{ route('accounting.loans.create') }}" class="vj-btn vj-btn-primary">
                             <i class="fas fa-plus"></i> New Loan
                         </a>
                     </div>
-                </div>
 
-                <div class="card-body">
-                    <table id="loans" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Agreement</th>
-                                <th>Creditor</th>
-                                <th>Desc</th>
-                                <th>Principal IDR</th>
-                                <th>StartD</th>
-                                <th>status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                    </table>
+                    <div class="card-body">
+                        <table id="loans" class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Agreement</th>
+                                    <th>Creditor</th>
+                                    <th>Desc</th>
+                                    <th>Principal IDR</th>
+                                    <th>StartD</th>
+                                    <th>status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
-
         </div>
     </div>
 @endsection
@@ -50,6 +51,7 @@
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}" />
+    @include('partials.vj-soft-ui-styles')
 @endsection
 
 @section('scripts')
