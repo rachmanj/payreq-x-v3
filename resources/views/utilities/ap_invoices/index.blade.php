@@ -84,7 +84,8 @@
                                             title="Buat OP"
                                             data-invoice-id="{{ $invoice->id }}"
                                             data-num-at-card="{{ $invoice->num_at_card }}"
-                                            data-sap-doc-num="{{ $invoice->sap_doc_num }}">
+                                            data-sap-doc-num="{{ $invoice->sap_doc_num }}"
+                                            data-total-amount="{{ $invoice->total_amount }}">
                                             <i class="fas fa-money-bill-wave"></i>
                                         </button>
                                     @endif

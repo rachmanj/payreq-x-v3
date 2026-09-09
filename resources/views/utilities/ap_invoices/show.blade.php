@@ -23,7 +23,8 @@
                                     class="vj-btn vj-btn-primary btn-utility-create-op"
                                     data-invoice-id="{{ $invoice->id }}"
                                     data-num-at-card="{{ $invoice->num_at_card }}"
-                                    data-sap-doc-num="{{ $invoice->sap_doc_num }}">
+                                    data-sap-doc-num="{{ $invoice->sap_doc_num }}"
+                                    data-total-amount="{{ $invoice->total_amount }}">
                                     <i class="fas fa-money-bill-wave"></i> Buat OP
                                 </button>
                             @endif

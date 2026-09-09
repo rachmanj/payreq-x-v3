@@ -96,13 +96,23 @@
                 $('#utility_sap_num_at_card').text(invoice.num_at_card || '-');
                 $('#utility_sap_ap_doc_num').text(invoice.sap_doc_num || '-');
                 $('#utility_payment_date').val(new Date().toISOString().split('T')[0]);
-                $('#utility_payment_amount').val('');
                 $('#utility_payment_remarks').val('');
                 $('#utility_prepared_by').val(defaultPreparedBy);
                 $('#utility_approved_by').val(defaultPreparedBy);
                 $('#utility_payment_means').val('transfer');
-                $('#utility_remaining_display').text('-');
-                $('#utility_sap_remaining_value').val('0');
+
+                // Jumlah otomatis sesuai total AP Invoice (belum ada partial payment utk utilities)
+                const invoiceTotal = parseFloat(invoice.total_amount || 0);
+                utilityRemainingBalance = invoiceTotal > 0 ? invoiceTotal : 0;
+                if (utilityRemainingBalance > 0) {
+                    $('#utility_payment_amount').val(Math.round(utilityRemainingBalance));
+                    $('#utility_remaining_display').text(formatCurrency(utilityRemainingBalance));
+                    $('#utility_sap_remaining_value').val(utilityRemainingBalance);
+                } else {
+                    $('#utility_payment_amount').val('');
+                    $('#utility_remaining_display').text('-');
+                    $('#utility_sap_remaining_value').val('0');
+                }
 
                 loadUtilityAccounts(null).always(function() {
                     $('#utilitySapPaymentModal').modal('show');
@@ -215,6 +225,7 @@
                         id: $(this).data('invoice-id'),
                         num_at_card: $(this).data('num-at-card'),
                         sap_doc_num: $(this).data('sap-doc-num'),
+                        total_amount: $(this).data('total-amount'),
                     });
                 });
             });
