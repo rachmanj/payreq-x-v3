@@ -53,7 +53,6 @@ class SapVendorPaymentBuilder
                 ],
             ],
             'JournalRemarks' => $journalRemarks,
-            'Comments' => $journalRemarks,
             'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
             'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
         ];

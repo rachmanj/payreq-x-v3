@@ -87,7 +87,7 @@ class SapVendorPaymentBuilderTest extends TestCase
             ],
         ], $payload['PaymentInvoices']);
         $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
-        $this->assertSame($payload['JournalRemarks'], $payload['Comments']);
+        $this->assertArrayNotHasKey('Comments', $payload);
         $this->assertSame('John Preparer', $payload['U_MIS_Signature1']);
         $this->assertSame('Jane Approver', $payload['U_MIS_Signature2']);
     }
