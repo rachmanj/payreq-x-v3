@@ -11,6 +11,7 @@ use App\Services\Notulen\AskService;
 use App\Services\Notulen\NotulenOpenRouterClient;
 use App\Services\Notulen\RetrievalService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -33,6 +34,77 @@ class AskController extends Controller
             'meetings' => $meetings,
             'streamingEnabled' => (bool) config('notulen.streaming_enabled'),
         ]);
+    }
+
+    public function history(Request $request): JsonResponse
+    {
+        $items = NotulenQuestion::query()
+            ->where('user_id', $request->user()->id)
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get(['id', 'question', 'created_at', 'not_found']);
+
+        return response()->json([
+            'items' => $items->map(static fn (NotulenQuestion $row) => [
+                'id' => $row->id,
+                'question' => $row->question,
+                'created_at' => $row->created_at?->toIso8601String(),
+                'not_found' => (bool) $row->not_found,
+            ])->values(),
+        ]);
+    }
+
+    public function historyShow(Request $request, int $id): JsonResponse
+    {
+        $row = NotulenQuestion::query()
+            ->where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->firstOrFail(['question', 'answer', 'sources', 'model', 'top_score', 'latency_ms', 'not_found']);
+
+        return response()->json([
+            'question' => $row->question,
+            'answer' => $row->answer,
+            'sources' => $row->sources ?? [],
+            'model' => $row->model,
+            'top_score' => $row->top_score,
+            'latency_ms' => $row->latency_ms,
+            'not_found' => (bool) $row->not_found,
+        ]);
+    }
+
+    public function suggestions(Request $request, AskService $askService): JsonResponse
+    {
+        $validated = $request->validate([
+            'question' => ['required', 'string', 'max:4000'],
+            'answer' => ['required', 'string', 'max:20000'],
+            'meeting_ids' => ['sometimes', 'array'],
+            'meeting_ids.*' => ['integer', 'exists:meetings,id'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+        ]);
+
+        $filters = [];
+        if (! empty($validated['meeting_ids'])) {
+            $filters['meeting_ids'] = array_map('intval', $validated['meeting_ids']);
+        }
+        if (! empty($validated['date_from'])) {
+            $filters['date_from'] = $validated['date_from'];
+        }
+        if (! empty($validated['date_to'])) {
+            $filters['date_to'] = $validated['date_to'];
+        }
+
+        try {
+            $items = $askService->suggestions(
+                $validated['question'],
+                $validated['answer'],
+                $filters
+            );
+
+            return response()->json(['suggestions' => $items]);
+        } catch (OpenRouterException $e) {
+            return $this->openRouterError($e);
+        }
     }
 
     public function ask(AskAiQuestionRequest $request, AskService $askService): JsonResponse|StreamedResponse
@@ -83,55 +155,18 @@ class AskController extends Controller
                     return;
                 }
 
-                $contextParts = [];
-                $sourcesByMeeting = [];
-                $topScore = null;
-
-                foreach ($picked as $item) {
-                    $meeting = $item['meeting'];
-                    $chunk = $item['chunk'];
-                    $score = (float) $item['score'];
-                    $topScore = $topScore === null ? $score : max($topScore, $score);
-                    $dateLabel = $meeting->meeting_date?->format('Y-m-d') ?? 'tanggal tidak diketahui';
-                    $contextParts[] = "Meeting: {$meeting->title} ({$dateLabel})\n{$chunk->content}";
-
-                    if (! isset($sourcesByMeeting[$meeting->id]) || $score > ($sourcesByMeeting[$meeting->id]['score'] ?? 0)) {
-                        $sourcesByMeeting[$meeting->id] = [
-                            'id' => $meeting->id,
-                            'title' => $meeting->title,
-                            'meeting_date' => $meeting->meeting_date?->format('Y-m-d'),
-                            'url' => route('notulen.meetings.download', $meeting),
-                            'excerpt' => mb_strlen($chunk->content, 'UTF-8') > 240
-                                ? rtrim(mb_substr(trim(preg_replace('/\s+/u', ' ', $chunk->content) ?? $chunk->content), 0, 239, 'UTF-8')).'…'
-                                : trim(preg_replace('/\s+/u', ' ', $chunk->content) ?? $chunk->content),
-                            'score' => round($score, 4),
-                            'chunk_index' => $chunk->chunk_index,
-                        ];
-                    }
-                }
-
-                $context = implode("\n\n---\n\n", $contextParts);
-                $systemPrompt = <<<PROMPT
-You are a meeting-minutes assistant. Your knowledge is STRICTLY LIMITED to the CONTEXT below from uploaded meeting PDFs.
-Rules:
-1. Answer only using information explicitly present in CONTEXT. If CONTEXT does not contain the answer, say you found nothing relevant.
-2. Cite meeting title and date when referencing specific discussions.
-3. Write the answer in the same language as the user's question (Indonesian or English).
-4. Do not invent meetings, dates, decisions, or participants not in CONTEXT.
-CONTEXT:
-{$context}
-PROMPT;
+                $built = $askService->buildRetrievalContext($picked);
 
                 $this->emitSse('meta', [
-                    'sources' => array_values($sourcesByMeeting),
-                    'top_score' => $topScore !== null ? round($topScore, 4) : null,
+                    'sources' => $built['sources'],
+                    'top_score' => $built['top_score'],
                     'model' => $client->chatModel(),
                     'not_found' => false,
                 ]);
 
                 $answer = '';
                 foreach ($client->chatStream([
-                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'system', 'content' => $built['system_prompt']],
                     ['role' => 'user', 'content' => $question],
                 ]) as $delta) {
                     $answer .= $delta;
@@ -140,9 +175,9 @@ PROMPT;
 
                 $result = [
                     'answer' => $answer,
-                    'sources' => array_values($sourcesByMeeting),
+                    'sources' => $built['sources'],
                     'not_found' => false,
-                    'top_score' => $topScore !== null ? round($topScore, 4) : null,
+                    'top_score' => $built['top_score'],
                     'model' => $client->chatModel(),
                     'latency_ms' => (int) round((hrtime(true) - $started) / 1_000_000),
                 ];

@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('notulen')->name('notulen.')->group(function () {
     Route::middleware('permission:akses_notulen')->group(function () {
         Route::get('ask', [AskController::class, 'index'])->name('ask.index');
+        Route::get('ask/history', [AskController::class, 'history'])->name('ask.history');
+        Route::get('ask/history/{id}', [AskController::class, 'historyShow'])->name('ask.history.show');
+        Route::post('ask/suggestions', [AskController::class, 'suggestions'])
+            ->middleware('throttle:20,1')
+            ->name('ask.suggestions');
         Route::post('ask', [AskController::class, 'ask'])
             ->middleware('throttle:20,1')
             ->name('ask');

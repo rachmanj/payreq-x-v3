@@ -43,8 +43,69 @@ class AskService
             ];
         }
 
+        $built = $this->buildRetrievalContext($picked, $signedDownloadUrls);
+
+        $model = config('services.openrouter.notulen_model');
+        $answer = $this->client->chat([
+            ['role' => 'system', 'content' => $built['system_prompt']],
+            ['role' => 'user', 'content' => $question],
+        ]);
+
+        return [
+            'answer' => $answer,
+            'sources' => $built['sources'],
+            'not_found' => false,
+            'top_score' => $built['top_score'],
+            'model' => is_string($model) ? $model : null,
+            'latency_ms' => $this->elapsedMs($started),
+        ];
+    }
+
+    /**
+     * @param  array{
+     *   meeting_ids?: array<int, int>,
+     *   date_from?: string|null,
+     *   date_to?: string|null,
+     * }  $filters
+     * @return array<int, string>
+     */
+    public function suggestions(string $question, string $answer, array $filters = []): array
+    {
+        unset($filters);
+
+        $prompt = <<<PROMPT
+Berdasarkan pertanyaan {$question} dan jawaban {$answer}, berikan 3 pertanyaan lanjutan yang berguna, satu per baris, awali '- ', bahasa sama dgn pertanyaan. Jangan tambahkan teks lain.
+PROMPT;
+
+        $result = $this->client->chat([
+            ['role' => 'user', 'content' => $prompt],
+        ]);
+
+        $suggestions = [];
+        foreach (preg_split('/\R/u', trim($result)) ?: [] as $line) {
+            $line = trim($line);
+            if (preg_match('/^-\s+(.+)/u', $line, $matches) === 1) {
+                $suggestions[] = trim($matches[1]);
+            }
+        }
+
+        return array_values(array_slice($suggestions, 0, 3));
+    }
+
+    /**
+     * @param  array<int, array{meeting: Meeting, chunk: \App\Models\MeetingChunk, score: float}>  $picked
+     * @return array{
+     *   context: string,
+     *   sources: array<int, array{id:int, title:string, meeting_date:?string, url:string, excerpt:?string, score:?float, chunk_index:?int}>,
+     *   top_score: ?float,
+     *   system_prompt: string,
+     * }
+     */
+    public function buildRetrievalContext(array $picked, bool $signedDownloadUrls = false): array
+    {
         $contextParts = [];
-        $sourcesByMeeting = [];
+        $orderedSources = [];
+        $sourceIndexByMeeting = [];
         $topScore = null;
 
         foreach ($picked as $item) {
@@ -54,50 +115,51 @@ class AskService
             $topScore = $topScore === null ? $score : max($topScore, $score);
             $dateLabel = $meeting->meeting_date?->format('Y-m-d') ?? 'tanggal tidak diketahui';
 
-            $contextParts[] = "Meeting: {$meeting->title} ({$dateLabel})\n{$chunk->content}";
-
-            if (! isset($sourcesByMeeting[$meeting->id])) {
-                $sourcesByMeeting[$meeting->id] = $this->formatSource(
+            if (! isset($sourceIndexByMeeting[$meeting->id])) {
+                $sourceIndexByMeeting[$meeting->id] = count($orderedSources) + 1;
+                $orderedSources[] = $this->formatSource(
                     $meeting,
                     $signedDownloadUrls,
                     $chunk->content,
                     $score,
                     $chunk->chunk_index
                 );
-            } elseif ($score > ($sourcesByMeeting[$meeting->id]['score'] ?? 0)) {
-                $sourcesByMeeting[$meeting->id]['excerpt'] = $this->excerpt($chunk->content);
-                $sourcesByMeeting[$meeting->id]['score'] = round($score, 4);
-                $sourcesByMeeting[$meeting->id]['chunk_index'] = $chunk->chunk_index;
+            } else {
+                $sourceIdx = $sourceIndexByMeeting[$meeting->id] - 1;
+                if ($score > ($orderedSources[$sourceIdx]['score'] ?? 0)) {
+                    $orderedSources[$sourceIdx]['excerpt'] = $this->excerpt($chunk->content);
+                    $orderedSources[$sourceIdx]['score'] = round($score, 4);
+                    $orderedSources[$sourceIdx]['chunk_index'] = $chunk->chunk_index;
+                }
             }
+
+            $sourceNum = $sourceIndexByMeeting[$meeting->id];
+            $contextParts[] = "Source {$sourceNum} — Meeting: {$meeting->title} ({$dateLabel})\n{$chunk->content}";
         }
 
         $context = implode("\n\n---\n\n", $contextParts);
 
-        $systemPrompt = <<<PROMPT
+        return [
+            'context' => $context,
+            'sources' => $orderedSources,
+            'top_score' => $topScore !== null ? round($topScore, 4) : null,
+            'system_prompt' => $this->systemPrompt($context),
+        ];
+    }
+
+    protected function systemPrompt(string $context): string
+    {
+        return <<<PROMPT
 You are a meeting-minutes assistant. Your knowledge is STRICTLY LIMITED to the CONTEXT below from uploaded meeting PDFs.
 Rules:
 1. Answer only using information explicitly present in CONTEXT. If CONTEXT does not contain the answer, say you found nothing relevant.
 2. Cite meeting title and date when referencing specific discussions.
 3. Write the answer in the same language as the user's question (Indonesian or English).
 4. Do not invent meetings, dates, decisions, or participants not in CONTEXT.
+5. When you refer to information from a source, append its source number in square brackets, e.g. [1]. If multiple sources: [1][2].
 CONTEXT:
 {$context}
 PROMPT;
-
-        $model = config('services.openrouter.notulen_model');
-        $answer = $this->client->chat([
-            ['role' => 'system', 'content' => $systemPrompt],
-            ['role' => 'user', 'content' => $question],
-        ]);
-
-        return [
-            'answer' => $answer,
-            'sources' => array_values($sourcesByMeeting),
-            'not_found' => false,
-            'top_score' => $topScore !== null ? round($topScore, 4) : null,
-            'model' => is_string($model) ? $model : null,
-            'latency_ms' => $this->elapsedMs($started),
-        ];
     }
 
     protected function notFoundMessage(string $question): string

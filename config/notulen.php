@@ -22,6 +22,6 @@ return [
 
     'ocr_max_mb' => (float) env('NOTULEN_OCR_MAX_MB', 20),
 
-    'streaming_enabled' => (bool) env('NOTULEN_STREAMING_ENABLED', false),
+    'streaming_enabled' => (bool) env('NOTULEN_STREAMING_ENABLED', true),
 
 ];
