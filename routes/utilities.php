@@ -27,6 +27,12 @@ Route::prefix('utilities')->name('utilities.')->middleware('permission:akses_uti
     Route::get('/customers/data', [UtilityCustomerController::class, 'data'])->name('customers.data');
     Route::resource('/customers', UtilityCustomerController::class);
 
+    Route::middleware('permission:submit_sap_utility_payment')->group(function () {
+        Route::get('/ap-invoices/accounts', [UtilityApInvoiceController::class, 'paymentAccounts'])->name('ap-invoices.accounts');
+        Route::post('/ap-invoices/{utilityApInvoice}/sap-payment/preview', [UtilityApInvoiceController::class, 'previewSapPayment'])->name('ap-invoices.sap-payment.preview');
+        Route::post('/ap-invoices/{utilityApInvoice}/sap-payment/submit', [UtilityApInvoiceController::class, 'submitSapPayment'])->name('ap-invoices.sap-payment.submit');
+    });
+
     Route::middleware('permission:submit_sap_ap_invoice_utilities')->group(function () {
         Route::get('/vendors', [UtilityVendorController::class, 'index'])->name('vendors.index');
         Route::post('/vendors', [UtilityVendorController::class, 'update'])->name('vendors.update');

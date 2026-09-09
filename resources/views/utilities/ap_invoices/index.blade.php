@@ -51,8 +51,8 @@
                                 </td>
                                 <td class="text-right">{{ number_format($invoice->total_amount, 2) }}</td>
                                 <td>
-                                    {{ $invoice->sapBusinessPartner?->card_code ?: '-' }}
-                                    <small class="d-block text-muted">{{ $invoice->sapBusinessPartner?->card_name }}</small>
+                                    {{ $invoice->sapBusinessPartner?->code ?: '-' }}
+                                    <small class="d-block text-muted">{{ $invoice->sapBusinessPartner?->name }}</small>
                                 </td>
                                 <td>
                                     @if ($invoice->sap_doc_num)
@@ -60,21 +60,34 @@
                                     @else
                                         <span class="text-muted">-</span>
                                     @endif
+                                    @if ($invoice->isPaid() && $invoice->paid_sap_doc_num)
+                                        <small class="d-block text-muted">OP: {{ $invoice->paid_sap_doc_num }}</small>
+                                    @endif
                                 </td>
                                 <td>
-                                    <span class="vj-chip vj-chip-{{ $invoice->status === 'posted' ? 'success' : ($invoice->status === 'failed' ? 'danger' : 'neutral') }}">
-                                        {{ strtoupper($invoice->status) }}
+                                    <span class="vj-chip vj-chip-{{ $invoice->statusChipClass() }}">
+                                        {{ $invoice->statusLabel() }}
                                     </span>
                                 </td>
                                 <td>
                                     {{ $invoice->submitted_at?->format('d-M-Y H:i') }}
                                     <small class="d-block text-muted">{{ $invoice->submittedBy?->name }}</small>
                                 </td>
-                                <td>
+                                <td class="text-nowrap">
                                     <a href="{{ route('utilities.ap-invoices.show', $invoice->id) }}"
                                         class="vj-action-item vj-action-item-xs vj-action-show" title="Detail">
                                         <i class="fas fa-eye"></i>
                                     </a>
+                                    @if (($canSubmitUtilityPayment ?? false) && $invoice->canCreateOutgoingPayment())
+                                        <button type="button"
+                                            class="vj-action-item vj-action-item-xs vj-action-primary btn-utility-create-op"
+                                            title="Buat OP"
+                                            data-invoice-id="{{ $invoice->id }}"
+                                            data-num-at-card="{{ $invoice->num_at_card }}"
+                                            data-sap-doc-num="{{ $invoice->sap_doc_num }}">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -89,8 +102,23 @@
             </div>
         </div>
     </div>
+
+    @if ($canSubmitUtilityPayment ?? false)
+        @include('utilities.ap_invoices._sap_payment_modal')
+    @endif
 @endsection
 
 @section('styles')
     @include('partials.vj-soft-ui-styles')
+    @if ($canSubmitUtilityPayment ?? false)
+        <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    @endif
 @endsection
+
+@if ($canSubmitUtilityPayment ?? false)
+    @include('utilities.ap_invoices._sap_payment_scripts', [
+        'canSubmitUtilityPayment' => $canSubmitUtilityPayment,
+        'defaultPreparedBy' => auth()->user()?->name ?? '',
+    ])
+@endif

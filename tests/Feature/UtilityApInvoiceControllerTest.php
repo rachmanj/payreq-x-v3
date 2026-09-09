@@ -25,6 +25,34 @@ class UtilityApInvoiceControllerTest extends TestCase
 
         Permission::findOrCreate('akses_utilities', 'web');
         Permission::findOrCreate('submit_sap_ap_invoice_utilities', 'web');
+        Permission::findOrCreate('submit_sap_utility_payment', 'web');
+    }
+
+    public function test_payment_accounts_requires_submit_sap_utility_payment_permission(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo('akses_utilities');
+
+        $this->actingAs($user)
+            ->getJson(route('utilities.ap-invoices.accounts'))
+            ->assertForbidden();
+
+        $authorized = User::factory()->create();
+        $authorized->givePermissionTo(['akses_utilities', 'submit_sap_utility_payment']);
+
+        Account::query()->create([
+            'account_number' => '11010001',
+            'account_name' => 'BCA Operating',
+            'type' => 'bank',
+            'sap_account' => '11010001',
+            'is_active' => true,
+            'is_hidden' => false,
+        ]);
+
+        $this->actingAs($authorized)
+            ->getJson(route('utilities.ap-invoices.accounts'))
+            ->assertOk()
+            ->assertJsonStructure(['accounts' => [['id', 'label', 'account_number', 'account_name', 'sap_account', 'type']]]);
     }
 
     public function test_preview_renders_for_valid_selection(): void

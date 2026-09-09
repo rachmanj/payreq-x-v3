@@ -17,9 +17,20 @@
                         <h3 class="card-title mb-0">
                             <i class="fas fa-file-invoice"></i> AP Invoice SAP — {{ $jenisLabel }}
                         </h3>
-                        <a href="{{ route('utilities.ap-invoices.index') }}" class="vj-action-item vj-action-back">
-                            <i class="fas fa-arrow-left"></i> Daftar AP Invoice
-                        </a>
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (($canSubmitUtilityPayment ?? false) && $invoice->canCreateOutgoingPayment())
+                                <button type="button"
+                                    class="vj-btn vj-btn-primary btn-utility-create-op"
+                                    data-invoice-id="{{ $invoice->id }}"
+                                    data-num-at-card="{{ $invoice->num_at_card }}"
+                                    data-sap-doc-num="{{ $invoice->sap_doc_num }}">
+                                    <i class="fas fa-money-bill-wave"></i> Buat OP
+                                </button>
+                            @endif
+                            <a href="{{ route('utilities.ap-invoices.index') }}" class="vj-action-item vj-action-back">
+                                <i class="fas fa-arrow-left"></i> Daftar AP Invoice
+                            </a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="row mb-3">
@@ -38,8 +49,8 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="small text-muted d-block">Status</label>
-                                <span class="vj-chip vj-chip-{{ $invoice->status === 'posted' ? 'success' : 'neutral' }}">
-                                    {{ strtoupper($invoice->status) }}
+                                <span class="vj-chip vj-chip-{{ $invoice->statusChipClass() }}">
+                                    {{ $invoice->statusLabel() }}
                                 </span>
                             </div>
                             <div class="col-md-3">
@@ -50,6 +61,33 @@
                                 @endif
                             </div>
                         </div>
+
+                        @if ($invoice->isPaid())
+                            <div class="vj-form-panel mb-3">
+                                <h6 class="mb-2"><i class="fas fa-check-circle text-success"></i> Informasi Pembayaran (OP)</h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label class="small text-muted d-block">Tanggal Bayar</label>
+                                        <strong>{{ $invoice->paid_at?->format('d-M-Y') ?: '-' }}</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small text-muted d-block">SAP OP DocNum</label>
+                                        <strong>{{ $invoice->paid_sap_doc_num ?: '-' }}</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small text-muted d-block">Jumlah Dibayar</label>
+                                        <strong>{{ number_format($invoice->paid_amount ?? 0, 2) }}</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small text-muted d-block">Dibayar Oleh</label>
+                                        <strong>{{ $invoice->paidBy?->name ?: '-' }}</strong>
+                                    </div>
+                                </div>
+                                @if ($invoice->payment_remarks)
+                                    <p class="mb-0 mt-2 vj-note"><strong>Keterangan:</strong> {{ $invoice->payment_remarks }}</p>
+                                @endif
+                            </div>
+                        @endif
 
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped table-sm">
@@ -99,8 +137,23 @@
             </div>
         </div>
     </div>
+
+    @if ($canSubmitUtilityPayment ?? false)
+        @include('utilities.ap_invoices._sap_payment_modal')
+    @endif
 @endsection
 
 @section('styles')
     @include('partials.vj-soft-ui-styles')
+    @if ($canSubmitUtilityPayment ?? false)
+        <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    @endif
 @endsection
+
+@if ($canSubmitUtilityPayment ?? false)
+    @include('utilities.ap_invoices._sap_payment_scripts', [
+        'canSubmitUtilityPayment' => $canSubmitUtilityPayment,
+        'defaultPreparedBy' => $defaultPreparedBy ?? auth()->user()?->name ?? '',
+    ])
+@endif

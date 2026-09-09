@@ -17,10 +17,14 @@ class UtilityApInvoice extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_PAID = 'paid';
+
     protected $guarded = [];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'paid_at' => 'date',
         'submitted_at' => 'datetime',
     ];
 
@@ -37,5 +41,49 @@ class UtilityApInvoice extends Model
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function paidBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->paid_at !== null || $this->status === self::STATUS_PAID;
+    }
+
+    public function canCreateOutgoingPayment(): bool
+    {
+        return $this->status === self::STATUS_POSTED && ! $this->isPaid();
+    }
+
+    public function statusLabel(): string
+    {
+        if ($this->isPaid()) {
+            $docNum = $this->paid_sap_doc_num ?: '-';
+
+            return 'Paid (DocNum '.$docNum.')';
+        }
+
+        return match ($this->status) {
+            self::STATUS_POSTED => 'Posted',
+            self::STATUS_FAILED => 'Failed',
+            self::STATUS_PENDING => 'Pending',
+            default => ucfirst((string) $this->status),
+        };
+    }
+
+    public function statusChipClass(): string
+    {
+        if ($this->isPaid()) {
+            return 'success';
+        }
+
+        return match ($this->status) {
+            self::STATUS_POSTED => 'neutral',
+            self::STATUS_FAILED => 'danger',
+            default => 'neutral',
+        };
     }
 }
