@@ -348,7 +348,7 @@ class VerificationJournalAggregator
     public function stripInternalMetadata(array $lines): array
     {
         return array_map(function (array $line) {
-            unset($line['is_reclassified'], $line['reclassified_reason'], $line['activity_id']);
+            unset($line['is_reclassified'], $line['reclassified_reason']);
 
             return $line;
         }, $lines);

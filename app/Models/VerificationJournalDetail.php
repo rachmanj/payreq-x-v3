@@ -15,4 +15,9 @@ class VerificationJournalDetail extends Model
     {
         return $this->belongsTo(VerificationJournal::class);
     }
+
+    public function activity()
+    {
+        return $this->belongsTo(Activity::class);
+    }
 }
