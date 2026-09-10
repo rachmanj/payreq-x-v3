@@ -86,6 +86,36 @@
     </div>
     <!-- /.row -->
 
+    @if (!empty($activitySummary))
+    <div class="row mt-3">
+      <div class="col-12">
+        <h5><strong>Ringkasan Kegiatan</strong></h5>
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th>Nama Kegiatan</th>
+              <th>Akun Kegiatan</th>
+              <th>Cost Center</th>
+              <th class="text-right">Total Debit (IDR)</th>
+              <th class="text-center">Jumlah Baris</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach ($activitySummary as $summary)
+              <tr>
+                <td>{{ $summary['name'] }}</td>
+                <td>{{ $summary['account_label'] }}</td>
+                <td>{{ $summary['cost_centers'] ?: '-' }}</td>
+                <td class="text-right">{{ number_format($summary['total_debit'], 2) }}</td>
+                <td class="text-center">{{ $summary['line_count'] }}</td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+    </div>
+    @endif
+
     {{--
     <div class="row invoice-info">
         <div class="col-sm-4 invoice-col">

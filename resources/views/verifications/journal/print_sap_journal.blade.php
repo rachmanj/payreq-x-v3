@@ -271,6 +271,34 @@
         </tbody>
     </table>
 
+    @if (!empty($activitySummary))
+        <div style="margin: 14px 0 10px 0;">
+            <p><strong>Ringkasan Kegiatan</strong></p>
+            <table class="lines" style="margin-top: 6px;">
+                <thead>
+                    <tr>
+                        <th>Nama Kegiatan</th>
+                        <th>Akun Kegiatan</th>
+                        <th>Cost Center</th>
+                        <th class="num">Total Debit</th>
+                        <th style="text-align:center;">Jumlah Baris</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($activitySummary as $summary)
+                        <tr>
+                            <td>{{ $summary['name'] }}</td>
+                            <td>{{ $summary['account_label'] }}</td>
+                            <td>{{ $summary['cost_centers'] ?: '—' }}</td>
+                            <td class="num">{{ number_format($summary['total_debit'], 2, '.', ',') }}</td>
+                            <td style="text-align:center;">{{ $summary['line_count'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+
     <p class="descr"><strong>Description:</strong> Verification Journal: {{ $vj->nomor }}</p>
 
     <p><strong>Says:</strong> {{ $amountInWords }}</p>

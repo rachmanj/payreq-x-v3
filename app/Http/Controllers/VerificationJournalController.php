@@ -87,14 +87,17 @@ class VerificationJournalController extends Controller
             ->get()
             ->map(function ($detail) {
                 $account = Account::where('account_number', $detail->account_code)->first();
-                $detail->account_name = $account->account_name;
+                $detail->account_name = $account?->account_name ?? '-';
 
                 return $detail;
             });
 
+        $activitySummary = $this->buildActivitySummaryForPrint($vj_details);
+
         return view('verifications.journal.print_journal', compact([
             'vj',
             'vj_details',
+            'activitySummary',
         ]));
     }
 
@@ -116,11 +119,13 @@ class VerificationJournalController extends Controller
             });
 
         $amountInWords = app(ToolController::class)->numberToWordsEnglish((float) $vj->amount);
+        $activitySummary = $this->buildActivitySummaryForPrint($vjDetails);
 
         return view('verifications.journal.print_sap_journal', compact([
             'vj',
             'vjDetails',
             'amountInWords',
+            'activitySummary',
         ]));
     }
 
@@ -577,5 +582,42 @@ class VerificationJournalController extends Controller
         $realizations = Realization::where('flag', $flag)->get();
 
         return $realizations;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, VerificationJournalDetail>  $vjDetails
+     * @return array<int, array<string, mixed>>
+     */
+    protected function buildActivitySummaryForPrint($vjDetails): array
+    {
+        $tagged = $vjDetails->whereNotNull('activity_id');
+        if ($tagged->isEmpty()) {
+            return [];
+        }
+
+        $activities = Activity::query()
+            ->with('account')
+            ->whereIn('id', $tagged->pluck('activity_id')->unique())
+            ->get()
+            ->keyBy('id');
+
+        return $tagged
+            ->groupBy('activity_id')
+            ->map(function ($lines, $activityId) use ($activities) {
+                $activity = $activities->get((int) $activityId);
+                $debitLines = $lines->where('debit_credit', 'debit');
+
+                return [
+                    'name' => $activity?->name ?? '-',
+                    'account_label' => $activity?->account
+                        ? $activity->account->account_number.' - '.$activity->account->account_name
+                        : '-',
+                    'cost_centers' => $debitLines->pluck('cost_center')->filter()->unique()->implode(', '),
+                    'total_debit' => (float) $debitLines->sum('amount'),
+                    'line_count' => $lines->count(),
+                ];
+            })
+            ->values()
+            ->all();
     }
 }
