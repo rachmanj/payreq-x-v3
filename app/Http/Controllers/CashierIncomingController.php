@@ -25,7 +25,21 @@ class CashierIncomingController extends Controller
 
         try {
             // update incomings table
-            $incoming = Incoming::findOrFail($request->incoming_id);
+            // lockForUpdate: mencegah dua request receive paralel (klik ganda) lolos bersamaan
+            $incoming = Incoming::whereKey($request->incoming_id)->lockForUpdate()->firstOrFail();
+
+            // Anti-dobel: incoming yang sudah pernah di-receive tidak boleh diproses ulang.
+            // Tanpa guard ini, klik/retry berulang menambah transaksi kas & app_balance berkali-kali.
+            $sudahDireceive = \App\Models\Transaksi::where('document_type', 'incoming')
+                ->where('document_id', $incoming->id)
+                ->exists();
+
+            if ($sudahDireceive) {
+                DB::rollBack();
+
+                return redirect()->back()->with('error', 'Incoming ini sudah pernah di-receive. Tidak diproses ulang untuk mencegah saldo dobel.');
+            }
+
             $incoming->receive_date = $request->receive_date;
             $incoming->cashier_id = auth()->user()->id;
             $incoming->save();

@@ -19,7 +19,8 @@
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
 
-            <form action="{{ route('cashier.incomings.receive') }}" method="POST">
+            <form action="{{ route('cashier.incomings.receive') }}" method="POST"
+                onsubmit="this.querySelector('button[type=submit]').disabled = true;">
                 @csrf
 
                 <div class="modal-body">
