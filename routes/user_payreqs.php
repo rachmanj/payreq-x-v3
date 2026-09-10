@@ -107,6 +107,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::post('/store-detail', [PayreqReimburseController::class, 'store_detail'])->name('store_detail');
         Route::post('/delete-detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
         Route::post('/update-rab', [PayreqReimburseController::class, 'update_rab'])->name('update_rab');
+        Route::post('/{realization_id}/update-activity', [PayreqReimburseController::class, 'updateActivity'])->name('update_activity');
         Route::post('/update_detail', [PayreqReimburseController::class, 'update_detail'])->name('update_detail');
     });
 
