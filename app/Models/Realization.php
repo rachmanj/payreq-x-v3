@@ -48,6 +48,11 @@ class Realization extends Model
         return $this->belongsTo(Department::class);
     }
 
+    public function activity()
+    {
+        return $this->belongsTo(Activity::class);
+    }
+
     public function journal()
     {
         return $this->belogsTo(Journal::class);

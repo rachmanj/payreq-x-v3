@@ -74,6 +74,7 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::post('/update_detail/{detail}', [UserRealizationController::class, 'updateDetail'])->name('update_detail');
         Route::post('/scan-receipt', [UserRealizationController::class, 'scanReceipt'])->name('scan_receipt');
         Route::post('/bulk-store-details', [UserRealizationController::class, 'bulkStoreDetails'])->name('bulk_store_details');
+        Route::post('/{realization_id}/update-activity', [UserRealizationController::class, 'updateActivity'])->name('update_activity');
     });
     Route::resource('realizations', UserRealizationController::class);
 

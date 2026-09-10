@@ -4,12 +4,13 @@ namespace App\Services;
 
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
-use App\Models\Account;
+use App\Support\SapLineMemoTruncator;
 use Carbon\Carbon;
 
 class SapJournalEntryBuilder
 {
     protected VerificationJournal $verificationJournal;
+
     protected $journalDetails;
 
     public function __construct(VerificationJournal $verificationJournal)
@@ -30,7 +31,10 @@ class SapJournalEntryBuilder
         foreach ($this->journalDetails as $detail) {
             $line = [
                 'AccountCode' => $detail->account_code,
-                'LineMemo' => $detail->description ?? '',
+                'LineMemo' => SapLineMemoTruncator::truncate(
+                    (string) ($detail->description ?? ''),
+                    $this->verificationJournal->nomor
+                ),
                 'DueDate' => $dueDate,
             ];
 
@@ -62,7 +66,7 @@ class SapJournalEntryBuilder
         $journalEntry = [
             'ReferenceDate' => $referenceDate,
             'TaxDate' => $taxDate,
-            'Memo' => $this->verificationJournal->description ?? 'Verification Journal: ' . $this->verificationJournal->nomor,
+            'Memo' => $this->verificationJournal->description ?? 'Verification Journal: '.$this->verificationJournal->nomor,
             'JournalEntryLines' => $lines,
         ];
 
@@ -99,4 +103,3 @@ class SapJournalEntryBuilder
         return $errors;
     }
 }
-

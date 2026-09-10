@@ -28,6 +28,9 @@ Route::prefix('verifications')->name('verifications.')->group(function () {
         Route::get('/{id}/show', [VerificationJournalController::class, 'show'])->name('show');
         Route::get('/{id}/print', [VerificationJournalController::class, 'print'])->name('print');
         Route::get('/{id}/print-sap-journal', [VerificationJournalController::class, 'printSapJournal'])->name('print_sap_journal');
+        Route::get('/{id}/preview', [VerificationJournalController::class, 'preview'])->name('preview');
+        Route::get('/{id}/set-activities', [VerificationJournalController::class, 'setActivitiesForm'])->name('set_activities');
+        Route::post('/{id}/set-activities', [VerificationJournalController::class, 'setActivities'])->name('set_activities.store');
         Route::delete('/{id}', [VerificationJournalController::class, 'destroy'])->name('destroy');
         Route::post('/move_selected_to_cart', [VerificationJournalController::class, 'moveSelectedToCart'])->name('move_selected_to_cart');
         Route::post('/remove_selected_from_cart', [VerificationJournalController::class, 'removeSelectedFromCart'])->name('remove_selected_from_cart');

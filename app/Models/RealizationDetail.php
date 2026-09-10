@@ -15,6 +15,7 @@ class RealizationDetail extends Model
 
     protected $casts = [
         'expense_date' => 'date',
+        'activity_excluded' => 'boolean',
     ];
 
     /**
@@ -70,5 +71,10 @@ class RealizationDetail extends Model
     public function anggaran(): BelongsTo
     {
         return $this->belongsTo(Anggaran::class, 'rab_id');
+    }
+
+    public function activity(): BelongsTo
+    {
+        return $this->belongsTo(Activity::class);
     }
 }

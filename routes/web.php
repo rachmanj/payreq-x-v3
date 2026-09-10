@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Api\MenuSearchController;
 use App\Http\Controllers\BucSyncController;
@@ -172,6 +173,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/data', [CurrencyController::class, 'data'])->name('data');
     });
     Route::resource('currencies', CurrencyController::class);
+
+    // KEGIATAN (ACTIVITY COSTING)
+    Route::prefix('master/activities')->name('activities.')->middleware('permission:manage_activities')->group(function () {
+        Route::get('/data', [ActivityController::class, 'data'])->name('data');
+        Route::post('/{activity}/close', [ActivityController::class, 'close'])->name('close');
+    });
+    Route::resource('master/activities', ActivityController::class)
+        ->middleware('permission:manage_activities')
+        ->except(['show', 'destroy']);
 
     Route::prefix('rabs')->name('rabs.')->group(function () {
         Route::prefix('/sync')->name('sync.')->group(function () {

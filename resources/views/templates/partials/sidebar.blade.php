@@ -351,6 +351,15 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('manage_activities')
+                                <li class="nav-item">
+                                    <a href="{{ route('activities.index') }}"
+                                        class="nav-link {{ request()->routeIs('activities.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Kegiatan</p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('akses_exchange_rates')
                                 <li class="nav-item">
                                     <a href="{{ route('accounting.exchange-rates.index') }}"

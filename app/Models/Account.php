@@ -23,6 +23,11 @@ class Account extends Model
         return $query->where('is_active', true)->where('is_hidden', false);
     }
 
+    public function activities()
+    {
+        return $this->hasMany(Activity::class);
+    }
+
     public static function forVjDetailSelection(string $debitCredit, ?string $project = null): Collection
     {
         $query = static::query()

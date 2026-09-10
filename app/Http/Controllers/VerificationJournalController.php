@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PreparesVerificationJournalShow;
 use App\Models\Account;
+use App\Models\Activity;
 use App\Models\Department;
 use App\Models\Parameter;
 use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
+use App\Services\VerificationJournalAggregator;
 use App\Support\VerificationJournalDetailDescriptionEnricher;
-use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class VerificationJournalController extends Controller
 {
@@ -376,66 +379,123 @@ class VerificationJournalController extends Controller
 
     public function store_verification_journal_details($verification_journal_id)
     {
-        // debits type
-        $realizations = Realization::where('verification_journal_id', $verification_journal_id)
-            ->get();
+        $realizations = $this->realizationsForAggregation($verification_journal_id);
+        $aggregator = app(VerificationJournalAggregator::class);
+        $lines = $aggregator->aggregate($realizations, (int) $verification_journal_id, auth()->user());
+        $persistLines = $aggregator->stripInternalMetadata($lines);
 
-        foreach ($realizations as $realization) {
-            $realization_details = $realization->realizationDetails;
-
-            foreach ($realization_details as $realization_detail) {
-                $data = [
-                    'verification_journal_id' => $verification_journal_id,
-                    'realization_date' => Carbon::parse($realization->created_at)->format('Y-m-d'),
-                    'debit_credit' => 'debit',
-                    'realization_no' => $realization_detail->realization->nomor,
-                    'account_code' => $realization_detail->account->account_number,
-                    'amount' => $realization_detail->amount,
-                    'description' => $realization_detail->description,
-                    'project' => $realization_detail->project,
-                    'cost_center' => $realization_detail->department->sap_code,
-                ];
-
-                VerificationJournalDetail::create($data);
-            }
-
-            // credit type
-            if (auth()->user()->project === '000H' || auth()->user()->project === 'APS') {
-                $cashProject = '000H';
-            } else {
-                $cashProject = $realization->project;
-            }
-
-            $cash_account = Account::query()
-                ->selectable()
-                ->where('type', 'cash')
-                ->where('project', $cashProject)
-                ->orderBy('account_number')
-                ->first();
-
-            $array_desc = $realization_details->pluck('description')->unique();
-
-            $descriptions = implode(', ', $array_desc->toArray());
-            if (strlen($descriptions) > 100) {
-                $descriptions = substr($descriptions, 0, 100);
-            }
-
-            $data = [
-                'verification_journal_id' => $verification_journal_id,
-                'realization_date' => Carbon::parse($realization->created_at)->format('Y-m-d'),
-                'debit_credit' => 'credit',
-                'realization_no' => $realization->nomor,
-                'account_code' => $cash_account->account_number,
-                'amount' => $realization->realizationDetails->sum('amount'),
-                'description' => $descriptions,
-                'project' => $realization->project,
-                'cost_center' => $realization->department->sap_code,
-            ];
-
-            VerificationJournalDetail::create($data);
+        foreach ($persistLines as $line) {
+            VerificationJournalDetail::create($line);
         }
 
         return true;
+    }
+
+    public function preview(int $id): View|RedirectResponse
+    {
+        $vj = VerificationJournal::findOrFail($id);
+        $realizations = $this->realizationsForAggregation($id);
+        $aggregator = app(VerificationJournalAggregator::class);
+        $lines = $aggregator->aggregate($realizations, $id, auth()->user());
+
+        $totalDebit = collect($lines)->where('debit_credit', 'debit')->sum('amount');
+        $totalCredit = collect($lines)->where('debit_credit', 'credit')->sum('amount');
+
+        return view('verifications.journal.preview', [
+            'vj' => $vj,
+            'lines' => $lines,
+            'totalDebit' => $totalDebit,
+            'totalCredit' => $totalCredit,
+            'isBalanced' => abs($totalDebit - $totalCredit) < 0.01,
+        ]);
+    }
+
+    public function setActivitiesForm(int $id): View|RedirectResponse
+    {
+        $vj = VerificationJournal::findOrFail($id);
+
+        if (filled($vj->sap_journal_no)) {
+            return redirect()
+                ->route('verifications.journal.show', $vj->id)
+                ->with('error', 'Kegiatan tidak dapat diubah karena VJ sudah diposting ke SAP.');
+        }
+
+        $aggregator = app(VerificationJournalAggregator::class);
+        $details = RealizationDetail::query()
+            ->where('verification_journal_id', $vj->id)
+            ->with(['account', 'activity', 'realization.activity'])
+            ->orderBy('id')
+            ->get()
+            ->map(function (RealizationDetail $detail) use ($aggregator) {
+                $detail->effective_activity = $aggregator->effectiveActivity($detail);
+
+                return $detail;
+            });
+
+        $activities = Activity::query()->open()->orderBy('code')->get();
+
+        return view('verifications.journal.set-activities', [
+            'vj' => $vj,
+            'details' => $details,
+            'activities' => $activities,
+        ]);
+    }
+
+    public function setActivities(Request $request, int $id): RedirectResponse
+    {
+        $vj = VerificationJournal::findOrFail($id);
+
+        if (filled($vj->sap_journal_no)) {
+            return redirect()
+                ->back()
+                ->with('error', 'Kegiatan tidak dapat diubah karena VJ sudah diposting ke SAP.');
+        }
+
+        $validated = $request->validate([
+            'assignments' => ['required', 'array'],
+            'assignments.*.realization_detail_id' => ['required', 'integer', 'exists:realization_details,id'],
+            'assignments.*.activity_id' => ['nullable', 'integer', 'exists:activities,id'],
+            'assignments.*.activity_excluded' => ['nullable', 'boolean'],
+        ]);
+
+        foreach ($validated['assignments'] as $assignment) {
+            $detail = RealizationDetail::query()
+                ->where('verification_journal_id', $vj->id)
+                ->findOrFail($assignment['realization_detail_id']);
+
+            $excluded = (bool) ($assignment['activity_excluded'] ?? false);
+            $activityId = $assignment['activity_id'] ?? null;
+
+            $detail->update([
+                'activity_id' => $excluded ? null : $activityId,
+                'activity_excluded' => $excluded,
+            ]);
+        }
+
+        VerificationJournalDetail::query()
+            ->where('verification_journal_id', $vj->id)
+            ->delete();
+
+        $this->store_verification_journal_details($vj->id);
+
+        return redirect()
+            ->route('verifications.journal.preview', $vj->id)
+            ->with('success', 'Kegiatan berhasil diperbarui dan baris jurnal diregenerasi.');
+    }
+
+    protected function realizationsForAggregation(int $verificationJournalId)
+    {
+        return Realization::query()
+            ->where('verification_journal_id', $verificationJournalId)
+            ->with([
+                'department',
+                'activity',
+                'realizationDetails.account',
+                'realizationDetails.department',
+                'realizationDetails.activity',
+                'realizationDetails.realization.activity',
+            ])
+            ->get();
     }
 
     public function editVjDetailData(Request $request)

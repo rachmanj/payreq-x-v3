@@ -140,6 +140,8 @@ class UpdateRealizationDetailRequest extends FormRequest
                 'before_or_equal:today',
             ],
             'rab_id' => $rabRules,
+            'activity_id' => ['nullable', 'integer', 'exists:activities,id'],
+            'activity_excluded' => ['nullable', 'boolean'],
         ];
     }
 
@@ -210,6 +212,8 @@ class UpdateRealizationDetailRequest extends FormRequest
             'uom',
             'km_position',
             'expense_date',
+            'activity_id',
+            'activity_excluded',
         ];
 
         $payreq = $this->realizationPayreq();
@@ -238,6 +242,14 @@ class UpdateRealizationDetailRequest extends FormRequest
 
             if ($key === 'rab_id' && $value !== null && $value !== '') {
                 return (int) $value;
+            }
+
+            if ($key === 'activity_excluded') {
+                return (bool) $value;
+            }
+
+            if ($key === 'activity_id') {
+                return $value === '' || $value === null ? null : (int) $value;
             }
 
             return $value;

@@ -356,6 +356,11 @@
                         <i class="fas fa-print"></i>
                         <span>Print</span>
                     </a>
+                    <a href="{{ route('verifications.journal.preview', $vj->id) }}"
+                        class="vj-action-item vj-action-export">
+                        <i class="fas fa-eye"></i>
+                        <span>Preview Jurnal</span>
+                    </a>
                     @if ($canManageSapInfo)
                         <button type="button"
                             class="vj-action-item vj-action-item-btn vj-action-sap {{ ! $canManageSapInfoForVj || $vj->sap_journal_no ? 'is-disabled' : '' }}"
