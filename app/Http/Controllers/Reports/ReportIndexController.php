@@ -189,6 +189,17 @@ class ReportIndexController extends Controller
                     ],
                 ],
             ],
+            [
+                'name' => 'Kegiatan',
+                'protector' => null,
+                'subMenu' => [
+                    [
+                        'name' => 'Biaya per Kegiatan',
+                        'url' => route('reports.activity-costing.index'),
+                        'protector' => 'view_activity_costing',
+                    ],
+                ],
+            ],
         ];
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Reports\ActivityCostingController;
 use App\Http\Controllers\Reports\AnggaranConsolidatedController;
 use App\Http\Controllers\Reports\AnggaranController;
 use App\Http\Controllers\Reports\AnggaranDashboardController;
@@ -113,5 +114,14 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/data', [DocumentCreationController::class, 'data'])->name('data');
         Route::get('/detail', [DocumentCreationController::class, 'detail'])->name('detail');
         Route::get('/by-user', [DocumentCreationController::class, 'by_user'])->name('by_user');
+    });
+
+    Route::prefix('activity-costing')->name('activity-costing.')->middleware('permission:view_activity_costing')->group(function () {
+        Route::get('/', [ActivityCostingController::class, 'index'])->name('index');
+        Route::get('/data', [ActivityCostingController::class, 'data'])->name('data');
+        Route::get('/export', [ActivityCostingController::class, 'export'])->name('export');
+        Route::get('/{id}', [ActivityCostingController::class, 'show'])->name('show');
+        Route::get('/{id}/data', [ActivityCostingController::class, 'showData'])->name('show-data');
+        Route::post('/{id}/close', [ActivityCostingController::class, 'close'])->name('close');
     });
 });
