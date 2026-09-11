@@ -99,6 +99,8 @@
         @include('approvals-request.payreqs.details_table')
     </div>
 
+    @include('approvals-request.partials.activity-create-modal')
+
     {{-- modal update --}}
     <div class="modal fade" id="approvals-update">
         <div class="modal-dialog modal-lg">
@@ -154,6 +156,12 @@
 
 @section('styles')
     @include('partials.vj-soft-ui-styles')
+    @can('manage_activities')
+        @if ($showActivityColumn ?? false)
+            <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+            <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+        @endif
+    @endcan
 @endsection
 
 @section('scripts')
@@ -339,6 +347,10 @@
                 projectCell.html(
                     `<select class="form-control form-control-sm project-input">${projectOptions}</select>`);
 
+                if (typeof transformActivityRowToEdit === 'function') {
+                    transformActivityRowToEdit(row);
+                }
+
                 // Amount cell
                 const amountCell = row.find('.amount-cell');
                 amountCell.html(`
@@ -407,6 +419,10 @@
                     </tr>
                 `);
 
+                if (typeof appendActivityToNewRow === 'function') {
+                    appendActivityToNewRow(newRow);
+                }
+
                 $('#details-tbody').append(newRow);
                 newRow.find('.description-input').focus();
                 calculateTotal();
@@ -459,7 +475,7 @@
                         return;
                     }
 
-                    const detail = {
+                    let detail = {
                         id: row.data('detail-id') || null,
                         description: row.find('.description-input').val(),
                         amount: parseFloat(row.find('.amount-input').val()) || 0,
@@ -471,6 +487,10 @@
                         uom: row.find('.uom-input').val() || null,
                         km_position: row.find('.km-input').val() || null,
                     };
+
+                    if (typeof collectActivityDetailFields === 'function') {
+                        detail = collectActivityDetailFields(row, detail);
+                    }
 
                     details.push(detail);
                 });
@@ -508,14 +528,20 @@
                 $('#btn-save-details').prop('disabled', true).html(
                     '<i class="fas fa-spinner fa-spin"></i> Saving...');
 
+                let savePayload = {
+                    _token: "{{ csrf_token() }}",
+                    details: data.details,
+                    deleted_ids: data.deletedIds
+                };
+
+                if (typeof addActivityToPayload === 'function') {
+                    savePayload = addActivityToPayload(savePayload);
+                }
+
                 $.ajax({
                     url: "{{ route('approvals.request.payreqs.update-details', $document->id) }}",
                     method: 'PUT',
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        details: data.details,
-                        deleted_ids: data.deletedIds
-                    },
+                    data: savePayload,
                     success: function(response) {
                         toastr.success(response.message);
 
@@ -541,4 +567,5 @@
             }
         });
     </script>
+    @include('approvals-request.partials.activity-details-scripts')
 @endsection

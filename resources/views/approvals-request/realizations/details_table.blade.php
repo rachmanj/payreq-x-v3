@@ -1,3 +1,10 @@
+@php
+    $details = $document_details;
+    $activityColspanOffset = auth()->user()->can('manage_activities') && ($showActivityColumn ?? false) ? 1 : 0;
+@endphp
+
+@include('approvals-request.partials.activity-header')
+
 <div class="row">
     <div class="col-12">
         <div class="card card-outline card-primary">
@@ -31,23 +38,30 @@
                 <table class="table table-striped table-hover mb-0" id="details-table">
                     <thead>
                         <tr>
-                            <th>#</td>
-                            <th>Desc</td>
-                            <th>Department</td>
-                            <th>Project</td>
+                            <th>#</th>
+                            <th>Desc</th>
+                            <th>Department</th>
+                            <th>Project</th>
+                            @can('manage_activities')
+                                @if ($showActivityColumn ?? false)
+                                    <th>Kegiatan</th>
+                                @endif
+                            @endcan
                             <th class="text-right">Amount (IDR)</th>
                             <th class="text-center actions-column" style="display: none;">Actions</th>
                         </tr>
                     </thead>
-                    @if ($document_details->count() > 0)
+                    @if ($details->count() > 0)
                         <tbody id="details-tbody">
-                            @foreach ($document_details as $item)
+                            @foreach ($details as $item)
                                 <tr data-detail-id="{{ $item->id }}" data-description="{{ $item->description }}"
                                     data-amount="{{ $item->amount }}" data-department-id="{{ $item->department_id }}"
                                     data-project="{{ $item->project }}"
                                     data-unit-no="{{ $item->unit_no }}" data-type="{{ $item->type }}"
                                     data-qty="{{ $item->qty }}" data-uom="{{ $item->uom }}"
-                                    data-km-position="{{ $item->km_position }}">
+                                    data-km-position="{{ $item->km_position }}"
+                                    data-activity-id="{{ $item->activity_id }}"
+                                    data-activity-excluded="{{ $item->activity_excluded ? '1' : '0' }}">
                                     <td class="row-number">{{ $loop->iteration }}</td>
                                     <td class="description-cell">
                                         <div class="description-display">
@@ -63,6 +77,18 @@
                                     <td class="project-cell">
                                         <div class="project-display">{{ $item->project ?: '-' }}</div>
                                     </td>
+                                    @can('manage_activities')
+                                        @if ($showActivityColumn ?? false)
+                                            <td class="activity-cell">
+                                                <div class="activity-display">
+                                                    @include('approvals-request.partials.activity-badge', [
+                                                        'detail' => $item,
+                                                        'headerActivity' => $realization->activity,
+                                                    ])
+                                                </div>
+                                            </td>
+                                        @endif
+                                    @endcan
                                     <td class="text-right amount-cell">
                                         <div class="amount-display">{{ number_format($item->amount, 2) }}</div>
                                     </td>
@@ -77,21 +103,21 @@
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="4" class="text-right">Total</td>
+                                <td colspan="{{ 4 + $activityColspanOffset }}" class="text-right">Total</td>
                                 <td class="text-right"><b
-                                        id="total-amount-display">{{ number_format($document_details->sum('amount'), 2) }}</b>
+                                        id="total-amount-display">{{ number_format($details->sum('amount'), 2) }}</b>
                                 </td>
                                 <td class="actions-column" style="display: none;"></td>
                             </tr>
                             <tr>
-                                <td colspan="4" class="text-right">Variance</td>
+                                <td colspan="{{ 4 + $activityColspanOffset }}" class="text-right">Variance</td>
                                 <td class="text-right"><b
-                                        id="variance-display">{{ number_format($payreq->amount - $document_details->sum('amount'), 2) }}</b>
+                                        id="variance-display">{{ number_format($payreq->amount - $details->sum('amount'), 2) }}</b>
                                 </td>
                                 <td class="actions-column" style="display: none;"></td>
                             </tr>
                             <tr id="amount-warning-row" style="display: none;">
-                                <td colspan="5" class="text-center">
+                                <td colspan="{{ 5 + $activityColspanOffset }}" class="text-center">
                                     <div class="vj-alert vj-alert-warning mb-0" role="alert">
                                         <i class="fas fa-exclamation-triangle"></i>
                                         <span id="amount-warning-message">Total amount differs from original</span>
@@ -103,7 +129,7 @@
                     @else
                         <tbody>
                             <tr>
-                                <td colspan="4" class="text-center">No Data Found</td>
+                                <td colspan="{{ 5 + $activityColspanOffset }}" class="text-center">No Data Found</td>
                             </tr>
                         </tbody>
                     @endif

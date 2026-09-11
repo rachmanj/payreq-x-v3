@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApprovalActivityController;
 use App\Http\Controllers\ApprovalPlanController;
 use App\Http\Controllers\ApprovalRequestAnggaranController;
 use App\Http\Controllers\ApprovalRequestPayreqController;
@@ -9,6 +10,10 @@ use App\Http\Controllers\ToolController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('approvals')->name('approvals.')->group(function () {
+    Route::middleware('permission:manage_activities')->group(function () {
+        Route::get('/activities/open', [ApprovalActivityController::class, 'open'])->name('activities.open');
+        Route::post('/activities', [ApprovalActivityController::class, 'store'])->name('activities.store');
+    });
     Route::prefix('request')->name('request.')->group(function () {
         Route::get('/document-count', [ToolController::class, 'approval_documents_count_api'])->name('document-count');
 

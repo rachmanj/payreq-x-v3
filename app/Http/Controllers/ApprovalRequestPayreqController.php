@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesApprovalActivityDetails;
 use App\Models\ApprovalPlan;
 use App\Models\Department;
 use App\Models\Project;
@@ -12,6 +13,8 @@ use Illuminate\Support\Str;
 
 class ApprovalRequestPayreqController extends Controller
 {
+    use HandlesApprovalActivityDetails;
+
     public function index()
     {
         $document_count = app(ToolController::class)->approval_documents_count();
@@ -23,11 +26,17 @@ class ApprovalRequestPayreqController extends Controller
     {
         $document = ApprovalPlan::find($id);
         $payreq = $document->payreq;
-        $payreq->load('outgoings'); // Eager load outgoings relationship
-        $realization = $payreq->realization;
-        $realization_details = $realization->realizationDetails;
+        $payreq->load('outgoings');
+        $realization = $payreq->realization->load('activity');
+        $realization_details = $realization->realizationDetails()->with('activity')->get();
         $departments = Department::orderBy('department_name')->get();
         $projects = Project::where('is_active', 1)->orderBy('code')->get();
+        $openActivities = $this->openActivitiesForProject($realization->project);
+        $showActivityColumn = $payreq->type === 'reimburse';
+        $activityLocked = ! $this->canUpdateActivityOnPlan($document);
+        $activityModalOptions = auth()->user()->can('manage_activities')
+            ? ApprovalActivityController::modalFormOptions()
+            : [];
 
         return view('approvals-request.payreqs.show', compact([
             'document',
@@ -36,6 +45,10 @@ class ApprovalRequestPayreqController extends Controller
             'realization_details',
             'departments',
             'projects',
+            'openActivities',
+            'showActivityColumn',
+            'activityLocked',
+            'activityModalOptions',
         ]));
     }
 
@@ -74,12 +87,9 @@ class ApprovalRequestPayreqController extends Controller
                 return '<span class="vj-chip '.$chipClass.'">'.ucfirst($approval_request->payreq->type).'</span>';
             })
             ->addColumn('amount', function ($approval_request) {
-                // if payreq type is advance
                 if ($approval_request->payreq->type == 'advance') {
                     return number_format($approval_request->payreq->amount, 2);
                 } else {
-                    // $realization_details = $approval_request->payreq->realization->realizationDetails;
-                    // $amount = $realization_details->sum('amount');
                     return number_format($approval_request->payreq->realization->realizationDetails->sum('amount'), 2);
                 }
             })
@@ -120,29 +130,41 @@ class ApprovalRequestPayreqController extends Controller
             'deleted_ids.*' => 'exists:realization_details,id',
         ]);
 
+        $document = ApprovalPlan::findOrFail($id);
+        $payreq = $document->payreq;
+
+        if ($payreq->type === 'reimburse') {
+            $this->assertActivityChangesAllowed($document, $request);
+
+            if ($this->requestContainsActivityFields($request)) {
+                $this->validateActivityFields($request);
+            }
+        }
+
         try {
             DB::beginTransaction();
 
-            $document = ApprovalPlan::findOrFail($id);
-            $realization = $document->payreq->realization;
+            $realization = $payreq->realization;
+            $canUpdateActivity = $payreq->type === 'reimburse' && $this->canUpdateActivityOnPlan($document);
 
-            // Delete removed details
             if ($request->has('deleted_ids') && ! empty($request->deleted_ids)) {
                 RealizationDetail::whereIn('id', $request->deleted_ids)
                     ->where('realization_id', $realization->id)
                     ->delete();
             }
 
-            // Update or create details
             foreach ($request->details as $detailData) {
+                $activityFields = $payreq->type === 'reimburse'
+                    ? $this->activityFieldsForDetailUpdate($detailData, $canUpdateActivity)
+                    : [];
+
                 if (isset($detailData['id']) && $detailData['id']) {
-                    // Update existing detail
                     $detail = RealizationDetail::where('id', $detailData['id'])
                         ->where('realization_id', $realization->id)
                         ->first();
 
                     if ($detail) {
-                        $detail->update([
+                        $detail->update(array_merge([
                             'description' => $detailData['description'],
                             'amount' => $detailData['amount'],
                             'department_id' => $detailData['department_id'] ?? null,
@@ -152,11 +174,10 @@ class ApprovalRequestPayreqController extends Controller
                             'qty' => $detailData['qty'] ?? null,
                             'uom' => $detailData['uom'] ?? null,
                             'km_position' => $detailData['km_position'] ?? null,
-                        ]);
+                        ], $activityFields));
                     }
                 } else {
-                    // Create new detail
-                    RealizationDetail::create([
+                    RealizationDetail::create(array_merge([
                         'realization_id' => $realization->id,
                         'description' => $detailData['description'],
                         'amount' => $detailData['amount'],
@@ -167,11 +188,14 @@ class ApprovalRequestPayreqController extends Controller
                         'qty' => $detailData['qty'] ?? null,
                         'uom' => $detailData['uom'] ?? null,
                         'km_position' => $detailData['km_position'] ?? null,
-                    ]);
+                    ], $activityFields));
                 }
             }
 
-            // Mark realization as modified by approver
+            if ($payreq->type === 'reimburse') {
+                $this->updateRealizationHeaderActivity($realization, $request, $canUpdateActivity);
+            }
+
             $realization->update([
                 'modified_by_approver' => true,
                 'modified_by_approver_at' => now(),
@@ -180,8 +204,7 @@ class ApprovalRequestPayreqController extends Controller
 
             DB::commit();
 
-            // Reload details for response
-            $updatedDetails = $realization->fresh()->realizationDetails;
+            $updatedDetails = $realization->fresh()->realizationDetails()->with('activity')->get();
 
             return response()->json([
                 'success' => true,
