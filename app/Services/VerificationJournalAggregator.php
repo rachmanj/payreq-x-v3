@@ -143,8 +143,12 @@ class VerificationJournalAggregator
     {
         $debitBuckets = [];
         $creditBuckets = [];
+        $creditActivityNames = [];
+        $creditHasNonActivity = [];
 
         foreach ($realizations as $realization) {
+            $cashAccountForMeta = $this->resolveCashAccount($realization, $user);
+
             foreach ($realization->realizationDetails as $detail) {
                 $activity = $this->effectiveActivity($detail);
                 $resolved = $this->resolveEffectiveAccount($detail);
@@ -153,8 +157,20 @@ class VerificationJournalAggregator
                     continue;
                 }
 
+                if ($cashAccountForMeta) {
+                    $creditMetaKey = implode('|', [
+                        $cashAccountForMeta->account_number,
+                        (string) $realization->department?->sap_code,
+                    ]);
+
+                    if ($activity === null) {
+                        $creditHasNonActivity[$creditMetaKey] = true;
+                    } else {
+                        $creditActivityNames[$creditMetaKey][$activity->name] = true;
+                    }
+                }
+
                 $costCenter = $detail->department?->sap_code;
-                $realizationDate = Carbon::parse($realization->created_at)->format('Y-m-d');
 
                 if ($activity === null) {
                     $linesKey = 'legacy:'.$detail->id;
@@ -222,12 +238,6 @@ class VerificationJournalAggregator
             ]);
 
             if (! isset($creditBuckets[$creditKey])) {
-                $arrayDesc = $realization->realizationDetails->pluck('description')->unique();
-                $descriptions = implode(', ', $arrayDesc->toArray());
-                if (strlen($descriptions) > 100) {
-                    $descriptions = substr($descriptions, 0, 100);
-                }
-
                 $creditBuckets[$creditKey] = [
                     'verification_journal_id' => $verificationJournalId,
                     'realization_date' => Carbon::parse($realization->created_at)->format('Y-m-d'),
@@ -235,7 +245,7 @@ class VerificationJournalAggregator
                     'realization_no' => $realization->nomor,
                     'account_code' => $cashAccount->account_number,
                     'amount' => 0.0,
-                    'description' => $descriptions,
+                    'description' => '',
                     'project' => $realization->project,
                     'cost_center' => $realization->department?->sap_code,
                     'is_reclassified' => false,
@@ -256,7 +266,46 @@ class VerificationJournalAggregator
             );
         }
 
+        foreach ($creditBuckets as $creditKey => $creditBucket) {
+            $activityNames = array_keys($creditActivityNames[$creditKey] ?? []);
+            $creditBuckets[$creditKey]['description'] = $this->buildAggregatedCreditDescription(
+                $activityNames,
+                $creditHasNonActivity[$creditKey] ?? false,
+            );
+        }
+
         return array_values(array_merge($debitBuckets, $creditBuckets));
+    }
+
+    /**
+     * @param  array<int, string>  $activityNames
+     */
+    protected function buildAggregatedCreditDescription(array $activityNames, bool $hasNonActivity): string
+    {
+        $suffix = $hasNonActivity ? ' · biaya non-kegiatan' : '';
+        $prefix = 'Kegiatan: ';
+        $maxLength = 180;
+
+        $names = $activityNames;
+        while (true) {
+            $description = $prefix.implode(', ', $names).$suffix;
+            if (strlen($description) <= $maxLength) {
+                return $description;
+            }
+
+            if (count($names) > 1) {
+                array_pop($names);
+
+                continue;
+            }
+
+            $available = $maxLength - strlen($prefix) - strlen($suffix);
+            if ($available < 1) {
+                return rtrim(substr($description, 0, $maxLength), ', ');
+            }
+
+            return $prefix.rtrim(substr($names[0], 0, $available), ', ').$suffix;
+        }
     }
 
     /**
