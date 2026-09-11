@@ -297,16 +297,17 @@ class ActivityCostingReportTest extends TestCase
         $this->assertNotEquals(200, $response->getStatusCode());
     }
 
-    public function test_acc_team_user_cannot_access_activity_costing_report(): void
+    public function test_acc_team_user_can_access_activity_costing_report(): void
     {
-        Role::query()->firstOrCreate(['name' => 'acc-team', 'guard_name' => 'web']);
+        $accTeamRole = Role::query()->firstOrCreate(['name' => 'acc-team', 'guard_name' => 'web']);
+        $accTeamRole->givePermissionTo('view_activity_costing');
 
         $accTeamUser = User::factory()->create(['project' => '000H']);
         $accTeamUser->assignRole('acc-team');
 
         $this->actingAs($accTeamUser)
             ->getJson(route('reports.activity-costing.index'))
-            ->assertForbidden();
+            ->assertOk();
     }
 
     public function test_export_downloads_excel_file(): void
