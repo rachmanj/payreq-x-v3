@@ -243,6 +243,19 @@
             loadAccounts();
         }
 
+        // PENTING: destroy DataTable DULU, baru kosongkan tbody.
+        // Kalau tbody dikosongkan saat instance DataTables masih hidup, data lama tetap
+        // tersimpan di model DataTables sehingga baris menumpuk tiap kali modal dibuka
+        // (227 -> 454 -> 681; akun yang sama tampak dobel/triple di modal).
+        function resetAccountsTable() {
+            if ($.fn.DataTable.isDataTable('#accountsTable')) {
+                $('#accountsTable').DataTable().destroy();
+                console.log('Existing DataTable destroyed');
+            }
+
+            $('#accountsTable tbody').empty();
+        }
+
         function loadAccounts() {
             $.ajax({
                 url: '{{ route('accounts.list') }}',
@@ -250,8 +263,8 @@
                 dataType: 'json',
                 beforeSend: function() {
                     console.log('Loading accounts...');
-                    let tbody = $('#accountsTable tbody');
-                    tbody.html(`
+                    resetAccountsTable();
+                    $('#accountsTable tbody').html(`
                         <tr>
                             <td colspan="3" class="text-center">
                                 <i class="fas fa-spinner fa-spin"></i> Loading accounts...
@@ -261,13 +274,9 @@
                 },
                 success: function(response) {
                     console.log('Raw response:', response);
-                    let tbody = $('#accountsTable tbody');
-                    tbody.empty();
+                    resetAccountsTable();
 
-                    if ($.fn.DataTable.isDataTable('#accountsTable')) {
-                        $('#accountsTable').DataTable().destroy();
-                        console.log('Existing DataTable destroyed');
-                    }
+                    const tbody = $('#accountsTable tbody');
 
                     if (!Array.isArray(response)) {
                         console.error('Invalid response:', response);
@@ -349,8 +358,9 @@
                         status,
                         error
                     });
-                    let tbody = $('#accountsTable tbody');
-                    tbody.empty();
+                    resetAccountsTable();
+
+                    const tbody = $('#accountsTable tbody');
 
                     let errorMessage = 'Error loading accounts. Please try again later.';
                     try {
