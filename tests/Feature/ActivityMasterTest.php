@@ -21,6 +21,8 @@ class ActivityMasterTest extends TestCase
         Permission::firstOrCreate(['name' => 'manage_activities', 'guard_name' => 'web']);
         Role::query()->firstOrCreate(['name' => 'superadmin', 'guard_name' => 'web']);
         Role::query()->firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => 'approver', 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => 'approver_bo', 'guard_name' => 'web']);
     }
 
     protected function authorizedUser(): User
@@ -56,6 +58,27 @@ class ActivityMasterTest extends TestCase
         $response = $this->actingAs($user)->get(route('activities.index'));
 
         $this->assertNotEquals(200, $response->getStatusCode());
+    }
+
+    public function test_approver_bo_cannot_access_activity_master(): void
+    {
+        $user = User::factory()->create(['project' => '000H']);
+        $user->assignRole('approver_bo');
+
+        $this->actingAs($user)
+            ->getJson(route('activities.index'))
+            ->assertForbidden();
+    }
+
+    public function test_approver_can_access_activity_master(): void
+    {
+        $user = User::factory()->create(['project' => '000H']);
+        $user->assignRole('approver');
+        $user->givePermissionTo('manage_activities');
+
+        $this->actingAs($user)
+            ->get(route('activities.index'))
+            ->assertOk();
     }
 
     public function test_can_create_activity_tanpa_reklasifikasi(): void

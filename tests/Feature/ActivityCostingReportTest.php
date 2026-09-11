@@ -35,10 +35,10 @@ class ActivityCostingReportTest extends TestCase
         parent::setUp();
 
         Permission::firstOrCreate(['name' => 'view_activity_costing', 'guard_name' => 'web']);
-        Role::query()->firstOrCreate(['name' => 'acc-team', 'guard_name' => 'web']);
+        Role::query()->firstOrCreate(['name' => 'approver', 'guard_name' => 'web']);
 
         $this->user = User::factory()->create(['project' => '000H']);
-        $this->user->assignRole('acc-team');
+        $this->user->assignRole('approver');
         $this->user->givePermissionTo('view_activity_costing');
 
         $this->department = Department::query()->create([
@@ -295,6 +295,18 @@ class ActivityCostingReportTest extends TestCase
         $user = User::factory()->create();
         $response = $this->actingAs($user)->get(route('reports.activity-costing.index'));
         $this->assertNotEquals(200, $response->getStatusCode());
+    }
+
+    public function test_acc_team_user_cannot_access_activity_costing_report(): void
+    {
+        Role::query()->firstOrCreate(['name' => 'acc-team', 'guard_name' => 'web']);
+
+        $accTeamUser = User::factory()->create(['project' => '000H']);
+        $accTeamUser->assignRole('acc-team');
+
+        $this->actingAs($accTeamUser)
+            ->getJson(route('reports.activity-costing.index'))
+            ->assertForbidden();
     }
 
     public function test_export_downloads_excel_file(): void
