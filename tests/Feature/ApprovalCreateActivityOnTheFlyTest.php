@@ -136,4 +136,35 @@ class ApprovalCreateActivityOnTheFlyTest extends TestCase
         $response->assertJsonFragment(['code' => 'KEG-2026-099', 'name' => 'Open Activity']);
         $response->assertJsonMissing(['code' => 'KEG-2026-098']);
     }
+
+    public function test_approver_can_create_activity_with_annual_periode_from_approval_endpoint(): void
+    {
+        $response = $this->actingAs($this->approver)->postJson(route('approvals.activities.store'), [
+            'name' => 'Kegiatan Tahunan',
+            'periode' => '2026',
+            'mode' => 'tanpa_reklasifikasi',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('activity.name', 'Kegiatan Tahunan');
+
+        $this->assertDatabaseHas('activities', [
+            'name' => 'Kegiatan Tahunan',
+            'periode' => '2026',
+        ]);
+    }
+
+    public function test_invalid_periode_rejected_from_approval_endpoint(): void
+    {
+        $response = $this->actingAs($this->approver)->postJson(route('approvals.activities.store'), [
+            'name' => 'Kegiatan Invalid',
+            'periode' => '2026/09',
+            'mode' => 'tanpa_reklasifikasi',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'periode' => 'Periode harus dalam format YYYY-MM atau YYYY.',
+            ]);
+    }
 }

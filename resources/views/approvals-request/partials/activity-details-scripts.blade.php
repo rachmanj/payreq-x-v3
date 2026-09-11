@@ -230,7 +230,7 @@
                             selectCreatedActivity(response.activity);
                             $('#approval-create-activity-modal').modal('hide');
                             $('#approval-create-activity-form')[0].reset();
-                            $('#modal_activity_periode').val('{{ now()->format('Y-m') }}');
+                            $('#modal_activity_periode').val(@json(\App\Support\ActivityPeriodOptions::currentMonthValue()));
                             $('#modal_activity_project').val($('#btn-create-activity').data('default-project') || '');
                         },
                         error: function(xhr) {

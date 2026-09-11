@@ -196,6 +196,21 @@ class ApprovalActivityTaggingTest extends TestCase
         $response->assertDontSee('Buat Kegiatan Baru', false);
     }
 
+    public function test_approver_sees_periode_select_in_create_activity_modal(): void
+    {
+        $fixture = $this->createRealizationApprovalFixture('advance');
+        $currentMonth = now()->format('Y-m');
+
+        $response = $this->actingAs($this->approver)->get(
+            route('approvals.request.realizations.show', $fixture['plan']->id)
+        );
+
+        $response->assertOk();
+        $response->assertSee('id="modal_activity_periode"', false);
+        $response->assertSee('name="periode"', false);
+        $response->assertSee('value="'.$currentMonth.'"', false);
+    }
+
     public function test_activity_changes_rejected_when_approval_plan_already_approved(): void
     {
         $activity = $this->createOpenActivity();

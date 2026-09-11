@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Account;
 use App\Models\Activity;
+use App\Support\ActivityPeriodOptions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -31,7 +32,7 @@ class UpdateActivityRequest extends FormRequest
                 Rule::unique('activities', 'code')->ignore($activityId),
             ],
             'name' => ['required', 'string', 'max:255'],
-            'periode' => ['required', 'string', 'max:20'],
+            'periode' => ActivityPeriodOptions::validationRules(),
             'project' => ['nullable', 'string', 'max:20'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'mode' => ['required', Rule::in(['reklasifikasi', 'tanpa_reklasifikasi'])],
@@ -55,9 +56,19 @@ class UpdateActivityRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ActivityPeriodOptions::validationMessages();
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            ActivityPeriodOptions::validateMonthRange($validator, $this->input('periode'));
+
             if ($this->input('mode') === 'reklasifikasi' && ! $this->filled('account_id')) {
                 $validator->errors()->add('account_id', 'Akun kegiatan wajib diisi untuk mode reklasifikasi.');
             }

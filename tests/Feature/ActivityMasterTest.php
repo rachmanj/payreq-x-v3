@@ -152,4 +152,96 @@ class ActivityMasterTest extends TestCase
 
         $this->assertSame('closed', $activity->fresh()->status);
     }
+
+    public function test_can_create_activity_with_annual_periode(): void
+    {
+        $user = $this->authorizedUser();
+
+        $this->actingAs($user)
+            ->post(route('activities.store'), [
+                'name' => 'Kegiatan Tahunan',
+                'periode' => '2026',
+                'mode' => 'tanpa_reklasifikasi',
+            ])
+            ->assertRedirect(route('activities.index'));
+
+        $this->assertDatabaseHas('activities', [
+            'name' => 'Kegiatan Tahunan',
+            'periode' => '2026',
+        ]);
+    }
+
+    public function test_invalid_periode_format_is_rejected(): void
+    {
+        $user = $this->authorizedUser();
+
+        $this->actingAs($user)
+            ->from(route('activities.create'))
+            ->post(route('activities.store'), [
+                'name' => 'Kegiatan Invalid Slash',
+                'periode' => '2026/09',
+                'mode' => 'tanpa_reklasifikasi',
+            ])
+            ->assertSessionHasErrors([
+                'periode' => 'Periode harus dalam format YYYY-MM atau YYYY.',
+            ]);
+
+        $this->actingAs($user)
+            ->from(route('activities.create'))
+            ->post(route('activities.store'), [
+                'name' => 'Kegiatan Invalid Text',
+                'periode' => 'Sept 2026',
+                'mode' => 'tanpa_reklasifikasi',
+            ])
+            ->assertSessionHasErrors([
+                'periode' => 'Periode harus dalam format YYYY-MM atau YYYY.',
+            ]);
+    }
+
+    public function test_invalid_periode_month_is_rejected(): void
+    {
+        $user = $this->authorizedUser();
+
+        $this->actingAs($user)
+            ->from(route('activities.create'))
+            ->post(route('activities.store'), [
+                'name' => 'Kegiatan Bulan Invalid',
+                'periode' => '2026-13',
+                'mode' => 'tanpa_reklasifikasi',
+            ])
+            ->assertSessionHasErrors([
+                'periode' => 'Periode harus dalam format YYYY-MM atau YYYY.',
+            ]);
+    }
+
+    public function test_create_form_shows_periode_select_with_current_month(): void
+    {
+        $user = $this->authorizedUser();
+        $currentMonth = now()->format('Y-m');
+
+        $response = $this->actingAs($user)->get(route('activities.create'));
+
+        $response->assertOk();
+        $response->assertSee('<select name="periode"', false);
+        $response->assertSee('value="'.$currentMonth.'"', false);
+    }
+
+    public function test_edit_form_preserves_legacy_periode_not_in_standard_options(): void
+    {
+        $user = $this->authorizedUser();
+        $activity = Activity::query()->create([
+            'code' => 'KEG-2020-001',
+            'name' => 'Kegiatan Lama',
+            'periode' => '2020-03',
+            'mode' => 'tanpa_reklasifikasi',
+            'status' => 'open',
+            'created_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('activities.edit', $activity));
+
+        $response->assertOk();
+        $response->assertSee('value="2020-03"', false);
+        $response->assertSee('value="2020-03" selected', false);
+    }
 }

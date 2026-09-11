@@ -19,8 +19,9 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="modal_activity_periode">Periode <span class="text-danger">*</span></label>
-                                        <input type="text" id="modal_activity_periode" name="periode" class="form-control"
-                                            value="{{ now()->format('Y-m') }}" required>
+                                        <select id="modal_activity_periode" name="periode" class="form-control" required>
+                                            @include('partials.activity-period-options')
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-4">

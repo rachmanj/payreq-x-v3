@@ -24,9 +24,11 @@
     <div class="col-md-4">
         <div class="form-group">
             <label for="periode">Periode <span class="text-danger">*</span></label>
-            <input type="text" name="periode" id="periode" class="form-control" required
-                placeholder="2026-09 atau 2026"
-                value="{{ old('periode', $activity->periode ?? now()->format('Y-m')) }}">
+            <select name="periode" id="periode" class="form-control" required>
+                @include('partials.activity-period-options', [
+                    'selectedPeriode' => old('periode', $activity->periode ?? null),
+                ])
+            </select>
         </div>
     </div>
     <div class="col-md-4">
