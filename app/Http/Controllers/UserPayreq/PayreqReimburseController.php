@@ -8,7 +8,6 @@ use App\Http\Controllers\DocumentNumberController;
 use App\Http\Controllers\PayreqController;
 use App\Http\Requests\StoreRealizationDetailRequest;
 use App\Http\Requests\UpdateRealizationDetailRequest;
-use App\Models\Activity;
 use App\Models\Bank;
 use App\Models\Equipment;
 use App\Models\LotClaim;
@@ -87,9 +86,8 @@ class PayreqReimburseController extends Controller
         $lotc_detail = $this->lotClaimForPayreq($payreq);
         $transferAccounts = TransferAccount::where('user_id', auth()->id())->with('bank')->orderBy('label')->get();
         $banks = Bank::orderBy('name')->get();
-        $openActivities = $this->getOpenActivities($realization->project);
 
-        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks', 'openActivities']));
+        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks']));
     }
 
     public function edit($id)
@@ -97,15 +95,14 @@ class PayreqReimburseController extends Controller
         $equipments = $this->getEquipments();
         $payreq = Payreq::findOrFail($id);
         $realization = Realization::where('payreq_id', $payreq->id)
-            ->with(['realizationDetails.activity', 'activity'])
+            ->with(['realizationDetails'])
             ->first();
         $rabs = app(UserAnggaranController::class)->getAvailableRabs();
         $lotc_detail = $this->lotClaimForPayreq($payreq);
         $transferAccounts = TransferAccount::where('user_id', auth()->id())->with('bank')->orderBy('label')->get();
         $banks = Bank::orderBy('name')->get();
-        $openActivities = $this->getOpenActivities($realization->project);
 
-        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks', 'openActivities']));
+        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks']));
     }
 
     public function store_detail(StoreRealizationDetailRequest $request)
@@ -135,36 +132,6 @@ class PayreqReimburseController extends Controller
         }
 
         return $this->edit($realization->payreq_id);
-    }
-
-    public function updateActivity(Request $request, $realization_id)
-    {
-        $realization = Realization::findOrFail($realization_id);
-
-        if ((int) $realization->user_id !== (int) auth()->id()) {
-            abort(403, 'Invalid request.');
-        }
-
-        $validated = $request->validate([
-            'activity_id' => ['nullable', 'integer', 'exists:activities,id'],
-        ]);
-
-        if (! empty($validated['activity_id'])) {
-            $activity = Activity::query()->open()->find($validated['activity_id']);
-            if (! $activity) {
-                return redirect()
-                    ->route('user-payreqs.reimburse.edit', $realization->payreq_id)
-                    ->with('error', 'Kegiatan tidak tersedia atau sudah ditutup.');
-            }
-        }
-
-        $realization->update([
-            'activity_id' => $validated['activity_id'] ?? null,
-        ]);
-
-        return redirect()
-            ->route('user-payreqs.reimburse.edit', $realization->payreq_id)
-            ->with('success', 'Kegiatan header realisasi diperbarui.');
     }
 
     public function submit_payreq(Request $request)
@@ -255,20 +222,6 @@ class PayreqReimburseController extends Controller
         }
 
         return $this->edit($realization->payreq_id);
-    }
-
-    private function getOpenActivities(?string $project = null)
-    {
-        $project = $project ?? auth()->user()->project;
-
-        return Activity::query()
-            ->open()
-            ->where(function ($query) use ($project) {
-                $query->whereNull('project')
-                    ->orWhere('project', $project);
-            })
-            ->orderBy('code')
-            ->get();
     }
 
     public function getEquipments()

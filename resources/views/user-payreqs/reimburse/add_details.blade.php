@@ -148,39 +148,6 @@
 
         <div class="row mb-3">
             <div class="col-12">
-                <div class="card card-outline card-info">
-                    <div class="card-header">
-                        <h3 class="card-title mb-0"><i class="fas fa-tags"></i> Kegiatan (opsional)</h3>
-                    </div>
-                    <div class="card-body">
-                        <form action="{{ route('user-payreqs.reimburse.update_activity', $realization->id) }}" method="POST"
-                            class="row align-items-end">
-                            @csrf
-                            <div class="col-md-8">
-                                <label for="header_activity_id">Kegiatan default untuk seluruh baris</label>
-                                <select name="activity_id" id="header_activity_id" class="form-control">
-                                    <option value="">— Tanpa kegiatan —</option>
-                                    @foreach ($openActivities as $activity)
-                                        <option value="{{ $activity->id }}"
-                                            {{ (string) $realization->activity_id === (string) $activity->id ? 'selected' : '' }}>
-                                            {{ $activity->code }} — {{ $activity->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <button type="submit" class="vj-btn vj-btn-info w-100">
-                                    <i class="fas fa-save"></i> Simpan Kegiatan Header
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-12">
                 <div class="card card-outline card-primary">
                     <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h3 class="card-title mb-0">
@@ -209,7 +176,6 @@
                             <tr>
                                 <th width="5%">#</th>
                                 <th>Description</th>
-                                <th width="14%">Kegiatan</th>
                                 <th width="12%">Expense date</th>
                                 <th class="text-right" width="18%">Amount (IDR)</th>
                                 <th width="15%">Actions</th>
@@ -230,18 +196,6 @@
                                                 @else
                                                     <small>{{ $item->type }}, HM: {{ $item->km_position }}</small>
                                                 @endif
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if ($item->activity_excluded)
-                                                <span class="badge badge-secondary">Tanpa kegiatan</span>
-                                            @elseif ($item->activity)
-                                                <span class="badge badge-info">{{ $item->activity->code }}</span>
-                                            @elseif ($realization->activity)
-                                                <span class="badge badge-light border">{{ $realization->activity->code }}</span>
-                                                <small class="text-muted d-block">ikut header</small>
-                                            @else
-                                                <span class="text-muted">—</span>
                                             @endif
                                         </td>
                                         <td>{{ $item->expense_date ? $item->expense_date->format('d-M-Y') : '—' }}</td>
@@ -266,13 +220,13 @@
                                 @endforeach
                             @else
                                 <tr id="no-data-row">
-                                    <td colspan="6" class="text-center">No Data Found</td>
+                                    <td colspan="5" class="text-center">No Data Found</td>
                                 </tr>
                             @endif
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="4" class="text-right">Total:</th>
+                                <th colspan="3" class="text-right">Total:</th>
                                 <th class="text-right" id="total-amount">
                                     {{ number_format($realization->realizationDetails->sum('amount'), 2) }}</th>
                                 <th></th>
@@ -446,13 +400,6 @@
                             </div>
                         </div>
 
-                        <hr class="my-3">
-                        @include('user-payreqs.realizations.partials.activity-fields', [
-                            'prefix' => '',
-                            'openActivities' => $openActivities,
-                            'selectedActivityId' => old('activity_id'),
-                            'activityExcluded' => old('activity_excluded'),
-                        ])
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -612,13 +559,6 @@
                             </div>
                         </div>
 
-                        <hr class="my-3">
-                        @include('user-payreqs.realizations.partials.activity-fields', [
-                            'prefix' => 'edit-',
-                            'openActivities' => $openActivities,
-                            'selectedActivityId' => null,
-                            'activityExcluded' => false,
-                        ])
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -642,9 +582,7 @@
                     data-nopol="{{ $detail->nopol }}" data-qty="{{ $detail->qty }}"
                     data-km-position="{{ $detail->km_position }}" data-type="{{ $detail->type }}"
                     data-uom="{{ $detail->uom }}"
-                    data-expense-date="{{ $detail->expense_date ? $detail->expense_date->format('Y-m-d') : '' }}"
-                    data-activity-id="{{ $detail->activity_id }}"
-                    data-activity-excluded="{{ $detail->activity_excluded ? '1' : '0' }}">
+                    data-expense-date="{{ $detail->expense_date ? $detail->expense_date->format('Y-m-d') : '' }}">
                 </div>
             @endforeach
         @endif
@@ -662,8 +600,6 @@
     <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 
     <script>
-        const headerActivityCode = @json($realization->activity?->code);
-
         // Make formatNumber globally available for use in inline events
         function formatNumber(input) {
             // Remove any non-digit characters except dots
@@ -773,20 +709,6 @@
             return `${p[2].padStart(2, '0')}-${mo[parseInt(p[1], 10) - 1]}-${p[0]}`;
         }
 
-        function formatActivityBadge(detail) {
-            if (detail.activity_excluded) {
-                return '<span class="badge badge-secondary">Tanpa kegiatan</span>';
-            }
-            if (detail.activity && detail.activity.code) {
-                return '<span class="badge badge-info">' + detail.activity.code + '</span>';
-            }
-            if (headerActivityCode) {
-                return '<span class="badge badge-light border">' + headerActivityCode +
-                    '</span><small class="text-muted d-block">ikut header</small>';
-            }
-            return '<span class="text-muted">—</span>';
-        }
-
         // Function to display notifications
         function showAlert(message, type) {
             // Configure Toastr options
@@ -844,7 +766,6 @@
                             ''
                         }
                     </td>
-                    <td>${formatActivityBadge(detail)}</td>
                     <td>${formatExpenseDateDisplay(detail.expense_date)}</td>
                     <td class="text-right">${numberFormat(detail.amount)}</td>
                     <td>
@@ -872,9 +793,7 @@
                     data-nopol="${detail.nopol || ''}" data-qty="${detail.qty || ''}"
                     data-km-position="${detail.km_position || ''}" data-type="${detail.type || ''}"
                     data-uom="${detail.uom || ''}"
-                    data-expense-date="${expenseYmd}"
-                    data-activity-id="${detail.activity_id || ''}"
-                    data-activity-excluded="${detail.activity_excluded ? '1' : '0'}">
+                    data-expense-date="${expenseYmd}">
                 </div>
             `);
 
@@ -896,7 +815,6 @@
                         ''
                     }
                 </td>
-                <td>${formatActivityBadge(detail)}</td>
                 <td>${formatExpenseDateDisplay(detail.expense_date)}</td>
                 <td class="text-right">${numberFormat(detail.amount)}</td>
                 <td>
@@ -925,8 +843,6 @@
                 'data-type': detail.type || '',
                 'data-uom': detail.uom || '',
                 'data-expense-date': expenseYmd,
-                'data-activity-id': detail.activity_id || '',
-                'data-activity-excluded': detail.activity_excluded ? '1' : '0',
             });
 
             attachEventHandlers();
@@ -961,14 +877,6 @@
 
                 const expAttr = detailData.attr('data-expense-date');
                 $('#edit-expense_date').val(expAttr ? String(expAttr).substring(0, 10) : '');
-
-                $('#edit-activity_excluded').prop('checked', detailData.attr('data-activity-excluded') === '1');
-                $('#edit-activity_id').val(detailData.attr('data-activity-id') || '');
-                if (detailData.attr('data-activity-excluded') === '1') {
-                    $('#edit-activity_id').prop('disabled', true);
-                } else {
-                    $('#edit-activity_id').prop('disabled', false);
-                }
 
                 @if (isset($lotc_detail) && $lotc_detail)
                     if ((detailData.attr('data-description') || '').includes(
@@ -1232,8 +1140,6 @@
                             $('#add-detail-form')[0].reset();
                             $('#expense_date').val(new Date().toISOString().slice(0, 10));
                             $('#unit_no, #type, #uom').val('').trigger('change');
-                            $('#activity_excluded').prop('checked', false);
-                            $('#activity_id').val('').prop('disabled', false);
 
                             // Close the modal
                             $('#add-detail-modal').modal('hide');
@@ -1412,20 +1318,6 @@
             // Initial attachment of event handlers
             attachEventHandlers();
 
-            function bindActivityExcludedToggle(prefix) {
-                const excluded = $('#' + prefix + 'activity_excluded');
-                const select = $('#' + prefix + 'activity_id');
-                excluded.off('change.activity').on('change.activity', function() {
-                    if ($(this).is(':checked')) {
-                        select.val('').prop('disabled', true);
-                    } else {
-                        select.prop('disabled', false);
-                    }
-                });
-            }
-
-            bindActivityExcludedToggle('');
-            bindActivityExcludedToggle('edit-');
         });
     </script>
     @include('user-payreqs.partials.payment-method-scripts')

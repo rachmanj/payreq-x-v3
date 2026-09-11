@@ -7,7 +7,6 @@ use App\Http\Controllers\UserPayreq\PayreqAdvanceController;
 use App\Http\Requests\BulkStoreRealizationDetailsRequest;
 use App\Http\Requests\StoreRealizationDetailRequest;
 use App\Http\Requests\UpdateRealizationDetailRequest;
-use App\Models\Activity;
 use App\Models\ApprovalPlan;
 use App\Models\Equipment;
 use App\Models\Incoming;
@@ -267,9 +266,9 @@ class UserRealizationController extends Controller
 
     public function add_details($realization_id)
     {
-        $realization = Realization::with(['payreq.anggaranAllocations.anggaran', 'activity'])
+        $realization = Realization::with(['payreq.anggaranAllocations.anggaran'])
             ->findOrFail($realization_id);
-        $realization_details = $realization->realizationDetails()->with('activity')->get();
+        $realization_details = $realization->realizationDetails()->get();
         // $equipments = app(ToolController::class)->getEquipments($realization->project);
         // $equipments = Equipment::where('project', $realization->project)->get();
 
@@ -308,15 +307,6 @@ class UserRealizationController extends Controller
             }
         }
 
-        $openActivities = Activity::query()
-            ->open()
-            ->where(function ($query) use ($realization) {
-                $query->whereNull('project')
-                    ->orWhere('project', $realization->project);
-            })
-            ->orderBy('code')
-            ->get();
-
         return view('user-payreqs.realizations.add_details', compact([
             'realization',
             'realization_details',
@@ -325,34 +315,7 @@ class UserRealizationController extends Controller
             'lotc_detail',
             'realization_budget_warnings',
             'advance_realization_rab_labels',
-            'openActivities',
         ]));
-    }
-
-    public function updateActivity(Request $request, $realization_id)
-    {
-        $realization = Realization::findOrFail($realization_id);
-
-        $validated = $request->validate([
-            'activity_id' => ['nullable', 'integer', 'exists:activities,id'],
-        ]);
-
-        if (! empty($validated['activity_id'])) {
-            $activity = Activity::query()->open()->find($validated['activity_id']);
-            if (! $activity) {
-                return redirect()
-                    ->route('user-payreqs.realizations.add_details', $realization->id)
-                    ->with('error', 'Kegiatan tidak tersedia atau sudah ditutup.');
-            }
-        }
-
-        $realization->update([
-            'activity_id' => $validated['activity_id'] ?? null,
-        ]);
-
-        return redirect()
-            ->route('user-payreqs.realizations.add_details', $realization->id)
-            ->with('success', 'Kegiatan header realisasi diperbarui.');
     }
 
     public function store_detail(StoreRealizationDetailRequest $request)

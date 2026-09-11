@@ -38,31 +38,6 @@
                         </div>
                     </div>
                 @endcan
-                @isset($openActivities, $realization)
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <form action="{{ route('user-payreqs.reimburse.update_activity', $realization->id) }}" method="POST"
-                                class="row align-items-end">
-                                @csrf
-                                <div class="col-md-8">
-                                    <label for="header_activity_id">Kegiatan default untuk seluruh baris</label>
-                                    <select name="activity_id" id="header_activity_id" class="form-control">
-                                        <option value="">— Tanpa kegiatan —</option>
-                                        @foreach ($openActivities as $activity)
-                                            <option value="{{ $activity->id }}"
-                                                {{ (string) $realization->activity_id === (string) $activity->id ? 'selected' : '' }}>
-                                                {{ $activity->code }} — {{ $activity->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <button type="submit" class="btn btn-info btn-sm btn-block">Simpan Kegiatan Header</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                @endisset
             </div>
             <div class="card-header">
                 <h4 class="card-title">Form</h4>
@@ -186,14 +161,6 @@
                         </div>
 
                     </div>
-                    @isset($openActivities)
-                        @include('user-payreqs.realizations.partials.activity-fields', [
-                            'prefix' => '',
-                            'openActivities' => $openActivities,
-                            'selectedActivityId' => old('activity_id'),
-                            'activityExcluded' => old('activity_excluded'),
-                        ])
-                    @endisset
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-sm btn-success btn-block"><i class="fas fa-save"></i> ADD

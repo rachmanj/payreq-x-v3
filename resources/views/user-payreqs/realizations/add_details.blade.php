@@ -68,35 +68,6 @@
             </div>
         @endif
 
-        <div class="card card-outline card-info mb-3">
-            <div class="card-header">
-                <h3 class="card-title mb-0"><i class="fas fa-tags"></i> Kegiatan (opsional)</h3>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('user-payreqs.realizations.update_activity', $realization->id) }}" method="POST"
-                    class="row align-items-end">
-                    @csrf
-                    <div class="col-md-8">
-                        <label for="header_activity_id">Kegiatan default untuk seluruh baris</label>
-                        <select name="activity_id" id="header_activity_id" class="form-control">
-                            <option value="">— Tanpa kegiatan —</option>
-                            @foreach ($openActivities as $activity)
-                                <option value="{{ $activity->id }}"
-                                    {{ (string) $realization->activity_id === (string) $activity->id ? 'selected' : '' }}>
-                                    {{ $activity->code }} — {{ $activity->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <button type="submit" class="vj-btn vj-btn-info w-100">
-                            <i class="fas fa-save"></i> Simpan Kegiatan Header
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
         {{-- DETAILS SECTION --}}
         <div class="row mb-3">
             <div class="col-12">
@@ -136,7 +107,6 @@
                             <tr>
                                 <th width="5%">No</th>
                                 <th>Description</th>
-                                <th width="14%">Kegiatan</th>
                                 <th width="12%">Expense date</th>
                                 <th class="text-right" width="14%">Amount</th>
                                 <th width="15%">Actions</th>
@@ -167,18 +137,6 @@
                                                     {{ $advance_realization_rab_labels[$detail->rab_id] ?? ('#' . $detail->rab_id) }}</small>
                                             @endif
                                         </td>
-                                        <td>
-                                            @if ($detail->activity_excluded)
-                                                <span class="badge badge-secondary">Tanpa kegiatan</span>
-                                            @elseif ($detail->activity)
-                                                <span class="badge badge-info">{{ $detail->activity->code }}</span>
-                                            @elseif ($realization->activity)
-                                                <span class="badge badge-light border">{{ $realization->activity->code }}</span>
-                                                <small class="text-muted d-block">ikut header</small>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
-                                        </td>
                                         <td>{{ $detail->expense_date ? $detail->expense_date->format('d-M-Y') : '—' }}</td>
                                         <td class="text-right">{{ number_format($detail->amount, 2) }}</td>
                                         <td>
@@ -201,25 +159,25 @@
                                 @endforeach
                             @else
                                 <tr id="no-data-row">
-                                    <td colspan="6" class="text-center">No Data Found</td>
+                                    <td colspan="5" class="text-center">No Data Found</td>
                                 </tr>
                             @endif
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="4" class="text-right">Total:</th>
+                                <th colspan="3" class="text-right">Total:</th>
                                 <th class="text-right" id="total-amount">
                                     {{ number_format($realization_details->sum('amount'), 2) }}</th>
                                 <th></th>
                             </tr>
                             <tr>
-                                <th colspan="4" class="text-right">Payreq Amount:</th>
+                                <th colspan="3" class="text-right">Payreq Amount:</th>
                                 <th class="text-right" id="payreq-amount">
                                     {{ number_format($realization->payreq->amount, 2) }}</th>
                                 <th></th>
                             </tr>
                             <tr>
-                                <th colspan="4" class="text-right">Variance:</th>
+                                <th colspan="3" class="text-right">Variance:</th>
                                 <th class="text-right" id="variance-amount">
                                     {{ number_format($realization->payreq->amount - $realization_details->sum('amount'), 2) }}
                                 </th>
@@ -302,11 +260,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        @include('user-payreqs.realizations.partials.activity-fields', [
-                            'prefix' => '',
-                            'openActivities' => $openActivities,
-                        ])
 
                         @if ($realization->payreq->isAdvanceMultiBudget())
                             <div class="row">
@@ -497,11 +450,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        @include('user-payreqs.realizations.partials.activity-fields', [
-                            'prefix' => 'edit-',
-                            'openActivities' => $openActivities,
-                        ])
 
                         @if ($realization->payreq->isAdvanceMultiBudget())
                             <div class="row">
@@ -833,7 +781,7 @@
                             // No data
                             $('#details-table tbody').html(`
                                 <tr id="no-data-row">
-                                    <td colspan="6" class="text-center">No Data Found</td>
+                                    <td colspan="5" class="text-center">No Data Found</td>
                                 </tr>
                             `);
                             console.log("No details found");
@@ -919,14 +867,6 @@
                                 $('#edit-realization_rab_id').val(response.rab_id || '');
                             }
 
-                            $('#edit-activity_excluded').prop('checked', !!response.activity_excluded);
-                            $('#edit-activity_id').val(response.activity_id || '');
-                            if (response.activity_excluded) {
-                                $('#edit-activity_id').prop('disabled', true);
-                            } else {
-                                $('#edit-activity_id').prop('disabled', false);
-                            }
-
                             // Show modal
                             $('#edit-detail-modal').modal('show');
                         },
@@ -938,21 +878,6 @@
                     });
                 });
             }
-
-            function bindActivityExcludedToggle(prefix) {
-                const excluded = $('#' + prefix + 'activity_excluded');
-                const select = $('#' + prefix + 'activity_id');
-                excluded.off('change.activity').on('change.activity', function () {
-                    if ($(this).is(':checked')) {
-                        select.val('').prop('disabled', true);
-                    } else {
-                        select.prop('disabled', false);
-                    }
-                }).trigger('change');
-            }
-
-            bindActivityExcludedToggle('');
-            bindActivityExcludedToggle('edit-');
 
             // Log an initialization message
             console.log("Initializing page...");
@@ -1201,9 +1126,6 @@
                 if (realizationAdvanceMultiBudget && $('#edit-realization_rab_id').length) {
                     formData.rab_id = $('#edit-realization_rab_id').val();
                 }
-
-                formData.activity_id = $('#edit-activity_id').val();
-                formData.activity_excluded = $('#edit-activity_excluded').is(':checked') ? 1 : 0;
 
                 $.ajax({
                     url: "{{ url('user-payreqs/realizations/update_detail') }}/" + detailId,

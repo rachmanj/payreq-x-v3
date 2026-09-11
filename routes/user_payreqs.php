@@ -74,7 +74,6 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::post('/update_detail/{detail}', [UserRealizationController::class, 'updateDetail'])->name('update_detail');
         Route::post('/scan-receipt', [UserRealizationController::class, 'scanReceipt'])->name('scan_receipt');
         Route::post('/bulk-store-details', [UserRealizationController::class, 'bulkStoreDetails'])->name('bulk_store_details');
-        Route::post('/{realization_id}/update-activity', [UserRealizationController::class, 'updateActivity'])->name('update_activity');
     });
     Route::resource('realizations', UserRealizationController::class);
 
@@ -107,7 +106,6 @@ Route::prefix('user-payreqs')->name('user-payreqs.')->group(function () {
         Route::post('/store-detail', [PayreqReimburseController::class, 'store_detail'])->name('store_detail');
         Route::post('/delete-detail', [PayreqReimburseController::class, 'delete_detail'])->name('delete_detail');
         Route::post('/update-rab', [PayreqReimburseController::class, 'update_rab'])->name('update_rab');
-        Route::post('/{realization_id}/update-activity', [PayreqReimburseController::class, 'updateActivity'])->name('update_activity');
         Route::post('/update_detail', [PayreqReimburseController::class, 'update_detail'])->name('update_detail');
     });
 
