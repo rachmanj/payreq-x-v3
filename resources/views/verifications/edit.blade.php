@@ -62,7 +62,16 @@
                             <dt class="col-sm-3">Employee</dt>
                             <dd class="col-sm-9">{{ $realization->payreq->requestor->name }}</dd>
                             <dt class="col-sm-3">Department</dt>
-                            <dd class="col-sm-9 mb-0">{{ $realization->payreq->requestor->department->department_name }}</dd>
+                            <dd class="col-sm-9">{{ $realization->payreq->requestor->department->department_name }}</dd>
+                            <dt class="col-sm-3">Kegiatan</dt>
+                            <dd class="col-sm-9 mb-0">
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    @include('verifications.partials.activity-badge', [
+                                        'context' => 'header',
+                                        'realization' => $realization,
+                                    ])
+                                </div>
+                            </dd>
                         </dl>
                         <div class="vj-note">
                             <i class="fas fa-comment-alt"></i>

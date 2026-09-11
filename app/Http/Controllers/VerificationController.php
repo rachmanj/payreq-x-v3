@@ -18,7 +18,14 @@ class VerificationController extends Controller
 
     public function edit($id)
     {
-        $realization = Realization::findOrFail($id);
+        $realization = Realization::query()
+            ->with([
+                'payreq.requestor.department',
+                'activity.account',
+                'realizationDetails.activity.account',
+                'realizationDetails.account',
+            ])
+            ->findOrFail($id);
         $realization_details = $realization->realizationDetails;
         $projects = Project::orderBy('code', 'asc')->get();
         $departments = Department::orderBy('akronim', 'asc')->get();

@@ -35,6 +35,12 @@
                                                 <small>{{ $item->type }}, HM: {{ $item->km_position }}</small>
                                             @endif 
                                         @endif
+                                        @include('verifications.partials.activity-badge', [
+                                            'context' => 'row',
+                                            'detail' => $item,
+                                            'realization' => $realization,
+                                            'headerActivity' => $realization->activity,
+                                        ])
                                     </td>
                                     <td>
                                         <div class="form-group">
