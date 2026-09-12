@@ -22,6 +22,7 @@ class BanksTableSeeder extends Seeder
             ['name' => 'Bank Nusantara Parahyangan'],
             ['name' => 'Bank CIMB Niaga'],
             ['name' => 'Bank Syariah Indonesia'],
+            ['name' => 'Bank BRI'],
         ];
 
         DB::table('banks')->insert($banks);
