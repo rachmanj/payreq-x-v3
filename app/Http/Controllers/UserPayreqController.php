@@ -164,6 +164,7 @@ class UserPayreqController extends Controller
                 'anggaran',
                 'anggaranAllocations.anggaran',
                 'transferAccount.bank',
+                'transferDestinations.transferAccount.bank',
             ])
             ->findOrFail($id);
         $terbilang = app(ToolController::class)->terbilang($payreq->amount);

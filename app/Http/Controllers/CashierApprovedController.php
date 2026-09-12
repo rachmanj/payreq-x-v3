@@ -55,7 +55,7 @@ class CashierApprovedController extends Controller
 
     public function pay($id)
     {
-        $payreq = Payreq::with('transferAccount')->findOrfail($id);
+        $payreq = Payreq::with(['transferAccount', 'transferDestinations.transferAccount'])->findOrfail($id);
         $outgoings = Outgoing::with(['attachments.creator'])->where('payreq_id', $id)->get();
         $cashier = auth()->user();
 

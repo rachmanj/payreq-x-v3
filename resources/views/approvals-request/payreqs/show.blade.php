@@ -91,6 +91,14 @@
                                     readonly>
                             </div>
                         @endif
+
+                        @if ($payreq->transferDestinations->isNotEmpty())
+                            @php
+                                $paymentEditable = false;
+                                $transferDestinations = $payreq->transferDestinations;
+                            @endphp
+                            @include('user-payreqs.partials.transfer-destinations')
+                        @endif
                     </div>
                 </div>
             </div>

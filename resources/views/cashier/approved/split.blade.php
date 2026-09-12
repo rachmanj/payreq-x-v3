@@ -117,6 +117,14 @@
                                     </div>
                                 @enderror
                             </div>
+
+                            @if ($payreq->transferDestinations->isNotEmpty())
+                                <div class="form-group mb-0">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-fill-from-plan">
+                                        <i class="fas fa-list-ol"></i> Isi dari rencana
+                                    </button>
+                                </div>
+                            @endif
                         </form>
                     </div>
                     <div class="card-footer">
@@ -290,6 +298,13 @@
             const isTransferPayment = @json($payreq->payment_method === 'transfer');
             const defaultTransferLabel = @json($defaultTransferLabel);
             const $transferSelect = $('#transfer_account_id');
+            @if ($payreq->transferDestinations->isNotEmpty())
+            const transferPlan = @json($payreq->transferDestinations->map(static fn ($destination) => [
+                'transfer_account_id' => $destination->transfer_account_id,
+                'planned_amount' => $destination->planned_amount,
+            ])->values());
+            let transferPlanIndex = 0;
+            @endif
 
             if ($transferSelect.length && !$transferSelect.hasClass('select2-hidden-accessible')) {
                 $transferSelect.select2({
@@ -326,6 +341,29 @@
                 return '<p>Transfer ke: <strong>' + $('<div>').text(destinationLabel).html() + '</strong></p>'
                     + '<p class="mb-0">Nominal: <strong>Rp ' + formattedAmount + '</strong></p>';
             }
+
+            @if ($payreq->transferDestinations->isNotEmpty())
+            $('#btn-fill-from-plan').on('click', function() {
+                if (!transferPlan.length) {
+                    return;
+                }
+
+                const destination = transferPlan[transferPlanIndex % transferPlan.length];
+
+                if ($transferSelect.length) {
+                    $transferSelect.val(String(destination.transfer_account_id)).trigger('change');
+                }
+
+                const $amountInput = $('input[name="amount"]');
+                if (destination.planned_amount !== null && destination.planned_amount !== '') {
+                    $amountInput.val(formatCurrency(destination.planned_amount));
+                } else {
+                    $amountInput.val('');
+                }
+
+                transferPlanIndex++;
+            });
+            @endif
 
             $('#split-update').on('submit', function(e) {
                 e.preventDefault();

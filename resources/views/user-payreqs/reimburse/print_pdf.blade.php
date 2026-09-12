@@ -134,6 +134,8 @@
                 </div>
                 <!-- /.row -->
 
+                @include('user-payreqs.partials.transfer-destinations-print')
+
                 <div class="row invoice-info">
                     <div class="col-sm-3 invoice-col">
                         <b>Requestor</b><br>
