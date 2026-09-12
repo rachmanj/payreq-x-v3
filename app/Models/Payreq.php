@@ -113,6 +113,11 @@ class Payreq extends Model
         return $this->belongsTo(TransferAccount::class);
     }
 
+    public function transferDestinations()
+    {
+        return $this->hasMany(PayreqTransferDestination::class);
+    }
+
     public function getPaymentMethodLabelAttribute(): string
     {
         return match ($this->payment_method) {

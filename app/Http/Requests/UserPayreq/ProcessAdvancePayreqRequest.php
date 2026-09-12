@@ -3,6 +3,7 @@
 namespace App\Http\Requests\UserPayreq;
 
 use App\Models\Payreq;
+use App\Services\PayreqTransferDestinationService;
 use App\Support\PayreqBudgetLinkMode;
 use App\Support\PayreqPaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
@@ -55,6 +56,34 @@ class ProcessAdvancePayreqRequest extends FormRequest
         if (! $this->filled('payment_method')) {
             $this->merge(['payment_method' => 'cash']);
         }
+
+        $destinations = $this->input('transfer_destinations', []);
+        if (! is_array($destinations)) {
+            return;
+        }
+
+        $normalizedDestinations = [];
+        foreach ($destinations as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $plannedAmount = $row['planned_amount'] ?? null;
+            if (is_string($plannedAmount)) {
+                $row['planned_amount'] = str_replace(',', '', $plannedAmount);
+            }
+
+            $normalizedDestinations[] = $row;
+        }
+
+        $this->merge(['transfer_destinations' => $normalizedDestinations]);
+
+        if (PayreqTransferDestinationService::hasDestinations($normalizedDestinations)) {
+            $this->merge([
+                'payment_method' => 'transfer',
+                'transfer_account_id' => PayreqTransferDestinationService::firstTransferAccountId($normalizedDestinations),
+            ]);
+        }
     }
 
     /**
@@ -75,7 +104,7 @@ class ProcessAdvancePayreqRequest extends FormRequest
             'rab_id' => ['nullable'],
         ];
 
-        $rules = array_merge($rules, PayreqPaymentMethod::rules());
+        $rules = array_merge($rules, PayreqPaymentMethod::rules(), PayreqTransferDestinationService::rules());
 
         if ($this->input('budget_link_mode') === PayreqBudgetLinkMode::MULTI_ALLOCATION) {
             $rules['amount'] = ['required', 'numeric', 'min:0.01'];
@@ -126,10 +155,28 @@ class ProcessAdvancePayreqRequest extends FormRequest
                 }
             }
 
-            PayreqPaymentMethod::assertTransferAccountOwnership(
+            $destinations = $this->input('transfer_destinations', []);
+            $hasDestinations = PayreqTransferDestinationService::hasDestinations($destinations);
+
+            if (! $hasDestinations) {
+                PayreqPaymentMethod::assertTransferAccountOwnership(
+                    $validator,
+                    $this->input('payment_method') === 'transfer' ? (int) $this->input('transfer_account_id') : null,
+                    (int) Auth::id()
+                );
+            }
+
+            $payreqAmount = null;
+            $amountInput = $this->input('amount');
+            if ($amountInput !== null && $amountInput !== '') {
+                $payreqAmount = (int) (is_numeric($amountInput) ? $amountInput : str_replace(',', '', (string) $amountInput));
+            }
+
+            PayreqTransferDestinationService::assertValid(
                 $validator,
-                $this->input('payment_method') === 'transfer' ? (int) $this->input('transfer_account_id') : null,
-                (int) Auth::id()
+                $destinations,
+                (int) Auth::id(),
+                $payreqAmount
             );
 
             if ($this->input('budget_link_mode') !== PayreqBudgetLinkMode::MULTI_ALLOCATION) {

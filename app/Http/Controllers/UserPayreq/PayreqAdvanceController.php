@@ -13,6 +13,7 @@ use App\Models\Realization;
 use App\Models\TransferAccount;
 use App\Services\LotService;
 use App\Services\PayreqBudgetSubmitValidator;
+use App\Services\PayreqTransferDestinationService;
 use App\Support\PayreqBudgetLinkMode;
 use App\Support\PayreqPaymentMethod;
 use Illuminate\Http\Request;
@@ -78,8 +79,9 @@ class PayreqAdvanceController extends Controller
 
         $payreq = Payreq::create($payreqAttrs);
         $this->syncAdvanceAllocations($payreq, $validated);
+        $this->syncAdvanceTransferDestinations($payreq, $validated);
 
-        return $payreq;
+        return $payreq->fresh();
     }
 
     /**
@@ -90,7 +92,9 @@ class PayreqAdvanceController extends Controller
         $payreq = Payreq::where('user_id', Auth::id())->findOrFail($payreqId);
         $payreqAttrs = $this->advancePayreqAttributes($validated);
         $payreq->update($payreqAttrs);
-        $this->syncAdvanceAllocations($payreq->fresh(), $validated);
+        $payreq = $payreq->fresh();
+        $this->syncAdvanceAllocations($payreq, $validated);
+        $this->syncAdvanceTransferDestinations($payreq, $validated);
 
         return $payreq->fresh();
     }
@@ -113,6 +117,14 @@ class PayreqAdvanceController extends Controller
             $rabId = (int) $validated['rab_id'];
         }
 
+        $paymentData = $validated;
+        if (PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
+            $paymentData['payment_method'] = 'transfer';
+            $paymentData['transfer_account_id'] = PayreqTransferDestinationService::firstTransferAccountId(
+                $validated['transfer_destinations'] ?? null
+            );
+        }
+
         return [
             'remarks' => $validated['remarks'],
             'amount' => is_numeric($amount) ? $amount : str_replace(',', '', (string) $amount),
@@ -125,8 +137,20 @@ class PayreqAdvanceController extends Controller
             'budget_link_mode' => $mode,
             'lot_no' => $validated['lot_no'] ?? null,
             'user_id' => (int) $validated['employee_id'],
-            ...PayreqPaymentMethod::normalizedAttributes($validated),
+            ...PayreqPaymentMethod::normalizedAttributes($paymentData),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncAdvanceTransferDestinations(Payreq $payreq, array $validated): void
+    {
+        PayreqTransferDestinationService::sync(
+            $payreq,
+            $validated['transfer_destinations'] ?? null,
+            (int) Auth::id()
+        );
     }
 
     /**

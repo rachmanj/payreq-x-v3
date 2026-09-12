@@ -16,9 +16,11 @@ use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\TransferAccount;
 use App\Services\PayreqBudgetSubmitValidator;
+use App\Services\PayreqTransferDestinationService;
 use App\Support\PayreqPaymentMethod;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class PayreqReimburseController extends Controller
 {
@@ -43,6 +45,8 @@ class PayreqReimburseController extends Controller
 
     public function store(Request $request)
     {
+        $this->normalizeTransferDestinationsInput($request);
+
         $validated = $request->validate(array_merge([
             'employee_id' => 'required|exists:users,id',
             'payreq_type' => 'required|in:reimburse',
@@ -51,13 +55,21 @@ class PayreqReimburseController extends Controller
             'department_id' => 'nullable|exists:departments,id',
             'remarks' => 'required|string',
             'rab_id' => 'nullable|exists:anggarans,id',
-        ], PayreqPaymentMethod::rules()));
+        ], PayreqPaymentMethod::rules(), PayreqTransferDestinationService::rules()));
 
         if ((int) $validated['employee_id'] !== (int) auth()->id()) {
             abort(403, 'Invalid request.');
         }
 
-        if ($validated['payment_method'] === 'transfer') {
+        $destinationErrors = $this->validateTransferDestinations(
+            $validated['transfer_destinations'] ?? null,
+            null
+        );
+        if ($destinationErrors->isNotEmpty()) {
+            return redirect()->back()->withInput()->withErrors($destinationErrors);
+        }
+
+        if ($validated['payment_method'] === 'transfer' && ! PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
             $owned = TransferAccount::where('id', $validated['transfer_account_id'])
                 ->where('user_id', auth()->id())
                 ->exists();
@@ -68,7 +80,22 @@ class PayreqReimburseController extends Controller
             }
         }
 
+        if (PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
+            $request->merge([
+                'payment_method' => 'transfer',
+                'transfer_account_id' => PayreqTransferDestinationService::firstTransferAccountId(
+                    $validated['transfer_destinations'] ?? null
+                ),
+            ]);
+        }
+
         $payreq = app(PayreqController::class)->store($request);
+
+        PayreqTransferDestinationService::sync(
+            $payreq,
+            $validated['transfer_destinations'] ?? null,
+            (int) auth()->id()
+        );
 
         // Create new Realization
         $realization = Realization::create([
@@ -239,11 +266,13 @@ class PayreqReimburseController extends Controller
             'payment_method' => $request->input('payment_method', 'cash'),
         ]);
 
+        $this->normalizeTransferDestinationsInput($request);
+
         $validated = $request->validate(array_merge([
             'payreq_id' => 'required|exists:payreqs,id',
             'rab_id' => 'nullable|exists:anggarans,id',
             'remarks' => 'nullable|string',
-        ], PayreqPaymentMethod::rules()));
+        ], PayreqPaymentMethod::rules(), PayreqTransferDestinationService::rules()));
 
         $payreq = Payreq::findOrFail($validated['payreq_id']);
 
@@ -258,7 +287,18 @@ class PayreqReimburseController extends Controller
             ], 403);
         }
 
-        if ($validated['payment_method'] === 'transfer') {
+        $destinationErrors = $this->validateTransferDestinations(
+            $validated['transfer_destinations'] ?? null,
+            $payreq->amount !== null ? (int) $payreq->amount : null
+        );
+        if ($destinationErrors->isNotEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $destinationErrors->first(),
+            ], 422);
+        }
+
+        if ($validated['payment_method'] === 'transfer' && ! PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
             $owned = TransferAccount::where('id', $validated['transfer_account_id'])
                 ->where('user_id', auth()->id())
                 ->exists();
@@ -270,7 +310,15 @@ class PayreqReimburseController extends Controller
             }
         }
 
-        $paymentAttrs = PayreqPaymentMethod::normalizedAttributes($validated);
+        $paymentData = $validated;
+        if (PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
+            $paymentData['payment_method'] = 'transfer';
+            $paymentData['transfer_account_id'] = PayreqTransferDestinationService::firstTransferAccountId(
+                $validated['transfer_destinations'] ?? null
+            );
+        }
+
+        $paymentAttrs = PayreqPaymentMethod::normalizedAttributes($paymentData);
 
         $payreq->update([
             'rab_id' => $validated['rab_id'] ?? $payreq->rab_id,
@@ -278,6 +326,12 @@ class PayreqReimburseController extends Controller
             'payment_method' => $paymentAttrs['payment_method'],
             'transfer_account_id' => $paymentAttrs['transfer_account_id'],
         ]);
+
+        PayreqTransferDestinationService::sync(
+            $payreq->fresh(),
+            $validated['transfer_destinations'] ?? null,
+            (int) auth()->id()
+        );
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -287,5 +341,56 @@ class PayreqReimburseController extends Controller
         }
 
         return redirect()->route('user-payreqs.index')->with('success', 'RAB updated successfully');
+    }
+
+    private function normalizeTransferDestinationsInput(Request $request): void
+    {
+        $destinations = $request->input('transfer_destinations', []);
+        if (! is_array($destinations)) {
+            return;
+        }
+
+        $normalized = [];
+        foreach ($destinations as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $plannedAmount = $row['planned_amount'] ?? null;
+            if (is_string($plannedAmount)) {
+                $row['planned_amount'] = str_replace(',', '', $plannedAmount);
+            }
+
+            $normalized[] = $row;
+        }
+
+        $request->merge(['transfer_destinations' => $normalized]);
+
+        if (PayreqTransferDestinationService::hasDestinations($normalized)) {
+            $request->merge([
+                'payment_method' => 'transfer',
+                'transfer_account_id' => PayreqTransferDestinationService::firstTransferAccountId($normalized),
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>|null  $destinations
+     */
+    private function validateTransferDestinations(?array $destinations, ?int $payreqAmount): \Illuminate\Support\MessageBag
+    {
+        $validator = Validator::make(
+            ['transfer_destinations' => $destinations],
+            PayreqTransferDestinationService::rules()
+        );
+
+        PayreqTransferDestinationService::assertValid(
+            $validator,
+            $destinations,
+            (int) auth()->id(),
+            $payreqAmount
+        );
+
+        return $validator->errors();
     }
 }
