@@ -24,10 +24,13 @@ class VerifyTransferProofJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $this->attachment->load(['outgoing.payreq.transferAccount.bank']);
+            $this->attachment->load([
+                'outgoing.payreq.transferAccount.bank',
+                'outgoing.transferAccount.bank',
+            ]);
 
             $outgoing = $this->attachment->outgoing;
-            $transferAccount = $outgoing?->payreq?->transferAccount;
+            $transferAccount = $outgoing?->transferAccount ?? $outgoing?->payreq?->transferAccount;
 
             if ($transferAccount === null) {
                 $this->attachment->update([

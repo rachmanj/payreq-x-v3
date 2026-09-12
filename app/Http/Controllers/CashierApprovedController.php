@@ -6,6 +6,7 @@ use App\Http\Controllers\Cashier\TransaksiController;
 use App\Models\Account;
 use App\Models\Outgoing;
 use App\Models\Payreq;
+use App\Models\TransferAccount;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -99,6 +100,22 @@ class CashierApprovedController extends Controller
             return redirect()->route('cashier.approveds.pay', $id)->with('error', 'Pembayaran tidak boleh melebihi jumlah yang tersisa!');
         }
 
+        $transferAccountId = $request->filled('transfer_account_id')
+            ? (int) $request->transfer_account_id
+            : $payreq->transfer_account_id;
+
+        if ($payreq->payment_method === 'transfer') {
+            $isValidTransferAccount = TransferAccount::query()
+                ->where('id', $transferAccountId)
+                ->whereIn('user_id', [$payreq->user_id, auth()->id()])
+                ->exists();
+
+            if (! $isValidTransferAccount) {
+                return redirect()->route('cashier.approveds.pay', $id)
+                    ->with('error', 'Rekening tujuan tidak valid untuk pembayaran ini.');
+            }
+        }
+
         // create new outgoing record
         $outgoing = new Outgoing;
         $outgoing->payreq_id = $payreq->id;
@@ -108,7 +125,7 @@ class CashierApprovedController extends Controller
         $outgoing->project = auth()->user()->project;
         $outgoing->outgoing_date = $request->date;
         $outgoing->payment_method = $payreq->payment_method ?? 'cash';
-        $outgoing->transfer_account_id = $payreq->transfer_account_id;
+        $outgoing->transfer_account_id = $transferAccountId;
         $outgoing->save();
 
         // create transaksi
