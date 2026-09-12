@@ -240,6 +240,103 @@ class PayreqTransferDestinationsTest extends TestCase
         ]);
     }
 
+    public function test_planned_amount_with_dot_thousand_separators_is_stored_as_integer(): void
+    {
+        $response = $this->actingAs($this->user)->post(route('user-payreqs.advance.proses'), $this->advancePayload([
+            'amount' => '3000000',
+            'transfer_destinations' => [
+                [
+                    'transfer_account_id' => $this->accountA->id,
+                    'planned_amount' => '3.000.000',
+                ],
+            ],
+        ]));
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+
+        $payreq = Payreq::query()->where('user_id', $this->user->id)->latest('id')->first();
+        $this->assertNotNull($payreq);
+        $this->assertDatabaseHas('payreq_transfer_destinations', [
+            'payreq_id' => $payreq->id,
+            'transfer_account_id' => $this->accountA->id,
+            'planned_amount' => 3000000,
+        ]);
+    }
+
+    public function test_present_flag_with_empty_list_deletes_all_destinations(): void
+    {
+        $createResponse = $this->actingAs($this->user)->post(route('user-payreqs.advance.proses'), $this->advancePayload([
+            'amount' => '1000000',
+            'transfer_destinations' => [
+                [
+                    'transfer_account_id' => $this->accountA->id,
+                    'planned_amount' => '600000',
+                ],
+                [
+                    'transfer_account_id' => $this->accountB->id,
+                    'planned_amount' => '400000',
+                ],
+            ],
+        ]));
+
+        $createResponse->assertSessionHasNoErrors();
+        $payreq = Payreq::query()->where('user_id', $this->user->id)->latest('id')->firstOrFail();
+        $this->assertSame(2, PayreqTransferDestination::query()->where('payreq_id', $payreq->id)->count());
+
+        $updateResponse = $this->actingAs($this->user)->post(route('user-payreqs.advance.proses'), $this->advancePayload([
+            'button_type' => 'edit',
+            'payreq_id' => $payreq->id,
+            'amount' => '1000000',
+            'payment_method' => 'transfer',
+            'transfer_account_id' => $this->accountB->id,
+            'transfer_destinations_present' => '1',
+            'transfer_destinations' => [],
+        ]));
+
+        $updateResponse->assertSessionHasNoErrors();
+
+        $payreq->refresh();
+        $this->assertSame($this->accountB->id, (int) $payreq->transfer_account_id);
+        $this->assertSame(0, PayreqTransferDestination::query()->where('payreq_id', $payreq->id)->count());
+    }
+
+    public function test_without_present_flag_empty_list_preserves_existing_destinations(): void
+    {
+        $createResponse = $this->actingAs($this->user)->post(route('user-payreqs.advance.proses'), $this->advancePayload([
+            'amount' => '1000000',
+            'transfer_destinations' => [
+                [
+                    'transfer_account_id' => $this->accountA->id,
+                    'planned_amount' => '600000',
+                ],
+                [
+                    'transfer_account_id' => $this->accountB->id,
+                    'planned_amount' => '400000',
+                ],
+            ],
+        ]));
+
+        $createResponse->assertSessionHasNoErrors();
+        $payreq = Payreq::query()->where('user_id', $this->user->id)->latest('id')->firstOrFail();
+        $this->assertSame(2, PayreqTransferDestination::query()->where('payreq_id', $payreq->id)->count());
+
+        $updateResponse = $this->actingAs($this->user)->post(route('user-payreqs.advance.proses'), $this->advancePayload([
+            'button_type' => 'edit',
+            'payreq_id' => $payreq->id,
+            'amount' => '1000000',
+            'payment_method' => 'transfer',
+            'transfer_account_id' => $this->accountB->id,
+            'transfer_destinations' => [],
+        ]));
+
+        $updateResponse->assertSessionHasNoErrors();
+
+        $payreq->refresh();
+        $this->assertSame($this->accountB->id, (int) $payreq->transfer_account_id);
+        $this->assertSame(2, PayreqTransferDestination::query()->where('payreq_id', $payreq->id)->count());
+    }
+
     public function test_reimburse_update_rab_syncs_destinations_and_header(): void
     {
         $anggaran = $this->makeApprovedAnggaran($this->user);

@@ -149,7 +149,8 @@ class PayreqAdvanceController extends Controller
         PayreqTransferDestinationService::sync(
             $payreq,
             $validated['transfer_destinations'] ?? null,
-            (int) Auth::id()
+            (int) Auth::id(),
+            PayreqTransferDestinationService::isPresentMarked($validated['transfer_destinations_present'] ?? null)
         );
     }
 

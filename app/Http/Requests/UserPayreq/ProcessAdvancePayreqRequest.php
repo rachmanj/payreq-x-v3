@@ -68,10 +68,9 @@ class ProcessAdvancePayreqRequest extends FormRequest
                 continue;
             }
 
-            $plannedAmount = $row['planned_amount'] ?? null;
-            if (is_string($plannedAmount)) {
-                $row['planned_amount'] = str_replace(',', '', $plannedAmount);
-            }
+            $row['planned_amount'] = PayreqTransferDestinationService::normalizePlannedAmountInput(
+                $row['planned_amount'] ?? null
+            );
 
             $normalizedDestinations[] = $row;
         }

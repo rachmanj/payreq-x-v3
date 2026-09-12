@@ -20,7 +20,24 @@ class PayreqTransferDestinationService
             'transfer_destinations.*.transfer_account_id' => ['required', 'integer', 'exists:transfer_accounts,id'],
             'transfer_destinations.*.planned_amount' => ['nullable', 'numeric', 'min:1'],
             'transfer_destinations.*.remark' => ['nullable', 'string', 'max:255'],
+            'transfer_destinations_present' => ['nullable', 'in:0,1'],
         ];
+    }
+
+    public static function isPresentMarked(mixed $value): bool
+    {
+        return (int) $value === 1;
+    }
+
+    public static function normalizePlannedAmountInput(mixed $plannedAmount): mixed
+    {
+        if (! is_string($plannedAmount)) {
+            return $plannedAmount;
+        }
+
+        $normalized = str_replace([',', '.'], '', $plannedAmount);
+
+        return $normalized === '' ? null : $normalized;
     }
 
     /**
@@ -80,11 +97,17 @@ class PayreqTransferDestinationService
     /**
      * @param  array<int, array<string, mixed>>|null  $destinations
      */
-    public static function sync(Payreq $payreq, ?array $destinations, int $userId): void
+    public static function sync(Payreq $payreq, ?array $destinations, int $userId, bool $destinationsPresent = false): void
     {
         $normalized = self::normalizeInput($destinations);
 
         if ($normalized->isEmpty()) {
+            if ($destinationsPresent) {
+                PayreqTransferDestination::query()
+                    ->where('payreq_id', $payreq->id)
+                    ->delete();
+            }
+
             return;
         }
 
@@ -141,11 +164,7 @@ class PayreqTransferDestinationService
         return collect($destinations)
             ->filter(fn ($row) => is_array($row) && ! empty($row['transfer_account_id']))
             ->map(function (array $row) {
-                $plannedAmount = $row['planned_amount'] ?? null;
-                if (is_string($plannedAmount)) {
-                    $plannedAmount = str_replace(',', '', $plannedAmount);
-                    $plannedAmount = $plannedAmount === '' ? null : $plannedAmount;
-                }
+                $plannedAmount = self::normalizePlannedAmountInput($row['planned_amount'] ?? null);
 
                 return [
                     'transfer_account_id' => (int) $row['transfer_account_id'],

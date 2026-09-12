@@ -94,7 +94,8 @@ class PayreqReimburseController extends Controller
         PayreqTransferDestinationService::sync(
             $payreq,
             $validated['transfer_destinations'] ?? null,
-            (int) auth()->id()
+            (int) auth()->id(),
+            PayreqTransferDestinationService::isPresentMarked($validated['transfer_destinations_present'] ?? null)
         );
 
         // Create new Realization
@@ -330,7 +331,8 @@ class PayreqReimburseController extends Controller
         PayreqTransferDestinationService::sync(
             $payreq->fresh(),
             $validated['transfer_destinations'] ?? null,
-            (int) auth()->id()
+            (int) auth()->id(),
+            PayreqTransferDestinationService::isPresentMarked($validated['transfer_destinations_present'] ?? null)
         );
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -356,10 +358,9 @@ class PayreqReimburseController extends Controller
                 continue;
             }
 
-            $plannedAmount = $row['planned_amount'] ?? null;
-            if (is_string($plannedAmount)) {
-                $row['planned_amount'] = str_replace(',', '', $plannedAmount);
-            }
+            $row['planned_amount'] = PayreqTransferDestinationService::normalizePlannedAmountInput(
+                $row['planned_amount'] ?? null
+            );
 
             $normalized[] = $row;
         }
