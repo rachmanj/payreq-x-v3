@@ -138,17 +138,7 @@
                                         {{ $realization->payreq->remarks }}
                                     </td>
                                 </tr>
-                                @if ($realizationAdvanceMultiBudget)
-                                    <tr>
-                                        <th class="text-right align-top" style="border: 1px solid black;">Advance
-                                            allocations</th>
-                                        <td colspan="{{ $printDetailColspan }}" style="border: 1px solid black;">
-                                            @include('user-payreqs.partials.show_advance_allocation_table', [
-                                                'payreq' => $realization->payreq,
-                                            ])
-                                        </td>
-                                    </tr>
-                                @elseif ($realization->payreq->rab_id && $realization->payreq->anggaran)
+                                @if (! $realizationAdvanceMultiBudget && $realization->payreq->rab_id && $realization->payreq->anggaran)
                                     <tr>
                                         <th class="text-right" style="border: 1px solid black;">RAB No.</th>
                                         <td colspan="{{ $printDetailColspan }}" style="border: 1px solid black;">
