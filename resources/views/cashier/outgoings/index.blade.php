@@ -31,6 +31,7 @@
             <th>Payment Date</th>
             <th>IDR</th>
             <th>Remarks</th>
+            <th>Rekening Tujuan</th>
             <th>Bukti Transfer</th>
             <th></th>
           </tr>
@@ -83,6 +84,7 @@
         {data: 'outgoing_date'},
         {data: 'amount'},
         {data: 'remarks'},
+        {data: 'transfer_destination', orderable: false, searchable: false},
         {data: 'transfer_proof', orderable: false, searchable: false},
         {data: 'action', orderable: false, searchable: false},
       ],

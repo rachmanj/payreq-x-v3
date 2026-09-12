@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Cashier\TransaksiController;
 use App\Models\Account;
+use App\Models\Bank;
 use App\Models\Outgoing;
 use App\Models\Payreq;
 use App\Models\TransferAccount;
@@ -80,7 +81,37 @@ class CashierApprovedController extends Controller
 
         $available_amount = $payreq->amount - $outgoings->sum('amount');
 
-        return view('cashier.approved.split', compact(['payreq', 'outgoings', 'accounts', 'available_amount']));
+        $requestorTransferAccounts = collect();
+        $cashierTransferAccounts = collect();
+        $banks = collect();
+
+        if ($payreq->payment_method === 'transfer') {
+            $requestorTransferAccounts = TransferAccount::query()
+                ->where('user_id', $payreq->user_id)
+                ->with('bank')
+                ->orderBy('label')
+                ->get();
+
+            if ((int) auth()->id() !== (int) $payreq->user_id) {
+                $cashierTransferAccounts = TransferAccount::query()
+                    ->where('user_id', auth()->id())
+                    ->with('bank')
+                    ->orderBy('label')
+                    ->get();
+            }
+
+            $banks = Bank::query()->orderBy('name')->get();
+        }
+
+        return view('cashier.approved.split', compact([
+            'payreq',
+            'outgoings',
+            'accounts',
+            'available_amount',
+            'requestorTransferAccounts',
+            'cashierTransferAccounts',
+            'banks',
+        ]));
     }
 
     public function store_pay(Request $request, $id)

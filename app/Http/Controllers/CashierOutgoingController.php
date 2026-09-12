@@ -64,14 +64,14 @@ class CashierOutgoingController extends Controller
         $roles = app(ToolController::class)->getUserRoles();
 
         if (array_intersect(['superadmin', 'admin'], $roles)) {
-            $outgoings = Outgoing::with('attachments')
+            $outgoings = Outgoing::with(['attachments', 'transferAccount.bank'])
                 ->orderBy('outgoing_date', 'desc')
                 ->get();
         } else {
             // user hanya melihat outgoing project sendiri, histori 12 bulan terakhir
             // (outgoing manual yg belum dibayar — outgoing_date null — tetap tampil)
             $limit_date = Carbon::now()->subMonths(12)->format('Y-m-d');
-            $outgoings = Outgoing::with('attachments')
+            $outgoings = Outgoing::with(['attachments', 'transferAccount.bank'])
                 ->where('project', auth()->user()->project)
                 ->where(function ($q) use ($limit_date) {
                     $q->whereNull('outgoing_date')
@@ -105,6 +105,13 @@ class CashierOutgoingController extends Controller
             })
             ->addColumn('remarks', function ($outgoing) {
                 return $outgoing->payreq?->remarks;
+            })
+            ->addColumn('transfer_destination', function ($outgoing) {
+                if ($outgoing->transferAccount) {
+                    return e($outgoing->transferAccount->displayLabel);
+                }
+
+                return '<span class="text-muted">-</span>';
             })
             ->addColumn('transfer_proof', function ($outgoing) {
                 if ($outgoing->payment_method !== 'transfer') {
@@ -147,7 +154,7 @@ class CashierOutgoingController extends Controller
             })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.outgoings.action')
-            ->rawColumns(['action', 'amount', 'transfer_proof'])
+            ->rawColumns(['action', 'amount', 'transfer_destination', 'transfer_proof'])
             ->toJson();
     }
 }

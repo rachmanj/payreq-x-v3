@@ -35,15 +35,12 @@
                         </div>
 
                         @php
-                            if ($payreq->payment_method === 'transfer' && $payreq->transferAccount) {
+                            $selectedTransferAccountId = old('transfer_account_id', $payreq->transfer_account_id ?? '');
+                            $defaultTransferLabel = $payreq->transferAccount->displayLabel ?? 'Akun transfer tidak ditemukan';
+                            if ($payreq->payment_method === 'transfer') {
                                 $confirmTitle = 'Konfirmasi Transfer';
-                                $confirmHtml = '<p>Transfer ke: <strong>'.e($payreq->transferAccount->displayLabel).'</strong></p><p class="mb-0">Nominal: <strong>Rp '.number_format($available_amount, 0).'</strong></p>';
-                            } elseif ($payreq->payment_method === 'transfer') {
-                                $confirmTitle = 'Konfirmasi Transfer';
-                                $confirmHtml = '<p>Transfer (akun tidak ditemukan) — Nominal: <strong>Rp '.number_format($available_amount, 0).'</strong></p>';
                             } else {
                                 $confirmTitle = 'Konfirmasi Pembayaran';
-                                $confirmHtml = '<p>Bayar payreq ini? Nominal: <strong>Rp '.number_format($available_amount, 0).'</strong></p>';
                             }
                             $sourceAccountLabel = $payreq->payment_method === 'transfer'
                                 ? 'Akun sumber: Rekening Bank'
@@ -70,6 +67,41 @@
                                 </select>
                             </div>
 
+                            @if ($payreq->payment_method === 'transfer')
+                                <div class="form-group">
+                                    <label for="transfer_account_id">Rekening Tujuan</label>
+                                    <div class="d-flex flex-wrap align-items-start gap-2">
+                                        <div class="flex-grow-1" style="min-width: 240px;">
+                                            <select name="transfer_account_id" id="transfer_account_id"
+                                                class="form-control select2bs4 @error('transfer_account_id') is-invalid @enderror"
+                                                data-placeholder="Pilih rekening tujuan (opsional)" style="width: 100%;">
+                                                <option value=""></option>
+                                                @foreach ($requestorTransferAccounts as $account)
+                                                    <option value="{{ $account->id }}"
+                                                        {{ (string) $selectedTransferAccountId === (string) $account->id ? 'selected' : '' }}>
+                                                        [Pemohon] {{ $account->displayLabel }}
+                                                    </option>
+                                                @endforeach
+                                                @foreach ($cashierTransferAccounts as $account)
+                                                    <option value="{{ $account->id }}"
+                                                        {{ (string) $selectedTransferAccountId === (string) $account->id ? 'selected' : '' }}>
+                                                        [Kasir] {{ $account->displayLabel }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <small class="text-muted d-block mt-1">Kosongkan untuk memakai rekening tujuan default dari payreq.</small>
+                                            @error('transfer_account_id')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm mt-1" id="btn-open-transfer-modal"
+                                            data-toggle="modal" data-target="#transferAccountModal">
+                                            <i class="fas fa-plus"></i> Tambah Akun Transfer
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="form-group">
                                 <label for="date">Date</label>
                                 <input type="date" class="form-control" name="date"
@@ -91,6 +123,54 @@
                         <button type="submit" class="vj-btn vj-btn-primary" form="split-update"> Save</button>
                     </div>
                 </div>
+
+                @if ($payreq->payment_method === 'transfer')
+                    <div class="modal fade" id="transferAccountModal" tabindex="-1" role="dialog"
+                        aria-labelledby="transferAccountModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="transferAccountModalLabel">Tambah Akun Transfer</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-group">
+                                        <label for="new_transfer_label">Label</label>
+                                        <input type="text" id="new_transfer_label" class="form-control"
+                                            placeholder="mis. Vendor A - Sertifikasi">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="new_transfer_bank_id">Bank</label>
+                                        <select id="new_transfer_bank_id" class="form-control select2bs4-modal"
+                                            data-placeholder="Pilih Bank" style="width: 100%;">
+                                            <option value=""></option>
+                                            @foreach ($banks as $bank)
+                                                <option value="{{ $bank->id }}">{{ $bank->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="new_transfer_account_number">No. Rekening</label>
+                                        <input type="text" id="new_transfer_account_number" class="form-control">
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label for="new_transfer_account_name">Atas Nama</label>
+                                        <input type="text" id="new_transfer_account_name" class="form-control">
+                                    </div>
+                                    <div id="transfer-account-modal-error" class="text-danger small mt-2" style="display:none;"></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-primary" id="btn-save-transfer-account">
+                                        <i class="fas fa-save"></i> Simpan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
             </div>
 
@@ -198,18 +278,61 @@
 
 @section('styles')
     @include('partials.vj-soft-ui-styles')
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
 @endsection
 
 @section('scripts')
     @include('partials.vj-soft-ui-swal')
+    <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
     <script>
         $(function() {
+            const isTransferPayment = @json($payreq->payment_method === 'transfer');
+            const defaultTransferLabel = @json($defaultTransferLabel);
+            const $transferSelect = $('#transfer_account_id');
+
+            if ($transferSelect.length && !$transferSelect.hasClass('select2-hidden-accessible')) {
+                $transferSelect.select2({
+                    theme: 'bootstrap4',
+                    placeholder: 'Pilih rekening tujuan (opsional)',
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+
+            function formatCurrency(value) {
+                const numeric = String(value || '').replace(/[^\d]/g, '');
+                const amount = numeric === '' ? 0 : parseInt(numeric, 10);
+
+                return amount.toLocaleString('id-ID');
+            }
+
+            function buildConfirmHtml() {
+                const amountValue = $('input[name="amount"]').val();
+                const formattedAmount = formatCurrency(amountValue);
+
+                if (!isTransferPayment) {
+                    return '<p>Bayar payreq ini? Nominal: <strong>Rp ' + formattedAmount + '</strong></p>';
+                }
+
+                let destinationLabel = defaultTransferLabel;
+
+                if ($transferSelect.length && $transferSelect.val()) {
+                    destinationLabel = $transferSelect.find('option:selected').text().trim();
+                } else {
+                    destinationLabel += ' (default dari payreq)';
+                }
+
+                return '<p>Transfer ke: <strong>' + $('<div>').text(destinationLabel).html() + '</strong></p>'
+                    + '<p class="mb-0">Nominal: <strong>Rp ' + formattedAmount + '</strong></p>';
+            }
+
             $('#split-update').on('submit', function(e) {
                 e.preventDefault();
                 const form = this;
                 VjSwal.fire({
                     title: @json($confirmTitle),
-                    html: @json($confirmHtml),
+                    html: buildConfirmHtml(),
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Ya, Bayar',
@@ -219,6 +342,64 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         form.submit();
+                    }
+                });
+            });
+
+            $('#transferAccountModal').on('shown.bs.modal', function() {
+                const $bankSelect = $('#new_transfer_bank_id');
+                if ($bankSelect.length && !$bankSelect.hasClass('select2-hidden-accessible')) {
+                    $bankSelect.select2({
+                        theme: 'bootstrap4',
+                        placeholder: 'Pilih Bank',
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('#transferAccountModal')
+                    });
+                }
+            });
+
+            $('#btn-save-transfer-account').on('click', function() {
+                const $btn = $(this);
+                const $error = $('#transfer-account-modal-error');
+
+                $error.hide().text('');
+                $btn.prop('disabled', true);
+
+                $.ajax({
+                    url: '{{ route('user-payreqs.transfer_accounts.store') }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        label: $('#new_transfer_label').val(),
+                        bank_id: $('#new_transfer_bank_id').val(),
+                        account_number: $('#new_transfer_account_number').val(),
+                        account_name: $('#new_transfer_account_name').val(),
+                    },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            const optionLabel = '[Kasir] ' + response.label;
+                            const option = new Option(optionLabel, response.id, true, true);
+                            $transferSelect.append(option).trigger('change');
+                            $('#new_transfer_label, #new_transfer_account_number, #new_transfer_account_name').val('');
+                            $('#new_transfer_bank_id').val('').trigger('change');
+                            $('#transferAccountModal').modal('hide');
+                            toastr.success('Akun transfer berhasil ditambahkan.');
+                        } else {
+                            $error.text('Gagal menyimpan akun transfer.').show();
+                        }
+                    },
+                    error: function(xhr) {
+                        let message = 'Gagal menyimpan akun transfer.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            message = Object.values(xhr.responseJSON.errors).flat().join(' ');
+                        }
+                        $error.text(message).show();
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false);
                     }
                 });
             });
