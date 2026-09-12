@@ -109,6 +109,9 @@
                     @include('user-payreqs.partials.payment-method', [
                         'paymentEditable' => in_array($payreq->status, ['draft', 'revise'], true),
                     ])
+                    @include('user-payreqs.partials.transfer-destinations', [
+                        'paymentEditable' => in_array($payreq->status, ['draft', 'revise'], true),
+                    ])
 
                     @if (in_array($payreq->status, ['draft', 'revise'], true))
                         @cannot('rab_select')
@@ -1042,18 +1045,22 @@
                 var payreq_id = '{{ $payreq->id }}';
                 var payment_method = $('input[name="payment_method"]:checked').val() || 'cash';
                 var transfer_account_id = $('#transfer_account_id').val();
+                var transferDestinationsPayload = typeof window.payreqCollectTransferDestinationsPayload === 'function'
+                    ? window.payreqCollectTransferDestinationsPayload()
+                    : {};
 
                 $.ajax({
                     url: '{{ route('user-payreqs.reimburse.update_rab') }}',
                     method: 'POST',
-                    data: {
+                    traditional: true,
+                    data: $.extend({
                         _token: '{{ csrf_token() }}',
                         rab_id: rab_id,
                         remarks: remarks,
                         payreq_id: payreq_id,
                         payment_method: payment_method,
                         transfer_account_id: transfer_account_id,
-                    },
+                    }, transferDestinationsPayload),
                     success: function(response) {
                         $button.prop('disabled', false).html('update');
                         if (response.status == 'success') {
@@ -1074,17 +1081,22 @@
                 var $button = $(this);
                 $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
 
+                var transferDestinationsPayload = typeof window.payreqCollectTransferDestinationsPayload === 'function'
+                    ? window.payreqCollectTransferDestinationsPayload()
+                    : {};
+
                 $.ajax({
                     url: '{{ route('user-payreqs.reimburse.update_rab') }}',
                     method: 'POST',
-                    data: {
+                    traditional: true,
+                    data: $.extend({
                         _token: '{{ csrf_token() }}',
                         rab_id: '{{ $payreq->rab_id }}',
                         remarks: $('#remarks').val(),
                         payreq_id: '{{ $payreq->id }}',
                         payment_method: $('input[name="payment_method"]:checked').val() || 'cash',
                         transfer_account_id: $('#transfer_account_id').val(),
-                    },
+                    }, transferDestinationsPayload),
                     success: function(response) {
                         $button.prop('disabled', false).html('Simpan Metode Pembayaran');
                         if (response.status == 'success') {
@@ -1321,4 +1333,5 @@
         });
     </script>
     @include('user-payreqs.partials.payment-method-scripts')
+    @include('user-payreqs.partials.transfer-destinations-scripts')
 @endsection

@@ -359,6 +359,7 @@
                         </div>
 
                         @include('user-payreqs.partials.payment-method', ['paymentEditable' => true])
+                        @include('user-payreqs.partials.transfer-destinations', ['paymentEditable' => true])
 
                         @php
                             $allocationRowsOld = old('allocations');
@@ -927,4 +928,5 @@
         });
     </script>
     @include('user-payreqs.partials.payment-method-scripts')
+    @include('user-payreqs.partials.transfer-destinations-scripts')
 @endsection

@@ -386,6 +386,74 @@ class PayreqTransferDestinationsTest extends TestCase
         $this->assertSame(2, PayreqTransferDestination::query()->where('payreq_id', $payreq->id)->count());
     }
 
+    public function test_advance_edit_with_transfer_shows_transfer_destinations_form_data(): void
+    {
+        $payreq = Payreq::query()->create([
+            'user_id' => $this->user->id,
+            'nomor' => 'ADV-UI-TR',
+            'type' => 'advance',
+            'status' => 'draft',
+            'amount' => 1000000,
+            'project' => $this->user->project,
+            'department_id' => $this->user->department_id,
+            'payment_method' => 'transfer',
+            'transfer_account_id' => $this->accountA->id,
+            'budget_link_mode' => PayreqBudgetLinkMode::LEGACY,
+            'remarks' => 'UI test transfer',
+        ]);
+
+        PayreqTransferDestination::query()->create([
+            'payreq_id' => $payreq->id,
+            'transfer_account_id' => $this->accountA->id,
+            'planned_amount' => 600000,
+            'remark' => 'Tujuan A',
+            'created_by' => $this->user->id,
+        ]);
+
+        PayreqTransferDestination::query()->create([
+            'payreq_id' => $payreq->id,
+            'transfer_account_id' => $this->accountB->id,
+            'planned_amount' => 400000,
+            'remark' => 'Tujuan B',
+            'created_by' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('user-payreqs.advance.edit', $payreq->id));
+
+        $response->assertOk();
+        $response->assertSee('name="transfer_destinations_present"', false);
+        $response->assertSee('Daftar Tujuan Transfer', false);
+        $response->assertSee('name="transfer_destinations[0][transfer_account_id]"', false);
+        $response->assertSee('name="transfer_destinations[1][transfer_account_id]"', false);
+        $response->assertSee('value="600000"', false);
+        $response->assertSee('value="400000"', false);
+        $response->assertSee('Tujuan A', false);
+        $response->assertSee('Tujuan B', false);
+        $response->assertDontSee('id="transfer-destinations-block" style="display:none;"', false);
+    }
+
+    public function test_advance_edit_with_cash_hides_transfer_destinations_block(): void
+    {
+        $payreq = Payreq::query()->create([
+            'user_id' => $this->user->id,
+            'nomor' => 'ADV-UI-CASH',
+            'type' => 'advance',
+            'status' => 'draft',
+            'amount' => 1000000,
+            'project' => $this->user->project,
+            'department_id' => $this->user->department_id,
+            'payment_method' => 'cash',
+            'transfer_account_id' => null,
+            'budget_link_mode' => PayreqBudgetLinkMode::LEGACY,
+            'remarks' => 'UI test cash',
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('user-payreqs.advance.edit', $payreq->id));
+
+        $response->assertOk();
+        $response->assertSee('id="transfer-destinations-block" style="display:none;"', false);
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>

@@ -399,6 +399,9 @@
                         @include('user-payreqs.partials.payment-method', [
                             'paymentEditable' => in_array($payreq->status, ['draft', 'revise'], true),
                         ])
+                        @include('user-payreqs.partials.transfer-destinations', [
+                            'paymentEditable' => in_array($payreq->status, ['draft', 'revise'], true),
+                        ])
 
                         <div class="form-group">
                             <label for="amount">Amount</label>
@@ -860,4 +863,5 @@
         });
     </script>
     @include('user-payreqs.partials.payment-method-scripts')
+    @include('user-payreqs.partials.transfer-destinations-scripts')
 @endsection

@@ -56,6 +56,7 @@
                         if (response.status === 'success') {
                             const option = new Option(response.label, response.id, true, true);
                             $transferSelect.append(option).trigger('change');
+                            $(document).trigger('payreq:transfer-account-added', [response.id, response.label]);
                             $('#payment_method_transfer').prop('checked', true).trigger('change');
                             $transferBlock.show();
                             $('#new_transfer_label, #new_transfer_account_number, #new_transfer_account_name').val('');

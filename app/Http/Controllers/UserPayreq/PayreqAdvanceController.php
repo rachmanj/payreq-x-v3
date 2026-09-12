@@ -44,8 +44,9 @@ class PayreqAdvanceController extends Controller
         $rabs = app(UserAnggaranController::class)->getAvailableRabs();
         $transferAccounts = TransferAccount::where('user_id', Auth::id())->with('bank')->orderBy('label')->get();
         $banks = Bank::orderBy('name')->get();
+        $transferDestinations = $payreq->transferDestinations()->with('transferAccount.bank')->get();
 
-        return view('user-payreqs.advance.edit', compact(['payreq', 'rabs', 'transferAccounts', 'banks']));
+        return view('user-payreqs.advance.edit', compact(['payreq', 'rabs', 'transferAccounts', 'banks', 'transferDestinations']));
     }
 
     public function proses(ProcessAdvancePayreqRequest $request): \Illuminate\Http\RedirectResponse

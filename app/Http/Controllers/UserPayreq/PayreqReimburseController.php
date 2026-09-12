@@ -114,8 +114,9 @@ class PayreqReimburseController extends Controller
         $lotc_detail = $this->lotClaimForPayreq($payreq);
         $transferAccounts = TransferAccount::where('user_id', auth()->id())->with('bank')->orderBy('label')->get();
         $banks = Bank::orderBy('name')->get();
+        $transferDestinations = $payreq->transferDestinations()->with('transferAccount.bank')->get();
 
-        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks']));
+        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks', 'transferDestinations']));
     }
 
     public function edit($id)
@@ -129,8 +130,9 @@ class PayreqReimburseController extends Controller
         $lotc_detail = $this->lotClaimForPayreq($payreq);
         $transferAccounts = TransferAccount::where('user_id', auth()->id())->with('bank')->orderBy('label')->get();
         $banks = Bank::orderBy('name')->get();
+        $transferDestinations = $payreq->transferDestinations()->with('transferAccount.bank')->get();
 
-        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks']));
+        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks', 'transferDestinations']));
     }
 
     public function store_detail(StoreRealizationDetailRequest $request)
