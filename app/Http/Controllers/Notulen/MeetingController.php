@@ -144,6 +144,37 @@ class MeetingController extends Controller
         return $disk->download($meeting->file_path, $meeting->original_filename);
     }
 
+    public function preview(Request $request, Meeting $meeting)
+    {
+        if (! $request->hasValidSignature() && ! Auth::check()) {
+            abort(403);
+        }
+
+        if (Auth::check() && ! Auth::user()->can('akses_notulen')) {
+            abort(403);
+        }
+
+        $disk = Storage::disk('notulen');
+
+        if (! $disk->exists($meeting->file_path)) {
+            abort(404);
+        }
+
+        $isPdf = str_ends_with(strtolower($meeting->original_filename), '.pdf')
+            || str_ends_with(strtolower($meeting->file_path), '.pdf');
+
+        if ($isPdf) {
+            return $disk->response(
+                $meeting->file_path,
+                $meeting->original_filename,
+                ['Content-Type' => 'application/pdf'],
+                'inline'
+            );
+        }
+
+        return $disk->download($meeting->file_path, $meeting->original_filename);
+    }
+
     public function destroy(Meeting $meeting)
     {
         $disk = Storage::disk('notulen');

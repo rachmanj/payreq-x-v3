@@ -196,8 +196,8 @@ PROMPT;
         ?int $chunkIndex = null,
     ): array {
         $url = $signedDownloadUrls
-            ? URL::temporarySignedRoute('notulen.meetings.download', now()->addHour(), ['meeting' => $meeting->id])
-            : route('notulen.meetings.download', $meeting);
+            ? URL::temporarySignedRoute('notulen.meetings.preview', now()->addHour(), ['meeting' => $meeting->id])
+            : route('notulen.meetings.preview', $meeting);
 
         return [
             'id' => $meeting->id,

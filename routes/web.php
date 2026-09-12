@@ -229,6 +229,9 @@ Route::post('/get_account_name', [AccountController::class, 'get_account_name'])
 Route::get('notulen/meetings/{meeting}/download', [App\Http\Controllers\Notulen\MeetingController::class, 'download'])
     ->name('notulen.meetings.download');
 
+Route::get('notulen/meetings/{meeting}/preview', [App\Http\Controllers\Notulen\MeetingController::class, 'preview'])
+    ->name('notulen.meetings.preview');
+
 // Remove or comment out this line if it exists
 // Route::get('/accounts/list', [AccountController::class, 'getList'])->name('accounts.list');
 
