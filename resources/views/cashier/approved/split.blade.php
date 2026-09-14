@@ -45,6 +45,8 @@
                             $sourceAccountLabel = $payreq->payment_method === 'transfer'
                                 ? 'Akun sumber: Rekening Bank'
                                 : 'Akun sumber: Kas';
+                            $hasAllocationTransferPlan = $allocationTransferPlan->isNotEmpty();
+                            $hasPayreqTransferPlan = $payreq->transferDestinations->isNotEmpty();
                         @endphp
 
                         <form action="{{ route('cashier.approveds.store_pay', $payreq->id) }}" method="POST" id="split-update">
@@ -66,6 +68,38 @@
                                     @endforeach
                                 </select>
                             </div>
+
+                            @if ($allocationTransferPlan->isNotEmpty())
+                                <div class="form-group" id="allocation-transfer-plan-readonly">
+                                    <label>Rencana Transfer per Baris Transaksi</label>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered mb-0">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th style="width:3rem">No</th>
+                                                    <th>Keterangan Baris</th>
+                                                    <th class="text-right" style="width:9rem">Nominal Baris</th>
+                                                    <th>Rekening Tujuan</th>
+                                                    <th class="text-right" style="width:9rem">Rencana Nominal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($allocationTransferPlan as $planRow)
+                                                    <tr>
+                                                        <td>{{ $planRow['row_number'] }}</td>
+                                                        <td>{{ $planRow['remarks'] ?: '–' }}</td>
+                                                        <td class="text-right">{{ number_format((float) $planRow['amount'], 0, ',', '.') }}</td>
+                                                        <td>{{ $planRow['transferAccount']?->displayLabel ?? '–' }}</td>
+                                                        <td class="text-right">
+                                                            {{ $planRow['planned_amount'] !== null ? number_format($planRow['planned_amount'], 0, ',', '.') : '–' }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endif
 
                             @if ($payreq->payment_method === 'transfer')
                                 <div class="form-group">
@@ -118,7 +152,7 @@
                                 @enderror
                             </div>
 
-                            @if ($payreq->transferDestinations->isNotEmpty())
+                            @if ($hasAllocationTransferPlan || $hasPayreqTransferPlan)
                                 <div class="form-group mb-0">
                                     <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-fill-from-plan">
                                         <i class="fas fa-list-ol"></i> Isi dari rencana
@@ -298,11 +332,8 @@
             const isTransferPayment = @json($payreq->payment_method === 'transfer');
             const defaultTransferLabel = @json($defaultTransferLabel);
             const $transferSelect = $('#transfer_account_id');
-            @if ($payreq->transferDestinations->isNotEmpty())
-            const transferPlan = @json($payreq->transferDestinations->map(static fn ($destination) => [
-                'transfer_account_id' => $destination->transfer_account_id,
-                'planned_amount' => $destination->planned_amount,
-            ])->values());
+            @if ($hasAllocationTransferPlan || $hasPayreqTransferPlan)
+            const transferPlan = @json($fillFromPlanRows);
             let transferPlanIndex = 0;
             @endif
 
@@ -342,7 +373,7 @@
                     + '<p class="mb-0">Nominal: <strong>Rp ' + formattedAmount + '</strong></p>';
             }
 
-            @if ($payreq->transferDestinations->isNotEmpty())
+            @if ($hasAllocationTransferPlan || $hasPayreqTransferPlan)
             $('#btn-fill-from-plan').on('click', function() {
                 if (!transferPlan.length) {
                     return;

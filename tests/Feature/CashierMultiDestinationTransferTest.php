@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\Anggaran;
 use App\Models\Outgoing;
 use App\Models\Payreq;
+use App\Models\PayreqAnggaranAllocation;
 use App\Models\TransferAccount;
 use App\Models\User;
+use App\Support\PayreqBudgetLinkMode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -31,13 +34,31 @@ class CashierMultiDestinationTransferTest extends TestCase
 
     private Account $bankAccount;
 
+    private int $departmentId;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->cashier = User::factory()->create(['project' => '000H']);
-        $this->requestor = User::factory()->create(['project' => '000H']);
-        $this->otherUser = User::factory()->create(['project' => '000H']);
+        $this->departmentId = DB::table('departments')->insertGetId([
+            'department_name' => 'Test Dept',
+            'akronim' => 'TD',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->cashier = User::factory()->create([
+            'project' => '000H',
+            'department_id' => $this->departmentId,
+        ]);
+        $this->requestor = User::factory()->create([
+            'project' => '000H',
+            'department_id' => $this->departmentId,
+        ]);
+        $this->otherUser = User::factory()->create([
+            'project' => '000H',
+            'department_id' => $this->departmentId,
+        ]);
 
         $this->bankId = DB::table('banks')->insertGetId([
             'name' => 'BCA',
@@ -184,5 +205,99 @@ class CashierMultiDestinationTransferTest extends TestCase
             ->assertSessionHas('error', 'Pembayaran tidak boleh melebihi jumlah yang tersisa!');
 
         $this->assertSame(0, Outgoing::where('payreq_id', $payreq->id)->count());
+    }
+
+    public function test_split_page_shows_allocation_transfer_plan_when_present(): void
+    {
+        $payreq = $this->createTransferPayreq();
+        $payreq->update([
+            'budget_link_mode' => PayreqBudgetLinkMode::MULTI_ALLOCATION,
+        ]);
+
+        $anggaranA = $this->makeApprovedAnggaran('RAB-A');
+        $anggaranB = $this->makeApprovedAnggaran('RAB-B');
+
+        PayreqAnggaranAllocation::query()->create([
+            'payreq_id' => $payreq->id,
+            'anggaran_id' => $anggaranA->id,
+            'amount' => 600000,
+            'remarks' => 'Baris operasional',
+            'transfer_account_id' => $this->requestorAccountA->id,
+            'planned_amount' => 600000,
+            'sort_order' => 0,
+        ]);
+
+        PayreqAnggaranAllocation::query()->create([
+            'payreq_id' => $payreq->id,
+            'anggaran_id' => $anggaranB->id,
+            'amount' => 400000,
+            'remarks' => 'Baris logistik',
+            'transfer_account_id' => $this->requestorAccountB->id,
+            'planned_amount' => 400000,
+            'sort_order' => 1,
+        ]);
+
+        $response = $this->actingAs($this->cashier)->get(
+            route('cashier.approveds.pay', $payreq->id)
+        );
+
+        $response->assertOk();
+        $response->assertSee('id="allocation-transfer-plan-readonly"', false);
+        $response->assertSee('Rencana Transfer per Baris Transaksi', false);
+        $response->assertSee('Baris operasional', false);
+        $response->assertSee('Baris logistik', false);
+        $response->assertSee($this->requestorAccountA->displayLabel, false);
+        $response->assertSee($this->requestorAccountB->displayLabel, false);
+        $response->assertSee('600.000', false);
+        $response->assertSee('400.000', false);
+        $response->assertSee('id="btn-fill-from-plan"', false);
+        $response->assertSee('transferPlan', false);
+    }
+
+    public function test_split_page_hides_allocation_transfer_plan_when_empty(): void
+    {
+        $payreq = $this->createTransferPayreq();
+        $payreq->update([
+            'budget_link_mode' => PayreqBudgetLinkMode::MULTI_ALLOCATION,
+        ]);
+
+        $anggaranA = $this->makeApprovedAnggaran('RAB-A');
+
+        PayreqAnggaranAllocation::query()->create([
+            'payreq_id' => $payreq->id,
+            'anggaran_id' => $anggaranA->id,
+            'amount' => 1000000,
+            'remarks' => 'Tanpa rekening tujuan',
+            'sort_order' => 0,
+        ]);
+
+        $response = $this->actingAs($this->cashier)->get(
+            route('cashier.approveds.pay', $payreq->id)
+        );
+
+        $response->assertOk();
+        $response->assertDontSee('id="allocation-transfer-plan-readonly"', false);
+        $response->assertDontSee('Rencana Transfer per Baris Transaksi', false);
+        $response->assertDontSee('id="btn-fill-from-plan"', false);
+        $response->assertDontSee('transferPlan', false);
+    }
+
+    private function makeApprovedAnggaran(string $label): Anggaran
+    {
+        return Anggaran::query()->create([
+            'nomor' => 'TEST-'.$label.'-'.fake()->unique()->numerify('####'),
+            'description' => 'Test budget '.$label,
+            'project' => '000H',
+            'rab_project' => '000H',
+            'department_id' => $this->departmentId,
+            'type' => 'event',
+            'amount' => 5000000,
+            'balance' => 0,
+            'usage' => 'user',
+            'status' => 'approved',
+            'is_active' => 1,
+            'created_by' => $this->requestor->id,
+            'date' => now()->toDateString(),
+        ]);
     }
 }

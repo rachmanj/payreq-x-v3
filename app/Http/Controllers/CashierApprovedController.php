@@ -55,7 +55,11 @@ class CashierApprovedController extends Controller
 
     public function pay($id)
     {
-        $payreq = Payreq::with(['transferAccount', 'transferDestinations.transferAccount'])->findOrfail($id);
+        $payreq = Payreq::with([
+            'transferAccount',
+            'transferDestinations.transferAccount',
+            'anggaranAllocations.transferAccount.bank',
+        ])->findOrfail($id);
         $outgoings = Outgoing::with(['attachments.creator'])->where('payreq_id', $id)->get();
         $cashier = auth()->user();
 
@@ -103,6 +107,32 @@ class CashierApprovedController extends Controller
             $banks = Bank::query()->orderBy('name')->get();
         }
 
+        $allocationTransferPlan = collect();
+        foreach ($payreq->anggaranAllocations as $index => $allocation) {
+            if (! $allocation->transfer_account_id) {
+                continue;
+            }
+
+            $allocationTransferPlan->push([
+                'row_number' => $index + 1,
+                'remarks' => $allocation->remarks,
+                'amount' => $allocation->amount,
+                'transfer_account_id' => $allocation->transfer_account_id,
+                'transferAccount' => $allocation->transferAccount,
+                'planned_amount' => $allocation->planned_amount,
+            ]);
+        }
+
+        $fillFromPlanRows = $allocationTransferPlan->isNotEmpty()
+            ? $allocationTransferPlan->map(static fn (array $planRow) => [
+                'transfer_account_id' => $planRow['transfer_account_id'],
+                'planned_amount' => $planRow['planned_amount'],
+            ])->values()
+            : $payreq->transferDestinations->map(static fn ($destination) => [
+                'transfer_account_id' => $destination->transfer_account_id,
+                'planned_amount' => $destination->planned_amount,
+            ])->values();
+
         return view('cashier.approved.split', compact([
             'payreq',
             'outgoings',
@@ -111,6 +141,8 @@ class CashierApprovedController extends Controller
             'requestorTransferAccounts',
             'cashierTransferAccounts',
             'banks',
+            'allocationTransferPlan',
+            'fillFromPlanRows',
         ]));
     }
 
