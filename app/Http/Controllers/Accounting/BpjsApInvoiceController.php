@@ -35,7 +35,7 @@ class BpjsApInvoiceController extends Controller
     public function data(Request $request): JsonResponse
     {
         $query = BpjsApInvoice::query()
-            ->with(['submittedBy', 'journalEntry'])
+            ->with(['submittedBy', 'journalEntry', 'cancelledBy'])
             ->orderByDesc('id');
 
         if ($request->filled('jenis')) {
@@ -75,9 +75,31 @@ class BpjsApInvoiceController extends Controller
                     BpjsApInvoice::STATUS_PENDING => 'warning',
                     BpjsApInvoice::STATUS_CANCELLED => 'neutral',
                 ];
+                $labelMap = [
+                    BpjsApInvoice::STATUS_POSTED => 'Posted',
+                    BpjsApInvoice::STATUS_FAILED => 'Failed',
+                    BpjsApInvoice::STATUS_PAID => 'Paid',
+                    BpjsApInvoice::STATUS_PENDING => 'Pending',
+                    BpjsApInvoice::STATUS_CANCELLED => 'Dibatalkan',
+                ];
                 $chip = $chipMap[$invoice->status] ?? 'neutral';
+                $label = $labelMap[$invoice->status] ?? strtoupper($invoice->status);
 
-                return '<span class="vj-chip vj-chip-'.$chip.'">'.strtoupper($invoice->status).'</span>';
+                $html = '<span class="vj-chip vj-chip-'.$chip.'">'.$label.'</span>';
+
+                if ($invoice->status === BpjsApInvoice::STATUS_CANCELLED) {
+                    if ($invoice->cancelled_at) {
+                        $html .= '<small class="d-block text-muted">'.$invoice->cancelled_at->format('d-M-Y H:i').'</small>';
+                    }
+                    if ($invoice->cancelledBy) {
+                        $html .= '<small class="d-block text-muted">'.e($invoice->cancelledBy->name).'</small>';
+                    }
+                    if ($invoice->cancel_reason) {
+                        $html .= '<small class="d-block text-muted">'.e($invoice->cancel_reason).'</small>';
+                    }
+                }
+
+                return $html;
             })
             ->addColumn('sap_doc', function (BpjsApInvoice $invoice) {
                 if ($invoice->sap_doc_num) {
@@ -117,7 +139,7 @@ class BpjsApInvoiceController extends Controller
                         BpjsApInvoice::JE_STATUS_SUCCESS => 'Berhasil',
                         BpjsApInvoice::JE_STATUS_FAILED => 'Gagal',
                         BpjsApInvoice::JE_STATUS_SKIPPED => 'Dilewati',
-                        BpjsApInvoice::JE_STATUS_REVERSED => 'Di-reverse',
+                        BpjsApInvoice::JE_STATUS_REVERSED => 'Reversed',
                     ];
                     $chip = $chipMap[$invoice->je_status] ?? 'neutral';
                     $label = $labelMap[$invoice->je_status] ?? strtoupper($invoice->je_status);

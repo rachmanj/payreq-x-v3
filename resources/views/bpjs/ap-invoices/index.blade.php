@@ -54,6 +54,7 @@
                             <option value="posted">Posted</option>
                             <option value="failed">Failed</option>
                             <option value="paid">Paid</option>
+                            <option value="cancelled">Dibatalkan</option>
                         </select>
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
@@ -92,6 +93,10 @@
     @if ($canSubmit)
         @include('bpjs.ap-invoices.partials.create-modal')
     @endif
+
+    @can('cancel_sap_ap_invoice_bpjs')
+        @include('bpjs.ap-invoices.partials.cancel-modal')
+    @endcan
 @endsection
 
 @section('styles')
@@ -187,6 +192,68 @@
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Ya, posting',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+
+            $(document).on('click', '.bpjs-cancel-btn', function() {
+                const btn = $(this);
+                const form = $('#cancelBpjsForm');
+                form.attr('action', btn.data('cancel-url'));
+                form.data('jenis', btn.data('jenis'));
+                $('#cancel_reason').val('');
+                $('#cancelBpjsInvoiceInfo').text('Invoice: ' + btn.data('invoice-label'));
+                $('#cancelBpjsModal').modal('show');
+            });
+
+            $('#cancelBpjsForm').on('submit', function(e) {
+                e.preventDefault();
+                const form = $(this);
+                const reason = $('#cancel_reason').val().trim();
+
+                if (reason.length < 5) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validasi',
+                        text: 'Alasan pembatalan minimal 5 karakter.'
+                    });
+                    return;
+                }
+
+                const isTk = form.data('jenis') === @json(\App\Models\BpjsApInvoice::JENIS_KETENAGAKERJAAN);
+                let confirmText = 'AP Invoice akan dibatalkan di SAP B1. Tindakan ini tidak dapat dibatalkan.';
+                if (isTk) {
+                    confirmText += ' Jurnal akrual juga akan di-reverse di SAP.';
+                }
+
+                Swal.fire({
+                    title: 'Batalkan AP Invoice?',
+                    text: confirmText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, batalkan',
+                    cancelButtonText: 'Tutup',
+                    confirmButtonColor: '#d33'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.off('submit').submit();
+                    }
+                });
+            });
+
+            $(document).on('click', '.bpjs-cancel-je-btn', function(e) {
+                e.preventDefault();
+                const form = $(this).closest('form');
+                Swal.fire({
+                    title: 'Retry reversal jurnal akrual?',
+                    text: 'Jurnal akrual akan dikirim ulang untuk di-reverse di SAP B1.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, retry',
                     cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {

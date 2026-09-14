@@ -156,6 +156,67 @@ class BpjsApInvoiceControllerTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_index_renders_cancel_modal_for_cancel_permission(): void
+    {
+        Permission::firstOrCreate(['name' => 'cancel_sap_ap_invoice_bpjs', 'guard_name' => 'web']);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo([
+            'akses_ap_invoice_bpjs',
+            'submit_sap_ap_invoice_bpjs',
+            'cancel_sap_ap_invoice_bpjs',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('bpjs-ap-invoices.index'))
+            ->assertOk()
+            ->assertSee('id="cancelBpjsModal"', false)
+            ->assertSee('Batalkan AP Invoice BPJS', false)
+            ->assertSee('Alasan Pembatalan', false);
+    }
+
+    public function test_data_endpoint_includes_cancelled_status_and_cancel_action(): void
+    {
+        Permission::firstOrCreate(['name' => 'cancel_sap_ap_invoice_bpjs', 'guard_name' => 'web']);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo([
+            'akses_ap_invoice_bpjs',
+            'submit_sap_ap_invoice_bpjs',
+            'cancel_sap_ap_invoice_bpjs',
+        ]);
+
+        $cancelledBy = User::factory()->create(['name' => 'Admin Batal']);
+        $cancelled = BpjsApInvoice::factory()->cancelled()->create([
+            'cancelled_by' => $cancelledBy->id,
+            'cancel_reason' => 'Salah nominal input',
+        ]);
+
+        $posted = BpjsApInvoice::factory()->posted()->create([
+            'jenis' => BpjsApInvoice::JENIS_KESEHATAN,
+            'unit' => '000H',
+            'periode' => '2026-11',
+            'paid_amount' => 0,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson(route('bpjs-ap-invoices.data'));
+
+        $response->assertOk();
+
+        $records = collect($response->json('data'));
+        $cancelledRow = $records->firstWhere('id', $cancelled->id);
+        $postedRow = $records->firstWhere('id', $posted->id);
+
+        $this->assertNotNull($cancelledRow);
+        $this->assertStringContainsString('Dibatalkan', $cancelledRow['status_chip']);
+        $this->assertStringContainsString('Salah nominal input', $cancelledRow['status_chip']);
+        $this->assertStringContainsString('Admin Batal', $cancelledRow['status_chip']);
+
+        $this->assertNotNull($postedRow);
+        $this->assertStringContainsString('bpjs-cancel-btn', $postedRow['action']);
+    }
+
     /**
      * @return array<string, mixed>
      */
