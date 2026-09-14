@@ -93,7 +93,7 @@ class SapBpjsApInvoiceBuilderTest extends TestCase
         $payload = $builder->build();
 
         $this->assertSame('VBPTKIDR01', $payload['CardCode']);
-        $this->assertSame('61201003', $payload['DocumentLines'][0]['AccountCode']);
+        $this->assertSame('21601001', $payload['DocumentLines'][0]['AccountCode']);
         $this->assertSame('022C', $payload['DocumentLines'][0]['ProjectCode']);
         $this->assertSame('BPJS Ketenagakerjaan NS 022C per September 2026', $payload['Comments']);
     }

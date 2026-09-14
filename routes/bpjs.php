@@ -16,5 +16,6 @@ Route::prefix('bpjs-ap-invoices')
             Route::get('/{bpjsApInvoice}/preview', [BpjsApInvoiceController::class, 'preview'])->name('preview');
             Route::post('/{bpjsApInvoice}/submit', [BpjsApInvoiceController::class, 'submit'])->name('submit');
             Route::post('/{bpjsApInvoice}/retry', [BpjsApInvoiceController::class, 'retry'])->name('retry');
+            Route::post('/{bpjsApInvoice}/retry-je', [BpjsApInvoiceController::class, 'retryJe'])->name('retry-je');
         });
     });

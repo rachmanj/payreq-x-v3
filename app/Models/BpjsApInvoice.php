@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,8 +31,23 @@ class BpjsApInvoice extends Model
 
     public const ACCOUNT_CODES = [
         self::JENIS_KESEHATAN => '61201004',
+        self::JENIS_KETENAGAKERJAAN => '21601001',
+    ];
+
+    public const EXPENSE_ACCOUNT_CODES = [
+        self::JENIS_KESEHATAN => '61201004',
         self::JENIS_KETENAGAKERJAAN => '61201003',
     ];
+
+    public const ACCRUAL_ACCOUNT_CODE = '21601001';
+
+    public const JE_STATUS_PENDING = 'pending';
+
+    public const JE_STATUS_SUCCESS = 'success';
+
+    public const JE_STATUS_FAILED = 'failed';
+
+    public const JE_STATUS_SKIPPED = 'skipped';
 
     public const JENIS_LABELS = [
         self::JENIS_KESEHATAN => 'BPJS Kesehatan',
@@ -52,11 +68,32 @@ class BpjsApInvoice extends Model
         'due_date' => 'date',
         'paid_at' => 'date',
         'submitted_at' => 'datetime',
+        'auto_je' => 'boolean',
+        'je_posting_date' => 'date',
+        'je_submitted_at' => 'datetime',
     ];
 
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function journalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class);
+    }
+
+    public function jeSubmittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'je_submitted_by');
+    }
+
+    public static function defaultJePostingDate(string $periode): string
+    {
+        return Carbon::createFromFormat('Y-m', $periode)
+            ->subMonth()
+            ->endOfMonth()
+            ->format('Y-m-d');
     }
 
     public function submissionLogs(): HasMany

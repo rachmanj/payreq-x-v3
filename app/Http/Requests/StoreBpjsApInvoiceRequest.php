@@ -28,6 +28,8 @@ class StoreBpjsApInvoiceRequest extends FormRequest
             'amount' => ['required', 'numeric', 'min:1'],
             'doc_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:doc_date'],
+            'auto_je' => ['nullable', 'boolean'],
+            'je_posting_date' => ['nullable', 'date'],
         ];
     }
 

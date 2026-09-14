@@ -7,6 +7,7 @@ use App\Http\Requests\StoreBpjsApInvoiceRequest;
 use App\Models\BpjsApInvoice;
 use App\Models\Project;
 use App\Models\SapSubmissionLog;
+use App\Services\BpjsTkAccrualJournalService;
 use App\Services\SapBpjsApInvoiceBuilder;
 use App\Services\SapService;
 use Carbon\Carbon;
@@ -114,6 +115,8 @@ class BpjsApInvoiceController extends Controller
         $numAtCard = SapBpjsApInvoiceBuilder::buildNumAtCard($validated['periode']);
         $label = SapBpjsApInvoiceBuilder::buildLabel($validated['jenis'], $validated['unit'], $validated['periode']);
 
+        $isTk = $validated['jenis'] === BpjsApInvoice::JENIS_KETENAGAKERJAAN;
+
         $invoice = BpjsApInvoice::create([
             'jenis' => $validated['jenis'],
             'unit' => $validated['unit'],
@@ -125,6 +128,10 @@ class BpjsApInvoiceController extends Controller
             'label' => $label,
             'status' => BpjsApInvoice::STATUS_PENDING,
             'submitted_by' => auth()->id(),
+            'auto_je' => $isTk ? ($validated['auto_je'] ?? true) : false,
+            'je_posting_date' => $isTk
+                ? ($validated['je_posting_date'] ?? BpjsApInvoice::defaultJePostingDate($validated['periode']))
+                : null,
         ]);
 
         return redirect()
@@ -151,8 +158,11 @@ class BpjsApInvoiceController extends Controller
         ]);
     }
 
-    public function submit(BpjsApInvoice $bpjsApInvoice, SapService $sapService): RedirectResponse
-    {
+    public function submit(
+        BpjsApInvoice $bpjsApInvoice,
+        SapService $sapService,
+        BpjsTkAccrualJournalService $accrualJournalService
+    ): RedirectResponse {
         if (! in_array($bpjsApInvoice->status, [BpjsApInvoice::STATUS_PENDING, BpjsApInvoice::STATUS_FAILED], true)) {
             return redirect()
                 ->route('bpjs-ap-invoices.index')
@@ -229,12 +239,48 @@ class BpjsApInvoiceController extends Controller
                 ->with('error', 'Gagal submit ke SAP B1: '.$sapError);
         }
 
+        $bpjsApInvoice->refresh();
+        $jeResult = $accrualJournalService->createAndSubmit($bpjsApInvoice, auth()->user());
+
+        $successMessage = 'AP Invoice BPJS berhasil dibuat di SAP. DocNum: '.($bpjsApInvoice->sap_doc_num ?? '-');
+
+        if ($bpjsApInvoice->jenis === BpjsApInvoice::JENIS_KETENAGAKERJAAN && $bpjsApInvoice->auto_je) {
+            if (($jeResult['success'] ?? false) && ! ($jeResult['skipped'] ?? false)) {
+                $successMessage .= ' Jurnal akrual berhasil diposting.';
+            } elseif (! ($jeResult['success'] ?? false)) {
+                $successMessage .= ' Jurnal akrual gagal: '.($jeResult['message'] ?? 'Unknown error').'. AP Invoice tetap posted.';
+            }
+        }
+
         return redirect()
             ->route('bpjs-ap-invoices.index')
-            ->with('success', 'AP Invoice BPJS berhasil dibuat di SAP. DocNum: '.($bpjsApInvoice->sap_doc_num ?? '-'));
+            ->with('success', $successMessage);
     }
 
-    public function retry(BpjsApInvoice $bpjsApInvoice, SapService $sapService): RedirectResponse
+    public function retryJe(
+        BpjsApInvoice $bpjsApInvoice,
+        BpjsTkAccrualJournalService $accrualJournalService
+    ): RedirectResponse {
+        if ($bpjsApInvoice->je_status !== BpjsApInvoice::JE_STATUS_FAILED) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'Retry jurnal akrual hanya tersedia untuk invoice dengan je_status failed.');
+        }
+
+        $result = $accrualJournalService->createAndSubmit($bpjsApInvoice, auth()->user());
+
+        if ($result['success'] ?? false) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('success', 'Jurnal akrual BPJS TK berhasil diposting.');
+        }
+
+        return redirect()
+            ->route('bpjs-ap-invoices.index')
+            ->with('error', 'Gagal posting jurnal akrual: '.($result['message'] ?? 'Unknown error'));
+    }
+
+    public function retry(BpjsApInvoice $bpjsApInvoice, SapService $sapService, BpjsTkAccrualJournalService $accrualJournalService): RedirectResponse
     {
         if ($bpjsApInvoice->status !== BpjsApInvoice::STATUS_FAILED) {
             return redirect()
@@ -242,7 +288,7 @@ class BpjsApInvoiceController extends Controller
                 ->with('error', 'Retry hanya tersedia untuk invoice berstatus failed.');
         }
 
-        return $this->submit($bpjsApInvoice, $sapService);
+        return $this->submit($bpjsApInvoice, $sapService, $accrualJournalService);
     }
 
     public function lastAmount(Request $request): JsonResponse
