@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CancelBpjsApInvoiceRequest;
 use App\Http\Requests\StoreBpjsApInvoiceRequest;
 use App\Models\BpjsApInvoice;
 use App\Models\Project;
 use App\Models\SapSubmissionLog;
 use App\Services\BpjsTkAccrualJournalService;
+use App\Services\JournalEntrySubmissionService;
 use App\Services\SapBpjsApInvoiceBuilder;
 use App\Services\SapService;
 use Carbon\Carbon;
@@ -71,6 +73,7 @@ class BpjsApInvoiceController extends Controller
                     BpjsApInvoice::STATUS_FAILED => 'danger',
                     BpjsApInvoice::STATUS_PAID => 'info',
                     BpjsApInvoice::STATUS_PENDING => 'warning',
+                    BpjsApInvoice::STATUS_CANCELLED => 'neutral',
                 ];
                 $chip = $chipMap[$invoice->status] ?? 'neutral';
 
@@ -107,12 +110,14 @@ class BpjsApInvoiceController extends Controller
                         BpjsApInvoice::JE_STATUS_SUCCESS => 'success',
                         BpjsApInvoice::JE_STATUS_FAILED => 'danger',
                         BpjsApInvoice::JE_STATUS_SKIPPED => 'neutral',
+                        BpjsApInvoice::JE_STATUS_REVERSED => 'info',
                     ];
                     $labelMap = [
                         BpjsApInvoice::JE_STATUS_PENDING => 'Pending',
                         BpjsApInvoice::JE_STATUS_SUCCESS => 'Berhasil',
                         BpjsApInvoice::JE_STATUS_FAILED => 'Gagal',
                         BpjsApInvoice::JE_STATUS_SKIPPED => 'Dilewati',
+                        BpjsApInvoice::JE_STATUS_REVERSED => 'Di-reverse',
                     ];
                     $chip = $chipMap[$invoice->je_status] ?? 'neutral';
                     $label = $labelMap[$invoice->je_status] ?? strtoupper($invoice->je_status);
@@ -331,6 +336,198 @@ class BpjsApInvoiceController extends Controller
         }
 
         return $this->submit($bpjsApInvoice, $sapService, $accrualJournalService);
+    }
+
+    public function cancel(
+        CancelBpjsApInvoiceRequest $request,
+        BpjsApInvoice $bpjsApInvoice,
+        SapService $sapService,
+        JournalEntrySubmissionService $journalEntrySubmissionService
+    ): RedirectResponse {
+        $user = $request->user();
+        $reason = $request->validated('cancel_reason');
+
+        if ($bpjsApInvoice->status !== BpjsApInvoice::STATUS_POSTED) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'Hanya invoice berstatus posted yang bisa dibatalkan.');
+        }
+
+        if ((float) $bpjsApInvoice->paid_amount > 0) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'Invoice yang sudah dibayar (paid_amount > 0) tidak bisa dibatalkan.');
+        }
+
+        if (empty($bpjsApInvoice->sap_doc_entry)) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'Invoice belum memiliki SAP Doc Entry.');
+        }
+
+        try {
+            $sapInvoice = $sapService->getPurchaseInvoiceByDocEntry($bpjsApInvoice->sap_doc_entry);
+        } catch (Throwable $exception) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'Gagal memverifikasi AP Invoice di SAP B1: '.$exception->getMessage());
+        }
+
+        if ($sapInvoice === null) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'AP Invoice tidak ditemukan di SAP B1.');
+        }
+
+        if ($this->isSapPurchaseInvoiceCancelled($sapInvoice)) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'AP Invoice sudah dibatalkan di SAP B1.');
+        }
+
+        $documentStatus = $sapInvoice['DocumentStatus'] ?? null;
+        if ($documentStatus !== 'bost_Open') {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'AP Invoice di SAP B1 tidak dalam status open (status: '.($documentStatus ?? '-').').');
+        }
+
+        $paidToDate = (float) ($sapInvoice['PaidToDate'] ?? 0);
+        if ($paidToDate > 0) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'AP Invoice di SAP B1 sudah memiliki pembayaran (PaidToDate > 0).');
+        }
+
+        $cancelResult = $sapService->cancelPurchaseInvoice($bpjsApInvoice->sap_doc_entry);
+
+        if (! ($cancelResult['success'] ?? false)) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', $cancelResult['message'] ?? 'Gagal membatalkan AP Invoice di SAP B1.');
+        }
+
+        DB::transaction(function () use ($bpjsApInvoice, $user, $reason, $cancelResult) {
+            $bpjsApInvoice->update([
+                'status' => BpjsApInvoice::STATUS_CANCELLED,
+                'cancelled_at' => now(),
+                'cancelled_by' => $user->id,
+                'cancel_reason' => $reason,
+            ]);
+
+            SapSubmissionLog::create([
+                'bpjs_ap_invoice_id' => $bpjsApInvoice->id,
+                'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_CANCELLATION,
+                'status' => 'success',
+                'action' => 'cancellation',
+                'sap_doc_num' => $bpjsApInvoice->sap_doc_num,
+                'sap_doc_entry' => $bpjsApInvoice->sap_doc_entry,
+                'sap_response' => $cancelResult['data'] ?? null,
+                'attempt_number' => ($bpjsApInvoice->submissionLogs()->count() + 1),
+                'submitted_by' => $user->id,
+                'user_id' => $user->id,
+                'error_message' => $reason,
+            ]);
+        });
+
+        $jeMessage = null;
+
+        if ($bpjsApInvoice->jenis === BpjsApInvoice::JENIS_KETENAGAKERJAAN && $bpjsApInvoice->journal_entry_id) {
+            $bpjsApInvoice->load('journalEntry');
+            $jeResult = $journalEntrySubmissionService->reverse($bpjsApInvoice->journalEntry, $user, $reason);
+
+            if ($jeResult['success'] ?? false) {
+                $bpjsApInvoice->update([
+                    'je_status' => BpjsApInvoice::JE_STATUS_REVERSED,
+                    'je_error' => null,
+                ]);
+            } else {
+                $bpjsApInvoice->update([
+                    'je_status' => BpjsApInvoice::JE_STATUS_FAILED,
+                    'je_error' => $jeResult['message'] ?? 'Unknown error',
+                ]);
+                $jeMessage = $jeResult['message'] ?? 'Unknown error';
+            }
+        }
+
+        $successMessage = 'AP Invoice BPJS berhasil dibatalkan di SAP B1.';
+
+        if ($jeMessage !== null) {
+            $successMessage .= ' Jurnal akrual gagal di-reverse: '.$jeMessage.'. AP Invoice tetap cancelled.';
+        } elseif ($bpjsApInvoice->jenis === BpjsApInvoice::JENIS_KETENAGAKERJAAN && $bpjsApInvoice->journal_entry_id) {
+            $successMessage .= ' Jurnal akrual berhasil di-reverse.';
+        }
+
+        return redirect()
+            ->route('bpjs-ap-invoices.index')
+            ->with('success', $successMessage);
+    }
+
+    public function cancelJe(
+        BpjsApInvoice $bpjsApInvoice,
+        JournalEntrySubmissionService $journalEntrySubmissionService
+    ): RedirectResponse {
+        if ($bpjsApInvoice->status !== BpjsApInvoice::STATUS_CANCELLED) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'Retry reversal jurnal akrual hanya tersedia untuk invoice yang sudah dibatalkan.');
+        }
+
+        if ($bpjsApInvoice->je_status === BpjsApInvoice::JE_STATUS_REVERSED) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('success', 'Jurnal akrual sudah di-reverse.');
+        }
+
+        if ($bpjsApInvoice->je_status !== BpjsApInvoice::JE_STATUS_FAILED) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'Retry reversal jurnal akrual hanya tersedia untuk je_status failed.');
+        }
+
+        if (! $bpjsApInvoice->journal_entry_id) {
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('error', 'Invoice tidak memiliki jurnal akrual.');
+        }
+
+        $bpjsApInvoice->load('journalEntry');
+        $reason = $bpjsApInvoice->cancel_reason ?? 'Retry reversal after AP cancellation';
+
+        $jeResult = $journalEntrySubmissionService->reverse(
+            $bpjsApInvoice->journalEntry,
+            auth()->user(),
+            $reason
+        );
+
+        if ($jeResult['success'] ?? false) {
+            $bpjsApInvoice->update([
+                'je_status' => BpjsApInvoice::JE_STATUS_REVERSED,
+                'je_error' => null,
+            ]);
+
+            return redirect()
+                ->route('bpjs-ap-invoices.index')
+                ->with('success', 'Jurnal akrual berhasil di-reverse.');
+        }
+
+        $bpjsApInvoice->update([
+            'je_error' => $jeResult['message'] ?? 'Unknown error',
+        ]);
+
+        return redirect()
+            ->route('bpjs-ap-invoices.index')
+            ->with('error', 'Gagal reverse jurnal akrual: '.($jeResult['message'] ?? 'Unknown error'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $sapInvoice
+     */
+    protected function isSapPurchaseInvoiceCancelled(array $sapInvoice): bool
+    {
+        $cancelled = strtoupper((string) ($sapInvoice['Cancelled'] ?? ''));
+
+        return in_array($cancelled, ['TYES', 'Y'], true);
     }
 
     public function lastAmount(Request $request): JsonResponse

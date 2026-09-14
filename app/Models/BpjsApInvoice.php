@@ -24,6 +24,8 @@ class BpjsApInvoice extends Model
 
     public const STATUS_PAID = 'paid';
 
+    public const STATUS_CANCELLED = 'cancelled';
+
     public const CARD_CODES = [
         self::JENIS_KESEHATAN => 'VBPKEIDR01',
         self::JENIS_KETENAGAKERJAAN => 'VBPTKIDR01',
@@ -49,6 +51,8 @@ class BpjsApInvoice extends Model
 
     public const JE_STATUS_SKIPPED = 'skipped';
 
+    public const JE_STATUS_REVERSED = 'reversed';
+
     public const JENIS_LABELS = [
         self::JENIS_KESEHATAN => 'BPJS Kesehatan',
         self::JENIS_KETENAGAKERJAAN => 'BPJS Ketenagakerjaan',
@@ -71,6 +75,7 @@ class BpjsApInvoice extends Model
         'auto_je' => 'boolean',
         'je_posting_date' => 'date',
         'je_submitted_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     public function submittedBy(): BelongsTo
@@ -86,6 +91,11 @@ class BpjsApInvoice extends Model
     public function jeSubmittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'je_submitted_by');
+    }
+
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public static function defaultJePostingDate(string $periode): string

@@ -18,4 +18,9 @@ Route::prefix('bpjs-ap-invoices')
             Route::post('/{bpjsApInvoice}/retry', [BpjsApInvoiceController::class, 'retry'])->name('retry');
             Route::post('/{bpjsApInvoice}/retry-je', [BpjsApInvoiceController::class, 'retryJe'])->name('retry-je');
         });
+
+        Route::middleware('permission:cancel_sap_ap_invoice_bpjs')->group(function () {
+            Route::post('/{bpjsApInvoice}/cancel', [BpjsApInvoiceController::class, 'cancel'])->name('cancel');
+            Route::post('/{bpjsApInvoice}/cancel-je', [BpjsApInvoiceController::class, 'cancelJe'])->name('cancel-je');
+        });
     });

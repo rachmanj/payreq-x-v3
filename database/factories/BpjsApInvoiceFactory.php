@@ -65,4 +65,16 @@ class BpjsApInvoiceFactory extends Factory
             ];
         });
     }
+
+    public function cancelled(): static
+    {
+        return $this->state(fn () => [
+            'status' => BpjsApInvoice::STATUS_CANCELLED,
+            'sap_doc_num' => (string) fake()->unique()->numberBetween(10000, 99999),
+            'sap_doc_entry' => fake()->unique()->numberBetween(10000, 99999),
+            'submitted_at' => now(),
+            'cancelled_at' => now(),
+            'cancel_reason' => 'Cancelled for testing',
+        ]);
+    }
 }

@@ -13,6 +13,8 @@ class SapSubmissionLog extends Model
 
     public const DOCUMENT_TYPE_BPJS_AP_INVOICE = 'bpjs_ap_invoice';
 
+    public const DOCUMENT_TYPE_BPJS_AP_INVOICE_CANCELLATION = 'bpjs_ap_invoice_cancellation';
+
     public const DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT = 'bpjs_ap_invoice_payment';
 
     public const DOCUMENT_TYPE_AP_INVOICE_INSTALLMENT = 'ap_invoice_installment';

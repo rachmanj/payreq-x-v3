@@ -479,6 +479,62 @@ class SapService
         });
     }
 
+    public function cancelPurchaseInvoice(string|int $docEntry): array
+    {
+        $this->ensureSession();
+
+        return $this->handleSessionExpiration(function () use ($docEntry) {
+            try {
+                $docEntry = trim((string) $docEntry);
+
+                Log::debug('SAP B1 Purchase Invoice Cancel Request', ['doc_entry' => $docEntry]);
+
+                $response = $this->client->post('PurchaseInvoices('.$docEntry.')/Cancel');
+
+                $statusCode = $response->getStatusCode();
+
+                if (! in_array($statusCode, [200, 204], true)) {
+                    $body = json_decode($response->getBody()->getContents(), true);
+                    $errorMessage = $body['error']['message']['value'] ?? 'Unknown error';
+
+                    return [
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'data' => $body ?? null,
+                    ];
+                }
+
+                $verifyResponse = $this->client->get('PurchaseInvoices('.$docEntry.')');
+                $body = json_decode($verifyResponse->getBody()->getContents(), true);
+                $cancelled = strtoupper((string) ($body['Cancelled'] ?? ''));
+
+                if ($cancelled !== 'TYES') {
+                    return [
+                        'success' => false,
+                        'message' => 'Purchase invoice cancellation was not confirmed in SAP B1 (Cancelled != tYES).',
+                        'data' => is_array($body) ? $body : null,
+                    ];
+                }
+
+                Log::info('SAP B1 purchase invoice cancelled successfully', [
+                    'doc_entry' => $docEntry,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Purchase invoice cancelled successfully.',
+                    'data' => $body,
+                ];
+            } catch (RequestException $e) {
+                return [
+                    'success' => false,
+                    'message' => $this->extractErrorMessage($e),
+                    'data' => null,
+                ];
+            }
+        });
+    }
+
     /**
      * @return array{DocEntry: int, DocNum: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, NumAtCard?: string, DocTotal?: float}|null
      */
