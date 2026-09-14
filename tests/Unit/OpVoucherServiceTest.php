@@ -82,7 +82,7 @@ class OpVoucherServiceTest extends TestCase
 
         $this->assertSame('BPJS KESEHATAN', $voucher['header']['payment_for']);
         $this->assertSame('88001', $voucher['header']['voucher_no']);
-        $this->assertSame('07-Sep-2026', $voucher['header']['voucher_date']);
+        $this->assertSame('07-September-2026', $voucher['header']['voucher_date']);
         $this->assertSame('000H - HO Balikpapan', $voucher['header']['project']);
         $this->assertSame('TRANSFER', $voucher['header']['payment_method']);
         $this->assertSame('IDR', $voucher['header']['currency']);

@@ -67,7 +67,7 @@ class OpVoucherPrintTest extends TestCase
             'header' => [
                 'payment_for' => 'BPJS KESEHATAN',
                 'voucher_no' => '88010',
-                'voucher_date' => '07-Sep-2026',
+                'voucher_date' => '07-September-2026',
                 'project' => '000H - HO Balikpapan',
                 'payment_method' => 'TRANSFER',
                 'currency' => 'IDR',
@@ -139,7 +139,7 @@ class OpVoucherPrintTest extends TestCase
             'header' => [
                 'payment_for' => 'PT Vendor DDS',
                 'voucher_no' => '99055',
-                'voucher_date' => '20-Aug-2026',
+                'voucher_date' => '20-August-2026',
                 'project' => '022C - Site C',
                 'payment_method' => 'TRANSFER',
                 'currency' => 'IDR',

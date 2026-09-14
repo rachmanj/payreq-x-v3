@@ -173,7 +173,7 @@ class OpVoucherService
         }
 
         try {
-            return Carbon::parse($docDate)->format('d-M-Y');
+            return Carbon::parse($docDate)->format('d-F-Y');
         } catch (\Throwable) {
             return (string) $docDate;
         }
