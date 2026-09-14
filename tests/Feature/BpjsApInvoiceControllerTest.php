@@ -217,6 +217,43 @@ class BpjsApInvoiceControllerTest extends TestCase
         $this->assertStringContainsString('bpjs-cancel-btn', $postedRow['action']);
     }
 
+    public function test_data_endpoint_includes_print_op_action_when_paid_amount_positive(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo('akses_ap_invoice_bpjs');
+
+        $paid = BpjsApInvoice::factory()->paid()->create([
+            'jenis' => BpjsApInvoice::JENIS_KESEHATAN,
+            'unit' => '000H',
+            'periode' => '2026-12',
+        ]);
+
+        $unpaid = BpjsApInvoice::factory()->posted()->create([
+            'jenis' => BpjsApInvoice::JENIS_KESEHATAN,
+            'unit' => '000H',
+            'periode' => '2026-11',
+            'paid_amount' => 0,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson(route('bpjs-ap-invoices.data'));
+
+        $response->assertOk();
+
+        $records = collect($response->json('data'));
+        $paidRow = $records->firstWhere('id', $paid->id);
+        $unpaidRow = $records->firstWhere('id', $unpaid->id);
+
+        $this->assertNotNull($paidRow);
+        $this->assertStringContainsString('Print OP', $paidRow['action']);
+        $this->assertStringContainsString(route('bpjs-ap-invoices.print-op', $paid), $paidRow['action']);
+        $this->assertStringContainsString('fa-print', $paidRow['action']);
+
+        $this->assertNotNull($unpaidRow);
+        $this->assertStringNotContainsString('Print OP', $unpaidRow['action']);
+        $this->assertStringNotContainsString(route('bpjs-ap-invoices.print-op', $unpaid), $unpaidRow['action']);
+    }
+
     /**
      * @return array<string, mixed>
      */

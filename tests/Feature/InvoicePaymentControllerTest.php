@@ -908,6 +908,22 @@ class InvoicePaymentControllerTest extends TestCase
         $this->assertSame(1500000.0, (float) $bpjs->paid_amount);
     }
 
+    public function test_index_includes_print_op_action_scripts(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake($this->ddsDepartmentFake());
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)
+            ->get(route('cashier.invoice-payment.index'))
+            ->assertOk()
+            ->assertSee('renderPrintOpAction', false)
+            ->assertSee('Print OP', false)
+            ->assertSee(route('cashier.invoice-payment.print-op', ['ddsInvoiceId' => ':id']), false)
+            ->assertSee(route('bpjs-ap-invoices.print-op', ['bpjsApInvoice' => ':id']), false);
+    }
+
     protected function ddsDepartmentFake(): callable
     {
         return function ($request) {

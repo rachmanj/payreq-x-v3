@@ -6,7 +6,8 @@
     $showRetryCancelJe = $canCancel
         && $invoice->status === \App\Models\BpjsApInvoice::STATUS_CANCELLED
         && $invoice->je_status === \App\Models\BpjsApInvoice::JE_STATUS_FAILED;
-    $hasActions = ($canSubmit ?? false) || $showCancel || $showRetryCancelJe;
+    $showPrintOp = (float) $invoice->paid_amount > 0;
+    $hasActions = ($canSubmit ?? false) || $showCancel || $showRetryCancelJe || $showPrintOp;
 @endphp
 
 @if ($hasActions)
@@ -70,6 +71,13 @@
                     <i class="fas fa-redo"></i>
                 </button>
             </form>
+        @endif
+
+        @if ($showPrintOp)
+            <a href="{{ route('bpjs-ap-invoices.print-op', $invoice) }}"
+                class="vj-action-item vj-action-item-xs vj-action-print" target="_blank" title="Print OP">
+                <i class="fas fa-print"></i>
+            </a>
         @endif
     </div>
 @endif

@@ -236,6 +236,7 @@
                                                 <th>Status</th>
                                                 <th>SAP Payment</th>
                                                 <th>Action</th>
+                                                <th>Aksi</th>
                                             </tr>
                                         </thead>
                                     </table>
@@ -534,6 +535,10 @@
                 '{{ route('cashier.invoice-payment.sap-payment.preview', ['invoiceId' => ':invoiceId']) }}';
             const sapSubmitUrlTemplate =
                 '{{ route('cashier.invoice-payment.sap-payment.submit', ['invoiceId' => ':invoiceId']) }}';
+            const bpjsPrintOpUrlTemplate =
+                '{{ route('bpjs-ap-invoices.print-op', ['bpjsApInvoice' => ':id']) }}';
+            const ddsPrintOpUrlTemplate =
+                '{{ route('cashier.invoice-payment.print-op', ['ddsInvoiceId' => ':id']) }}';
 
             initializeWaitingTable();
             initializePaidTable();
@@ -808,6 +813,14 @@
                             render: function(data, type, row) {
                                 return renderSapPaymentAction(row);
                             }
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            render: function(data, type, row) {
+                                return renderPrintOpAction(row);
+                            }
                         }
                     ],
                     order: [
@@ -913,6 +926,30 @@
                 const label = row.sap_payment && row.sap_payment.is_partial ? 'Pay remaining' : 'Submit to SAP';
 
                 return '<button type="button" class="vj-btn vj-btn-primary submit-sap-btn">' + label + '</button>';
+            }
+
+            function hasAppOp(sapPayment) {
+                if (!sapPayment || sapPayment.status !== 'success') {
+                    return false;
+                }
+
+                return !!(sapPayment.doc_num || sapPayment.doc_entry);
+            }
+
+            function renderPrintOpAction(row) {
+                if (!hasAppOp(row.sap_payment)) {
+                    return '<span class="text-muted small">-</span>';
+                }
+
+                let url;
+                if ((row.source || 'dds') === 'bpjs') {
+                    url = bpjsPrintOpUrlTemplate.replace(':id', row.local_id);
+                } else {
+                    url = ddsPrintOpUrlTemplate.replace(':id', row.id);
+                }
+
+                return '<a href="' + escapeAttr(url) + '" class="vj-action-item vj-action-item-xs vj-action-print" target="_blank" title="Print OP">' +
+                    '<i class="fas fa-print"></i></a>';
             }
 
             function renderPaymentHistory(history) {
