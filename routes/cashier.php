@@ -23,6 +23,7 @@ use App\Http\Controllers\InvoicePaymentController;
 use App\Http\Controllers\Migrasi\MigrasiBucController;
 use App\Http\Controllers\Migrasi\MigrasiIndexController;
 use App\Http\Controllers\Migrasi\MigrasiPayreqController;
+use App\Http\Controllers\OpVoucherPrintController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
@@ -255,5 +256,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/invoices/{invoiceId}/sap-payment/submit', [InvoicePaymentController::class, 'submitSapPayment'])
             ->middleware('permission:submit_sap_invoice_payment')
             ->name('sap-payment.submit');
+        Route::get('/{ddsInvoiceId}/print-op', [OpVoucherPrintController::class, 'printDds'])->name('print-op');
     });
 });

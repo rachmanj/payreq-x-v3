@@ -603,6 +603,87 @@ class SapService
         return $entity !== '' ? $entity : 'VendorPayments';
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getVendorPaymentByDocEntry(string|int $docEntry): ?array
+    {
+        $this->ensureSession();
+
+        $docEntry = trim((string) $docEntry);
+        if ($docEntry === '') {
+            return null;
+        }
+
+        return $this->handleSessionExpiration(function () use ($docEntry) {
+            try {
+                $entity = $this->outgoingPaymentEntity();
+                $response = $this->client->get("{$entity}({$docEntry})", [
+                    'query' => [
+                        '$select' => $this->vendorPaymentSelectFields(),
+                    ],
+                ]);
+
+                $body = json_decode($response->getBody()->getContents(), true);
+
+                return is_array($body) && isset($body['DocEntry']) ? $body : null;
+            } catch (RequestException $e) {
+                if ($e->getResponse()?->getStatusCode() === 404) {
+                    return null;
+                }
+
+                throw $e;
+            }
+        });
+    }
+
+    /**
+     * @return array<int, array{account: string, description: string, debit: float, credit: float}>
+     */
+    public function getPaymentGlLines(string|int $docEntry): array
+    {
+        $this->ensureSession();
+
+        $docEntry = trim((string) $docEntry);
+        if ($docEntry === '') {
+            throw new \InvalidArgumentException('Payment DocEntry is required to fetch GL lines.');
+        }
+
+        $sqlCode = $this->ensurePaymentGlLinesSql();
+
+        try {
+            $rawRows = $this->executeSqlQuery($sqlCode, ['docEntry' => $docEntry]);
+        } catch (\Throwable $exception) {
+            throw new \RuntimeException(
+                'Failed to fetch Outgoing Payment GL lines from SAP (DocEntry: '.$docEntry.'). '
+                .$exception->getMessage(),
+                0,
+                $exception
+            );
+        }
+
+        $lines = [];
+        foreach ($rawRows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $account = trim((string) ($row['Account'] ?? ''));
+            if ($account === '') {
+                continue;
+            }
+
+            $lines[] = [
+                'account' => $account,
+                'description' => trim((string) ($row['LineMemo'] ?? '')),
+                'debit' => (float) ($row['Debit'] ?? 0),
+                'credit' => (float) ($row['Credit'] ?? 0),
+            ];
+        }
+
+        return $lines;
+    }
+
     public function createOutgoingPayment(array $paymentData): array
     {
         $this->ensureSession();
@@ -654,6 +735,27 @@ class SapService
                 throw new \Exception('SAP B1 Error: '.$errorMessage, 0, $e);
             }
         });
+    }
+
+    protected function vendorPaymentSelectFields(): string
+    {
+        return 'DocEntry,DocNum,DocDate,CardName,CashSum,TransferSum,CashAccount,TransferAccount,DocCurrency,JournalRemarks,ProjectCode,CheckNumber';
+    }
+
+    protected function ensurePaymentGlLinesSql(): string
+    {
+        $sqlCode = 'AO_OPGL1';
+
+        $this->ensureSqlQuery(
+            $sqlCode,
+            'AccountingOne outgoing payment GL lines',
+            'SELECT T1.Account AS Account, T1.Debit AS Debit, T1.Credit AS Credit, T1.LineMemo AS LineMemo'
+            .' FROM OVPM T0 INNER JOIN JDT1 T1 ON T1.TransId = T0.TransId'
+            .' WHERE T0.DocEntry = :docEntry'
+            .' ORDER BY T1.Line_ID'
+        );
+
+        return $sqlCode;
     }
 
     protected function extractArInvoiceNumber(array $response): ?string

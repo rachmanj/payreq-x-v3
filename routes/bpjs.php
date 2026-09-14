@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Accounting\BpjsApInvoiceController;
+use App\Http\Controllers\OpVoucherPrintController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('bpjs-ap-invoices')
@@ -9,6 +10,7 @@ Route::prefix('bpjs-ap-invoices')
     ->group(function () {
         Route::get('/', [BpjsApInvoiceController::class, 'index'])->name('index');
         Route::get('/data', [BpjsApInvoiceController::class, 'data'])->name('data');
+        Route::get('/{bpjsApInvoice}/print-op', [OpVoucherPrintController::class, 'printBpjs'])->name('print-op');
 
         Route::middleware('permission:submit_sap_ap_invoice_bpjs')->group(function () {
             Route::get('/last-amount', [BpjsApInvoiceController::class, 'lastAmount'])->name('last-amount');
