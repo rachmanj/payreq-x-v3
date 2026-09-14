@@ -20,6 +20,7 @@ use App\Services\PayreqRealizationBudgetWarningService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class UserRealizationController extends Controller
@@ -197,63 +198,89 @@ class UserRealizationController extends Controller
 
     public function cancel($realization_id)
     {
-
         $realization = Realization::where('id', $realization_id)->first();
-        $payreq_amount = $realization->payreq->amount;
 
-        // if realization has details
-        if ($realization->realizationDetails->count() > 0) {
-            // check if realization amount is different from payreq amount
-            $realization_amount = $realization->realizationDetails->sum('amount');
-
-            // if realization amount > advance amount, then delete payreq
-            if ($realization_amount > $payreq_amount) {
-                // delete payreq
-                $payreq = Payreq::where('remarks', 'LIKE', '%'.$realization->nomor.'%')->first();
-                $payreq->delete();
-            }
-
-            // if realization amount < advance amount, then delete incomming payreq
-            if ($realization_amount < $payreq_amount) {
-                // delete incomming payreq
-                $incomming = Incoming::where('realization_id', $realization_id)->first();
-                $incomming->delete();
-            }
-
-            // delete realization details
-            $realization->realizationDetails()->delete();
+        if (! $realization) {
+            return redirect()->route('user-payreqs.realizations.index')
+                ->with('error', 'Realisasi tidak ditemukan atau sudah dihapus.');
         }
 
-        // reverse payreq status to 'paid'
-        $realization->payreq->update([
-            'status' => 'paid',
-            'cancel_count' => $realization->payreq->cancel_count + 1,
-        ]);
+        DB::transaction(function () use ($realization, $realization_id) {
+            $payreq = Payreq::find($realization->payreq_id);
+            $payreqAmount = $payreq?->amount ?? 0;
 
-        // delete realization
-        $realization->delete();
+            if ($realization->realizationDetails->count() > 0) {
+                $realizationAmount = $realization->realizationDetails->sum('amount');
 
-        return redirect()->route('user-payreqs.realizations.index')->with('success', 'Realization deleted');
+                if ($realizationAmount > $payreqAmount) {
+                    $relatedPayreq = Payreq::where('remarks', 'LIKE', '%'.$realization->nomor.'%')->first();
+                    if ($relatedPayreq) {
+                        $relatedPayreq->delete();
+                    }
+                }
+
+                if ($realizationAmount < $payreqAmount) {
+                    $incoming = Incoming::where('realization_id', $realization_id)->first();
+                    if ($incoming) {
+                        $incoming->delete();
+                    }
+                }
+
+                $realization->realizationDetails()->delete();
+            }
+
+            if ($payreq) {
+                $payreq->update([
+                    'status' => 'paid',
+                    'cancel_count' => $payreq->cancel_count + 1,
+                ]);
+            }
+
+            $realization->delete();
+        });
+
+        return redirect()->route('user-payreqs.realizations.index')
+            ->with('success', 'Realisasi berhasil dihapus.');
     }
 
     public function destroy($id)
     {
-        $realization = Realization::where('id', $id)->first();
+        $realization = $this->findRealizationForDelete($id);
 
-        // if realizaiton has details, delete details first
-        if ($realization->realizationDetails->count() > 0) {
-            $realization->realizationDetails()->delete();
+        if (! $realization) {
+            return redirect()->route('user-payreqs.realizations.index')
+                ->with('error', 'Realisasi tidak ditemukan atau sudah dihapus.');
         }
 
-        // reverse payreq status to 'paid'
-        $realization->payreq->update([
-            'status' => 'paid',
-        ]);
+        DB::transaction(function () use ($realization) {
+            if ($realization->realizationDetails->count() > 0) {
+                $realization->realizationDetails()->delete();
+            }
 
-        // delete realization
-        $realization->delete();
+            $payreq = Payreq::find($realization->payreq_id);
+            if ($payreq) {
+                $payreq->update([
+                    'status' => 'paid',
+                ]);
+            }
 
-        return $this->index();
+            $realization->delete();
+        });
+
+        return redirect()->route('user-payreqs.realizations.index')
+            ->with('success', 'Realisasi berhasil dihapus.');
+    }
+
+    private function findRealizationForDelete(int|string $id): ?Realization
+    {
+        $query = Realization::query()->where('id', $id);
+
+        $roles = app(ToolController::class)->getUserRoles();
+        if (! array_intersect(['superadmin', 'admin'], $roles)) {
+            $query->where('user_id', auth()->id());
+        }
+
+        return $query->first();
     }
 
     private function checkPayreqLot($payreq_id)
