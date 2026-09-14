@@ -355,11 +355,7 @@ class PayreqReimburseController extends Controller
         }
 
         $normalized = [];
-        foreach ($destinations as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-
+        foreach (PayreqTransferDestinationService::pruneEmptyRows($destinations) as $row) {
             $row['planned_amount'] = PayreqTransferDestinationService::normalizePlannedAmountInput(
                 $row['planned_amount'] ?? null
             );

@@ -112,6 +112,21 @@ class PayreqTransferDestinationService
         return (int) $value === 1;
     }
 
+    /**
+     * @param  array<int, mixed>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    public static function pruneEmptyRows(array $rows): array
+    {
+        return array_values(array_filter($rows, function ($row) {
+            if (! is_array($row)) {
+                return false;
+            }
+
+            return ! blank($row['transfer_account_id'] ?? null);
+        }));
+    }
+
     public static function normalizePlannedAmountInput(mixed $plannedAmount): mixed
     {
         if (! is_string($plannedAmount)) {
