@@ -94,7 +94,9 @@ class OpVoucherServiceTest extends TestCase
         $this->assertStringContainsString('rupiah', strtolower($voucher['say']));
         $this->assertSame('Rachman J', $voucher['signatures']['reviewed_by_name']);
         $this->assertSame('sign_rj2.png', $voucher['signatures']['reviewed_by_signature']);
+        $this->assertSame('sign_checked.png', $voucher['signatures']['checked_by_signature']);
         $this->assertSame('Budi Kasir', $voucher['signatures']['paid_by_name']);
+        $this->assertSame('sign_paid.png', $voucher['signatures']['paid_by_signature']);
     }
 
     public function test_builds_complete_voucher_for_dds_payment_with_cash(): void
@@ -165,6 +167,8 @@ class OpVoucherServiceTest extends TestCase
         $this->assertSame('11101001', $voucher['header']['bank_acc_no']);
         $this->assertSame('022C - Site C', $voucher['header']['project']);
         $this->assertSame('Siti Cashier', $voucher['signatures']['paid_by_name']);
+        $this->assertSame('sign_checked.png', $voucher['signatures']['checked_by_signature']);
+        $this->assertSame('sign_paid.png', $voucher['signatures']['paid_by_signature']);
         $this->assertEquals(1500000, $voucher['totals']['debit']);
     }
 }

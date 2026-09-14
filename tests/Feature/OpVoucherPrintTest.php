@@ -97,7 +97,9 @@ class OpVoucherPrintTest extends TestCase
             'signatures' => [
                 'reviewed_by_name' => 'Rachman J',
                 'reviewed_by_signature' => 'sign_rj2.png',
+                'checked_by_signature' => 'sign_checked.png',
                 'paid_by_name' => 'Andi Pembayar',
+                'paid_by_signature' => 'sign_paid.png',
                 'checked_by_name' => null,
                 'received_by_name' => null,
             ],
@@ -114,6 +116,8 @@ class OpVoucherPrintTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('sign_rj2.png', false);
+        $response->assertSee('sign_checked.png', false);
+        $response->assertSee('sign_paid.png', false);
         $response->assertSee('Rachman J', false);
         $response->assertSee('Andi Pembayar', false);
         $response->assertSee('Cash Bank Voucher Out', false);
@@ -169,7 +173,9 @@ class OpVoucherPrintTest extends TestCase
             'signatures' => [
                 'reviewed_by_name' => 'Rachman J',
                 'reviewed_by_signature' => 'sign_rj2.png',
+                'checked_by_signature' => 'sign_checked.png',
                 'paid_by_name' => 'Dewi Kasir',
+                'paid_by_signature' => 'sign_paid.png',
                 'checked_by_name' => null,
                 'received_by_name' => null,
             ],
@@ -188,6 +194,8 @@ class OpVoucherPrintTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('sign_rj2.png', false);
+        $response->assertSee('sign_checked.png', false);
+        $response->assertSee('sign_paid.png', false);
         $response->assertSee('Rachman J', false);
         $response->assertSee('Dewi Kasir', false);
     }

@@ -104,6 +104,11 @@
             height: 48px;
             object-fit: contain;
         }
+        .signature-image-print {
+            width: 32mm;
+            height: auto;
+            object-fit: contain;
+        }
         .signature-name {
             margin-top: 6px;
             font-weight: 600;
@@ -219,6 +224,7 @@
         <div class="signatures">
             <div class="signature-box">
                 <div class="signature-title">Checked By</div>
+                <img src="{{ asset($voucher['signatures']['checked_by_signature']) }}" alt="Checked By" class="signature-image-print">
                 <div class="signature-date">Date: _______________</div>
             </div>
             <div class="signature-box">
@@ -229,6 +235,7 @@
             </div>
             <div class="signature-box">
                 <div class="signature-title">Paid By</div>
+                <img src="{{ asset($voucher['signatures']['paid_by_signature']) }}" alt="Paid By" class="signature-image-print">
                 <div class="signature-name">{{ $voucher['signatures']['paid_by_name'] ?: '-' }}</div>
                 <div class="signature-date">Date: _______________</div>
             </div>

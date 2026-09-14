@@ -72,7 +72,9 @@ class OpVoucherService
             'signatures' => [
                 'reviewed_by_name' => 'Rachman J',
                 'reviewed_by_signature' => 'sign_rj2.png',
+                'checked_by_signature' => 'sign_checked.png',
                 'paid_by_name' => $opLog->submittedBy?->name,
+                'paid_by_signature' => 'sign_paid.png',
                 'checked_by_name' => null,
                 'received_by_name' => null,
             ],
