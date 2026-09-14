@@ -364,10 +364,10 @@
                         @php
                             $allocationRowsOld = old('allocations');
                             if (! is_array($allocationRowsOld)) {
-                                $allocationRowsOld = [['anggaran_id' => '', 'amount' => '', 'remarks' => '']];
+                                $allocationRowsOld = [['anggaran_id' => '', 'amount' => '', 'planned_amount' => '', 'transfer_account_id' => '', 'remarks' => '']];
                             }
                             if (count($allocationRowsOld) < 1) {
-                                $allocationRowsOld = [['anggaran_id' => '', 'amount' => '', 'remarks' => '']];
+                                $allocationRowsOld = [['anggaran_id' => '', 'amount' => '', 'planned_amount' => '', 'transfer_account_id' => '', 'remarks' => '']];
                             }
                         @endphp
 
@@ -454,7 +454,9 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Anggaran</th>
-                                                    <th style="width:22%">Amount</th>
+                                                    <th style="width:15%">Amount</th>
+                                                    <th style="width:15%">Rencana Nominal</th>
+                                                    <th style="min-width:200px">Rekening Tujuan</th>
                                                     <th>Remarks</th>
                                                     <th style="width:52px"></th>
                                                 </tr>
@@ -484,6 +486,28 @@
                                                                 class="form-control allocation-amount"
                                                                 value="{{ old("allocations.$i.amount", $row['amount'] ?? '') }}"
                                                                 onkeyup="formatNumber(this)">
+                                                        </td>
+                                                        <td>
+                                                            <input type="text"
+                                                                name="allocations[{{ $i }}][planned_amount]"
+                                                                class="form-control allocation-planned-amount"
+                                                                value="{{ old("allocations.$i.planned_amount", $row['planned_amount'] ?? '') }}"
+                                                                onkeyup="formatNumber(this)">
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                name="allocations[{{ $i }}][transfer_account_id]"
+                                                                class="form-control select2bs4 allocation-transfer-account"
+                                                                style="width:100%"
+                                                                data-placeholder="-- Pilih Rekening --">
+                                                                <option value=""></option>
+                                                                @foreach ($transferAccounts as $account)
+                                                                    <option value="{{ $account->id }}"
+                                                                        {{ (string) old("allocations.$i.transfer_account_id", $row['transfer_account_id'] ?? '') === (string) $account->id ? 'selected' : '' }}>
+                                                                        {{ $account->displayLabel }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
                                                         </td>
                                                         <td>
                                                             <input type="text"
@@ -877,11 +901,36 @@
                 $('#advance-allocation-body').on('keyup change', '.allocation-amount',
                     recalcAdvanceAllocationTotal);
 
+                function initAllocationTransferSelect($select) {
+                    if (!$select.length || $select.hasClass('select2-hidden-accessible')) {
+                        return;
+                    }
+
+                    $select.select2({
+                        theme: 'bootstrap4',
+                        placeholder: '-- Pilih Rekening --',
+                        allowClear: true,
+                        width: '100%'
+                    });
+                }
+
+                $('#advance-allocation-body .allocation-transfer-account').each(function() {
+                    initAllocationTransferSelect($(this));
+                });
+
                 $('#btn-add-allocation-row').click(function() {
                     const $body = $('#advance-allocation-body');
                     const $first = $body.find('tr.allocation-row').first();
                     const idx = $body.find('tr.allocation-row').length;
                     const $clone = $first.clone();
+
+                    $clone.find('select').each(function() {
+                        const $sel = $(this);
+                        if ($sel.hasClass('select2-hidden-accessible')) {
+                            $sel.select2('destroy');
+                        }
+                    });
+
                     $clone.find('input, select').each(function() {
                         const $el = $(this);
                         const name = $el.attr('name');
@@ -889,21 +938,20 @@
                             $el.attr('name', name.replace(/allocations\[\d+\]/, 'allocations[' +
                                 idx + ']'));
                         }
-                        if ($el.hasClass('allocation-amount')) {
+                        if ($el.hasClass('allocation-amount') || $el.hasClass('allocation-planned-amount')) {
                             $el.val('');
                         }
-                        if ($el.hasClass('allocation-rab-select')) {
+                        if ($el.hasClass('allocation-rab-select') || $el.hasClass('allocation-transfer-account')) {
                             $el.val('');
                         }
-                        if ($el.is('input[type=text]:not(.allocation-amount)') && !$el.hasClass(
-                                'allocation-rab-select')) {
-                            const nm = $el.attr('name') || '';
-                            if (nm.indexOf('[remarks]') !== -1) {
-                                $el.val('');
-                            }
+                        const nm = $el.attr('name') || '';
+                        if ($el.is('input[type=text]') && nm.indexOf('[remarks]') !== -1) {
+                            $el.val('');
                         }
                     });
+
                     $body.append($clone);
+                    initAllocationTransferSelect($clone.find('.allocation-transfer-account'));
                 });
 
                 $('#advance-allocation-body').on('click', '.btn-remove-allocation-row', function() {
@@ -911,7 +959,12 @@
                     if ($body.find('tr.allocation-row').length <= 1) {
                         return;
                     }
-                    $(this).closest('tr.allocation-row').remove();
+                    const $row = $(this).closest('tr.allocation-row');
+                    const $select = $row.find('.allocation-transfer-account');
+                    if ($select.hasClass('select2-hidden-accessible')) {
+                        $select.select2('destroy');
+                    }
+                    $row.remove();
                     recalcAdvanceAllocationTotal();
                 });
             @endif
