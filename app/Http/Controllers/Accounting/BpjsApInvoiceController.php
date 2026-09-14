@@ -33,7 +33,7 @@ class BpjsApInvoiceController extends Controller
     public function data(Request $request): JsonResponse
     {
         $query = BpjsApInvoice::query()
-            ->with('submittedBy')
+            ->with(['submittedBy', 'journalEntry'])
             ->orderByDesc('id');
 
         if ($request->filled('jenis')) {
@@ -83,6 +83,48 @@ class BpjsApInvoiceController extends Controller
 
                 return '<span class="text-muted">-</span>';
             })
+            ->addColumn('accrual_je', function (BpjsApInvoice $invoice) {
+                if ($invoice->jenis !== BpjsApInvoice::JENIS_KETENAGAKERJAAN) {
+                    return '<span class="text-muted">—</span>';
+                }
+
+                $parts = [];
+
+                if ($invoice->je_posting_date) {
+                    $parts[] = $invoice->je_posting_date->format('d-M-Y');
+                } else {
+                    $parts[] = '<span class="text-muted">—</span>';
+                }
+
+                $sapJournalNo = $invoice->journalEntry?->sap_journal_no;
+                if ($sapJournalNo) {
+                    $parts[] = '<small class="d-block text-muted">'.e($sapJournalNo).'</small>';
+                }
+
+                if ($invoice->je_status) {
+                    $chipMap = [
+                        BpjsApInvoice::JE_STATUS_PENDING => 'warning',
+                        BpjsApInvoice::JE_STATUS_SUCCESS => 'success',
+                        BpjsApInvoice::JE_STATUS_FAILED => 'danger',
+                        BpjsApInvoice::JE_STATUS_SKIPPED => 'neutral',
+                    ];
+                    $labelMap = [
+                        BpjsApInvoice::JE_STATUS_PENDING => 'Pending',
+                        BpjsApInvoice::JE_STATUS_SUCCESS => 'Berhasil',
+                        BpjsApInvoice::JE_STATUS_FAILED => 'Gagal',
+                        BpjsApInvoice::JE_STATUS_SKIPPED => 'Dilewati',
+                    ];
+                    $chip = $chipMap[$invoice->je_status] ?? 'neutral';
+                    $label = $labelMap[$invoice->je_status] ?? strtoupper($invoice->je_status);
+                    $parts[] = '<span class="vj-chip vj-chip-'.$chip.'">'.$label.'</span>';
+                }
+
+                if ($invoice->je_status === BpjsApInvoice::JE_STATUS_SUCCESS && $invoice->journal_entry_id) {
+                    $parts[] = '<a href="'.route('accounting.journal-entries.show', $invoice->journal_entry_id).'" class="small">Detail JE</a>';
+                }
+
+                return implode('', $parts);
+            })
             ->addColumn('submitted_info', function (BpjsApInvoice $invoice) {
                 if (! $invoice->submitted_at) {
                     return '<span class="text-muted">-</span>';
@@ -97,7 +139,7 @@ class BpjsApInvoiceController extends Controller
                     'canSubmit' => auth()->user()?->can('submit_sap_ap_invoice_bpjs') ?? false,
                 ])->render();
             })
-            ->rawColumns(['jenis_badge', 'unit_label', 'dates', 'status_chip', 'sap_doc', 'submitted_info', 'action'])
+            ->rawColumns(['jenis_badge', 'unit_label', 'dates', 'status_chip', 'sap_doc', 'accrual_je', 'submitted_info', 'action'])
             ->make(true);
     }
 

@@ -17,6 +17,19 @@
             </form>
         @endif
 
+        @if (
+            $invoice->jenis === \App\Models\BpjsApInvoice::JENIS_KETENAGAKERJAAN
+            && $invoice->je_status === \App\Models\BpjsApInvoice::JE_STATUS_FAILED
+        )
+            <form method="POST" action="{{ route('bpjs-ap-invoices.retry-je', $invoice) }}" class="d-inline">
+                @csrf
+                <button type="submit" class="vj-action-item vj-action-item-xs vj-action-submit bpjs-retry-je-btn"
+                    title="Retry Jurnal Akrual">
+                    <i class="fas fa-book-medical"></i>
+                </button>
+            </form>
+        @endif
+
         @if ($invoice->status === 'posted' || $invoice->status === 'paid')
             <a href="{{ route('bpjs-ap-invoices.preview', $invoice) }}"
                 class="vj-action-item vj-action-item-xs vj-action-show" title="Detail">

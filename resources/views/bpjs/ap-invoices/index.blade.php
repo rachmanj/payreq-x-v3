@@ -78,6 +78,7 @@
                                 <th>Tanggal</th>
                                 <th>Status</th>
                                 <th>No. SAP</th>
+                                <th>Jurnal Akrual</th>
                                 <th>Dikirim</th>
                                 <th></th>
                             </tr>
@@ -129,6 +130,7 @@
                     { data: 'dates', name: 'doc_date', orderable: false, searchable: false },
                     { data: 'status_chip', name: 'status', orderable: false, searchable: false },
                     { data: 'sap_doc', name: 'sap_doc_num', orderable: false, searchable: false },
+                    { data: 'accrual_je', name: 'je_posting_date', orderable: false, searchable: false },
                     { data: 'submitted_info', name: 'submitted_at', orderable: false, searchable: false },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
@@ -168,6 +170,23 @@
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Ya, submit',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+
+            $(document).on('click', '.bpjs-retry-je-btn', function(e) {
+                e.preventDefault();
+                const form = $(this).closest('form');
+                Swal.fire({
+                    title: 'Retry jurnal akrual?',
+                    text: 'Jurnal akrual BPJS Ketenagakerjaan akan dikirim ulang ke SAP B1.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, posting',
                     cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {

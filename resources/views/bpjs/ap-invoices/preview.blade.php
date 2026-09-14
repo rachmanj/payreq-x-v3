@@ -86,6 +86,52 @@
                     </div>
                 </div>
 
+                @if ($invoice->jenis === \App\Models\BpjsApInvoice::JENIS_KETENAGAKERJAAN && $invoice->auto_je)
+                    <div class="vj-alert vj-alert-info mb-3">
+                        <i class="fas fa-book"></i>
+                        <div>
+                            <strong>Jurnal Akrual BPJS Ketenagakerjaan</strong>
+                            <p class="mb-2 small text-muted">
+                                Jurnal akrual akan diposting otomatis ke SAP setelah AP Invoice berhasil disubmit.
+                            </p>
+                            <table class="table table-sm table-borderless mb-0 bg-transparent">
+                                <tr>
+                                    <th class="text-muted" style="width: 35%">Debit</th>
+                                    <td>{{ \App\Models\BpjsApInvoice::EXPENSE_ACCOUNT_CODES[\App\Models\BpjsApInvoice::JENIS_KETENAGAKERJAAN] }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Kredit</th>
+                                    <td>{{ \App\Models\BpjsApInvoice::ACCRUAL_ACCOUNT_CODE }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Nominal</th>
+                                    <td><strong>Rp {{ number_format((float) $invoice->amount, 0, ',', '.') }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Tanggal posting</th>
+                                    <td>{{ ($invoice->je_posting_date ?? \Carbon\Carbon::parse(\App\Models\BpjsApInvoice::defaultJePostingDate($invoice->periode)))->format('d-M-Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Project / Unit</th>
+                                    <td>{{ $preview['unit_label'] }} ({{ $invoice->unit }})</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Cost Center</th>
+                                    <td>20</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                @else
+                    <div class="vj-alert vj-alert-secondary mb-3">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Jurnal Akrual</strong><br>
+                            Jurnal akrual BPJS Ketenagakerjaan tidak akan dibuat untuk invoice ini.
+                        </div>
+                    </div>
+                @endif
+
                 @if ($invoice->status === 'failed' && $invoice->sap_error_message)
                     <div class="vj-alert vj-alert-danger mb-3">
                         <i class="fas fa-times-circle"></i>

@@ -82,6 +82,35 @@
                         </div>
                     </div>
 
+                    <div id="tkAccrualFields" class="row" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="form-group mb-md-0">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="hidden" name="auto_je" value="0">
+                                    <input type="checkbox" class="custom-control-input" name="auto_je" id="auto_je"
+                                        value="1" @checked(old('auto_je', '1') != '0')>
+                                    <label class="custom-control-label" for="auto_je">
+                                        Buat jurnal akrual BPJS Ketenagakerjaan
+                                    </label>
+                                </div>
+                                @error('auto_je')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-0">
+                                <label for="je_posting_date">Tanggal posting jurnal</label>
+                                <input type="date" name="je_posting_date" id="je_posting_date"
+                                    class="form-control @error('je_posting_date') is-invalid @enderror"
+                                    value="{{ old('je_posting_date') }}">
+                                @error('je_posting_date')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -120,6 +149,65 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const JENIS_TK = @json(\App\Models\BpjsApInvoice::JENIS_KETENAGAKERJAAN);
+        const jenisSelect = document.getElementById('jenis');
+        const periodeInput = document.getElementById('periode');
+        const tkAccrualFields = document.getElementById('tkAccrualFields');
+        const jePostingDateInput = document.getElementById('je_posting_date');
+        let jePostingDateManual = @json(filled(old('je_posting_date')));
+
+        function defaultJePostingDate(periode) {
+            if (!periode) {
+                return '';
+            }
+
+            const parts = periode.split('-').map(Number);
+            if (parts.length !== 2 || !parts[0] || !parts[1]) {
+                return '';
+            }
+
+            const date = new Date(parts[0], parts[1] - 1, 0);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+
+            return y + '-' + m + '-' + d;
+        }
+
+        function syncJePostingDate() {
+            if (!jePostingDateManual && periodeInput && jePostingDateInput) {
+                jePostingDateInput.value = defaultJePostingDate(periodeInput.value);
+            }
+        }
+
+        function toggleTkAccrualFields() {
+            if (!jenisSelect || !tkAccrualFields) {
+                return;
+            }
+
+            const isTk = jenisSelect.value === JENIS_TK;
+            tkAccrualFields.style.display = isTk ? '' : 'none';
+
+            if (isTk) {
+                syncJePostingDate();
+            }
+        }
+
+        if (jenisSelect) {
+            jenisSelect.addEventListener('change', toggleTkAccrualFields);
+            toggleTkAccrualFields();
+        }
+
+        if (periodeInput) {
+            periodeInput.addEventListener('change', syncJePostingDate);
+        }
+
+        if (jePostingDateInput) {
+            jePostingDateInput.addEventListener('change', function() {
+                jePostingDateManual = true;
+            });
+        }
+
         const docDateInput = document.getElementById('doc_date');
         const dueDateInput = document.getElementById('due_date');
 
