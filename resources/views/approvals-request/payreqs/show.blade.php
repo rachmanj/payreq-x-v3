@@ -92,7 +92,12 @@
                             </div>
                         @endif
 
-                        @if ($payreq->transferDestinations->isNotEmpty())
+                        @php
+                            $hasAllocationTransferRows = $payreq->anggaranAllocations->contains(
+                                fn ($allocation) => filled($allocation->transfer_account_id)
+                            );
+                        @endphp
+                        @if ($payreq->transferDestinations->isNotEmpty() || $hasAllocationTransferRows)
                             @php
                                 $paymentEditable = false;
                                 $transferDestinations = $payreq->transferDestinations;

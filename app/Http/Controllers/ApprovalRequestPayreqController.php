@@ -26,7 +26,11 @@ class ApprovalRequestPayreqController extends Controller
     {
         $document = ApprovalPlan::find($id);
         $payreq = $document->payreq;
-        $payreq->load(['outgoings', 'transferDestinations.transferAccount.bank']);
+        $payreq->load([
+            'outgoings',
+            'transferDestinations.transferAccount.bank',
+            'anggaranAllocations.transferAccount.bank',
+        ]);
         $realization = $payreq->realization->load('activity');
         $realization_details = $realization->realizationDetails()->with('activity')->get();
         $departments = Department::orderBy('department_name')->get();

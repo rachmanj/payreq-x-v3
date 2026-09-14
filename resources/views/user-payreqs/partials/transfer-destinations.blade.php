@@ -21,32 +21,83 @@
     $showBlockInitially = $selectedMethod === 'transfer';
 @endphp
 
-@if (! $paymentEditable && isset($payreq) && $payreq->payment_method === 'transfer' && isset($transferDestinations) && $transferDestinations->isNotEmpty())
-    <div class="form-group" id="transfer-destinations-readonly">
-        <label>Daftar Tujuan Transfer</label>
-        <div class="table-responsive">
-            <table class="table table-sm table-bordered mb-0">
-                <thead class="thead-light">
-                    <tr>
-                        <th>Rekening Tujuan</th>
-                        <th class="text-right" style="width: 160px;">Rencana Nominal</th>
-                        <th>Keterangan</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($transferDestinations as $destination)
+@if (! $paymentEditable && isset($payreq))
+    @php
+        $allocationTransferRows = collect();
+        foreach ($payreq->anggaranAllocations ?? [] as $index => $allocation) {
+            if (! $allocation->transfer_account_id) {
+                continue;
+            }
+
+            $allocationTransferRows->push([
+                'row_number' => $index + 1,
+                'remarks' => $allocation->remarks,
+                'amount' => $allocation->amount,
+                'transferAccount' => $allocation->transferAccount,
+                'planned_amount' => $allocation->planned_amount,
+            ]);
+        }
+    @endphp
+
+    @if ($payreq->payment_method === 'transfer' && isset($transferDestinations) && $transferDestinations->isNotEmpty())
+        <div class="form-group" id="transfer-destinations-readonly">
+            <label>Daftar Tujuan Transfer</label>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="thead-light">
                         <tr>
-                            <td>{{ $destination->transferAccount?->displayLabel ?? '-' }}</td>
-                            <td class="text-right">
-                                {{ $destination->planned_amount !== null ? number_format($destination->planned_amount, 0, ',', '.') : '-' }}
-                            </td>
-                            <td>{{ $destination->remark ?: '-' }}</td>
+                            <th>Rekening Tujuan</th>
+                            <th class="text-right" style="width: 160px;">Rencana Nominal</th>
+                            <th>Keterangan</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach ($transferDestinations as $destination)
+                            <tr>
+                                <td>{{ $destination->transferAccount?->displayLabel ?? '-' }}</td>
+                                <td class="text-right">
+                                    {{ $destination->planned_amount !== null ? number_format($destination->planned_amount, 0, ',', '.') : '-' }}
+                                </td>
+                                <td>{{ $destination->remark ?: '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    @endif
+
+    @if ($allocationTransferRows->isNotEmpty())
+        <div class="form-group" id="allocation-transfer-destinations-readonly">
+            <label>Rekening Tujuan per Baris Transaksi</label>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 3rem;">No</th>
+                            <th>Uraian Baris</th>
+                            <th class="text-right" style="width: 9rem;">Nominal Baris</th>
+                            <th>Rekening Tujuan</th>
+                            <th class="text-right" style="width: 9rem;">Rencana Nominal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($allocationTransferRows as $planRow)
+                            <tr>
+                                <td>{{ $planRow['row_number'] }}</td>
+                                <td>{{ $planRow['remarks'] ?: '–' }}</td>
+                                <td class="text-right">{{ number_format((float) $planRow['amount'], 0, ',', '.') }}</td>
+                                <td>{{ $planRow['transferAccount']?->displayLabel ?? '–' }}</td>
+                                <td class="text-right">
+                                    {{ $planRow['planned_amount'] !== null ? number_format($planRow['planned_amount'], 0, ',', '.') : '–' }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 @elseif ($paymentEditable)
     <div class="form-group" id="transfer-destinations-section">
         <div id="transfer-destinations-block" style="{{ $showBlockInitially ? '' : 'display:none;' }}">
