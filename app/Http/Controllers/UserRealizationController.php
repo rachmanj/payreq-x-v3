@@ -198,7 +198,7 @@ class UserRealizationController extends Controller
 
     public function cancel($realization_id)
     {
-        $realization = Realization::where('id', $realization_id)->first();
+        $realization = $this->findRealizationForAction($realization_id);
 
         if (! $realization) {
             return redirect()->route('user-payreqs.realizations.index')
@@ -245,7 +245,7 @@ class UserRealizationController extends Controller
 
     public function destroy($id)
     {
-        $realization = $this->findRealizationForDelete($id);
+        $realization = $this->findRealizationForAction($id);
 
         if (! $realization) {
             return redirect()->route('user-payreqs.realizations.index')
@@ -271,7 +271,7 @@ class UserRealizationController extends Controller
             ->with('success', 'Realisasi berhasil dihapus.');
     }
 
-    private function findRealizationForDelete(int|string $id): ?Realization
+    private function findRealizationForAction(int|string $id): ?Realization
     {
         $query = Realization::query()->where('id', $id);
 

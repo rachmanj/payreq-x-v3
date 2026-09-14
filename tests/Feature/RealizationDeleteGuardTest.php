@@ -7,6 +7,7 @@ use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RealizationDeleteGuardTest extends TestCase
@@ -69,6 +70,74 @@ class RealizationDeleteGuardTest extends TestCase
         $response->assertRedirect(route('user-payreqs.realizations.index'));
         $response->assertSessionHas('error', self::NOT_FOUND_MESSAGE);
         $response->assertStatus(302);
+    }
+
+    public function test_regular_user_cannot_cancel_other_users_realization(): void
+    {
+        $owner = $this->makeUser();
+        $otherUser = $this->makeUser();
+        $realization = $this->makeDraftRealization($owner);
+        $payreqId = $realization->payreq_id;
+
+        Payreq::query()->whereKey($payreqId)->update(['status' => 'realization']);
+
+        $response = $this->actingAs($otherUser)->delete(route('user-payreqs.realizations.cancel', $realization->id));
+
+        $response->assertRedirect(route('user-payreqs.realizations.index'));
+        $response->assertSessionHas('error', self::NOT_FOUND_MESSAGE);
+        $this->assertDatabaseHas('realizations', ['id' => $realization->id]);
+        $this->assertDatabaseHas('realization_details', ['realization_id' => $realization->id]);
+        $this->assertDatabaseHas('payreqs', [
+            'id' => $payreqId,
+            'status' => 'realization',
+            'cancel_count' => 0,
+        ]);
+    }
+
+    public function test_owner_can_cancel_own_realization_and_increment_cancel_count(): void
+    {
+        $user = $this->makeUser();
+        $realization = $this->makeDraftRealization($user);
+        $payreqId = $realization->payreq_id;
+
+        Payreq::query()->whereKey($payreqId)->update(['status' => 'realization']);
+
+        $response = $this->actingAs($user)->delete(route('user-payreqs.realizations.cancel', $realization->id));
+
+        $response->assertRedirect(route('user-payreqs.realizations.index'));
+        $response->assertSessionHas('success', 'Realisasi berhasil dihapus.');
+        $this->assertDatabaseMissing('realizations', ['id' => $realization->id]);
+        $this->assertDatabaseMissing('realization_details', ['realization_id' => $realization->id]);
+        $this->assertDatabaseHas('payreqs', [
+            'id' => $payreqId,
+            'status' => 'paid',
+            'cancel_count' => 1,
+        ]);
+    }
+
+    public function test_superadmin_can_cancel_other_users_realization(): void
+    {
+        Role::query()->firstOrCreate(['name' => 'superadmin'], ['guard_name' => 'web']);
+
+        $owner = $this->makeUser();
+        $superadmin = $this->makeUser();
+        $superadmin->assignRole('superadmin');
+
+        $realization = $this->makeDraftRealization($owner);
+        $payreqId = $realization->payreq_id;
+
+        Payreq::query()->whereKey($payreqId)->update(['status' => 'realization']);
+
+        $response = $this->actingAs($superadmin)->delete(route('user-payreqs.realizations.cancel', $realization->id));
+
+        $response->assertRedirect(route('user-payreqs.realizations.index'));
+        $response->assertSessionHas('success', 'Realisasi berhasil dihapus.');
+        $this->assertDatabaseMissing('realizations', ['id' => $realization->id]);
+        $this->assertDatabaseHas('payreqs', [
+            'id' => $payreqId,
+            'status' => 'paid',
+            'cancel_count' => 1,
+        ]);
     }
 
     /**
