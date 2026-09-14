@@ -54,8 +54,6 @@ class SapBpjsApInvoiceBuilder
                     'Quantity' => 1,
                     'UnitPrice' => $amount,
                     'LineTotal' => $amount,
-                    'VatGroup' => 'B100',
-                    'TaxCode' => 'B100',
                     'WTLiable' => 'tNO',
                     'CostingCode' => '20',
                     'ProjectCode' => $this->invoice->unit,
@@ -160,7 +158,6 @@ class SapBpjsApInvoiceBuilder
             ],
             'num_at_card' => $this->invoice->num_at_card,
             'label' => $this->invoice->label,
-            'tax_code' => 'B100',
             'amount' => $amount,
             'invoice_number' => $this->invoice->invoiceNumber(),
         ];

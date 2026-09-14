@@ -70,7 +70,8 @@ class SapBpjsApInvoiceBuilderTest extends TestCase
         $this->assertSame(1, $payload['DocumentLines'][0]['Quantity']);
         $this->assertSame(15000000.0, $payload['DocumentLines'][0]['UnitPrice']);
         $this->assertSame(15000000.0, $payload['DocumentLines'][0]['LineTotal']);
-        $this->assertSame('B100', $payload['DocumentLines'][0]['VatGroup']);
+        $this->assertArrayNotHasKey('VatGroup', $payload['DocumentLines'][0]);
+        $this->assertArrayNotHasKey('TaxCode', $payload['DocumentLines'][0]);
         $this->assertSame('tNO', $payload['DocumentLines'][0]['WTLiable']);
         $this->assertSame('20', $payload['DocumentLines'][0]['CostingCode']);
         $this->assertSame('000H', $payload['DocumentLines'][0]['ProjectCode']);
@@ -94,8 +95,22 @@ class SapBpjsApInvoiceBuilderTest extends TestCase
 
         $this->assertSame('VBPTKIDR01', $payload['CardCode']);
         $this->assertSame('21601001', $payload['DocumentLines'][0]['AccountCode']);
+        $this->assertSame(8000000.0, $payload['DocumentLines'][0]['UnitPrice']);
+        $this->assertSame(8000000.0, $payload['DocumentLines'][0]['LineTotal']);
+        $this->assertArrayNotHasKey('VatGroup', $payload['DocumentLines'][0]);
+        $this->assertArrayNotHasKey('TaxCode', $payload['DocumentLines'][0]);
         $this->assertSame('022C', $payload['DocumentLines'][0]['ProjectCode']);
         $this->assertSame('BPJS Ketenagakerjaan NS 022C per September 2026', $payload['Comments']);
+    }
+
+    public function test_preview_data_excludes_tax_code(): void
+    {
+        $invoice = $this->makeInvoice(['amount' => 15000000]);
+
+        $preview = (new SapBpjsApInvoiceBuilder($invoice))->getPreviewData();
+
+        $this->assertArrayNotHasKey('tax_code', $preview);
+        $this->assertSame(15000000.0, $preview['amount']);
     }
 
     public function test_num_at_card_appends_suffix_when_already_used(): void

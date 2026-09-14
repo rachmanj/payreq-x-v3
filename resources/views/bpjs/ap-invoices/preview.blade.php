@@ -73,8 +73,8 @@
                         <div>{{ $preview['dates']['due_date'] }}</div>
                     </div>
                     <div class="col-md-4">
-                        <span class="text-muted small">Tax Code</span>
-                        <div>{{ $preview['tax_code'] }}</div>
+                        <span class="text-muted small">PPN</span>
+                        <div>Tanpa PPN</div>
                     </div>
                 </div>
 
@@ -162,7 +162,7 @@
                                 <td>{{ $preview['label'] }}</td>
                                 <td>1</td>
                                 <td class="text-right">{{ number_format($preview['amount'], 0, ',', '.') }}</td>
-                                <td>{{ $preview['tax_code'] }}</td>
+                                <td>Tanpa PPN</td>
                                 <td>{{ $preview['costing_code'] }}</td>
                                 <td>{{ $preview['project_code'] }}</td>
                             </tr>
