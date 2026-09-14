@@ -13,6 +13,89 @@ class PayreqTransferDestinationService
     /**
      * @return array<string, mixed>
      */
+    public static function allocationRules(): array
+    {
+        return [
+            'allocations.*.transfer_account_id' => ['nullable', 'integer', 'exists:transfer_accounts,id'],
+            'allocations.*.planned_amount' => ['nullable', 'numeric', 'min:1'],
+        ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $allocations
+     * @return array<int, array<string, mixed>>
+     */
+    public static function normalizeAllocations(array $allocations): array
+    {
+        return collect($allocations)
+            ->filter(fn ($row) => is_array($row) && ! empty($row['anggaran_id']))
+            ->map(function (array $row) {
+                $plannedAmount = self::normalizePlannedAmountInput($row['planned_amount'] ?? null);
+
+                return array_merge($row, [
+                    'planned_amount' => $plannedAmount,
+                ]);
+            })
+            ->values()
+            ->all();
+    }
+
+    public static function assertAllocationDestinations(Validator $validator, array $allocations, int $userId): void
+    {
+        $normalized = self::normalizeAllocations($allocations);
+
+        foreach ($normalized as $index => $row) {
+            if (empty($row['transfer_account_id'])) {
+                continue;
+            }
+
+            $transferAccountId = (int) $row['transfer_account_id'];
+
+            $owned = TransferAccount::query()
+                ->where('id', $transferAccountId)
+                ->where('user_id', $userId)
+                ->exists();
+
+            if (! $owned) {
+                $validator->errors()->add(
+                    "allocations.{$index}.transfer_account_id",
+                    'Akun transfer tidak valid atau bukan milik Anda.'
+                );
+            }
+
+            if (isset($row['planned_amount']) && $row['planned_amount'] !== null && $row['planned_amount'] !== '') {
+                $plannedAmount = (int) $row['planned_amount'];
+                $rowAmount = (int) (is_numeric($row['amount'] ?? 0)
+                    ? $row['amount']
+                    : str_replace(',', '', (string) ($row['amount'] ?? 0)));
+
+                if ($plannedAmount > $rowAmount) {
+                    $validator->errors()->add(
+                        "allocations.{$index}.planned_amount",
+                        'Rencana nominal tidak boleh melebihi nominal baris transaksi.'
+                    );
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $allocations
+     */
+    public static function firstAllocationAccountId(array $allocations): ?int
+    {
+        foreach (self::normalizeAllocations($allocations) as $row) {
+            if (! empty($row['transfer_account_id'])) {
+                return (int) $row['transfer_account_id'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public static function rules(): array
     {
         return [

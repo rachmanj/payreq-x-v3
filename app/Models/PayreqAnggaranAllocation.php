@@ -11,6 +11,7 @@ class PayreqAnggaranAllocation extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'planned_amount' => 'integer',
     ];
 
     public function payreq(): BelongsTo
@@ -21,5 +22,10 @@ class PayreqAnggaranAllocation extends Model
     public function anggaran(): BelongsTo
     {
         return $this->belongsTo(Anggaran::class, 'anggaran_id');
+    }
+
+    public function transferAccount(): BelongsTo
+    {
+        return $this->belongsTo(TransferAccount::class, 'transfer_account_id');
     }
 }

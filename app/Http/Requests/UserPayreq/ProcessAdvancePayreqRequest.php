@@ -51,6 +51,7 @@ class ProcessAdvancePayreqRequest extends FormRequest
             }
             $normalized[] = $row;
         }
+        $normalized = PayreqTransferDestinationService::normalizeAllocations($normalized);
         $this->merge(['allocations' => $normalized]);
 
         if (! $this->filled('payment_method')) {
@@ -59,7 +60,7 @@ class ProcessAdvancePayreqRequest extends FormRequest
 
         $destinations = $this->input('transfer_destinations', []);
         if (! is_array($destinations)) {
-            return;
+            $destinations = [];
         }
 
         $normalizedDestinations = [];
@@ -81,6 +82,11 @@ class ProcessAdvancePayreqRequest extends FormRequest
             $this->merge([
                 'payment_method' => 'transfer',
                 'transfer_account_id' => PayreqTransferDestinationService::firstTransferAccountId($normalizedDestinations),
+            ]);
+        } elseif (PayreqTransferDestinationService::firstAllocationAccountId($normalized) !== null) {
+            $this->merge([
+                'payment_method' => 'transfer',
+                'transfer_account_id' => PayreqTransferDestinationService::firstAllocationAccountId($normalized),
             ]);
         }
     }
@@ -111,6 +117,7 @@ class ProcessAdvancePayreqRequest extends FormRequest
             $rules['allocations.*.anggaran_id'] = ['required', 'exists:anggarans,id'];
             $rules['allocations.*.amount'] = ['required', 'numeric', 'min:0.01'];
             $rules['allocations.*.remarks'] = ['nullable', 'string', 'max:500'];
+            $rules = array_merge($rules, PayreqTransferDestinationService::allocationRules());
         } else {
             $rules['amount'] = ['required', 'numeric', 'min:0.01'];
             $rules['allocations'] = ['nullable', 'array'];
@@ -183,6 +190,13 @@ class ProcessAdvancePayreqRequest extends FormRequest
             }
 
             $allocations = $this->input('allocations', []);
+
+            PayreqTransferDestinationService::assertAllocationDestinations(
+                $validator,
+                $allocations,
+                (int) Auth::id()
+            );
+
             $sumRows = collect($allocations)->sum(fn ($row) => (float) ($row['amount'] ?? 0));
 
             $header = (float) $this->input('amount');

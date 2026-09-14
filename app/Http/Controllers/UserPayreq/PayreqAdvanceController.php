@@ -172,7 +172,11 @@ class PayreqAdvanceController extends Controller
             PayreqAnggaranAllocation::create([
                 'payreq_id' => $payreq->id,
                 'anggaran_id' => (int) $row['anggaran_id'],
+                'transfer_account_id' => ! empty($row['transfer_account_id']) ? (int) $row['transfer_account_id'] : null,
                 'amount' => $row['amount'],
+                'planned_amount' => isset($row['planned_amount']) && $row['planned_amount'] !== ''
+                    ? (int) $row['planned_amount']
+                    : null,
                 'remarks' => $row['remarks'] ?? null,
                 'sort_order' => (int) $index,
             ]);
