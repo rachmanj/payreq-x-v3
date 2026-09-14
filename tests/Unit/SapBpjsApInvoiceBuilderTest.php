@@ -70,7 +70,7 @@ class SapBpjsApInvoiceBuilderTest extends TestCase
         $this->assertSame(1, $payload['DocumentLines'][0]['Quantity']);
         $this->assertSame(15000000.0, $payload['DocumentLines'][0]['UnitPrice']);
         $this->assertSame(15000000.0, $payload['DocumentLines'][0]['LineTotal']);
-        $this->assertArrayNotHasKey('VatGroup', $payload['DocumentLines'][0]);
+        $this->assertSame('B100', $payload['DocumentLines'][0]['VatGroup']);
         $this->assertArrayNotHasKey('TaxCode', $payload['DocumentLines'][0]);
         $this->assertSame('tNO', $payload['DocumentLines'][0]['WTLiable']);
         $this->assertSame('20', $payload['DocumentLines'][0]['CostingCode']);
@@ -97,20 +97,44 @@ class SapBpjsApInvoiceBuilderTest extends TestCase
         $this->assertSame('21601001', $payload['DocumentLines'][0]['AccountCode']);
         $this->assertSame(8000000.0, $payload['DocumentLines'][0]['UnitPrice']);
         $this->assertSame(8000000.0, $payload['DocumentLines'][0]['LineTotal']);
-        $this->assertArrayNotHasKey('VatGroup', $payload['DocumentLines'][0]);
+        $this->assertSame('B100', $payload['DocumentLines'][0]['VatGroup']);
         $this->assertArrayNotHasKey('TaxCode', $payload['DocumentLines'][0]);
         $this->assertSame('022C', $payload['DocumentLines'][0]['ProjectCode']);
         $this->assertSame('BPJS Ketenagakerjaan NS 022C per September 2026', $payload['Comments']);
     }
 
-    public function test_preview_data_excludes_tax_code(): void
+    public function test_preview_data_shows_vat_group_b100(): void
     {
         $invoice = $this->makeInvoice(['amount' => 15000000]);
 
         $preview = (new SapBpjsApInvoiceBuilder($invoice))->getPreviewData();
 
+        $this->assertSame('B100', $preview['vat_group']);
+        $this->assertSame('PPN 0% (B100)', $preview['vat_label']);
         $this->assertArrayNotHasKey('tax_code', $preview);
         $this->assertSame(15000000.0, $preview['amount']);
+    }
+
+    public function test_build_payload_doc_total_equals_line_total_without_vat_surcharge(): void
+    {
+        $amount = 59973140;
+        $invoice = $this->makeInvoice([
+            'jenis' => BpjsApInvoice::JENIS_KETENAGAKERJAAN,
+            'amount' => $amount,
+        ]);
+
+        $payload = (new SapBpjsApInvoiceBuilder($invoice))->build();
+        $line = $payload['DocumentLines'][0];
+
+        $this->assertSame('B100', $line['VatGroup']);
+        $this->assertArrayNotHasKey('TaxCode', $line);
+        $this->assertSame(59973140.0, $line['LineTotal']);
+        $this->assertSame(59973140.0, $line['UnitPrice']);
+
+        // Without explicit B100, SAP applies vendor default B111 → DocTotal 66.570.185,40 instead of 59.973.140.
+        $incorrectDocTotal = round($amount * 1.11, 2);
+        $this->assertSame(66570185.40, $incorrectDocTotal);
+        $this->assertSame((float) $amount, $line['LineTotal']);
     }
 
     public function test_num_at_card_appends_suffix_when_already_used(): void

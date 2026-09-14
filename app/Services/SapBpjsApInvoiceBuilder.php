@@ -8,6 +8,9 @@ use Carbon\Carbon;
 
 class SapBpjsApInvoiceBuilder
 {
+    /** VAT IN 0% — must be explicit; vendor master defaults to B111 (11% PPN). */
+    private const VAT_GROUP = 'B100';
+
     private const INDONESIAN_MONTHS = [
         1 => 'Januari',
         2 => 'Februari',
@@ -54,6 +57,7 @@ class SapBpjsApInvoiceBuilder
                     'Quantity' => 1,
                     'UnitPrice' => $amount,
                     'LineTotal' => $amount,
+                    'VatGroup' => self::VAT_GROUP,
                     'WTLiable' => 'tNO',
                     'CostingCode' => '20',
                     'ProjectCode' => $this->invoice->unit,
@@ -159,6 +163,8 @@ class SapBpjsApInvoiceBuilder
             'num_at_card' => $this->invoice->num_at_card,
             'label' => $this->invoice->label,
             'amount' => $amount,
+            'vat_group' => self::VAT_GROUP,
+            'vat_label' => 'PPN 0% ('.self::VAT_GROUP.')',
             'invoice_number' => $this->invoice->invoiceNumber(),
         ];
     }

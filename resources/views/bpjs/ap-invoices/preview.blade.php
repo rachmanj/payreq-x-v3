@@ -74,7 +74,7 @@
                     </div>
                     <div class="col-md-4">
                         <span class="text-muted small">PPN</span>
-                        <div>Tanpa PPN</div>
+                        <div>{{ $preview['vat_label'] }}</div>
                     </div>
                 </div>
 
@@ -162,7 +162,7 @@
                                 <td>{{ $preview['label'] }}</td>
                                 <td>1</td>
                                 <td class="text-right">{{ number_format($preview['amount'], 0, ',', '.') }}</td>
-                                <td>Tanpa PPN</td>
+                                <td>{{ $preview['vat_label'] }} ({{ $preview['vat_group'] }})</td>
                                 <td>{{ $preview['costing_code'] }}</td>
                                 <td>{{ $preview['project_code'] }}</td>
                             </tr>
