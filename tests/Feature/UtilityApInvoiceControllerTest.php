@@ -187,6 +187,23 @@ class UtilityApInvoiceControllerTest extends TestCase
             ->assertSessionHas('alert_type', 'error');
     }
 
+    public function test_ap_invoices_index_includes_pph23_withholding_ui_markup(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo(['akses_utilities', 'submit_sap_ap_invoice_utilities', 'submit_sap_utility_payment']);
+
+        $this->actingAs($user)
+            ->get(route('utilities.ap-invoices.index'))
+            ->assertOk()
+            ->assertSee('id="utilitySapPaymentWithholdingInfo"', false)
+            ->assertSee('id="utilitySapPaymentWithholdingBreakdown"', false)
+            ->assertSee('Total invoice (bruto)', false)
+            ->assertSee('PPh23 (WTCode 1019)', false)
+            ->assertSee('Dibayar netto', false)
+            ->assertSee('renderUtilityWithholdingUi', false)
+            ->assertSee('Invoice ini mengandung PPh23 sebesar', false);
+    }
+
     protected function authorizedUser(): User
     {
         $user = User::factory()->create();

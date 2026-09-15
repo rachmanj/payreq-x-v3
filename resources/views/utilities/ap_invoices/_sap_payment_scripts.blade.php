@@ -11,6 +11,8 @@
             let utilityAccountsLoaded = false;
             let utilityPreviewReady = false;
             let utilityRemainingBalance = 0;
+            let utilityNetRemainingBalance = 0;
+            let utilityWithholdingTotal = 0;
 
             function formatCurrency(value) {
                 const amount = parseFloat(value || 0);
@@ -23,6 +25,45 @@
 
             function hideUtilityPaymentError() {
                 $('#utilitySapPaymentError').addClass('d-none').text('');
+            }
+
+            function hideUtilityWithholdingUi() {
+                utilityWithholdingTotal = 0;
+                utilityNetRemainingBalance = 0;
+                $('#utilitySapPaymentWithholdingInfo').addClass('d-none');
+                $('#utilitySapPaymentWithholdingBreakdown').addClass('d-none');
+                $('#utilitySapPaymentWithholdingInfoMessage').text('');
+                $('#utility_gross_applied_display').text('-');
+                $('#utility_withholding_display').text('-');
+                $('#utility_net_amount_display').text('-');
+            }
+
+            function renderUtilityWithholdingUi(preview) {
+                const withholding = preview.withholding || {};
+                const withholdingTotal = parseFloat(withholding.total || 0);
+
+                if (withholdingTotal <= 0) {
+                    hideUtilityWithholdingUi();
+                    return null;
+                }
+
+                utilityWithholdingTotal = withholdingTotal;
+                const grossApplied = parseFloat(preview.gross_applied || 0);
+                const netAmount = Math.round(parseFloat(preview.net_amount || preview.payment_amount || 0));
+                const wtCode = (withholding.entries && withholding.entries[0] && withholding.entries[0].WTCode) ?
+                    withholding.entries[0].WTCode : '1019';
+
+                $('#utility_gross_applied_display').text(formatCurrency(grossApplied));
+                $('#utility_withholding_display').text(formatCurrency(withholdingTotal) + ' (' + wtCode + ')');
+                $('#utility_net_amount_display').text(formatCurrency(netAmount));
+                $('#utilitySapPaymentWithholdingInfoMessage').text(
+                    'Invoice ini mengandung PPh23 sebesar ' + formatCurrency(withholdingTotal) +
+                    ' (kode ' + wtCode + '). Isi jumlah NETTO yang benar-benar dibayar; sistem akan menambahkan PPh23 sehingga invoice lunas penuh di SAP.'
+                );
+                $('#utilitySapPaymentWithholdingInfo').removeClass('d-none');
+                $('#utilitySapPaymentWithholdingBreakdown').removeClass('d-none');
+
+                return netAmount;
             }
 
             function initUtilityAccountSelect() {
@@ -69,13 +110,14 @@
                 const vendor = preview.vendor || {};
                 const account = preview.account || {};
                 const meansLabel = preview.payment_means === 'cash' ? 'Cash' : 'Bank Transfer';
+                const paymentDisplay = preview.net_amount != null ? preview.net_amount : preview.payment_amount;
 
                 $('#utility_preview_vendor').text((vendor.name || '-') + (vendor.code ? ' (' + vendor.code + ')' : ''));
                 $('#utility_preview_ap_doc').text(preview.ap_doc_num || '-');
                 $('#utility_preview_doc_total').text(formatCurrency(preview.doc_total));
                 $('#utility_preview_paid_to_date').text(formatCurrency(preview.paid_to_date));
                 $('#utility_preview_remaining').text(formatCurrency(preview.remaining));
-                $('#utility_preview_payment_amount').text(formatCurrency(preview.payment_amount));
+                $('#utility_preview_payment_amount').text(formatCurrency(paymentDisplay));
                 $('#utility_preview_means_account').text(meansLabel + ' — ' + (account.label || account.account_name || '-'));
                 $('#utility_sap_payment_preview_panel').removeClass('d-none');
             }
@@ -87,7 +129,9 @@
 
                 utilityPreviewReady = false;
                 utilityRemainingBalance = 0;
+                utilityNetRemainingBalance = 0;
                 hideUtilityPaymentError();
+                hideUtilityWithholdingUi();
                 $('#utility_sap_payment_preview_panel').addClass('d-none');
                 $('#utilitySapPaymentSubmitBtn').addClass('d-none').prop('disabled', true);
                 $('#utilitySapPaymentPreviewBtn').prop('disabled', false);
@@ -123,8 +167,11 @@
                 initUtilityAccountSelect();
 
                 $('#utility_fill_remaining_btn').on('click', function() {
-                    if (utilityRemainingBalance > 0) {
-                        $('#utility_payment_amount').val(Math.round(utilityRemainingBalance));
+                    const fillAmount = utilityWithholdingTotal > 0 ?
+                        utilityNetRemainingBalance :
+                        utilityRemainingBalance;
+                    if (fillAmount > 0) {
+                        $('#utility_payment_amount').val(Math.round(fillAmount));
                     }
                 });
 
@@ -152,8 +199,13 @@
                         $('#utility_sap_remaining_value').val(utilityRemainingBalance);
                         $('#utility_remaining_display').text(formatCurrency(utilityRemainingBalance));
 
-                        if (!$('#utility_payment_amount').val()) {
-                            $('#utility_payment_amount').val(Math.round(utilityRemainingBalance));
+                        const defaultNetAmount = renderUtilityWithholdingUi(preview);
+                        utilityNetRemainingBalance = defaultNetAmount !== null ?
+                            defaultNetAmount :
+                            utilityRemainingBalance;
+
+                        if (!$('#utility_payment_amount').val() || defaultNetAmount !== null) {
+                            $('#utility_payment_amount').val(Math.round(utilityNetRemainingBalance));
                         }
 
                         if (preview.account && preview.account.id) {

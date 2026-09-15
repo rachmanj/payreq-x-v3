@@ -1034,6 +1034,26 @@ class InvoicePaymentControllerTest extends TestCase
             ->assertSee(route('bpjs-ap-invoices.print-op', ['bpjsApInvoice' => ':id']), false);
     }
 
+    public function test_index_includes_pph23_withholding_ui_markup(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake($this->ddsDepartmentFake());
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+        $user->givePermissionTo('submit_sap_invoice_payment');
+
+        $this->actingAs($user)
+            ->get(route('cashier.invoice-payment.index'))
+            ->assertOk()
+            ->assertSee('id="sapPaymentWithholdingInfo"', false)
+            ->assertSee('id="sapPaymentWithholdingBreakdown"', false)
+            ->assertSee('Total invoice (bruto)', false)
+            ->assertSee('PPh23 (WTCode 1019)', false)
+            ->assertSee('Dibayar netto', false)
+            ->assertSee('renderSapWithholdingUi', false)
+            ->assertSee('Invoice ini mengandung PPh23 sebesar', false);
+    }
+
     protected function ddsDepartmentFake(): callable
     {
         return function ($request) {

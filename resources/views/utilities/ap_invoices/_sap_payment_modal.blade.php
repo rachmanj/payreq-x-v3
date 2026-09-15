@@ -14,6 +14,14 @@
                 <div class="modal-body">
                     <div id="utilitySapPaymentError" class="vj-alert vj-alert-danger d-none mb-3"></div>
 
+                    <div id="utilitySapPaymentWithholdingInfo" class="vj-alert vj-alert-info d-none mb-3">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>PPh23 — Pemotongan Pajak</strong><br>
+                            <span id="utilitySapPaymentWithholdingInfoMessage"></span>
+                        </div>
+                    </div>
+
                     <div class="row mb-2">
                         <div class="col-md-6">
                             <label class="small text-muted d-block">Vendor Ref. No.</label>
@@ -73,6 +81,24 @@
                                 <label for="utility_payment_remarks">Keterangan</label>
                                 <input type="text" class="form-control" id="utility_payment_remarks" name="remarks"
                                     maxlength="500" placeholder="Opsional">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="utilitySapPaymentWithholdingBreakdown" class="vj-form-panel mb-3 d-none">
+                        <h6 class="mb-2"><i class="fas fa-calculator"></i> Rincian Pembayaran PPh23</h6>
+                        <div class="row small">
+                            <div class="col-md-4">
+                                <p class="mb-1 text-muted">Total invoice (bruto)</p>
+                                <p class="mb-0 font-weight-bold" id="utility_gross_applied_display">-</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1 text-muted">PPh23 (WTCode 1019)</p>
+                                <p class="mb-0 font-weight-bold text-danger" id="utility_withholding_display">-</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1 text-muted">Dibayar netto</p>
+                                <p class="mb-0 font-weight-bold text-success" id="utility_net_amount_display">-</p>
                             </div>
                         </div>
                     </div>

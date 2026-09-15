@@ -352,6 +352,13 @@
                                 <span id="sapPaymentAlreadyPostedMessage"></span>
                             </div>
                         </div>
+                        <div id="sapPaymentWithholdingInfo" class="vj-alert vj-alert-info mb-3 d-none">
+                            <i class="fas fa-info-circle" aria-hidden="true"></i>
+                            <div>
+                                <strong>PPh23 — Pemotongan Pajak</strong><br>
+                                <span id="sapPaymentWithholdingInfoMessage"></span>
+                            </div>
+                        </div>
                         <div id="sapPaymentHistorySection" class="mb-3 d-none">
                             <label class="small text-muted d-block mb-2">Payment History</label>
                             <div class="table-responsive">
@@ -405,6 +412,23 @@
                                     <label for="sap_payment_amount">Amount to Pay <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control text-right" id="sap_payment_amount"
                                         name="payment_amount" min="1" step="1" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="sapPaymentWithholdingBreakdown" class="vj-form-panel mb-3 d-none">
+                            <h6 class="mb-2"><i class="fas fa-calculator" aria-hidden="true"></i> Rincian Pembayaran PPh23</h6>
+                            <div class="row small">
+                                <div class="col-md-4">
+                                    <p class="mb-1 text-muted">Total invoice (bruto)</p>
+                                    <p class="mb-0 font-weight-bold" id="sap_gross_applied_display">-</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-1 text-muted">PPh23 (WTCode 1019)</p>
+                                    <p class="mb-0 font-weight-bold text-danger" id="sap_withholding_display">-</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-1 text-muted">Dibayar netto</p>
+                                    <p class="mb-0 font-weight-bold text-success" id="sap_net_amount_display">-</p>
                                 </div>
                             </div>
                         </div>
@@ -952,6 +976,42 @@
                     '<i class="fas fa-print"></i></a>';
             }
 
+            function hideSapWithholdingUi() {
+                $('#sapPaymentWithholdingInfo').addClass('d-none');
+                $('#sapPaymentWithholdingBreakdown').addClass('d-none');
+                $('#sapPaymentWithholdingInfoMessage').text('');
+                $('#sap_gross_applied_display').text('-');
+                $('#sap_withholding_display').text('-');
+                $('#sap_net_amount_display').text('-');
+            }
+
+            function renderSapWithholdingUi(preview) {
+                const withholding = preview.withholding || {};
+                const withholdingTotal = parseFloat(withholding.total || 0);
+
+                if (withholdingTotal <= 0) {
+                    hideSapWithholdingUi();
+                    return null;
+                }
+
+                const grossApplied = parseFloat(preview.gross_applied || 0);
+                const netAmount = Math.round(parseFloat(preview.net_amount || preview.payment_amount || 0));
+                const wtCode = (withholding.entries && withholding.entries[0] && withholding.entries[0].WTCode) ?
+                    withholding.entries[0].WTCode : '1019';
+
+                $('#sap_gross_applied_display').text(formatCurrency(grossApplied));
+                $('#sap_withholding_display').text(formatCurrency(withholdingTotal) + ' (' + escapeAttr(wtCode) + ')');
+                $('#sap_net_amount_display').text(formatCurrency(netAmount));
+                $('#sapPaymentWithholdingInfoMessage').text(
+                    'Invoice ini mengandung PPh23 sebesar ' + formatCurrency(withholdingTotal) +
+                    ' (kode ' + wtCode + '). Isi jumlah NETTO yang benar-benar dibayar; sistem akan menambahkan PPh23 sehingga invoice lunas penuh di SAP.'
+                );
+                $('#sapPaymentWithholdingInfo').removeClass('d-none');
+                $('#sapPaymentWithholdingBreakdown').removeClass('d-none');
+
+                return netAmount;
+            }
+
             function renderPaymentHistory(history) {
                 const rows = history || [];
                 if (rows.length === 0) {
@@ -1138,6 +1198,7 @@
                 $('#sapPaymentMismatchAlert').addClass('d-none');
                 $('#sapPaymentAlreadyPostedAlert').addClass('d-none');
                 $('#sapPartialPaymentHint').addClass('d-none');
+                hideSapWithholdingUi();
                 $('#sap_close_invoice_in_dds').val(closeInDds ? '1' : '0');
                 $('#sap_close_dds_only').val('0');
                 $('#sap_invoice_id').val(row.id);
@@ -1241,7 +1302,12 @@
                             apInvoice.paid_to_date) : formatCurrency(0));
                         sapRemainingBalance = Math.round(parseFloat(apInvoice.remaining_balance || 0));
                         $('#sap_remaining_balance_display').val(formatCurrency(sapRemainingBalance));
-                        $('#sap_payment_amount').attr('max', sapRemainingBalance).val(sapRemainingBalance);
+
+                        const defaultNetAmount = renderSapWithholdingUi(preview);
+                        const paymentDefault = defaultNetAmount !== null ?
+                            defaultNetAmount :
+                            sapRemainingBalance;
+                        $('#sap_payment_amount').attr('max', sapRemainingBalance).val(paymentDefault);
                         if (invoice.payment_date) {
                             $('#sap_payment_date').val(invoice.payment_date);
                         }
