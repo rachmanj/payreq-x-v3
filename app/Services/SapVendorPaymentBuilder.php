@@ -89,6 +89,8 @@ class SapVendorPaymentBuilder
         $journalRemarks = $this->buildJournalRemarks();
 
         $withholdingTotal = $this->withholdingTotal();
+        // SAP mengaplikasikan PPh23 otomatis dari WTax terbuka di AP invoice; Payment entity
+        // tidak mengenal WithholdingTaxDataCollection (hanya WithholdingTaxDataWTXCollection) -> jangan kirim koleksi WTax.
         $sumApplied = $withholdingTotal > 0 ? $amount + $withholdingTotal : $amount;
 
         $paymentInvoice = [
@@ -96,10 +98,6 @@ class SapVendorPaymentBuilder
             'InvoiceType' => 'it_PurchaseInvoice',
             'SumApplied' => $sumApplied,
         ];
-
-        if ($withholdingTotal > 0) {
-            $paymentInvoice['WithholdingTaxDataCollection'] = $this->withholding['entries'];
-        }
 
         $payment = [
             'CardCode' => $this->partner->code,

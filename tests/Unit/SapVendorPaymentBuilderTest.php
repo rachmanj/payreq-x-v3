@@ -226,7 +226,7 @@ class SapVendorPaymentBuilderTest extends TestCase
         $this->assertSame([], $result['entries']);
     }
 
-    public function test_build_with_open_withholding_tax_applies_gross_sum_and_wtax_collection(): void
+    public function test_build_with_open_withholding_tax_applies_gross_sum_without_wtax_collection(): void
     {
         $this->apInvoice['DocTotal'] = 1831500;
         $this->apInvoice['WithholdingTaxDataCollection'] = [
@@ -249,9 +249,8 @@ class SapVendorPaymentBuilderTest extends TestCase
 
         $this->assertSame(1798500.0, $payload['TransferSum']);
         $this->assertSame(1831500.0, $payload['PaymentInvoices'][0]['SumApplied']);
-        $this->assertSame([
-            ['WTCode' => '1019', 'WTAmount' => 33000.0],
-        ], $payload['PaymentInvoices'][0]['WithholdingTaxDataCollection']);
+        $this->assertArrayNotHasKey('WithholdingTaxDataCollection', $payload);
+        $this->assertArrayNotHasKey('WithholdingTaxDataCollection', $payload['PaymentInvoices'][0]);
     }
 
     public function test_validate_rejects_partial_net_payment_when_withholding_tax_is_open(): void
