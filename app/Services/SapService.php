@@ -618,15 +618,15 @@ class SapService
         return $this->handleSessionExpiration(function () use ($docEntry) {
             try {
                 $entity = $this->outgoingPaymentEntity();
-                $response = $this->client->get("{$entity}({$docEntry})", [
-                    'query' => [
-                        '$select' => $this->vendorPaymentSelectFields(),
-                    ],
-                ]);
+                $response = $this->client->get("{$entity}({$docEntry})");
 
                 $body = json_decode($response->getBody()->getContents(), true);
 
-                return is_array($body) && isset($body['DocEntry']) ? $body : null;
+                if (! is_array($body) || ! isset($body['DocEntry'])) {
+                    return null;
+                }
+
+                return $this->normalizeVendorPaymentHeader($body);
             } catch (RequestException $e) {
                 if ($e->getResponse()?->getStatusCode() === 404) {
                     return null;
@@ -635,6 +635,44 @@ class SapService
                 throw $e;
             }
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    protected function normalizeVendorPaymentHeader(array $body): array
+    {
+        return [
+            'DocEntry' => $body['DocEntry'] ?? null,
+            'DocNum' => $body['DocNum'] ?? '',
+            'DocDate' => $body['DocDate'] ?? '',
+            'CardCode' => trim((string) ($body['CardCode'] ?? '')),
+            'CardName' => trim((string) ($body['CardName'] ?? '')),
+            'CashAccount' => trim((string) ($body['CashAccount'] ?? '')),
+            'CashSum' => (float) ($body['CashSum'] ?? 0),
+            'TransferAccount' => trim((string) ($body['TransferAccount'] ?? '')),
+            'TransferSum' => (float) ($body['TransferSum'] ?? 0),
+            'DocCurrency' => trim((string) ($body['DocCurrency'] ?? 'IDR')) ?: 'IDR',
+            'JournalRemarks' => trim((string) ($body['JournalRemarks'] ?? '')),
+            'ProjectCode' => trim((string) ($body['ProjectCode'] ?? $body['Project'] ?? '')),
+            'CheckBgNo' => $this->resolveVendorPaymentCheckBgNo($body),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     */
+    protected function resolveVendorPaymentCheckBgNo(array $body): string
+    {
+        foreach (['CheckNumber', 'CheckNo', 'BankersGuaranteeNo', 'BGNumber', 'U_CheckNumber', 'U_BGNumber'] as $key) {
+            $value = trim((string) ($body[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -735,11 +773,6 @@ class SapService
                 throw new \Exception('SAP B1 Error: '.$errorMessage, 0, $e);
             }
         });
-    }
-
-    protected function vendorPaymentSelectFields(): string
-    {
-        return 'DocEntry,DocNum,DocDate,CardName,CashSum,TransferSum,CashAccount,TransferAccount,DocCurrency,JournalRemarks,ProjectCode,CheckNumber';
     }
 
     protected function ensurePaymentGlLinesSql(): string

@@ -53,7 +53,7 @@ class OpVoucherService
             'payment_method' => $paymentMethod,
             'currency' => strtoupper(trim((string) ($payment['DocCurrency'] ?? 'IDR'))) ?: 'IDR',
             'bank_acc_no' => $bankAccount,
-            'check_bg_no' => trim((string) ($payment['CheckNumber'] ?? '')),
+            'check_bg_no' => trim((string) ($payment['CheckBgNo'] ?? '')),
             'remarks' => trim((string) ($payment['JournalRemarks'] ?? '')),
         ];
 
