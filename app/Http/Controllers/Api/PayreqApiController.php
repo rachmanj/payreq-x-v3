@@ -13,6 +13,7 @@ use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\User;
 use App\Services\PayreqBudgetSubmitValidator;
+use App\Services\PayreqSubmitLimitService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -215,6 +216,15 @@ class PayreqApiController extends Controller
 
             // Handle submission if requested
             if ($submit) {
+                if ($error = app(PayreqSubmitLimitService::class)->validate($employee)) {
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $error,
+                    ], 422);
+                }
+
                 $payreqForValidation = $payreq->fresh()->load('anggaranAllocations');
 
                 if ($error = app(PayreqBudgetSubmitValidator::class)->validate($payreqForValidation)) {
@@ -391,6 +401,15 @@ class PayreqApiController extends Controller
 
             // Handle submission if requested
             if ($submit) {
+                if ($error = app(PayreqSubmitLimitService::class)->validate($employee)) {
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $error,
+                    ], 422);
+                }
+
                 $payreqForValidation = $payreq->fresh()->load('anggaranAllocations');
 
                 if ($error = app(PayreqBudgetSubmitValidator::class)->validate($payreqForValidation)) {

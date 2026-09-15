@@ -13,6 +13,7 @@ use App\Models\Realization;
 use App\Models\TransferAccount;
 use App\Services\LotService;
 use App\Services\PayreqBudgetSubmitValidator;
+use App\Services\PayreqSubmitLimitService;
 use App\Services\PayreqTransferDestinationService;
 use App\Support\PayreqBudgetLinkMode;
 use App\Support\PayreqPaymentMethod;
@@ -185,11 +186,15 @@ class PayreqAdvanceController extends Controller
 
     public function submit($id)
     {
-        $payreq = Payreq::with('anggaranAllocations')->findOrFail($id);
+        $payreq = Payreq::with(['anggaranAllocations', 'requestor'])->findOrFail($id);
 
         if ($error = app(PayreqBudgetSubmitValidator::class)->validate($payreq)) {
             $payreq->update(['status' => 'draft']);
 
+            return redirect()->route('user-payreqs.index')->with('error', $error);
+        }
+
+        if ($error = app(PayreqSubmitLimitService::class)->validate($payreq->requestor)) {
             return redirect()->route('user-payreqs.index')->with('error', $error);
         }
 

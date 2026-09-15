@@ -16,6 +16,7 @@ use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\TransferAccount;
 use App\Services\PayreqBudgetSubmitValidator;
+use App\Services\PayreqSubmitLimitService;
 use App\Services\PayreqTransferDestinationService;
 use App\Support\PayreqPaymentMethod;
 use Carbon\Carbon;
@@ -167,7 +168,7 @@ class PayreqReimburseController extends Controller
     public function submit_payreq(Request $request)
     {
         $realization = Realization::findOrFail($request->realization_id);
-        $payreq = Payreq::findOrFail($realization->payreq_id);
+        $payreq = Payreq::with('requestor')->findOrFail($realization->payreq_id);
 
         if ($error = app(PayreqBudgetSubmitValidator::class)->validate($payreq)) {
             $payreq->update([
@@ -176,6 +177,10 @@ class PayreqReimburseController extends Controller
                 'deletable' => '1',
             ]);
 
+            return redirect()->route('user-payreqs.index')->with('error', $error);
+        }
+
+        if ($error = app(PayreqSubmitLimitService::class)->validate($payreq->requestor)) {
             return redirect()->route('user-payreqs.index')->with('error', $error);
         }
 
