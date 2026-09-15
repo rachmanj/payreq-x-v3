@@ -86,6 +86,7 @@ class SapVendorPaymentBuilderTest extends TestCase
                 'SumApplied' => 1500000.0,
             ],
         ], $payload['PaymentInvoices']);
+        $this->assertArrayNotHasKey('WithholdingTaxDataCollection', $payload['PaymentInvoices'][0]);
         $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
         $this->assertArrayNotHasKey('Comments', $payload);
         $this->assertSame('John Preparer', $payload['U_MIS_Signature1']);
@@ -198,6 +199,115 @@ class SapVendorPaymentBuilderTest extends TestCase
         $this->assertSame(1000000.0, $preview['ap_invoice']['remaining_balance']);
         $this->assertTrue($preview['is_partial']);
         $this->assertFalse($preview['fully_paid_after']);
+    }
+
+    public function test_open_withholding_tax_sums_only_open_entries(): void
+    {
+        $result = SapVendorPaymentBuilder::openWithholdingTax([
+            'WithholdingTaxDataCollection' => [
+                ['WTCode' => '1019', 'WTAmount' => 33000, 'Status' => 'bost_Open'],
+                ['WTCode' => '1020', 'WTAmount' => 10000, 'Status' => 'bost_Closed'],
+                ['WTCode' => '1021', 'WTAmount' => 5000],
+            ],
+        ]);
+
+        $this->assertSame(38000.0, $result['total']);
+        $this->assertSame([
+            ['WTCode' => '1019', 'WTAmount' => 33000.0],
+            ['WTCode' => '1021', 'WTAmount' => 5000.0],
+        ], $result['entries']);
+    }
+
+    public function test_open_withholding_tax_returns_empty_when_collection_missing(): void
+    {
+        $result = SapVendorPaymentBuilder::openWithholdingTax([]);
+
+        $this->assertSame(0.0, $result['total']);
+        $this->assertSame([], $result['entries']);
+    }
+
+    public function test_build_with_open_withholding_tax_applies_gross_sum_and_wtax_collection(): void
+    {
+        $this->apInvoice['DocTotal'] = 1831500;
+        $this->apInvoice['WithholdingTaxDataCollection'] = [
+            ['WTCode' => '1019', 'WTAmount' => 33000, 'Status' => 'bost_Open'],
+        ];
+
+        $builder = new SapVendorPaymentBuilder(
+            $this->invoice,
+            $this->apInvoice,
+            $this->partner->fresh(),
+            $this->account->fresh(),
+            SapVendorPaymentBuilder::MEANS_TRANSFER,
+            $this->invoice['payment_date'],
+            1798500,
+            'John Preparer',
+            'Jane Approver',
+        );
+
+        $payload = $builder->build();
+
+        $this->assertSame(1798500.0, $payload['TransferSum']);
+        $this->assertSame(1831500.0, $payload['PaymentInvoices'][0]['SumApplied']);
+        $this->assertSame([
+            ['WTCode' => '1019', 'WTAmount' => 33000.0],
+        ], $payload['PaymentInvoices'][0]['WithholdingTaxDataCollection']);
+    }
+
+    public function test_validate_rejects_partial_net_payment_when_withholding_tax_is_open(): void
+    {
+        $this->apInvoice['DocTotal'] = 1831500;
+        $this->apInvoice['WithholdingTaxDataCollection'] = [
+            ['WTCode' => '1019', 'WTAmount' => 33000, 'Status' => 'bost_Open'],
+        ];
+
+        $builder = new SapVendorPaymentBuilder(
+            $this->invoice,
+            $this->apInvoice,
+            $this->partner->fresh(),
+            $this->account->fresh(),
+            SapVendorPaymentBuilder::MEANS_TRANSFER,
+            $this->invoice['payment_date'],
+            1000000,
+            'John Preparer',
+            'Jane Approver',
+        );
+
+        $errors = $builder->validate();
+
+        $this->assertNotEmpty($errors);
+        $this->assertTrue(
+            collect($errors)->contains(fn (string $error) => str_contains($error, 'PPh23'))
+        );
+    }
+
+    public function test_preview_data_includes_withholding_and_gross_applied(): void
+    {
+        $this->apInvoice['DocTotal'] = 1831500;
+        $this->apInvoice['WithholdingTaxDataCollection'] = [
+            ['WTCode' => '1019', 'WTAmount' => 33000, 'Status' => 'bost_Open'],
+        ];
+
+        $builder = new SapVendorPaymentBuilder(
+            $this->invoice,
+            $this->apInvoice,
+            $this->partner->fresh(),
+            $this->account->fresh(),
+            SapVendorPaymentBuilder::MEANS_TRANSFER,
+            $this->invoice['payment_date'],
+            1798500,
+            'John Preparer',
+            'Jane Approver',
+        );
+
+        $preview = $builder->getPreviewData();
+
+        $this->assertSame(33000.0, $preview['withholding']['total']);
+        $this->assertSame('1019', $preview['withholding']['entries'][0]['WTCode']);
+        $this->assertSame(1798500.0, $preview['net_amount']);
+        $this->assertSame(1831500.0, $preview['gross_applied']);
+        $this->assertTrue($preview['fully_paid_after']);
+        $this->assertFalse($preview['is_partial']);
     }
 
     protected function makeBuilder(string $paymentMeans = SapVendorPaymentBuilder::MEANS_TRANSFER): SapVendorPaymentBuilder

@@ -208,6 +208,62 @@ class InvoicePaymentControllerTest extends TestCase
             ->assertJsonPath('accounts.0.sap_account', '11010101');
     }
 
+    public function test_preview_sap_payment_includes_withholding_and_default_net_amount(): void
+    {
+        $this->seedVendorAndAccount();
+
+        $this->mock(SapService::class, function ($mock) {
+            $mock->shouldReceive('getPurchaseInvoiceByNumAtCard')
+                ->once()
+                ->with('INV-WTAX')
+                ->andReturn($this->apInvoiceWithOpenWithholdingTax());
+        });
+
+        $this->actingAs($this->authorizedUser())
+            ->getJson(route('cashier.invoice-payment.sap-payment.preview', [
+                'invoiceId' => 42,
+                'invoice_number' => 'INV-WTAX',
+                'supplier_sap_code' => 'VSUP01',
+                'amount' => 1831500,
+                'payment_date' => '2026-08-20',
+            ]))
+            ->assertOk()
+            ->assertJsonPath('preview.withholding.total', 33000)
+            ->assertJsonPath('preview.withholding.entries.0.WTCode', '1019')
+            ->assertJsonPath('preview.withholding.entries.0.WTAmount', 33000)
+            ->assertJsonPath('preview.net_amount', 1798500)
+            ->assertJsonPath('preview.payment_amount', 1798500)
+            ->assertJsonPath('preview.gross_applied', 1831500)
+            ->assertJsonPath('preview.ap_invoice.remaining_balance', 1831500);
+    }
+
+    public function test_preview_sap_payment_without_withholding_tax_unchanged(): void
+    {
+        $this->seedVendorAndAccount();
+
+        $this->mock(SapService::class, function ($mock) {
+            $mock->shouldReceive('getPurchaseInvoiceByNumAtCard')
+                ->once()
+                ->with('INV-001')
+                ->andReturn($this->openApInvoice());
+        });
+
+        $this->actingAs($this->authorizedUser())
+            ->getJson(route('cashier.invoice-payment.sap-payment.preview', [
+                'invoiceId' => 42,
+                'invoice_number' => 'INV-001',
+                'supplier_sap_code' => 'VSUP01',
+                'amount' => 1500000,
+                'payment_date' => '2026-08-20',
+            ]))
+            ->assertOk()
+            ->assertJsonPath('preview.payment_amount', 1500000)
+            ->assertJsonPath('preview.withholding.total', 0)
+            ->assertJsonPath('preview.withholding.entries', [])
+            ->assertJsonPath('preview.gross_applied', 1500000)
+            ->assertJsonMissingPath('preview.withholdingTax');
+    }
+
     public function test_preview_sap_payment_returns_fully_paid_when_sap_balance_is_zero(): void
     {
         $this->seedVendorAndAccount();
@@ -244,6 +300,36 @@ class InvoicePaymentControllerTest extends TestCase
             ->assertJsonPath('fully_paid', true)
             ->assertJsonPath('preview.ap_invoice.remaining_balance', 0)
             ->assertJsonPath('payment_history.0.doc_num', '11111');
+    }
+
+    public function test_preview_sap_payment_ignores_closed_withholding_tax_entries(): void
+    {
+        $this->seedVendorAndAccount();
+
+        $apInvoice = $this->openApInvoice();
+        $apInvoice['WithholdingTaxDataCollection'] = [
+            ['WTCode' => '1019', 'WTAmount' => 33000, 'Status' => 'bost_Closed'],
+        ];
+
+        $this->mock(SapService::class, function ($mock) use ($apInvoice) {
+            $mock->shouldReceive('getPurchaseInvoiceByNumAtCard')
+                ->once()
+                ->with('INV-001')
+                ->andReturn($apInvoice);
+        });
+
+        $this->actingAs($this->authorizedUser())
+            ->getJson(route('cashier.invoice-payment.sap-payment.preview', [
+                'invoiceId' => 42,
+                'invoice_number' => 'INV-001',
+                'supplier_sap_code' => 'VSUP01',
+                'amount' => 1500000,
+                'payment_date' => '2026-08-20',
+            ]))
+            ->assertOk()
+            ->assertJsonPath('preview.payment_amount', 1500000)
+            ->assertJsonPath('preview.withholding.total', 0)
+            ->assertJsonPath('preview.gross_applied', 1500000);
     }
 
     public function test_submit_sap_payment_logs_success_and_writes_remarks_to_dds(): void
@@ -716,6 +802,30 @@ class InvoicePaymentControllerTest extends TestCase
             'NumAtCard' => 'INV-001',
             'DocTotal' => 1500000,
             'PaidToDate' => 1500000,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function apInvoiceWithOpenWithholdingTax(): array
+    {
+        return [
+            'DocEntry' => 777,
+            'DocNum' => 267007511,
+            'CardCode' => 'VSUP01',
+            'DocumentStatus' => 'bost_Open',
+            'Cancelled' => 'N',
+            'NumAtCard' => 'INV-WTAX',
+            'DocTotal' => 1831500,
+            'PaidToDate' => 0,
+            'WithholdingTaxDataCollection' => [
+                [
+                    'WTCode' => '1019',
+                    'WTAmount' => 33000,
+                    'Status' => 'bost_Open',
+                ],
+            ],
         ];
     }
 

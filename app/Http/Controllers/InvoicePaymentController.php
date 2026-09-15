@@ -286,9 +286,11 @@ class InvoicePaymentController extends Controller
                 ]);
             }
 
+            $withholding = SapVendorPaymentBuilder::openWithholdingTax($apInvoice);
+
             $paymentAmount = $request->filled('payment_amount')
                 ? (float) $request->input('payment_amount')
-                : $remaining;
+                : ($withholding['total'] > 0 ? $remaining - $withholding['total'] : $remaining);
 
             $builder = new SapVendorPaymentBuilder(
                 $invoice,

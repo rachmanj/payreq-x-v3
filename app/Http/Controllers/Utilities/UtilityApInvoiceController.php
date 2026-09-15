@@ -211,7 +211,10 @@ class UtilityApInvoiceController extends Controller
             }
 
             $remaining = $this->remainingFromApInvoice($apInvoice);
-            $paymentAmount = $validated['payment_amount'] ?? $remaining;
+            $withholding = SapVendorPaymentBuilder::openWithholdingTax($apInvoice);
+            $paymentAmount = $validated['payment_amount'] ?? (
+                $withholding['total'] > 0 ? $remaining - $withholding['total'] : $remaining
+            );
 
             $account = $this->resolvePaymentAccount($validated['account_id'] ?? null);
 
@@ -277,7 +280,10 @@ class UtilityApInvoiceController extends Controller
             }
 
             $remaining = $this->remainingFromApInvoice($apInvoice);
-            $paymentAmount = (float) ($validated['payment_amount'] ?? $remaining);
+            $withholding = SapVendorPaymentBuilder::openWithholdingTax($apInvoice);
+            $paymentAmount = (float) ($validated['payment_amount'] ?? (
+                $withholding['total'] > 0 ? $remaining - $withholding['total'] : $remaining
+            ));
 
             $account = $this->resolvePaymentAccount($validated['account_id']);
             if (! $account) {
@@ -578,7 +584,11 @@ class UtilityApInvoiceController extends Controller
             'doc_total' => $apInvoice['doc_total'] ?? null,
             'paid_to_date' => $apInvoice['paid_to_date'] ?? null,
             'remaining' => $apInvoice['remaining_balance'] ?? null,
+            'remaining_balance' => $apInvoice['remaining_balance'] ?? null,
             'payment_amount' => $preview['payment_amount'] ?? null,
+            'net_amount' => $preview['net_amount'] ?? $preview['payment_amount'] ?? null,
+            'withholding' => $preview['withholding'] ?? ['total' => 0.0, 'entries' => []],
+            'gross_applied' => $preview['gross_applied'] ?? $preview['payment_amount'] ?? null,
             'payment_means' => $preview['payment_means'] ?? null,
             'account' => $account,
             'remarks' => $remarks,

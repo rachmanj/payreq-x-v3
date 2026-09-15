@@ -18,6 +18,11 @@ class SapVendorPaymentBuilder
      * @param  array{invoice_number?: string, amount?: float|int|string, payment_date?: string|null, remarks?: string|null}  $invoice
      * @param  array{DocEntry?: int, DocNum?: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, DocTotal?: float|int|string, PaidToDate?: float|int|string}  $apInvoice
      */
+    /**
+     * @var array{total: float, entries: list<array{WTCode: string, WTAmount: float}>}
+     */
+    protected array $withholding;
+
     public function __construct(
         protected array $invoice,
         protected array $apInvoice,
@@ -28,7 +33,49 @@ class SapVendorPaymentBuilder
         protected ?float $paymentAmount = null,
         protected ?string $preparedBy = null,
         protected ?string $approvedBy = null,
-    ) {}
+    ) {
+        $this->withholding = self::openWithholdingTax($apInvoice);
+    }
+
+    /**
+     * @param  array{WithholdingTaxDataCollection?: list<array<string, mixed>>}  $apInvoice
+     * @return array{total: float, entries: list<array{WTCode: string, WTAmount: float}>}
+     */
+    public static function openWithholdingTax(array $apInvoice): array
+    {
+        $collection = $apInvoice['WithholdingTaxDataCollection'] ?? [];
+
+        if (! is_array($collection)) {
+            return ['total' => 0.0, 'entries' => []];
+        }
+
+        $entries = [];
+        $total = 0.0;
+
+        foreach ($collection as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $status = $item['Status'] ?? 'bost_Open';
+            if ($status !== 'bost_Open') {
+                continue;
+            }
+
+            $wtAmount = (float) ($item['WTAmount'] ?? 0);
+            if ($wtAmount <= 0) {
+                continue;
+            }
+
+            $entries[] = [
+                'WTCode' => (string) ($item['WTCode'] ?? ''),
+                'WTAmount' => $wtAmount,
+            ];
+            $total += $wtAmount;
+        }
+
+        return ['total' => $total, 'entries' => $entries];
+    }
 
     /**
      * @return array<string, mixed>
@@ -41,17 +88,24 @@ class SapVendorPaymentBuilder
 
         $journalRemarks = $this->buildJournalRemarks();
 
+        $withholdingTotal = $this->withholdingTotal();
+        $sumApplied = $withholdingTotal > 0 ? $amount + $withholdingTotal : $amount;
+
+        $paymentInvoice = [
+            'DocEntry' => (int) ($this->apInvoice['DocEntry'] ?? 0),
+            'InvoiceType' => 'it_PurchaseInvoice',
+            'SumApplied' => $sumApplied,
+        ];
+
+        if ($withholdingTotal > 0) {
+            $paymentInvoice['WithholdingTaxDataCollection'] = $this->withholding['entries'];
+        }
+
         $payment = [
             'CardCode' => $this->partner->code,
             'DocDate' => $paymentDate,
             'DocType' => 'rSupplier',
-            'PaymentInvoices' => [
-                [
-                    'DocEntry' => (int) ($this->apInvoice['DocEntry'] ?? 0),
-                    'InvoiceType' => 'it_PurchaseInvoice',
-                    'SumApplied' => $amount,
-                ],
-            ],
+            'PaymentInvoices' => [$paymentInvoice],
             'JournalRemarks' => $journalRemarks,
             'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
             'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
@@ -100,7 +154,19 @@ class SapVendorPaymentBuilder
         $errors = array_merge($errors, $this->validateApInvoice());
 
         $remaining = $this->remainingBalance();
-        if ($remaining !== null && $this->paymentAmountValue() > $remaining + self::AMOUNT_TOLERANCE) {
+        $withholdingTotal = $this->withholdingTotal();
+
+        if ($withholdingTotal > 0 && $remaining !== null) {
+            $netAmount = $this->paymentAmountValue();
+            $grossApplied = $netAmount + $withholdingTotal;
+
+            if (abs($grossApplied - $remaining) > self::AMOUNT_TOLERANCE) {
+                $errors[] = 'When PPh23 withholding applies, payment must settle the full invoice balance (net cash + PPh23 = remaining). '
+                    .'Net payment: Rp '.number_format($netAmount, 0, ',', '.')
+                    .', PPh23: Rp '.number_format($withholdingTotal, 0, ',', '.')
+                    .', invoice remaining: Rp '.number_format($remaining, 0, ',', '.').'.';
+            }
+        } elseif ($remaining !== null && $this->paymentAmountValue() > $remaining + self::AMOUNT_TOLERANCE) {
             $errors[] = 'Payment amount exceeds the remaining SAP balance of Rp '.number_format($remaining, 0, ',', '.').'.';
         }
 
@@ -137,6 +203,16 @@ class SapVendorPaymentBuilder
         $paidToDate = $this->paidToDate();
         $remaining = $this->remainingBalance();
         $amountMismatch = $apTotal !== null && abs($apTotal - $this->invoiceAmount()) > self::AMOUNT_TOLERANCE;
+        $withholdingTotal = $this->withholdingTotal();
+        $grossApplied = $amount + $withholdingTotal;
+
+        if ($withholdingTotal > 0 && $remaining !== null) {
+            $isPartial = $grossApplied < $remaining - self::AMOUNT_TOLERANCE;
+            $fullyPaidAfter = $grossApplied >= $remaining - self::AMOUNT_TOLERANCE;
+        } else {
+            $isPartial = $remaining !== null && $amount < $remaining - self::AMOUNT_TOLERANCE;
+            $fullyPaidAfter = $remaining !== null && $amount >= $remaining - self::AMOUNT_TOLERANCE;
+        }
 
         return [
             'invoice' => [
@@ -159,8 +235,11 @@ class SapVendorPaymentBuilder
                 'status' => $this->apInvoice['DocumentStatus'] ?? null,
             ],
             'payment_amount' => $amount,
-            'is_partial' => $remaining !== null && $amount < $remaining - self::AMOUNT_TOLERANCE,
-            'fully_paid_after' => $remaining !== null && $amount >= $remaining - self::AMOUNT_TOLERANCE,
+            'net_amount' => $amount,
+            'withholding' => $this->withholding,
+            'gross_applied' => $grossApplied,
+            'is_partial' => $isPartial,
+            'fully_paid_after' => $fullyPaidAfter,
             'amount_mismatch' => $amountMismatch,
             'payment_means' => $this->paymentMeans,
             'prepared_by' => $this->trimmedSignature($this->preparedBy),
@@ -172,6 +251,11 @@ class SapVendorPaymentBuilder
                 'sap_account' => $this->account->sap_account,
             ] : null,
         ];
+    }
+
+    public function withholdingTotal(): float
+    {
+        return $this->withholding['total'];
     }
 
     public function remainingBalance(): ?float
