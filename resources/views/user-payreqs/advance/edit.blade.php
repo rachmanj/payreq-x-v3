@@ -554,13 +554,20 @@
                         @endif
 
                         <div class="card-footer">
+                            @include('user-payreqs.partials.submit-limit-indicator', [
+                                'submitLimitSummary' => $submitLimitSummary,
+                                'submitLimitBlockedMessage' => $submitLimitBlockedMessage,
+                                'submitLimitUseVjUi' => false,
+                            ])
+
                             <div class="row">
                                 <div class="col-6">
                                     <button type="submit" class="btn btn-primary btn-block" id="btn-draft"><i
                                             class="fas fa-save"></i> Save as Draft</button>
                                 </div>
                                 <div class="col-6">
-                                    <button type="submit" class="btn btn-warning btn-block" id="btn-submit"><i
+                                    <button type="submit" class="btn btn-warning btn-block" id="btn-submit"
+                                        @if ($submitLimitSummary['blocked']) disabled title="{{ $submitLimitBlockedMessage }}" @endif><i
                                             class="fas fa-paper-plane"></i> Save and Submit</button>
                                 </div>
                             </div>

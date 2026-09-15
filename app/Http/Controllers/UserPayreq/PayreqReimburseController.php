@@ -117,7 +117,12 @@ class PayreqReimburseController extends Controller
         $banks = Bank::orderBy('name')->get();
         $transferDestinations = $payreq->transferDestinations()->with('transferAccount.bank')->get();
 
-        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks', 'transferDestinations']));
+        $submitLimitSummary = app(PayreqSubmitLimitService::class)->summary((int) auth()->id());
+        $submitLimitBlockedMessage = $submitLimitSummary['blocked']
+            ? "Kamu masih punya {$submitLimitSummary['count']} payreq menunggu approval (maksimal {$submitLimitSummary['limit']}). Selesaikan dulu sebelum submit payreq baru."
+            : '';
+
+        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks', 'transferDestinations', 'submitLimitSummary', 'submitLimitBlockedMessage']));
     }
 
     public function edit($id)
@@ -133,7 +138,12 @@ class PayreqReimburseController extends Controller
         $banks = Bank::orderBy('name')->get();
         $transferDestinations = $payreq->transferDestinations()->with('transferAccount.bank')->get();
 
-        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks', 'transferDestinations']));
+        $submitLimitSummary = app(PayreqSubmitLimitService::class)->summary((int) auth()->id());
+        $submitLimitBlockedMessage = $submitLimitSummary['blocked']
+            ? "Kamu masih punya {$submitLimitSummary['count']} payreq menunggu approval (maksimal {$submitLimitSummary['limit']}). Selesaikan dulu sebelum submit payreq baru."
+            : '';
+
+        return view('user-payreqs.reimburse.add_details', compact(['payreq', 'equipments', 'realization', 'rabs', 'lotc_detail', 'transferAccounts', 'banks', 'transferDestinations', 'submitLimitSummary', 'submitLimitBlockedMessage']));
     }
 
     public function store_detail(StoreRealizationDetailRequest $request)

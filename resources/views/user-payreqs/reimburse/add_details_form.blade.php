@@ -1,3 +1,12 @@
+@php
+    use App\Services\PayreqSubmitLimitService;
+
+    $submitLimitSummary = app(PayreqSubmitLimitService::class)->summary((int) auth()->id());
+    $submitLimitBlockedMessage = $submitLimitSummary['blocked']
+        ? "Kamu masih punya {$submitLimitSummary['count']} payreq menunggu approval (maksimal {$submitLimitSummary['limit']}). Selesaikan dulu sebelum submit payreq baru."
+        : '';
+@endphp
+
 <div class="row">
     <div class="col-12">
         <div class="card card-info">
@@ -41,12 +50,20 @@
             </div>
             <div class="card-header">
                 <h4 class="card-title">Form</h4>
-                <form action="{{ route('user-payreqs.reimburse.submit_payreq') }}" method="POST">
+                @include('user-payreqs.partials.submit-limit-indicator', [
+                    'submitLimitSummary' => $submitLimitSummary,
+                    'submitLimitBlockedMessage' => $submitLimitBlockedMessage,
+                    'submitLimitUseVjUi' => false,
+                ])
+                <form id="submit-payreq-form" action="{{ route('user-payreqs.reimburse.submit_payreq') }}" method="POST">
                     @csrf
                     @if ($realization->realizationDetails->count() > 0)
                         <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                        <button type="submit" class="btn btn-sm btn-warning float-right mx-2"
-                            onclick="return confirm('Are you sure you want to submit this realization?')"><b>Submit
+                        <button type="submit" id="btn-submit-payreq" class="btn btn-sm btn-warning float-right mx-2"
+                            @if ($submitLimitSummary['blocked']) disabled title="{{ $submitLimitBlockedMessage }}" @endif
+                            @unless ($submitLimitSummary['blocked'])
+                                onclick="return confirm('Are you sure you want to submit this realization?')"
+                            @endunless><b>Submit
                                 Payreq</b></button>
                     @endif
                 </form>

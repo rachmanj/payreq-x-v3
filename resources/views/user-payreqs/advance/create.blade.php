@@ -557,12 +557,18 @@
                             </div>
                         @endif
 
+                        @include('user-payreqs.partials.submit-limit-indicator', [
+                            'submitLimitSummary' => $submitLimitSummary,
+                            'submitLimitBlockedMessage' => $submitLimitBlockedMessage,
+                        ])
+
                         <div class="vj-actions vj-form-actions">
                             <div class="vj-actions-primary">
                                 <button type="submit" class="vj-btn vj-btn-primary" id="btn-draft">
                                     <i class="fas fa-save"></i> Save as Draft
                                 </button>
-                                <button type="submit" class="vj-btn vj-btn-warning" id="btn-submit">
+                                <button type="submit" class="vj-btn vj-btn-warning" id="btn-submit"
+                                    @if ($submitLimitSummary['blocked']) disabled title="{{ $submitLimitBlockedMessage }}" @endif>
                                     <i class="fas fa-paper-plane"></i> Save and Submit
                                 </button>
                             </div>

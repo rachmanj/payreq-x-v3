@@ -156,13 +156,21 @@
                         <h3 class="card-title mb-0">
                             <i class="fas fa-list"></i> Reimbursement Details
                         </h3>
-                        <div class="vj-inline-actions">
+                        <div class="vj-inline-actions flex-wrap">
+                            @include('user-payreqs.partials.submit-limit-indicator', [
+                                'submitLimitSummary' => $submitLimitSummary,
+                                'submitLimitBlockedMessage' => $submitLimitBlockedMessage,
+                            ])
+
                             <form id="submit-payreq-form" action="{{ route('user-payreqs.reimburse.submit_payreq') }}"
-                                method="POST" class="d-inline">
+                                method="POST" class="d-inline"
+                                data-submit-blocked="{{ $submitLimitSummary['blocked'] ? '1' : '0' }}"
+                                data-submit-blocked-message="{{ $submitLimitBlockedMessage }}">
                                 @csrf
                                 @if ($realization->realizationDetails->count() > 0)
                                     <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                                    <button type="button" id="btn-submit-payreq" class="vj-btn vj-btn-warning">
+                                    <button type="button" id="btn-submit-payreq" class="vj-btn vj-btn-warning"
+                                        @if ($submitLimitSummary['blocked']) disabled title="{{ $submitLimitBlockedMessage }}" @endif>
                                         <i class="fas fa-paper-plane"></i> Submit Payreq
                                     </button>
                                 @endif
@@ -899,9 +907,17 @@
             attachSubmitPayreqHandler();
         }
 
+        const payreqSubmitBlocked = $('#submit-payreq-form').data('submit-blocked') === 1
+            || $('#submit-payreq-form').data('submit-blocked') === '1';
+        const payreqSubmitBlockedTitle = $('#submit-payreq-form').attr('data-submit-blocked-message') || '';
+
         // Function to attach handler to submit payreq button
         function attachSubmitPayreqHandler() {
             $('#btn-submit-payreq').off('click').on('click', function() {
+                if ($(this).prop('disabled')) {
+                    return;
+                }
+
                 Swal.fire({
                     title: 'Are you sure?',
                     text: "You are about to submit this payreq. This action cannot be undone!",
@@ -1161,10 +1177,14 @@
 
                             // Enable the submit button if it was disabled
                             if ($('#btn-submit-payreq').length === 0) {
+                                const submitDisabledAttr = payreqSubmitBlocked
+                                    ? ` disabled title="${payreqSubmitBlockedTitle.replace(/"/g, '&quot;')}"`
+                                    : '';
+
                                 // Create the submit button if it doesn't exist
                                 let submitBtn = `
                                     <input type="hidden" name="realization_id" value="{{ $realization->id }}">
-                                    <button type="button" id="btn-submit-payreq" class="vj-btn vj-btn-warning">
+                                    <button type="button" id="btn-submit-payreq" class="vj-btn vj-btn-warning"${submitDisabledAttr}>
                                         <i class="fas fa-paper-plane"></i> Submit Payreq
                                     </button>
                                 `;

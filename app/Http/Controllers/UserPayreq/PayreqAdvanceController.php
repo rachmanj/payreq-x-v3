@@ -34,7 +34,12 @@ class PayreqAdvanceController extends Controller
         $transferAccounts = TransferAccount::where('user_id', Auth::id())->with('bank')->orderBy('label')->get();
         $banks = Bank::orderBy('name')->get();
 
-        return view('user-payreqs.advance.create', compact(['payreq_no', 'rabs', 'transferAccounts', 'banks']));
+        $submitLimitSummary = app(PayreqSubmitLimitService::class)->summary((int) Auth::id());
+        $submitLimitBlockedMessage = $submitLimitSummary['blocked']
+            ? "Kamu masih punya {$submitLimitSummary['count']} payreq menunggu approval (maksimal {$submitLimitSummary['limit']}). Selesaikan dulu sebelum submit payreq baru."
+            : '';
+
+        return view('user-payreqs.advance.create', compact(['payreq_no', 'rabs', 'transferAccounts', 'banks', 'submitLimitSummary', 'submitLimitBlockedMessage']));
     }
 
     public function edit($id)
@@ -47,7 +52,12 @@ class PayreqAdvanceController extends Controller
         $banks = Bank::orderBy('name')->get();
         $transferDestinations = $payreq->transferDestinations()->with('transferAccount.bank')->get();
 
-        return view('user-payreqs.advance.edit', compact(['payreq', 'rabs', 'transferAccounts', 'banks', 'transferDestinations']));
+        $submitLimitSummary = app(PayreqSubmitLimitService::class)->summary((int) Auth::id());
+        $submitLimitBlockedMessage = $submitLimitSummary['blocked']
+            ? "Kamu masih punya {$submitLimitSummary['count']} payreq menunggu approval (maksimal {$submitLimitSummary['limit']}). Selesaikan dulu sebelum submit payreq baru."
+            : '';
+
+        return view('user-payreqs.advance.edit', compact(['payreq', 'rabs', 'transferAccounts', 'banks', 'transferDestinations', 'submitLimitSummary', 'submitLimitBlockedMessage']));
     }
 
     public function proses(ProcessAdvancePayreqRequest $request): \Illuminate\Http\RedirectResponse

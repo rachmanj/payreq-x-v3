@@ -242,6 +242,37 @@ class PayreqSubmitLimitTest extends TestCase
         $blockedResponse->assertSessionHas('error', 'Masih ada 5 payreq kamu yang menunggu approval (maksimal 5). Selesaikan dulu sebelum submit payreq baru.');
     }
 
+    public function test_advance_create_shows_submit_limit_indicator_when_blocked(): void
+    {
+        $user = $this->makeUser('022C');
+        $this->createSubmittedPayreqs($user, 5);
+
+        $response = $this->actingAs($user)->get(route('user-payreqs.advance.create'));
+
+        $response->assertOk();
+        $response->assertSee('Payreq menunggu approval:', false);
+        $response->assertSee('Kamu masih punya 5 payreq menunggu approval (maksimal 5). Selesaikan dulu sebelum submit payreq baru.', false);
+        $response->assertSee('id="btn-submit"', false);
+        $response->assertSee('disabled', false);
+    }
+
+    public function test_reimburse_add_details_disables_submit_when_blocked(): void
+    {
+        $user = $this->makeUser('022C');
+        $anggaran = $this->makeApprovedAnggaran($user);
+        $this->createSubmittedPayreqs($user, 5);
+
+        [$payreq] = $this->makeReimburseDraft($user, $anggaran);
+
+        $response = $this->actingAs($user)->get(route('user-payreqs.reimburse.edit', $payreq->id));
+
+        $response->assertOk();
+        $response->assertSee('Payreq menunggu approval:', false);
+        $response->assertSee('Kamu masih punya 5 payreq menunggu approval (maksimal 5). Selesaikan dulu sebelum submit payreq baru.', false);
+        $response->assertSee('id="btn-submit-payreq"', false);
+        $response->assertSee('disabled', false);
+    }
+
     public function test_api_advance_submit_blocked_at_limit(): void
     {
         $user = $this->makeUser('022C');
