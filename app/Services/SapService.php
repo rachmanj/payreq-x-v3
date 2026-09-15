@@ -722,6 +722,43 @@ class SapService
         return $lines;
     }
 
+    /**
+     * @return array{prj_code: string, doc_num: string}
+     */
+    public function getPaymentHeaderFromSql(string|int $docEntry): array
+    {
+        $this->ensureSession();
+
+        $docEntry = trim((string) $docEntry);
+        if ($docEntry === '') {
+            throw new \InvalidArgumentException('Payment DocEntry is required to fetch payment header.');
+        }
+
+        $sqlCode = $this->ensurePaymentHeaderSql();
+
+        try {
+            $rawRows = $this->executeSqlQuery($sqlCode, ['docEntry' => $docEntry]);
+        } catch (\Throwable $exception) {
+            throw new \RuntimeException(
+                'Failed to fetch Outgoing Payment header from SAP (DocEntry: '.$docEntry.'). '
+                .$exception->getMessage(),
+                0,
+                $exception
+            );
+        }
+
+        if ($rawRows === [] || ! is_array($rawRows[0] ?? null)) {
+            return ['prj_code' => '', 'doc_num' => ''];
+        }
+
+        $row = $rawRows[0];
+
+        return [
+            'prj_code' => trim((string) ($row['PrjCode'] ?? '')),
+            'doc_num' => trim((string) ($row['DocNum'] ?? '')),
+        ];
+    }
+
     public function createOutgoingPayment(array $paymentData): array
     {
         $this->ensureSession();
@@ -786,6 +823,19 @@ class SapService
             .' FROM OVPM T0 INNER JOIN JDT1 T1 ON T1.TransId = T0.TransId'
             .' WHERE T0.DocEntry = :docEntry'
             .' ORDER BY T1.Line_ID'
+        );
+
+        return $sqlCode;
+    }
+
+    protected function ensurePaymentHeaderSql(): string
+    {
+        $sqlCode = 'AO_OPHDR2';
+
+        $this->ensureSqlQuery(
+            $sqlCode,
+            'AccountingOne outgoing payment header',
+            'SELECT T0.PrjCode AS PrjCode, T0.DocNum AS DocNum FROM OVPM T0 WHERE T0.DocEntry = :docEntry'
         );
 
         return $sqlCode;

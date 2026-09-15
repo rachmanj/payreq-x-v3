@@ -35,6 +35,8 @@ class OpVoucherService
             throw new \RuntimeException('Header Outgoing Payment tidak ditemukan di SAP (DocEntry: '.$docEntry.').');
         }
 
+        $paymentHeaderSql = $this->sapService->getPaymentHeaderFromSql($docEntry);
+
         $lines = $this->sapService->getPaymentGlLines($docEntry);
         if ($lines === []) {
             throw new \RuntimeException('Baris akun GL untuk Outgoing Payment tidak ditemukan di SAP (DocEntry: '.$docEntry.').');
@@ -49,7 +51,7 @@ class OpVoucherService
             'payment_for' => trim((string) ($payment['CardName'] ?? '')),
             'voucher_no' => (string) ($payment['DocNum'] ?? ''),
             'voucher_date' => $this->formatVoucherDate($payment['DocDate'] ?? null),
-            'project' => $this->resolveProjectLabel($payment),
+            'project' => $this->resolveProjectLabelFromCode($paymentHeaderSql['prj_code']),
             'payment_method' => $paymentMethod,
             'currency' => strtoupper(trim((string) ($payment['DocCurrency'] ?? 'IDR'))) ?: 'IDR',
             'bank_acc_no' => $bankAccount,
@@ -116,12 +118,9 @@ class OpVoucherService
         return trim((string) ($payment['TransferAccount'] ?? $payment['CashAccount'] ?? ''));
     }
 
-    /**
-     * @param  array<string, mixed>  $payment
-     */
-    protected function resolveProjectLabel(array $payment): string
+    protected function resolveProjectLabelFromCode(string $code): string
     {
-        $code = trim((string) ($payment['ProjectCode'] ?? $payment['Project'] ?? ''));
+        $code = trim($code);
         if ($code === '') {
             return '';
         }

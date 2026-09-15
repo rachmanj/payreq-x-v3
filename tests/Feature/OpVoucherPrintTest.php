@@ -199,4 +199,79 @@ class OpVoucherPrintTest extends TestCase
         $response->assertSee('Rachman J', false);
         $response->assertSee('Dewi Kasir', false);
     }
+
+    public function test_op_voucher_print_preserves_sap_number_format(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo('akses_ap_invoice_bpjs');
+
+        $submitter = User::factory()->create(['name' => 'Kasir Format']);
+        $invoice = BpjsApInvoice::factory()->posted()->create();
+
+        SapSubmissionLog::query()->create([
+            'bpjs_ap_invoice_id' => $invoice->id,
+            'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT,
+            'status' => 'success',
+            'action' => 'submission',
+            'sap_doc_entry' => 268812015,
+            'sap_doc_num' => '268812015',
+            'amount' => 4770000,
+            'submitted_by' => $submitter->id,
+            'user_id' => $submitter->id,
+        ]);
+
+        $voucher = [
+            'header' => [
+                'payment_for' => 'BPJS KESEHATAN',
+                'voucher_no' => '268812015',
+                'voucher_date' => '15-September-2026',
+                'project' => '017C - Project Site C',
+                'payment_method' => 'TRANSFER',
+                'currency' => 'IDR',
+                'bank_acc_no' => '11102001',
+                'check_bg_no' => '',
+                'remarks' => 'Payment OP prod sample',
+            ],
+            'lines' => [
+                [
+                    'account' => '21101001',
+                    'description' => 'Utang BPJS',
+                    'debit' => 4770000,
+                    'credit' => 0,
+                ],
+                [
+                    'account' => '11102001',
+                    'description' => 'Bank Mandiri',
+                    'debit' => 0,
+                    'credit' => 4770000,
+                ],
+            ],
+            'totals' => [
+                'debit' => 4770000,
+                'credit' => 4770000,
+            ],
+            'say' => 'Empat juta tujuh ratus tujuh puluh ribu rupiah',
+            'signatures' => [
+                'reviewed_by_name' => 'Rachman J',
+                'reviewed_by_signature' => 'sign_rj2.png',
+                'checked_by_signature' => 'sign_checked.png',
+                'paid_by_name' => 'Kasir Format',
+                'paid_by_signature' => 'sign_paid.png',
+                'checked_by_name' => null,
+                'received_by_name' => null,
+            ],
+        ];
+
+        $this->mock(OpVoucherService::class, function ($mock) use ($voucher): void {
+            $mock->shouldReceive('build')->once()->andReturn($voucher);
+        });
+
+        $this->mock(SapService::class);
+
+        $response = $this->actingAs($user)
+            ->get(route('bpjs-ap-invoices.print-op', $invoice));
+
+        $response->assertOk();
+        $response->assertSee('4,770,000.00', false);
+    }
 }

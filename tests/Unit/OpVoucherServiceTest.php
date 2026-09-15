@@ -71,6 +71,10 @@ class OpVoucherServiceTest extends TestCase
                 ->once()
                 ->with(501)
                 ->andReturn($paymentHeader);
+            $mock->shouldReceive('getPaymentHeaderFromSql')
+                ->once()
+                ->with(501)
+                ->andReturn(['prj_code' => '000H', 'doc_num' => '88001']);
             $mock->shouldReceive('getPaymentGlLines')
                 ->once()
                 ->with(501)
@@ -148,6 +152,10 @@ class OpVoucherServiceTest extends TestCase
                 ->once()
                 ->with(777)
                 ->andReturn($paymentHeader);
+            $mock->shouldReceive('getPaymentHeaderFromSql')
+                ->once()
+                ->with(777)
+                ->andReturn(['prj_code' => '022C', 'doc_num' => '99001']);
             $mock->shouldReceive('getPaymentGlLines')
                 ->once()
                 ->with(777)
@@ -231,6 +239,10 @@ class OpVoucherServiceTest extends TestCase
                 ->once()
                 ->with(10616)
                 ->andReturn($paymentHeader);
+            $mock->shouldReceive('getPaymentHeaderFromSql')
+                ->once()
+                ->with(10616)
+                ->andReturn(['prj_code' => '000H', 'doc_num' => '88016']);
             $mock->shouldReceive('getPaymentGlLines')
                 ->once()
                 ->with(10616)
@@ -244,5 +256,217 @@ class OpVoucherServiceTest extends TestCase
         $this->assertSame('88016', $voucher['header']['voucher_no']);
         $this->assertSame('BPJS KESEHATAN', $voucher['header']['payment_for']);
         $this->assertEquals(3000000, $voucher['totals']['debit']);
+    }
+
+    public function test_project_label_uses_prj_code_from_sql_query(): void
+    {
+        $submitter = User::factory()->create(['name' => 'Kasir OP']);
+
+        $log = SapSubmissionLog::query()->create([
+            'bpjs_ap_invoice_id' => 3,
+            'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT,
+            'status' => 'success',
+            'action' => 'submission',
+            'sap_doc_entry' => 268812015,
+            'sap_doc_num' => '268812015',
+            'amount' => 4770000,
+            'submitted_by' => $submitter->id,
+            'user_id' => $submitter->id,
+        ]);
+
+        Project::query()->create([
+            'code' => '017C',
+            'sap_code' => '017C',
+            'name' => 'Project Site C',
+            'is_active' => true,
+            'is_selectable' => true,
+        ]);
+
+        $paymentHeader = [
+            'DocEntry' => 268812015,
+            'DocNum' => 268812015,
+            'DocDate' => '2026-09-15',
+            'CardName' => 'BPJS KESEHATAN',
+            'CashSum' => 0,
+            'TransferSum' => 4770000,
+            'TransferAccount' => '11102001',
+            'DocCurrency' => 'IDR',
+            'JournalRemarks' => 'Payment OP prod sample',
+            'ProjectCode' => '000H',
+        ];
+
+        $paymentLines = [
+            [
+                'account' => '21101001',
+                'description' => 'Utang BPJS',
+                'debit' => 4770000,
+                'credit' => 0,
+            ],
+            [
+                'account' => '11102001',
+                'description' => 'Bank Mandiri',
+                'debit' => 0,
+                'credit' => 4770000,
+            ],
+        ];
+
+        $this->mock(SapService::class, function ($mock) use ($paymentHeader, $paymentLines): void {
+            $mock->shouldReceive('getVendorPaymentByDocEntry')
+                ->once()
+                ->with(268812015)
+                ->andReturn($paymentHeader);
+            $mock->shouldReceive('getPaymentHeaderFromSql')
+                ->once()
+                ->with(268812015)
+                ->andReturn(['prj_code' => '017C', 'doc_num' => '268812015']);
+            $mock->shouldReceive('getPaymentGlLines')
+                ->once()
+                ->with(268812015)
+                ->andReturn($paymentLines);
+            $mock->shouldNotReceive('getProjects');
+        });
+
+        $voucher = app(OpVoucherService::class)->build($log);
+
+        $this->assertSame('017C - Project Site C', $voucher['header']['project']);
+        $this->assertEquals(4770000, $voucher['totals']['debit']);
+    }
+
+    public function test_project_is_empty_when_sql_prj_code_is_null(): void
+    {
+        $submitter = User::factory()->create(['name' => 'Kasir OP']);
+
+        $log = SapSubmissionLog::query()->create([
+            'bpjs_ap_invoice_id' => 4,
+            'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT,
+            'status' => 'success',
+            'action' => 'submission',
+            'sap_doc_entry' => 268812015,
+            'sap_doc_num' => '268812015',
+            'amount' => 1000000,
+            'submitted_by' => $submitter->id,
+            'user_id' => $submitter->id,
+        ]);
+
+        Project::query()->create([
+            'code' => '000H',
+            'sap_code' => '000H',
+            'name' => 'HO Balikpapan',
+            'is_active' => true,
+            'is_selectable' => true,
+        ]);
+
+        $paymentHeader = [
+            'DocEntry' => 268812015,
+            'DocNum' => 268812015,
+            'DocDate' => '2026-09-15',
+            'CardName' => 'BPJS KESEHATAN',
+            'CashSum' => 0,
+            'TransferSum' => 1000000,
+            'TransferAccount' => '11102001',
+            'DocCurrency' => 'IDR',
+            'JournalRemarks' => 'Payment tanpa project',
+            'ProjectCode' => '000H',
+        ];
+
+        $paymentLines = [
+            [
+                'account' => '21101001',
+                'description' => 'Utang BPJS',
+                'debit' => 1000000,
+                'credit' => 0,
+            ],
+            [
+                'account' => '11102001',
+                'description' => 'Bank Mandiri',
+                'debit' => 0,
+                'credit' => 1000000,
+            ],
+        ];
+
+        $this->mock(SapService::class, function ($mock) use ($paymentHeader, $paymentLines): void {
+            $mock->shouldReceive('getVendorPaymentByDocEntry')
+                ->once()
+                ->with(268812015)
+                ->andReturn($paymentHeader);
+            $mock->shouldReceive('getPaymentHeaderFromSql')
+                ->once()
+                ->with(268812015)
+                ->andReturn(['prj_code' => '', 'doc_num' => '268812015']);
+            $mock->shouldReceive('getPaymentGlLines')
+                ->once()
+                ->with(268812015)
+                ->andReturn($paymentLines);
+            $mock->shouldNotReceive('getProjects');
+        });
+
+        $voucher = app(OpVoucherService::class)->build($log);
+
+        $this->assertSame('', $voucher['header']['project']);
+    }
+
+    public function test_project_is_empty_when_sql_query_returns_no_rows(): void
+    {
+        $submitter = User::factory()->create(['name' => 'Kasir OP']);
+
+        $log = SapSubmissionLog::query()->create([
+            'bpjs_ap_invoice_id' => 5,
+            'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT,
+            'status' => 'success',
+            'action' => 'submission',
+            'sap_doc_entry' => 99999,
+            'sap_doc_num' => '99999',
+            'amount' => 500000,
+            'submitted_by' => $submitter->id,
+            'user_id' => $submitter->id,
+        ]);
+
+        $paymentHeader = [
+            'DocEntry' => 99999,
+            'DocNum' => 99999,
+            'DocDate' => '2026-09-15',
+            'CardName' => 'BPJS KESEHATAN',
+            'CashSum' => 0,
+            'TransferSum' => 500000,
+            'TransferAccount' => '11102001',
+            'DocCurrency' => 'IDR',
+            'JournalRemarks' => 'Payment tanpa baris SQL header',
+            'ProjectCode' => '000H',
+        ];
+
+        $paymentLines = [
+            [
+                'account' => '21101001',
+                'description' => 'Utang BPJS',
+                'debit' => 500000,
+                'credit' => 0,
+            ],
+            [
+                'account' => '11102001',
+                'description' => 'Bank Mandiri',
+                'debit' => 0,
+                'credit' => 500000,
+            ],
+        ];
+
+        $this->mock(SapService::class, function ($mock) use ($paymentHeader, $paymentLines): void {
+            $mock->shouldReceive('getVendorPaymentByDocEntry')
+                ->once()
+                ->with(99999)
+                ->andReturn($paymentHeader);
+            $mock->shouldReceive('getPaymentHeaderFromSql')
+                ->once()
+                ->with(99999)
+                ->andReturn(['prj_code' => '', 'doc_num' => '']);
+            $mock->shouldReceive('getPaymentGlLines')
+                ->once()
+                ->with(99999)
+                ->andReturn($paymentLines);
+            $mock->shouldNotReceive('getProjects');
+        });
+
+        $voucher = app(OpVoucherService::class)->build($log);
+
+        $this->assertSame('', $voucher['header']['project']);
     }
 }
