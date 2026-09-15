@@ -98,15 +98,10 @@
         }
         .signature-title {
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 0;
         }
         .signature-image {
             height: 48px;
-            object-fit: contain;
-        }
-        .signature-image-print {
-            width: 32mm;
-            height: auto;
             object-fit: contain;
         }
         .signature-name {
@@ -114,7 +109,8 @@
             font-weight: 600;
         }
         .signature-date {
-            margin-top: 28px;
+            margin-top: 3px;
+            margin-bottom: 6px;
             font-size: 11px;
         }
         @media print {
@@ -224,24 +220,24 @@
         <div class="signatures">
             <div class="signature-box">
                 <div class="signature-title">Checked By</div>
-                <img src="{{ asset($voucher['signatures']['checked_by_signature']) }}" alt="Checked By" class="signature-image-print">
-                <div class="signature-date">Date: _______________</div>
+                <div class="signature-date">Date:</div>
+                <img src="{{ asset($voucher['signatures']['checked_by_signature']) }}" alt="Checked By" class="signature-image">
             </div>
             <div class="signature-box">
                 <div class="signature-title">Reviewed By</div>
+                <div class="signature-date">Date:</div>
                 <img src="{{ asset($voucher['signatures']['reviewed_by_signature']) }}" alt="Reviewed By" class="signature-image">
                 <div class="signature-name">{{ $voucher['signatures']['reviewed_by_name'] }}</div>
-                <div class="signature-date">Date: _______________</div>
             </div>
             <div class="signature-box">
                 <div class="signature-title">Paid By</div>
-                <img src="{{ asset($voucher['signatures']['paid_by_signature']) }}" alt="Paid By" class="signature-image-print">
+                <div class="signature-date">Date:</div>
+                <img src="{{ asset($voucher['signatures']['paid_by_signature']) }}" alt="Paid By" class="signature-image">
                 <div class="signature-name">{{ $voucher['signatures']['paid_by_name'] ?: '-' }}</div>
-                <div class="signature-date">Date: _______________</div>
             </div>
             <div class="signature-box">
                 <div class="signature-title">Received By</div>
-                <div class="signature-date">Date: _______________</div>
+                <div class="signature-date">Date:</div>
             </div>
         </div>
     </div>
