@@ -9,6 +9,7 @@ use App\Http\Controllers\Cashier\BilyetTempController;
 use App\Http\Controllers\Cashier\CashierDokumenController;
 use App\Http\Controllers\Cashier\CashierModalController;
 use App\Http\Controllers\Cashier\CashOnHandTransactionController;
+use App\Http\Controllers\Cashier\GeneralOutgoingPaymentController;
 use App\Http\Controllers\Cashier\KoranController;
 use App\Http\Controllers\Cashier\OutgoingAttachmentController;
 use App\Http\Controllers\Cashier\PcbcController;
@@ -241,6 +242,15 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::put('/{id}', [BankTransactionController::class, 'update'])->name('update');
         Route::delete('/{id}', [BankTransactionController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/submit', [BankTransactionController::class, 'submit'])->name('submit');
+    });
+
+    Route::prefix('general-op')->name('general-op.')->middleware('permission:create_general_op')->group(function () {
+        Route::get('/', [GeneralOutgoingPaymentController::class, 'index'])->name('index');
+        Route::get('/data', [GeneralOutgoingPaymentController::class, 'data'])->name('data');
+        Route::get('/create', [GeneralOutgoingPaymentController::class, 'create'])->name('create');
+        Route::post('/preview', [GeneralOutgoingPaymentController::class, 'preview'])->name('preview');
+        Route::post('/submit', [GeneralOutgoingPaymentController::class, 'submit'])->name('submit');
+        Route::get('/{id}/print-op', [GeneralOutgoingPaymentController::class, 'printOp'])->name('print-op');
     });
 
     // INVOICE PAYMENT

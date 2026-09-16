@@ -44,8 +44,9 @@ class OpVoucherService
 
         $totalDebit = array_sum(array_column($lines, 'debit'));
         $totalCredit = array_sum(array_column($lines, 'credit'));
-        $paymentMethod = $this->resolvePaymentMethod($payment);
-        $bankAccount = $this->resolveBankAccount($payment, $paymentMethod);
+        $paymentMethod = $this->resolvePaymentMethod($payment, $opLog);
+        $bankAccount = $this->resolveBankAccount($payment, $paymentMethod, $opLog);
+        $checkBgNo = $this->resolveCheckBgNo($payment, $opLog);
 
         $header = [
             'payment_for' => trim((string) ($payment['CardName'] ?? '')),
@@ -55,7 +56,7 @@ class OpVoucherService
             'payment_method' => $paymentMethod,
             'currency' => strtoupper(trim((string) ($payment['DocCurrency'] ?? 'IDR'))) ?: 'IDR',
             'bank_acc_no' => $bankAccount,
-            'check_bg_no' => trim((string) ($payment['CheckBgNo'] ?? '')),
+            'check_bg_no' => $checkBgNo,
             'remarks' => trim((string) ($payment['JournalRemarks'] ?? '')),
         ];
 
@@ -86,8 +87,12 @@ class OpVoucherService
     /**
      * @param  array<string, mixed>  $payment
      */
-    protected function resolvePaymentMethod(array $payment): string
+    protected function resolvePaymentMethod(array $payment, SapSubmissionLog $opLog): string
     {
+        if ($opLog->document_type === SapSubmissionLog::DOCUMENT_TYPE_GENERAL_OUTGOING_PAYMENT) {
+            return 'CHEQUE';
+        }
+
         $cashSum = (float) ($payment['CashSum'] ?? 0);
         $transferSum = (float) ($payment['TransferSum'] ?? 0);
 
@@ -105,8 +110,15 @@ class OpVoucherService
     /**
      * @param  array<string, mixed>  $payment
      */
-    protected function resolveBankAccount(array $payment, string $paymentMethod): string
+    protected function resolveBankAccount(array $payment, string $paymentMethod, SapSubmissionLog $opLog): string
     {
+        if ($paymentMethod === 'CHEQUE') {
+            $checkAccount = trim((string) ($payment['CheckAccount'] ?? ''));
+            if ($checkAccount !== '') {
+                return $checkAccount;
+            }
+        }
+
         if ($paymentMethod === 'CASH') {
             return trim((string) ($payment['CashAccount'] ?? ''));
         }
@@ -116,6 +128,23 @@ class OpVoucherService
         }
 
         return trim((string) ($payment['TransferAccount'] ?? $payment['CashAccount'] ?? ''));
+    }
+
+    /**
+     * @param  array<string, mixed>  $payment
+     */
+    protected function resolveCheckBgNo(array $payment, SapSubmissionLog $opLog): string
+    {
+        $checkBgNo = trim((string) ($payment['CheckBgNo'] ?? ''));
+        if ($checkBgNo !== '') {
+            return $checkBgNo;
+        }
+
+        if ($opLog->document_type === SapSubmissionLog::DOCUMENT_TYPE_GENERAL_OUTGOING_PAYMENT) {
+            return trim((string) ($payment['CheckNumber'] ?? ''));
+        }
+
+        return '';
     }
 
     protected function resolveProjectLabelFromCode(string $code): string

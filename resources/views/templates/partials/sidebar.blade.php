@@ -202,6 +202,15 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('create_general_op')
+                                <li class="nav-item">
+                                    <a href="{{ route('cashier.general-op.index') }}"
+                                        class="nav-link {{ request()->routeIs('cashier.general-op.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>OP Umum (Pinbuk)</p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('akses_realization_attachments')
                                 <li class="nav-item">
                                     <a href="{{ route('cashier.realization-attachments.index') }}"

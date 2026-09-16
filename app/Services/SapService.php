@@ -662,6 +662,20 @@ class SapService
      */
     protected function normalizeVendorPaymentHeader(array $body): array
     {
+        $checkAccount = '';
+        if (isset($body['PaymentChecks']) && is_array($body['PaymentChecks'])) {
+            foreach ($body['PaymentChecks'] as $check) {
+                if (! is_array($check)) {
+                    continue;
+                }
+
+                $checkAccount = trim((string) ($check['CheckAccount'] ?? ''));
+                if ($checkAccount !== '') {
+                    break;
+                }
+            }
+        }
+
         return [
             'DocEntry' => $body['DocEntry'] ?? null,
             'DocNum' => $body['DocNum'] ?? '',
@@ -676,6 +690,8 @@ class SapService
             'JournalRemarks' => trim((string) ($body['JournalRemarks'] ?? '')),
             'ProjectCode' => trim((string) ($body['ProjectCode'] ?? $body['Project'] ?? '')),
             'CheckBgNo' => $this->resolveVendorPaymentCheckBgNo($body),
+            'CheckAccount' => $checkAccount,
+            'CheckNumber' => $this->resolveVendorPaymentCheckBgNo($body),
         ];
     }
 
@@ -684,6 +700,19 @@ class SapService
      */
     protected function resolveVendorPaymentCheckBgNo(array $body): string
     {
+        if (isset($body['PaymentChecks']) && is_array($body['PaymentChecks'])) {
+            foreach ($body['PaymentChecks'] as $check) {
+                if (! is_array($check)) {
+                    continue;
+                }
+
+                $value = trim((string) ($check['CheckNumber'] ?? ''));
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+
         foreach (['CheckNumber', 'CheckNo', 'BankersGuaranteeNo', 'BGNumber', 'U_CheckNumber', 'U_BGNumber'] as $key) {
             $value = trim((string) ($body[$key] ?? ''));
             if ($value !== '') {

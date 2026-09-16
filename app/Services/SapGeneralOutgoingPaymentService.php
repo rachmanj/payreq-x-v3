@@ -23,6 +23,64 @@ class SapGeneralOutgoingPaymentService
 
     /**
      * @param  list<array{account_id: int, amount: float|int, description?: string|null, profit_center?: string|null}>  $destinationLines
+     * @return array{success: bool, message?: string, preview?: array<string, mixed>, sap_payload?: array<string, mixed>, local_impact?: array<string, mixed>}
+     */
+    public function preview(
+        int $giroId,
+        int $bilyetId,
+        float $amount,
+        string $docDate,
+        string $project,
+        ?string $remarks,
+        array $destinationLines,
+        User $user,
+        ?string $preparedBy = null,
+        ?string $approvedBy = null,
+    ): array {
+        $context = $this->resolveSubmissionContext(
+            $giroId,
+            $bilyetId,
+            $amount,
+            $docDate,
+            $project,
+            $remarks,
+            $destinationLines,
+            $user,
+            $preparedBy,
+            $approvedBy,
+        );
+
+        if (isset($context['error'])) {
+            return ['success' => false, 'message' => $context['error']];
+        }
+
+        $builder = $context['builder'];
+        $errors = $builder->validate();
+        if ($errors !== []) {
+            return ['success' => false, 'message' => implode(' ', $errors)];
+        }
+
+        $destinationAccounts = $context['destination_accounts'];
+
+        return [
+            'success' => true,
+            'preview' => $builder->getPreviewData(),
+            'sap_payload' => $builder->build(),
+            'local_impact' => [
+                'destination_accounts' => array_map(static fn (array $line) => [
+                    'account_id' => $line['account']->id,
+                    'account_name' => $line['account']->account_name,
+                    'sap_account' => $line['account']->sap_account,
+                    'amount' => (float) $line['amount'],
+                ], $destinationAccounts['lines']),
+                'total_amount' => $amount,
+                'note' => 'Saldo kas akan bertambah, akun advance berkurang sesuai nominal tiap akun tujuan.',
+            ],
+        ];
+    }
+
+    /**
+     * @param  list<array{account_id: int, amount: float|int, description?: string|null, profit_center?: string|null}>  $destinationLines
      * @return array{success: bool, message: string, doc_num?: string, general_outgoing_payment_id?: int}
      */
     public function submit(
@@ -52,32 +110,27 @@ class SapGeneralOutgoingPaymentService
             ];
         }
 
-        $giro = Giro::query()->find($giroId);
-        if (! $giro) {
-            return ['success' => false, 'message' => 'Giro tidak ditemukan.'];
-        }
-
-        $bilyet = Bilyet::query()->find($bilyetId);
-        if (! $bilyet) {
-            return ['success' => false, 'message' => 'Bilyet tidak ditemukan.'];
-        }
-
-        $destinationAccounts = $this->resolveDestinationAccounts($destinationLines);
-        if (isset($destinationAccounts['error'])) {
-            return ['success' => false, 'message' => $destinationAccounts['error']];
-        }
-
-        $builder = new SapGeneralOutgoingPaymentBuilder(
-            $giro,
-            $bilyet,
+        $context = $this->resolveSubmissionContext(
+            $giroId,
+            $bilyetId,
             $amount,
             $docDate,
             $project,
             $remarks,
-            $destinationAccounts['lines'],
-            $preparedBy ?? $user->name,
-            $approvedBy ?? $user->name,
+            $destinationLines,
+            $user,
+            $preparedBy,
+            $approvedBy,
         );
+
+        if (isset($context['error'])) {
+            return ['success' => false, 'message' => $context['error']];
+        }
+
+        $giro = $context['giro'];
+        $bilyet = $context['bilyet'];
+        $destinationAccounts = $context['destination_accounts'];
+        $builder = $context['builder'];
 
         $errors = $builder->validate();
         if ($errors !== []) {
@@ -236,6 +289,62 @@ class SapGeneralOutgoingPaymentService
                 $lineAmount,
             );
         }
+    }
+
+    /**
+     * @param  list<array{account_id: int, amount: float|int, description?: string|null, profit_center?: string|null}>  $destinationLines
+     * @return array{
+     *     giro: Giro,
+     *     bilyet: Bilyet,
+     *     destination_accounts: array{lines: list<array{account: Account, amount: float|int, description?: string|null, profit_center?: string|null}>},
+     *     builder: SapGeneralOutgoingPaymentBuilder
+     * }|array{error: string}
+     */
+    protected function resolveSubmissionContext(
+        int $giroId,
+        int $bilyetId,
+        float $amount,
+        string $docDate,
+        string $project,
+        ?string $remarks,
+        array $destinationLines,
+        User $user,
+        ?string $preparedBy = null,
+        ?string $approvedBy = null,
+    ): array {
+        $giro = Giro::query()->find($giroId);
+        if (! $giro) {
+            return ['error' => 'Giro tidak ditemukan.'];
+        }
+
+        $bilyet = Bilyet::query()->find($bilyetId);
+        if (! $bilyet) {
+            return ['error' => 'Bilyet tidak ditemukan.'];
+        }
+
+        $destinationAccounts = $this->resolveDestinationAccounts($destinationLines);
+        if (isset($destinationAccounts['error'])) {
+            return ['error' => $destinationAccounts['error']];
+        }
+
+        $builder = new SapGeneralOutgoingPaymentBuilder(
+            $giro,
+            $bilyet,
+            $amount,
+            $docDate,
+            $project,
+            $remarks,
+            $destinationAccounts['lines'],
+            $preparedBy ?? $user->name,
+            $approvedBy ?? $user->name,
+        );
+
+        return [
+            'giro' => $giro,
+            'bilyet' => $bilyet,
+            'destination_accounts' => $destinationAccounts,
+            'builder' => $builder,
+        ];
     }
 
     /**
