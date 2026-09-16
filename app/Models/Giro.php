@@ -20,4 +20,9 @@ class Giro extends Model
     {
         return $this->hasMany(Bilyet::class);
     }
+
+    public function generalOutgoingPayments()
+    {
+        return $this->hasMany(GeneralOutgoingPayment::class);
+    }
 }

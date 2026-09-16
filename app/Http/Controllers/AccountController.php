@@ -118,8 +118,19 @@ class AccountController extends Controller
             return false;
         }
 
-        $account_cash->app_balance = $account_cash->app_balance + $amount;
-        $account_cash->save();
+        return $this->incomingTo($account_cash, $amount);
+    }
+
+    public function incomingTo(Account $account, float $amount): bool
+    {
+        $account_advance = Account::where('type', 'advance')->where('project', $account->project)->first();
+
+        if (! $account_advance) {
+            return false;
+        }
+
+        $account->app_balance = $account->app_balance + $amount;
+        $account->save();
 
         $account_advance->app_balance = $account_advance->app_balance - $amount;
         $account_advance->save();

@@ -778,6 +778,11 @@ class SapService
         ];
     }
 
+    public function createGeneralOutgoingPayment(array $paymentData): array
+    {
+        return $this->createOutgoingPayment($paymentData);
+    }
+
     public function createOutgoingPayment(array $paymentData): array
     {
         $this->ensureSession();

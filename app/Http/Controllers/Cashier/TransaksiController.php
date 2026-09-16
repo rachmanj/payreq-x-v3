@@ -35,17 +35,40 @@ class TransaksiController extends Controller
 
             return true;
         } else {
-            $transaksi->account_id = Account::where('type', 'cash')->where('project', auth()->user()->project)->first()->id;
-            $transaksi->document_id = $data->id;
-            $transaksi->document_type = 'incoming';
-            $transaksi->posting_date = $data->receive_date;
-            $transaksi->description = $data->description;
-            $transaksi->debit = $data->amount;
-            $transaksi->balance = $last_balance + $data->amount;
-            $transaksi->save();
+            $account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+            $this->storeIncomingForAccount(
+                $account->id,
+                $data->id,
+                'incoming',
+                $data->receive_date,
+                $data->description,
+                (float) $data->amount,
+            );
 
             return true;
         }
+    }
+
+    public function storeIncomingForAccount(
+        int $accountId,
+        int $documentId,
+        string $documentType,
+        string $postingDate,
+        string $description,
+        float $amount,
+    ): void {
+        $latestTransaksi = Transaksi::where('account_id', $accountId)->latest()->first();
+        $lastBalance = $latestTransaksi ? $latestTransaksi->balance : 0;
+
+        $transaksi = new Transaksi;
+        $transaksi->account_id = $accountId;
+        $transaksi->document_id = $documentId;
+        $transaksi->document_type = $documentType;
+        $transaksi->posting_date = $postingDate;
+        $transaksi->description = $description;
+        $transaksi->debit = $amount;
+        $transaksi->balance = $lastBalance + $amount;
+        $transaksi->save();
     }
 
     public function data()

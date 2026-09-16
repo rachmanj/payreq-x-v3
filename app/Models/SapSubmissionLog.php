@@ -21,6 +21,8 @@ class SapSubmissionLog extends Model
 
     public const DOCUMENT_TYPE_AP_OUTGOING_INSTALLMENT = 'ap_outgoing_installment';
 
+    public const DOCUMENT_TYPE_GENERAL_OUTGOING_PAYMENT = 'general_outgoing_payment';
+
     protected $fillable = [
         'verification_journal_id',
         'journal_entry_id',

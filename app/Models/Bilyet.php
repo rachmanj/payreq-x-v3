@@ -19,12 +19,13 @@ class Bilyet extends Model
         'receive_date',
         'amount',
         'remarks',
+        'sap_doc_num',
         'filename',
         'loan_id',
         'purpose',
         'created_by',
         'project',
-        'status'
+        'status',
     ];
 
     protected $casts = [
@@ -36,26 +37,28 @@ class Bilyet extends Model
 
     // Business logic constants
     const STATUSES = ['onhand', 'release', 'cair', 'void'];
+
     const TYPES = ['cek', 'bilyet', 'loa'];
+
     const PURPOSES = ['loan_payment', 'operational', 'other'];
 
     const STATUS_LABELS = [
         'onhand' => 'On Hand',
         'release' => 'Released',
         'cair' => 'Settled',
-        'void' => 'Voided'
+        'void' => 'Voided',
     ];
 
     const TYPE_LABELS = [
         'cek' => 'Check',
         'bilyet' => 'Bilyet Giro',
-        'loa' => 'Letter of Authority'
+        'loa' => 'Letter of Authority',
     ];
 
     const PURPOSE_LABELS = [
         'loan_payment' => 'Loan Payment',
         'operational' => 'Operational Expense',
-        'other' => 'Other'
+        'other' => 'Other',
     ];
 
     // Relationships
@@ -96,7 +99,7 @@ class Bilyet extends Model
             'onhand' => ['release', 'void'],
             'release' => ['cair', 'void'],
             'cair' => [], // Cannot transition from cair
-            'void' => [] // Cannot transition from void
+            'void' => [], // Cannot transition from void
         ];
 
         return in_array($newStatus, $allowedTransitions[$this->status] ?? []);
@@ -119,7 +122,7 @@ class Bilyet extends Model
 
     public function getFullNomorAttribute()
     {
-        return $this->prefix . $this->nomor;
+        return $this->prefix.$this->nomor;
     }
 
     public function isForLoanPayment()
