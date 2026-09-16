@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\Bilyet;
+use App\Models\Department;
 use App\Models\GeneralOutgoingPayment;
 use App\Models\Giro;
 use App\Models\SapSubmissionLog;
@@ -34,7 +35,16 @@ class GeneralOutgoingPaymentControllerTest extends TestCase
 
         Permission::firstOrCreate(['name' => 'create_general_op', 'guard_name' => 'web']);
 
-        $this->user = User::factory()->create(['project' => '000H']);
+        $department = Department::query()->create([
+            'department_name' => 'Accounting',
+            'akronim' => 'ACC',
+            'sap_code' => '30',
+        ]);
+
+        $this->user = User::factory()->create([
+            'project' => '000H',
+            'department_id' => $department->id,
+        ]);
         $this->user->givePermissionTo('create_general_op');
 
         $bankId = DB::table('banks')->insertGetId([
@@ -119,6 +129,8 @@ class GeneralOutgoingPaymentControllerTest extends TestCase
         $response->assertSee('Bilyet (onhand)', false);
         $response->assertSee('Petty Cash', false);
         $response->assertSee('Preview', false);
+        $response->assertSee('Profit Center', false);
+        $response->assertSee('value="30"', false);
     }
 
     public function test_preview_returns_summary_payload(): void
@@ -155,7 +167,56 @@ class GeneralOutgoingPaymentControllerTest extends TestCase
         $response->assertJsonPath('sap_payload.TransferReference', 'JM 130552');
         $response->assertJsonMissing(['sap_payload' => ['PaymentChecks' => []]]);
         $response->assertJsonPath('sap_payload.PaymentAccounts.0.ProfitCenter', '30');
+        $response->assertJsonPath('preview.profit_center', '30');
         $response->assertJsonPath('local_impact.note', 'Saldo kas akan bertambah, akun advance berkurang sesuai nominal tiap akun tujuan.');
+    }
+
+    public function test_preview_uses_op_profit_center_when_provided(): void
+    {
+        $payload = $this->submissionPayload();
+        $payload['profit_center'] = '60';
+
+        $response = $this->actingAs($this->user)
+            ->postJson(route('cashier.general-op.preview'), $payload);
+
+        $response->assertOk();
+        $response->assertJsonPath('sap_payload.PaymentAccounts.0.ProfitCenter', '60');
+        $response->assertJsonPath('preview.profit_center', '60');
+    }
+
+    public function test_preview_uses_line_profit_center_override(): void
+    {
+        $payload = $this->submissionPayload();
+        $payload['profit_center'] = '60';
+        $payload['destination_accounts'][0]['profit_center'] = '140';
+
+        $response = $this->actingAs($this->user)
+            ->postJson(route('cashier.general-op.preview'), $payload);
+
+        $response->assertOk();
+        $response->assertJsonPath('sap_payload.PaymentAccounts.0.ProfitCenter', '140');
+    }
+
+    public function test_preview_fails_when_all_profit_centers_empty(): void
+    {
+        $userWithoutDepartment = User::factory()->create([
+            'project' => '000H',
+            'department_id' => null,
+        ]);
+        $userWithoutDepartment->givePermissionTo('create_general_op');
+
+        $payload = $this->submissionPayload();
+        unset($payload['profit_center']);
+
+        $response = $this->actingAs($userWithoutDepartment)
+            ->postJson(route('cashier.general-op.preview'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('success', false);
+        $this->assertStringContainsString(
+            'Profit Center wajib diisi (default dari departemen user kosong).',
+            (string) $response->json('message'),
+        );
     }
 
     public function test_submit_success_creates_record_and_redirects(): void
@@ -172,6 +233,7 @@ class GeneralOutgoingPaymentControllerTest extends TestCase
             'giro_id' => $this->giro->id,
             'bilyet_id' => $this->bilyet->id,
             'sap_doc_num' => '268811748',
+            'profit_center' => '30',
             'status' => GeneralOutgoingPayment::STATUS_SUCCESS,
         ]);
     }
@@ -298,6 +360,7 @@ class GeneralOutgoingPaymentControllerTest extends TestCase
             'posting_date' => '2026-08-12',
             'project' => '000H',
             'remarks' => 'Operational PC by Payreq & PMT BPJS TK',
+            'profit_center' => '30',
             'destination_accounts' => [
                 [
                     'account_id' => $this->cashAccount->id,

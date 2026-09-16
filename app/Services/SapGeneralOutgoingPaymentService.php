@@ -36,6 +36,7 @@ class SapGeneralOutgoingPaymentService
         User $user,
         ?string $preparedBy = null,
         ?string $approvedBy = null,
+        ?string $profitCenter = null,
     ): array {
         $context = $this->resolveSubmissionContext(
             $giroId,
@@ -48,6 +49,7 @@ class SapGeneralOutgoingPaymentService
             $user,
             $preparedBy,
             $approvedBy,
+            $profitCenter,
         );
 
         if (isset($context['error'])) {
@@ -95,6 +97,7 @@ class SapGeneralOutgoingPaymentService
         User $user,
         ?string $preparedBy = null,
         ?string $approvedBy = null,
+        ?string $profitCenter = null,
     ): array {
         $existingPayment = GeneralOutgoingPayment::query()
             ->where('bilyet_id', $bilyetId)
@@ -121,6 +124,7 @@ class SapGeneralOutgoingPaymentService
             $user,
             $preparedBy,
             $approvedBy,
+            $profitCenter,
         );
 
         if (isset($context['error'])) {
@@ -152,6 +156,7 @@ class SapGeneralOutgoingPaymentService
             $docNum = (string) ($sapResult['doc_num'] ?? '');
             $docEntry = isset($sapResult['doc_entry']) ? (int) $sapResult['doc_entry'] : null;
             $paymentDate = Carbon::parse($docDate);
+            $resolvedOpProfitCenter = $this->trimmedProfitCenter($profitCenter);
 
             $payment = DB::transaction(function () use (
                 $giro,
@@ -162,10 +167,12 @@ class SapGeneralOutgoingPaymentService
                 $postingDate,
                 $project,
                 $remarks,
+                $resolvedOpProfitCenter,
                 $user,
                 $docNum,
                 $docEntry,
                 $paymentDate,
+                $builder,
             ) {
                 $firstSapAccount = (string) $destinationAccounts['lines'][0]['account']->sap_account;
 
@@ -177,6 +184,7 @@ class SapGeneralOutgoingPaymentService
                     'amount' => (int) round($amount),
                     'remarks' => $remarks,
                     'project' => $project,
+                    'profit_center' => $resolvedOpProfitCenter !== '' ? $resolvedOpProfitCenter : null,
                     'akun_tujuan_utama' => $firstSapAccount,
                     'sap_doc_num' => $docNum !== '' ? $docNum : null,
                     'sap_doc_entry' => $docEntry,
@@ -188,6 +196,7 @@ class SapGeneralOutgoingPaymentService
 
                 foreach ($destinationAccounts['lines'] as $line) {
                     $account = $line['account'];
+                    $resolvedLineProfitCenter = $builder->resolveLineProfitCenter($line);
 
                     GeneralOutgoingPaymentAccount::query()->create([
                         'general_outgoing_payment_id' => $payment->id,
@@ -196,7 +205,7 @@ class SapGeneralOutgoingPaymentService
                         'account_name' => $account->account_name,
                         'amount' => (int) round((float) $line['amount']),
                         'description' => $line['description'] ?? null,
-                        'profit_center' => $line['profit_center'] ?? null,
+                        'profit_center' => $resolvedLineProfitCenter !== '' ? $resolvedLineProfitCenter : null,
                     ]);
                 }
 
@@ -311,6 +320,7 @@ class SapGeneralOutgoingPaymentService
         User $user,
         ?string $preparedBy = null,
         ?string $approvedBy = null,
+        ?string $profitCenter = null,
     ): array {
         $giro = Giro::query()->find($giroId);
         if (! $giro) {
@@ -337,7 +347,8 @@ class SapGeneralOutgoingPaymentService
             $destinationAccounts['lines'],
             $preparedBy ?? $user->name,
             $approvedBy ?? $user->name,
-            $this->resolveDefaultProfitCenter($user),
+            $this->trimmedProfitCenter($profitCenter),
+            $this->resolveDepartmentProfitCenter($user),
         );
 
         return [
@@ -348,13 +359,18 @@ class SapGeneralOutgoingPaymentService
         ];
     }
 
-    protected function resolveDefaultProfitCenter(User $user): ?string
+    protected function resolveDepartmentProfitCenter(User $user): ?string
     {
         $user->loadMissing('department');
 
-        $sapCode = trim((string) ($user->department?->sap_code ?? ''));
+        $sapCode = $this->trimmedProfitCenter($user->department?->sap_code);
 
         return $sapCode !== '' ? $sapCode : null;
+    }
+
+    protected function trimmedProfitCenter(?string $value): string
+    {
+        return trim((string) $value);
     }
 
     /**

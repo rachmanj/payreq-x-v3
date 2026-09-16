@@ -67,6 +67,11 @@ class GeneralOutgoingPaymentController extends Controller
             ->editColumn('amount', function (GeneralOutgoingPayment $payment) {
                 return number_format((int) $payment->amount, 0, ',', '.');
             })
+            ->addColumn('profit_center', function (GeneralOutgoingPayment $payment) {
+                return $payment->profit_center
+                    ? '<small>'.e($payment->profit_center).'</small>'
+                    : '<small class="text-muted">-</small>';
+            })
             ->editColumn('status', function (GeneralOutgoingPayment $payment) {
                 $class = $payment->status === GeneralOutgoingPayment::STATUS_SUCCESS ? 'success' : 'danger';
 
@@ -83,7 +88,7 @@ class GeneralOutgoingPaymentController extends Controller
 
                 return $actions !== '' ? '<div class="btn-group">'.$actions.'</div>' : '-';
             })
-            ->rawColumns(['status', 'action'])
+            ->rawColumns(['status', 'action', 'profit_center'])
             ->make(true);
     }
 
@@ -139,6 +144,10 @@ class GeneralOutgoingPaymentController extends Controller
             'label' => $account->account_number.' - '.$account->account_name.' ('.$account->sap_account.')',
         ])->values();
 
+        $user = auth()->user();
+        $user->loadMissing('department');
+        $defaultProfitCenter = trim((string) ($user->department?->sap_code ?? ''));
+
         return view('cashier.general_op.create', compact(
             'giros',
             'bilyets',
@@ -146,6 +155,7 @@ class GeneralOutgoingPaymentController extends Controller
             'project',
             'bilyetsByGiro',
             'cashAccountOptions',
+            'defaultProfitCenter',
         ));
     }
 
@@ -162,6 +172,7 @@ class GeneralOutgoingPaymentController extends Controller
             $validated['remarks'] ?? null,
             $this->normalizeDestinationLines($request),
             $request->user(),
+            profitCenter: $validated['profit_center'] ?? null,
         );
 
         if (! ($result['success'] ?? false)) {
@@ -194,6 +205,7 @@ class GeneralOutgoingPaymentController extends Controller
                 $validated['remarks'] ?? null,
                 $this->normalizeDestinationLines($request),
                 $request->user(),
+                profitCenter: $validated['profit_center'] ?? null,
             );
         } catch (RuntimeException $exception) {
             return back()
@@ -267,15 +279,17 @@ class GeneralOutgoingPaymentController extends Controller
             'posting_date' => ['required', 'date'],
             'project' => ['required', 'string', 'max:10'],
             'remarks' => ['nullable', 'string', 'max:254'],
+            'profit_center' => ['nullable', 'string', 'max:20'],
             'destination_accounts' => ['required', 'array', 'min:1'],
             'destination_accounts.*.account_id' => ['required', 'integer', 'exists:accounts,id'],
             'destination_accounts.*.amount' => ['required', 'numeric', 'min:1'],
             'destination_accounts.*.description' => ['nullable', 'string', 'max:254'],
+            'destination_accounts.*.profit_center' => ['nullable', 'string', 'max:20'],
         ]);
     }
 
     /**
-     * @return list<array{account_id: int, amount: float|int, description?: string|null}>
+     * @return list<array{account_id: int, amount: float|int, description?: string|null, profit_center?: string|null}>
      */
     protected function normalizeDestinationLines(Request $request): array
     {
@@ -290,6 +304,9 @@ class GeneralOutgoingPaymentController extends Controller
                 'account_id' => (int) ($line['account_id'] ?? 0),
                 'amount' => (float) ($line['amount'] ?? 0),
                 'description' => $line['description'] ?? null,
+                'profit_center' => isset($line['profit_center']) && trim((string) $line['profit_center']) !== ''
+                    ? trim((string) $line['profit_center'])
+                    : null,
             ];
         }
 

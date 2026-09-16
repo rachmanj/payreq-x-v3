@@ -73,7 +73,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
 
     public function test_build_payload_matches_verified_sap_shape(): void
     {
-        $builder = $this->makeBuilder();
+        $builder = $this->makeBuilder(departmentProfitCenter: '30');
 
         $this->assertSame([], $builder->validate());
 
@@ -108,7 +108,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
         $this->assertSame('JM 130552', $payload['TransferReference']);
     }
 
-    public function test_build_uses_line_profit_center_before_default(): void
+    public function test_build_uses_line_profit_center_before_op_and_department(): void
     {
         $lines = [
             [
@@ -133,7 +133,8 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
             '000H',
             'Operational PC by Payreq & PMT BPJS TK',
             $lines,
-            defaultProfitCenter: '60',
+            opProfitCenter: '60',
+            departmentProfitCenter: '30',
         );
 
         $payload = $builder->build();
@@ -143,7 +144,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
         $this->assertSame('20', $payload['PaymentAccounts'][1]['ProfitCenter']);
     }
 
-    public function test_build_uses_default_profit_center_from_user_department(): void
+    public function test_build_uses_op_profit_center_when_line_empty(): void
     {
         $builder = new SapGeneralOutgoingPaymentBuilder(
             $this->giro,
@@ -153,13 +154,33 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
             '000H',
             'Operational PC by Payreq & PMT BPJS TK',
             $this->destinationLines(),
-            defaultProfitCenter: '60',
+            opProfitCenter: '60',
+            departmentProfitCenter: '30',
         );
 
         $payload = $builder->build();
 
         $this->assertSame('60', $payload['PaymentAccounts'][0]['ProfitCenter']);
         $this->assertSame('60', $payload['PaymentAccounts'][1]['ProfitCenter']);
+    }
+
+    public function test_build_uses_department_profit_center_when_op_and_line_empty(): void
+    {
+        $builder = new SapGeneralOutgoingPaymentBuilder(
+            $this->giro,
+            $this->bilyet,
+            100934000,
+            '2026-08-12',
+            '000H',
+            'Operational PC by Payreq & PMT BPJS TK',
+            $this->destinationLines(),
+            departmentProfitCenter: '30',
+        );
+
+        $payload = $builder->build();
+
+        $this->assertSame('30', $payload['PaymentAccounts'][0]['ProfitCenter']);
+        $this->assertSame('30', $payload['PaymentAccounts'][1]['ProfitCenter']);
     }
 
     public function test_validate_fails_when_profit_center_missing_without_fallback(): void
@@ -172,20 +193,22 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
             '000H',
             'Operational PC by Payreq & PMT BPJS TK',
             $this->destinationLines(),
-            systemDefaultProfitCenter: '',
         );
 
         $errors = $builder->validate();
 
         $this->assertNotEmpty($errors);
-        $this->assertStringContainsString('Profit Center wajib diisi', implode(' ', $errors));
+        $this->assertStringContainsString(
+            'Profit Center wajib diisi (default dari departemen user kosong).',
+            implode(' ', $errors),
+        );
     }
 
     public function test_validate_fails_when_bilyet_not_onhand(): void
     {
         $this->bilyet->update(['status' => 'cair']);
 
-        $errors = $this->makeBuilder()->validate();
+        $errors = $this->makeBuilder(departmentProfitCenter: '30')->validate();
 
         $this->assertNotEmpty($errors);
         $this->assertStringContainsString('onhand', implode(' ', $errors));
@@ -210,6 +233,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
             '000H',
             'Operational PC by Payreq & PMT BPJS TK',
             $this->destinationLines(),
+            departmentProfitCenter: '30',
         );
 
         $errors = $builder->validate();
@@ -239,6 +263,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
             [
                 ['account' => $bankAccount, 'amount' => 100934000],
             ],
+            departmentProfitCenter: '30',
         );
 
         $errors = $builder->validate();
@@ -264,6 +289,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
             [
                 ['account' => $noSapAccount, 'amount' => 100934000],
             ],
+            departmentProfitCenter: '30',
         );
 
         $errors = $builder->validate();
@@ -284,6 +310,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
                 ['account' => $this->cashAccountA, 'amount' => 50000000],
                 ['account' => $this->cashAccountB, 'amount' => 983500],
             ],
+            departmentProfitCenter: '30',
         );
 
         $errors = $builder->validate();
@@ -305,6 +332,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
                 ['account' => $this->cashAccountA, 'amount' => 50000000],
                 ['account' => $this->cashAccountA, 'amount' => 50934000],
             ],
+            departmentProfitCenter: '30',
         );
 
         $errors = $builder->validate();
@@ -324,7 +352,7 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
         ];
     }
 
-    private function makeBuilder(): SapGeneralOutgoingPaymentBuilder
+    private function makeBuilder(?string $opProfitCenter = null, ?string $departmentProfitCenter = null): SapGeneralOutgoingPaymentBuilder
     {
         return new SapGeneralOutgoingPaymentBuilder(
             $this->giro,
@@ -336,6 +364,8 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
             $this->destinationLines(),
             'Preparer',
             'Approver',
+            $opProfitCenter,
+            $departmentProfitCenter,
         );
     }
 }

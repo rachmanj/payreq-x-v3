@@ -19,8 +19,6 @@ class SapGeneralOutgoingPaymentBuilder
 {
     public const AMOUNT_TOLERANCE = 0.5;
 
-    public const SYSTEM_DEFAULT_PROFIT_CENTER = '30';
-
     /**
      * @param  list<array{account: Account, amount: float|int, description?: string|null, profit_center?: string|null}>  $destinationAccounts
      */
@@ -34,8 +32,8 @@ class SapGeneralOutgoingPaymentBuilder
         protected array $destinationAccounts,
         protected ?string $preparedBy = null,
         protected ?string $approvedBy = null,
-        protected ?string $defaultProfitCenter = null,
-        protected string $systemDefaultProfitCenter = self::SYSTEM_DEFAULT_PROFIT_CENTER,
+        protected ?string $opProfitCenter = null,
+        protected ?string $departmentProfitCenter = null,
     ) {}
 
     /**
@@ -137,7 +135,7 @@ class SapGeneralOutgoingPaymentBuilder
             }
 
             if ($this->resolveLineProfitCenter($line) === '') {
-                $errors[] = "Profit Center wajib diisi untuk akun '{$account->account_name}'.";
+                $errors[] = 'Profit Center wajib diisi (default dari departemen user kosong).';
             }
 
             $seenAccountIds[] = $account->id;
@@ -179,6 +177,7 @@ class SapGeneralOutgoingPaymentBuilder
             'doc_date' => Carbon::parse($this->docDate)->format('Y-m-d'),
             'project' => $this->project,
             'remarks' => $this->remarks,
+            'profit_center' => $this->trimmedProfitCenter($this->opProfitCenter),
             'destination_accounts' => array_map(fn (array $line) => [
                 'account_id' => $line['account']->id,
                 'account_name' => $line['account']->account_name,
@@ -195,19 +194,24 @@ class SapGeneralOutgoingPaymentBuilder
     /**
      * @param  array{account: Account, amount: float|int, description?: string|null, profit_center?: string|null}  $line
      */
-    protected function resolveLineProfitCenter(array $line): string
+    public function resolveLineProfitCenter(array $line): string
     {
-        $lineProfitCenter = trim((string) ($line['profit_center'] ?? ''));
+        $lineProfitCenter = $this->trimmedProfitCenter($line['profit_center'] ?? null);
         if ($lineProfitCenter !== '') {
             return $lineProfitCenter;
         }
 
-        $defaultProfitCenter = trim((string) ($this->defaultProfitCenter ?? ''));
-        if ($defaultProfitCenter !== '') {
-            return $defaultProfitCenter;
+        $opProfitCenter = $this->trimmedProfitCenter($this->opProfitCenter);
+        if ($opProfitCenter !== '') {
+            return $opProfitCenter;
         }
 
-        return trim($this->systemDefaultProfitCenter);
+        return $this->trimmedProfitCenter($this->departmentProfitCenter);
+    }
+
+    protected function trimmedProfitCenter(?string $value): string
+    {
+        return trim((string) $value);
     }
 
     protected function buildTransferReference(): string

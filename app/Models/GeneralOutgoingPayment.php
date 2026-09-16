@@ -23,6 +23,7 @@ class GeneralOutgoingPayment extends Model
         'amount',
         'remarks',
         'project',
+        'profit_center',
         'akun_tujuan_utama',
         'sap_doc_num',
         'sap_doc_entry',

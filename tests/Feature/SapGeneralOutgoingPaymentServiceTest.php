@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\Bilyet;
+use App\Models\Department;
 use App\Models\GeneralOutgoingPayment;
 use App\Models\Giro;
 use App\Models\SapSubmissionLog;
@@ -36,7 +37,16 @@ class SapGeneralOutgoingPaymentServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->user = User::factory()->create(['project' => '000H']);
+        $department = Department::query()->create([
+            'department_name' => 'Accounting',
+            'akronim' => 'ACC',
+            'sap_code' => '30',
+        ]);
+
+        $this->user = User::factory()->create([
+            'project' => '000H',
+            'department_id' => $department->id,
+        ]);
 
         $bankId = DB::table('banks')->insertGetId([
             'name' => 'Mandiri',
@@ -114,6 +124,7 @@ class SapGeneralOutgoingPaymentServiceTest extends TestCase
             'Operational PC by Payreq & PMT BPJS TK',
             $this->destinationPayload(),
             $this->user,
+            profitCenter: '30',
         );
 
         $this->assertTrue($result['success']);
@@ -205,6 +216,7 @@ class SapGeneralOutgoingPaymentServiceTest extends TestCase
             'Operational PC by Payreq & PMT BPJS TK',
             $this->destinationPayload(),
             $this->user,
+            profitCenter: '30',
         );
 
         $this->assertFalse($result['success']);

@@ -32,6 +32,10 @@
                                 <th>Remarks</th>
                                 <td id="preview-remarks">-</td>
                             </tr>
+                            <tr>
+                                <th>Profit Center</th>
+                                <td id="preview-profit-center">-</td>
+                            </tr>
                         </table>
                     </div>
                     <div class="col-md-6">

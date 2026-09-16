@@ -66,6 +66,17 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
+                                    <label for="profit_center">Profit Center</label>
+                                    <input type="text" name="profit_center" id="profit_center" maxlength="20"
+                                        class="form-control @error('profit_center') is-invalid @enderror"
+                                        value="{{ old('profit_center', $defaultProfitCenter) }}"
+                                        placeholder="Default dari departemen user">
+                                    <small class="form-text text-muted">Kosongkan untuk memakai sap_code departemen Anda.</small>
+                                    @error('profit_center')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
                                     <label for="amount">Nominal OP <span class="text-danger">*</span></label>
                                     <input type="number" name="amount" id="amount" min="1" step="1"
                                         class="form-control @error('amount') is-invalid @enderror"
@@ -73,7 +84,7 @@
                                     @error('amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="remarks">Remarks</label>
                                     <input type="text" name="remarks" id="remarks" maxlength="254"
@@ -231,6 +242,7 @@
         $('#preview-doc-date').text(preview.doc_date || '-');
         $('#preview-total').text('Rp ' + formatRupiah(preview.amount || 0));
         $('#preview-remarks').text(preview.remarks || '-');
+        $('#preview-profit-center').text(preview.profit_center || '-');
         $('#preview-local-note').text(localImpact.note || 'Saldo kas akan bertambah, akun advance berkurang.');
 
         const $accountsBody = $('#preview-local-accounts').empty();

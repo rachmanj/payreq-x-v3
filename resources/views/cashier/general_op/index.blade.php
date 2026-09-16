@@ -28,6 +28,7 @@
                                 <th>No. OP SAP</th>
                                 <th>Bank / Giro</th>
                                 <th>Bilyet</th>
+                                <th>PC</th>
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th>Aksi</th>
@@ -64,6 +65,7 @@
                 { data: 'sap_doc_num' },
                 { data: 'bank_giro', orderable: false },
                 { data: 'bilyet', orderable: false },
+                { data: 'profit_center', orderable: false, searchable: false },
                 { data: 'amount', className: 'text-right' },
                 { data: 'status', orderable: false },
                 { data: 'action', orderable: false, searchable: false },
