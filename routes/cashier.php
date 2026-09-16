@@ -91,7 +91,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/{attachment}/reverify', [OutgoingAttachmentController::class, 'reverify'])->name('reverify');
     });
 
-    Route::prefix('modal')->name('modal.')->group(function () {
+    Route::prefix('modal')->name('modal.')->middleware('permission:akses_cashier_modal')->group(function () {
         Route::get('/data', [CashierModalController::class, 'data'])->name('data');
         Route::post('/store', [CashierModalController::class, 'store'])->name('store');
         Route::get('/', [CashierModalController::class, 'index'])->name('index');

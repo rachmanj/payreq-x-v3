@@ -10,6 +10,7 @@ use App\Models\CashierModal;
 use App\Models\Incoming;
 use App\Models\Outgoing;
 use App\Models\User;
+use App\Services\CashierModalToleranceService;
 use Illuminate\Http\Request;
 
 class CashierModalController extends Controller
@@ -23,7 +24,10 @@ class CashierModalController extends Controller
 
         $user_open_modal = CashierModal::where('receiver', auth()->user()->id)->where('status', 'open')->first();
         $cashier_button = $user_open_modal ? false : true;
-        $closing_balance = app(ReportCashierController::class)->dashboard_data()['closing_balance'];
+        $closing_balance = rescue(
+            fn () => app(ReportCashierController::class)->dashboard_data()['closing_balance'],
+            number_format(0, 2),
+        );
 
         return view('cashier.modal.index', compact([
             'cashiers',
@@ -49,13 +53,47 @@ class CashierModalController extends Controller
             abort_unless($request->user()->hasAnyRole(['cashier']), 403);
         }
 
-        // check if submit amount is more than cashier app balance
+        if (! $this->cashAccountExists()) {
+            return redirect()->back()->with('error', 'Akun kas untuk project ini belum tersedia.');
+        }
+
+        if ((int) $request->receiver === (int) auth()->id()) {
+            return redirect()->back()->with('error', 'Penerima tidak boleh diri sendiri.');
+        }
+
+        $typeLabel = strtoupper($request->type);
+        $existingModal = CashierModal::query()
+            ->where('date', $request->date)
+            ->where('type', $request->type)
+            ->where('submitter', auth()->id())
+            ->exists();
+
+        if ($existingModal) {
+            $formattedDate = date('d-M-Y', strtotime($request->date));
+
+            return redirect()->back()->with('error', "{$typeLabel} tanggal {$formattedDate} sudah pernah dibuat.");
+        }
+
         $max_modal = $this->cashier_app_balance();
         if ($request->submit_amount > $max_modal) {
             return redirect()->back()->with('error', 'Jumlah modal yang diberikan tidak boleh melebihi saldo modal kas aplikasi');
         }
 
-        if ($request->type == 'eod') {
+        if ($request->type === 'eod') {
+            $tolerance = app(CashierModalToleranceService::class)->tolerance();
+            $difference = abs($max_modal - $request->submit_amount);
+
+            if ($difference > $tolerance) {
+                $formattedBalance = number_format($max_modal, 0, ',', '.');
+                $formattedSubmitAmount = number_format($request->submit_amount, 0, ',', '.');
+                $formattedTolerance = number_format($tolerance, 0, ',', '.');
+
+                return redirect()->back()->with(
+                    'error',
+                    "Selisih saldo kas aplikasi (Rp {$formattedBalance}) dan jumlah diserahkan (Rp {$formattedSubmitAmount}) melebihi toleransi Rp {$formattedTolerance}."
+                );
+            }
+
             $tx_in = Incoming::select('id', 'cashier_id', 'realization_id', 'receive_date', 'amount', 'description')
                 ->where('receive_date', $request->date)
                 ->where('cashier_id', auth()->user()->id)
@@ -96,7 +134,6 @@ class CashierModalController extends Controller
         $isAdmin = count(array_intersect(['superadmin', 'admin'], $userRoles)) > 0;
         abort_if((int) $modal->receiver !== (int) $request->user()->id && ! $isAdmin, 403, 'Anda bukan penerima modal ini.');
 
-        // if receive_amount is not equal to submit_amount then return error
         if ($request->receive_amount != $modal->submit_amount) {
             return redirect()->back()->with('error', 'Jumlah modal yang diterima harus sama dengan jumlah modal yang diserahkan');
         }
@@ -177,10 +214,21 @@ class CashierModalController extends Controller
             ->toJson();
     }
 
-    public function cashier_app_balance()
+    public function cashier_app_balance(): float
     {
-        $cashier_app_balance = Account::where('project', auth()->user()->project)->where('type', 'cash')->first()->app_balance;
+        $account = Account::query()
+            ->where('project', auth()->user()->project)
+            ->where('type', 'cash')
+            ->first();
 
-        return $cashier_app_balance;
+        return (float) ($account?->app_balance ?? 0);
+    }
+
+    private function cashAccountExists(): bool
+    {
+        return Account::query()
+            ->where('project', auth()->user()->project)
+            ->where('type', 'cash')
+            ->exists();
     }
 }

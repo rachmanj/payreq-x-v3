@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\CashierModal;
+use App\Models\Parameter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -19,6 +21,15 @@ class CashierModalTest extends TestCase
 
         foreach (['superadmin', 'admin', 'head_cashier', 'cashier'] as $roleName) {
             Role::query()->firstOrCreate(['name' => $roleName], ['guard_name' => 'web']);
+        }
+
+        $permission = Permission::query()->firstOrCreate(
+            ['name' => 'akses_cashier_modal', 'guard_name' => 'web'],
+            [],
+        );
+
+        foreach (['superadmin', 'admin', 'head_cashier', 'cashier'] as $roleName) {
+            Role::findByName($roleName)->givePermissionTo($permission);
         }
     }
 
@@ -38,6 +49,7 @@ class CashierModalTest extends TestCase
     {
         $submitter = User::factory()->create(['project' => '000H']);
         $receiver = User::factory()->create(['project' => '000H']);
+        $receiver->assignRole('cashier');
 
         $modal = CashierModal::create([
             'submitter' => $submitter->id,
@@ -68,6 +80,7 @@ class CashierModalTest extends TestCase
         $submitter = User::factory()->create(['project' => '000H']);
         $receiver = User::factory()->create(['project' => '000H']);
         $otherUser = User::factory()->create(['project' => '000H']);
+        $otherUser->assignRole('cashier');
 
         $modal = CashierModal::create([
             'submitter' => $submitter->id,
@@ -93,6 +106,7 @@ class CashierModalTest extends TestCase
     {
         $submitter = User::factory()->create(['project' => '000H']);
         $receiver = User::factory()->create(['project' => '000H']);
+        $receiver->assignRole('cashier');
 
         $modal = CashierModal::create([
             'submitter' => $submitter->id,
@@ -217,5 +231,194 @@ class CashierModalTest extends TestCase
             ->get(route('cashier.modal.data'))
             ->assertOk()
             ->assertJsonPath('recordsTotal', 2);
+    }
+
+    public function test_modal_routes_require_akses_cashier_modal_permission(): void
+    {
+        $userWithoutPermission = User::factory()->create(['project' => '000H']);
+
+        $this->actingAs($userWithoutPermission)
+            ->get(route('cashier.modal.index'))
+            ->assertRedirect()
+            ->assertSessionHas('alert_message');
+
+        $authorizedUser = User::factory()->create(['project' => '000H']);
+        $authorizedUser->assignRole('head_cashier');
+
+        $this->actingAs($authorizedUser)
+            ->get(route('cashier.modal.index'))
+            ->assertOk();
+    }
+
+    public function test_missing_cash_account_does_not_fatal_on_index_and_store_shows_clear_error(): void
+    {
+        $headCashier = User::factory()->create(['project' => '000H']);
+        $headCashier->assignRole('head_cashier');
+
+        $cashier = User::factory()->create(['project' => '000H']);
+
+        $this->actingAs($headCashier)
+            ->get(route('cashier.modal.index'))
+            ->assertOk();
+
+        $this->actingAs($headCashier)
+            ->from(route('cashier.modal.index'))
+            ->post(route('cashier.modal.store'), [
+                'date' => now()->toDateString(),
+                'type' => 'bod',
+                'submit_amount' => 1000000,
+                'receiver' => $cashier->id,
+            ])
+            ->assertRedirect(route('cashier.modal.index'))
+            ->assertSessionHas('error', 'Akun kas untuk project ini belum tersedia.');
+
+        $this->assertSame(0, CashierModal::count());
+    }
+
+    public function test_store_eod_within_tolerance_succeeds(): void
+    {
+        $this->createCashAccount('000H', 1000000);
+
+        $cashier = User::factory()->create(['project' => '000H']);
+        $cashier->assignRole('cashier');
+
+        $receiver = User::factory()->create(['project' => '000H']);
+        $receiver->assignRole('head_cashier');
+
+        $this->actingAs($cashier)
+            ->post(route('cashier.modal.store'), [
+                'date' => now()->toDateString(),
+                'type' => 'eod',
+                'submit_amount' => 999500,
+                'receiver' => $receiver->id,
+            ])
+            ->assertRedirect(route('cashier.modal.index'));
+
+        $this->assertSame(1, CashierModal::count());
+    }
+
+    public function test_store_eod_outside_tolerance_is_rejected_with_amounts_in_message(): void
+    {
+        $this->createCashAccount('000H', 1000000);
+
+        $cashier = User::factory()->create(['project' => '000H']);
+        $cashier->assignRole('cashier');
+
+        $receiver = User::factory()->create(['project' => '000H']);
+        $receiver->assignRole('head_cashier');
+
+        $response = $this->actingAs($cashier)
+            ->from(route('cashier.modal.index'))
+            ->post(route('cashier.modal.store'), [
+                'date' => now()->toDateString(),
+                'type' => 'eod',
+                'submit_amount' => 998000,
+                'receiver' => $receiver->id,
+            ]);
+
+        $response->assertRedirect(route('cashier.modal.index'));
+        $response->assertSessionHas('error');
+
+        $errorMessage = session('error');
+        $this->assertStringContainsString('1.000.000', $errorMessage);
+        $this->assertStringContainsString('998.000', $errorMessage);
+        $this->assertStringContainsString('1.000', $errorMessage);
+        $this->assertSame(0, CashierModal::count());
+    }
+
+    public function test_store_eod_uses_default_tolerance_when_parameter_missing(): void
+    {
+        $this->createCashAccount('000H', 1000000);
+
+        Parameter::query()
+            ->where('name1', 'cashier_modal_tolerance')
+            ->where('name2', 'ALL')
+            ->delete();
+
+        $cashier = User::factory()->create(['project' => '000H']);
+        $cashier->assignRole('cashier');
+
+        $receiver = User::factory()->create(['project' => '000H']);
+        $receiver->assignRole('head_cashier');
+
+        $this->actingAs($cashier)
+            ->from(route('cashier.modal.index'))
+            ->post(route('cashier.modal.store'), [
+                'date' => now()->toDateString(),
+                'type' => 'eod',
+                'submit_amount' => 998000,
+                'receiver' => $receiver->id,
+            ])
+            ->assertRedirect(route('cashier.modal.index'))
+            ->assertSessionHas('error');
+
+        $this->actingAs($cashier)
+            ->post(route('cashier.modal.store'), [
+                'date' => now()->toDateString(),
+                'type' => 'eod',
+                'submit_amount' => 999500,
+                'receiver' => $receiver->id,
+            ])
+            ->assertRedirect(route('cashier.modal.index'));
+
+        $this->assertSame(1, CashierModal::count());
+    }
+
+    public function test_store_duplicate_date_type_submitter_is_rejected(): void
+    {
+        $this->createCashAccount();
+
+        $headCashier = User::factory()->create(['project' => '000H']);
+        $headCashier->assignRole('head_cashier');
+
+        $cashier = User::factory()->create(['project' => '000H']);
+        $cashier->assignRole('cashier');
+
+        $date = now()->toDateString();
+
+        CashierModal::create([
+            'submitter' => $headCashier->id,
+            'receiver' => $cashier->id,
+            'project' => '000H',
+            'date' => $date,
+            'type' => 'bod',
+            'submit_amount' => 1000000,
+            'status' => 'open',
+        ]);
+
+        $this->actingAs($headCashier)
+            ->from(route('cashier.modal.index'))
+            ->post(route('cashier.modal.store'), [
+                'date' => $date,
+                'type' => 'bod',
+                'submit_amount' => 500000,
+                'receiver' => $cashier->id,
+            ])
+            ->assertRedirect(route('cashier.modal.index'))
+            ->assertSessionHas('error');
+
+        $this->assertStringContainsString('BOD', session('error'));
+        $this->assertSame(1, CashierModal::count());
+    }
+
+    public function test_store_receiver_same_as_submitter_is_rejected(): void
+    {
+        $this->createCashAccount();
+
+        $headCashier = User::factory()->create(['project' => '000H']);
+        $headCashier->assignRole('head_cashier');
+
+        $this->actingAs($headCashier)
+            ->from(route('cashier.modal.index'))
+            ->post(route('cashier.modal.store'), [
+                'date' => now()->toDateString(),
+                'type' => 'bod',
+                'submit_amount' => 1000000,
+                'receiver' => $headCashier->id,
+            ])
+            ->assertRedirect(route('cashier.modal.index'))
+            ->assertSessionHas('error', 'Penerima tidak boleh diri sendiri.');
+
+        $this->assertSame(0, CashierModal::count());
     }
 }
