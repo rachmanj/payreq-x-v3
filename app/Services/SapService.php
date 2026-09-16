@@ -193,29 +193,48 @@ class SapService
 
     protected function findReversalJournalNumber(string $jdtNum): ?string
     {
+        // SAP storno JE Memo pattern: '<original memo>(Reversal) - <original JdtNum>'
+        $filter = "contains(Memo,'(Reversal) - {$jdtNum}')";
+        $baseQuery = [
+            '$filter' => $filter,
+            '$top' => 1,
+            '$orderby' => 'JdtNum desc',
+        ];
+
+        $selectQuery = $baseQuery + ['$select' => 'Number,JdtNum,Memo'];
+
         try {
-            $response = $this->client->get('JournalEntries', [
-                'query' => [
-                    '$filter' => 'StornoToTr eq '.$jdtNum,
-                    '$top' => 1,
-                    '$select' => 'Number,JdtNum,StornoToTr',
-                ],
-            ]);
-
-            $body = json_decode($response->getBody()->getContents(), true);
-            $items = $body['value'] ?? [];
-
-            if (! empty($items[0])) {
-                return $this->extractJournalNumber($items[0]);
-            }
+            $items = $this->fetchReversalJournalEntries($selectQuery);
         } catch (\Throwable $e) {
-            Log::warning('Could not look up SAP B1 reversal journal number', [
-                'jdt_num' => $jdtNum,
-                'error' => $e->getMessage(),
-            ]);
+            try {
+                $items = $this->fetchReversalJournalEntries($baseQuery);
+            } catch (\Throwable $retryException) {
+                Log::warning('Could not look up SAP B1 reversal journal number', [
+                    'jdt_num' => $jdtNum,
+                    'error' => $retryException->getMessage(),
+                ]);
+
+                return null;
+            }
+        }
+
+        if (! empty($items[0])) {
+            return $this->extractJournalNumber($items[0]);
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<string, int|string>  $query
+     * @return array<int, array<string, mixed>>
+     */
+    protected function fetchReversalJournalEntries(array $query): array
+    {
+        $response = $this->client->get('JournalEntries', ['query' => $query]);
+        $body = json_decode($response->getBody()->getContents(), true);
+
+        return $body['value'] ?? [];
     }
 
     protected function extractErrorMessage(RequestException $e): string
