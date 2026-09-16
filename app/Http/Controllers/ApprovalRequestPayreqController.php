@@ -35,7 +35,13 @@ class ApprovalRequestPayreqController extends Controller
         $realization_details = $realization->realizationDetails()->with('activity')->get();
         $departments = Department::orderBy('department_name')->get();
         $projects = Project::where('is_active', 1)->orderBy('code')->get();
-        $openActivities = $this->openActivitiesForProject($realization->project);
+        $projectsForActivities = collect([$realization->project])
+            ->merge($realization_details->pluck('project'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $openActivities = $this->openActivitiesForProjects($projectsForActivities);
         $showActivityColumn = $payreq->type === 'reimburse';
         $activityLocked = ! $this->canUpdateActivityOnPlan($document);
         $activityModalOptions = auth()->user()->can('manage_activities')

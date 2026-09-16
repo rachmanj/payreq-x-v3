@@ -16,12 +16,26 @@ trait HandlesApprovalActivityDetails
      */
     protected function openActivitiesForProject(?string $project)
     {
+        return $this->openActivitiesForProjects(filled($project) ? [$project] : []);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, Activity>
+     */
+    protected function openActivitiesForProjects(iterable $projects)
+    {
+        $projectCodes = collect($projects)
+            ->filter(fn ($project) => filled($project))
+            ->unique()
+            ->values()
+            ->all();
+
         return Activity::query()
             ->open()
-            ->where(function ($query) use ($project) {
+            ->where(function ($query) use ($projectCodes) {
                 $query->whereNull('project');
-                if ($project) {
-                    $query->orWhere('project', $project);
+                if ($projectCodes !== []) {
+                    $query->orWhereIn('project', $projectCodes);
                 }
             })
             ->orderBy('code')

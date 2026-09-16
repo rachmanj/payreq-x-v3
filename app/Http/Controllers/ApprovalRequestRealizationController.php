@@ -30,7 +30,13 @@ class ApprovalRequestRealizationController extends Controller
         $payreq->load('outgoings');
         $departments = Department::orderBy('department_name')->get();
         $projects = Project::where('is_active', 1)->orderBy('code')->get();
-        $openActivities = $this->openActivitiesForProject($realization->project);
+        $projectsForActivities = collect([$realization->project])
+            ->merge($document_details->pluck('project'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $openActivities = $this->openActivitiesForProjects($projectsForActivities);
         $showActivityColumn = true;
         $activityLocked = ! $this->canUpdateActivityOnPlan($document);
         $activityModalOptions = auth()->user()->can('manage_activities')
