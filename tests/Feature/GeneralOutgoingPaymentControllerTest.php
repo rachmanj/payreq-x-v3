@@ -139,7 +139,10 @@ class GeneralOutgoingPaymentControllerTest extends TestCase
             ],
             'sap_payload' => [
                 'DocType',
-                'PaymentChecks',
+                'TransferAccount',
+                'TransferSum',
+                'TransferDate',
+                'TransferReference',
                 'PaymentAccounts',
             ],
             'local_impact' => [
@@ -149,6 +152,9 @@ class GeneralOutgoingPaymentControllerTest extends TestCase
         ]);
         $response->assertJsonPath('preview.bilyet.nomor', '130552');
         $response->assertJsonPath('sap_payload.DocType', 'rAccount');
+        $response->assertJsonPath('sap_payload.TransferReference', 'JM 130552');
+        $response->assertJsonMissing(['sap_payload' => ['PaymentChecks' => []]]);
+        $response->assertJsonPath('sap_payload.PaymentAccounts.0.ProfitCenter', '30');
         $response->assertJsonPath('local_impact.note', 'Saldo kas akan bertambah, akun advance berkurang sesuai nominal tiap akun tujuan.');
     }
 

@@ -8,9 +8,18 @@ use App\Models\GeneralOutgoingPayment;
 use App\Models\Giro;
 use Carbon\Carbon;
 
+/**
+ * Outgoing Payment Umum (pinbuk bank → cash).
+ *
+ * Sisi bank memakai TransferAccount/TransferSum (bukan PaymentChecks).
+ * Integrasi cheque register SAP (PaymentChecks) belum didukung — ditolak SL (ODBC -2028).
+ * Nomor bilyet dicatat di TransferReference dan remarks.
+ */
 class SapGeneralOutgoingPaymentBuilder
 {
     public const AMOUNT_TOLERANCE = 0.5;
+
+    public const SYSTEM_DEFAULT_PROFIT_CENTER = '30';
 
     /**
      * @param  list<array{account: Account, amount: float|int, description?: string|null, profit_center?: string|null}>  $destinationAccounts
@@ -25,6 +34,8 @@ class SapGeneralOutgoingPaymentBuilder
         protected array $destinationAccounts,
         protected ?string $preparedBy = null,
         protected ?string $approvedBy = null,
+        protected ?string $defaultProfitCenter = null,
+        protected string $systemDefaultProfitCenter = self::SYSTEM_DEFAULT_PROFIT_CENTER,
     ) {}
 
     /**
@@ -34,20 +45,23 @@ class SapGeneralOutgoingPaymentBuilder
     {
         $docDate = Carbon::parse($this->docDate)->format('Y-m-d');
         $firstAccount = $this->destinationAccounts[0]['account'];
-        $remarks = mb_substr(trim((string) ($this->remarks ?? '')), 0, 254);
+        $remarks = $this->buildRemarksWithBilyet();
         $journalRemarks = $this->buildJournalRemarks();
+        $transferReference = $this->buildTransferReference();
 
         $paymentAccounts = [];
         foreach ($this->destinationAccounts as $line) {
             $account = $line['account'];
             $lineDescription = mb_substr(trim((string) ($line['description'] ?? $remarks)), 0, 254);
-            $projectCode = trim((string) ($line['profit_center'] ?? $this->project));
+            $profitCenter = $this->resolveLineProfitCenter($line);
 
             $paymentAccounts[] = [
                 'AccountCode' => (string) $account->sap_account,
                 'SumPaid' => (float) $line['amount'],
                 'Decription' => $lineDescription,
-                'ProjectCode' => $projectCode !== '' ? $projectCode : $this->project,
+                'ProjectCode' => $this->project,
+                'ProfitCenter' => $profitCenter,
+                'U_MIS_CCDepartment' => $profitCenter,
             ];
         }
 
@@ -59,16 +73,10 @@ class SapGeneralOutgoingPaymentBuilder
             'ProjectCode' => $this->project,
             'Remarks' => $remarks,
             'PaymentAccounts' => $paymentAccounts,
-            'PaymentChecks' => [
-                [
-                    'CheckAccount' => (string) $this->giro->sap_account,
-                    'CheckNumber' => (string) $this->bilyet->nomor,
-                    'CheckSum' => $this->amount,
-                    'DueDate' => $docDate,
-                    'Currency' => 'IDR',
-                    'ManualCheck' => 'tYES',
-                ],
-            ],
+            'TransferAccount' => (string) $this->giro->sap_account,
+            'TransferSum' => $this->amount,
+            'TransferDate' => $docDate,
+            'TransferReference' => $transferReference,
             'JournalRemarks' => $journalRemarks,
             'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
             'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
@@ -128,6 +136,10 @@ class SapGeneralOutgoingPaymentBuilder
                 $errors[] = "Akun tujuan '{$account->account_name}' tidak boleh duplikat.";
             }
 
+            if ($this->resolveLineProfitCenter($line) === '') {
+                $errors[] = "Profit Center wajib diisi untuk akun '{$account->account_name}'.";
+            }
+
             $seenAccountIds[] = $account->id;
             $totalDestination += $lineAmount;
         }
@@ -167,17 +179,57 @@ class SapGeneralOutgoingPaymentBuilder
             'doc_date' => Carbon::parse($this->docDate)->format('Y-m-d'),
             'project' => $this->project,
             'remarks' => $this->remarks,
-            'destination_accounts' => array_map(static fn (array $line) => [
+            'destination_accounts' => array_map(fn (array $line) => [
                 'account_id' => $line['account']->id,
                 'account_name' => $line['account']->account_name,
                 'sap_account' => $line['account']->sap_account,
                 'amount' => (float) $line['amount'],
                 'description' => $line['description'] ?? null,
-                'profit_center' => $line['profit_center'] ?? null,
+                'profit_center' => $this->resolveLineProfitCenter($line),
             ], $this->destinationAccounts),
             'prepared_by' => $this->trimmedSignature($this->preparedBy),
             'approved_by' => $this->trimmedSignature($this->approvedBy),
         ];
+    }
+
+    /**
+     * @param  array{account: Account, amount: float|int, description?: string|null, profit_center?: string|null}  $line
+     */
+    protected function resolveLineProfitCenter(array $line): string
+    {
+        $lineProfitCenter = trim((string) ($line['profit_center'] ?? ''));
+        if ($lineProfitCenter !== '') {
+            return $lineProfitCenter;
+        }
+
+        $defaultProfitCenter = trim((string) ($this->defaultProfitCenter ?? ''));
+        if ($defaultProfitCenter !== '') {
+            return $defaultProfitCenter;
+        }
+
+        return trim($this->systemDefaultProfitCenter);
+    }
+
+    protected function buildTransferReference(): string
+    {
+        return mb_substr(trim($this->bilyet->prefix.' '.$this->bilyet->nomor), 0, 254);
+    }
+
+    protected function buildRemarksWithBilyet(): string
+    {
+        $base = trim((string) ($this->remarks ?? ''));
+        $bilyetLabel = trim($this->bilyet->prefix.' '.$this->bilyet->nomor);
+        $suffix = 'Bilyet '.$bilyetLabel;
+
+        if ($base === '') {
+            return mb_substr($suffix, 0, 254);
+        }
+
+        if (str_contains($base, $bilyetLabel)) {
+            return mb_substr($base, 0, 254);
+        }
+
+        return mb_substr($base.' - '.$suffix, 0, 254);
     }
 
     protected function buildJournalRemarks(): string

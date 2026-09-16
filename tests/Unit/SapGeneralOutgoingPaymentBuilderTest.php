@@ -84,24 +84,101 @@ class SapGeneralOutgoingPaymentBuilderTest extends TestCase
         $this->assertSame('2026-08-12', $payload['DocDate']);
         $this->assertSame('IDR', $payload['DocCurrency']);
         $this->assertSame('000H', $payload['ProjectCode']);
-        $this->assertSame('Operational PC by Payreq & PMT BPJS TK', $payload['Remarks']);
+        $this->assertSame(
+            'Operational PC by Payreq & PMT BPJS TK - Bilyet JM 130552',
+            $payload['Remarks'],
+        );
 
         $this->assertCount(2, $payload['PaymentAccounts']);
         $this->assertSame('11101001', $payload['PaymentAccounts'][0]['AccountCode']);
         $this->assertSame(99950500.0, $payload['PaymentAccounts'][0]['SumPaid']);
         $this->assertArrayHasKey('Decription', $payload['PaymentAccounts'][0]);
         $this->assertSame('000H', $payload['PaymentAccounts'][0]['ProjectCode']);
+        $this->assertSame('30', $payload['PaymentAccounts'][0]['ProfitCenter']);
+        $this->assertSame('30', $payload['PaymentAccounts'][0]['U_MIS_CCDepartment']);
 
         $this->assertSame('11101020', $payload['PaymentAccounts'][1]['AccountCode']);
         $this->assertSame(983500.0, $payload['PaymentAccounts'][1]['SumPaid']);
+        $this->assertSame('30', $payload['PaymentAccounts'][1]['ProfitCenter']);
 
-        $this->assertCount(1, $payload['PaymentChecks']);
-        $this->assertSame('11201001', $payload['PaymentChecks'][0]['CheckAccount']);
-        $this->assertSame('130552', $payload['PaymentChecks'][0]['CheckNumber']);
-        $this->assertSame(100934000.0, $payload['PaymentChecks'][0]['CheckSum']);
-        $this->assertSame('2026-08-12', $payload['PaymentChecks'][0]['DueDate']);
-        $this->assertSame('IDR', $payload['PaymentChecks'][0]['Currency']);
-        $this->assertSame('tYES', $payload['PaymentChecks'][0]['ManualCheck']);
+        $this->assertArrayNotHasKey('PaymentChecks', $payload);
+        $this->assertSame('11201001', $payload['TransferAccount']);
+        $this->assertSame(100934000.0, $payload['TransferSum']);
+        $this->assertSame('2026-08-12', $payload['TransferDate']);
+        $this->assertSame('JM 130552', $payload['TransferReference']);
+    }
+
+    public function test_build_uses_line_profit_center_before_default(): void
+    {
+        $lines = [
+            [
+                'account' => $this->cashAccountA,
+                'amount' => 99950500,
+                'description' => 'Petty Cash line',
+                'profit_center' => '140',
+            ],
+            [
+                'account' => $this->cashAccountB,
+                'amount' => 983500,
+                'description' => 'Intransit line',
+                'profit_center' => '20',
+            ],
+        ];
+
+        $builder = new SapGeneralOutgoingPaymentBuilder(
+            $this->giro,
+            $this->bilyet,
+            100934000,
+            '2026-08-12',
+            '000H',
+            'Operational PC by Payreq & PMT BPJS TK',
+            $lines,
+            defaultProfitCenter: '60',
+        );
+
+        $payload = $builder->build();
+
+        $this->assertSame('140', $payload['PaymentAccounts'][0]['ProfitCenter']);
+        $this->assertSame('140', $payload['PaymentAccounts'][0]['U_MIS_CCDepartment']);
+        $this->assertSame('20', $payload['PaymentAccounts'][1]['ProfitCenter']);
+    }
+
+    public function test_build_uses_default_profit_center_from_user_department(): void
+    {
+        $builder = new SapGeneralOutgoingPaymentBuilder(
+            $this->giro,
+            $this->bilyet,
+            100934000,
+            '2026-08-12',
+            '000H',
+            'Operational PC by Payreq & PMT BPJS TK',
+            $this->destinationLines(),
+            defaultProfitCenter: '60',
+        );
+
+        $payload = $builder->build();
+
+        $this->assertSame('60', $payload['PaymentAccounts'][0]['ProfitCenter']);
+        $this->assertSame('60', $payload['PaymentAccounts'][1]['ProfitCenter']);
+    }
+
+    public function test_validate_fails_when_profit_center_missing_without_fallback(): void
+    {
+        $builder = new SapGeneralOutgoingPaymentBuilder(
+            $this->giro,
+            $this->bilyet,
+            100934000,
+            '2026-08-12',
+            '000H',
+            'Operational PC by Payreq & PMT BPJS TK',
+            $this->destinationLines(),
+            systemDefaultProfitCenter: '',
+        );
+
+        $errors = $builder->validate();
+
+        $this->assertNotEmpty($errors);
+        $this->assertStringContainsString('Profit Center wajib diisi', implode(' ', $errors));
     }
 
     public function test_validate_fails_when_bilyet_not_onhand(): void

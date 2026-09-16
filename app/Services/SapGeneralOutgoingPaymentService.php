@@ -337,6 +337,7 @@ class SapGeneralOutgoingPaymentService
             $destinationAccounts['lines'],
             $preparedBy ?? $user->name,
             $approvedBy ?? $user->name,
+            $this->resolveDefaultProfitCenter($user),
         );
 
         return [
@@ -345,6 +346,15 @@ class SapGeneralOutgoingPaymentService
             'destination_accounts' => $destinationAccounts,
             'builder' => $builder,
         ];
+    }
+
+    protected function resolveDefaultProfitCenter(User $user): ?string
+    {
+        $user->loadMissing('department');
+
+        $sapCode = trim((string) ($user->department?->sap_code ?? ''));
+
+        return $sapCode !== '' ? $sapCode : null;
     }
 
     /**
