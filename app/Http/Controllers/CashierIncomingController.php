@@ -51,10 +51,12 @@ class CashierIncomingController extends Controller
             app(TransaksiController::class)->store('incoming', $incoming);
 
             DB::commit();
+
             return redirect()->back()->with('success', 'Incoming has been received');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Failed to receive incoming: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Failed to receive incoming: '.$e->getMessage());
         }
     }
 
@@ -70,7 +72,30 @@ class CashierIncomingController extends Controller
             'amount' => 'required',
         ]);
 
-        $incoming = new Incoming();
+        $existingAutomaticIncoming = Incoming::query()
+            ->where('project', auth()->user()->project)
+            ->whereNotNull('nomor')
+            ->where('amount', $request->amount)
+            ->where('created_at', '>=', now()->subDays(14))
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('transaksis')
+                    ->whereColumn('transaksis.document_id', 'incomings.id')
+                    ->where('transaksis.document_type', 'incoming');
+            })
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($existingAutomaticIncoming) {
+            $tanggal = $existingAutomaticIncoming->created_at->format('d M Y');
+
+            return redirect()->back()->with(
+                'error',
+                'Sudah ada incoming otomatis (nomor '.$existingAutomaticIncoming->nomor.', tanggal '.$tanggal.') dengan nominal yang sama dan belum di-receive. Silakan klik Receive pada incoming tersebut — jangan membuat incoming manual untuk penarikan yang sama. Hubungi accounting bila penarikan ini memang berbeda.'
+            );
+        }
+
+        $incoming = new Incoming;
         $incoming->cashier_id = auth()->user()->id;
         $incoming->description = $request->description;
         $incoming->amount = $request->amount;
@@ -106,32 +131,32 @@ class CashierIncomingController extends Controller
 
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             $incomings = Incoming::with([
-                    'realization.requestor.department',
-                    'realization.payreq',
-                    'cashier',
-                    'account'
-                ])
+                'realization.requestor.department',
+                'realization.payreq',
+                'cashier',
+                'account',
+            ])
                 ->whereNull('receive_date')
                 ->orderBy('created_at', 'desc')
                 ->get();
         } elseif (in_array('cashier', $userRoles)) {
             $incomings = Incoming::with([
-                    'realization.requestor.department',
-                    'realization.payreq',
-                    'cashier',
-                    'account'
-                ])
+                'realization.requestor.department',
+                'realization.payreq',
+                'cashier',
+                'account',
+            ])
                 ->whereNull('receive_date')
                 ->whereIn('project', ['000H', 'APS'])
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
             $incomings = Incoming::with([
-                    'realization.requestor.department',
-                    'realization.payreq',
-                    'cashier',
-                    'account'
-                ])
+                'realization.requestor.department',
+                'realization.payreq',
+                'cashier',
+                'account',
+            ])
                 ->where('project', auth()->user()->project)
                 ->whereNull('receive_date')
                 ->orderBy('created_at', 'desc')
@@ -143,8 +168,8 @@ class CashierIncomingController extends Controller
                 if ($incoming->realization_id !== null && $incoming->realization && $incoming->realization->requestor) {
                     return $incoming->realization->requestor->name;
                 }
-                
-                if ($incoming->realization_id !== null && !$incoming->realization) {
+
+                if ($incoming->realization_id !== null && ! $incoming->realization) {
                     $realizationNo = $this->extractRealizationNoFromDescription($incoming->description);
                     if ($realizationNo) {
                         $realization = \App\Models\Realization::where('nomor', $realizationNo)->first();
@@ -153,15 +178,15 @@ class CashierIncomingController extends Controller
                         }
                     }
                 }
-                
+
                 return $incoming->cashier ? $incoming->cashier->name : '-';
             })
             ->addColumn('dept', function ($incoming) {
                 if ($incoming->realization_id !== null && $incoming->realization && $incoming->realization->requestor && $incoming->realization->requestor->department) {
                     return $incoming->realization->requestor->department->akronim;
                 }
-                
-                if ($incoming->realization_id !== null && !$incoming->realization) {
+
+                if ($incoming->realization_id !== null && ! $incoming->realization) {
                     $realizationNo = $this->extractRealizationNoFromDescription($incoming->description);
                     if ($realizationNo) {
                         $realization = \App\Models\Realization::where('nomor', $realizationNo)->first();
@@ -170,13 +195,14 @@ class CashierIncomingController extends Controller
                         }
                     }
                 }
-                
+
                 return $incoming->cashier ? $incoming->cashier->name : '-';
             })
             ->addColumn('realization_no', function ($incoming) {
                 if ($incoming->realization_id !== null && $incoming->realization) {
                     $payreqRemarks = $incoming->realization->payreq ? $incoming->realization->payreq->remarks : '';
-                    return '<a href="#" style="color: black" title="' . $payreqRemarks . '">' . $incoming->realization->nomor . '</a>';
+
+                    return '<a href="#" style="color: black" title="'.$payreqRemarks.'">'.$incoming->realization->nomor.'</a>';
                 } else {
                     return $incoming->description;
                 }
@@ -188,7 +214,7 @@ class CashierIncomingController extends Controller
                 return $incoming->project ?? '-';
             })
             ->addColumn('account', function ($incoming) {
-                return $incoming->account_id && $incoming->account ? $incoming->account->account_number . ' - ' . $incoming->account->account_name : '-';
+                return $incoming->account_id && $incoming->account ? $incoming->account->account_number.' - '.$incoming->account->account_name : '-';
             })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.incomings.action')
@@ -199,16 +225,16 @@ class CashierIncomingController extends Controller
     public function received_data()
     {
         $userRoles = app(UserController::class)->getUserRoles();
-        
+
         // Start building the query
         $query = Incoming::with([
-            'realization.requestor.department', 
-            'realization.payreq', 
-            'cashier', 
-            'account'
+            'realization.requestor.department',
+            'realization.payreq',
+            'cashier',
+            'account',
         ])
-        ->whereNotNull('receive_date');
-        
+            ->whereNotNull('receive_date');
+
         // Apply role-based filtering
         if (array_intersect(['superadmin', 'admin'], $userRoles)) {
             // No additional filters for admin
@@ -217,24 +243,24 @@ class CashierIncomingController extends Controller
         } else {
             $query->where('project', auth()->user()->project);
         }
-        
+
         // Order and prepare for datatables
         $query->orderBy('created_at', 'desc');
-        
+
         return datatables()->of($query)
             ->addColumn('employee', function ($incoming) {
-                return $incoming->realization_id !== null 
-                    ? $incoming->realization->requestor->name 
+                return $incoming->realization_id !== null
+                    ? $incoming->realization->requestor->name
                     : $incoming->cashier->name;
             })
             ->addColumn('dept', function ($incoming) {
-                return $incoming->realization_id !== null 
-                    ? $incoming->realization->requestor->department->akronim 
+                return $incoming->realization_id !== null
+                    ? $incoming->realization->requestor->department->akronim
                     : $incoming->cashier->name;
             })
             ->addColumn('realization_no', function ($incoming) {
                 if ($incoming->realization_id !== null) {
-                    return '<a href="#" style="color: black" title="' . $incoming->realization->payreq->remarks . '">' . $incoming->realization->nomor . '</a>';
+                    return '<a href="#" style="color: black" title="'.$incoming->realization->payreq->remarks.'">'.$incoming->realization->nomor.'</a>';
                 } else {
                     return $incoming->description;
                 }
@@ -246,8 +272,8 @@ class CashierIncomingController extends Controller
                 return number_format($incoming->amount, 2);
             })
             ->addColumn('account', function ($incoming) {
-                return $incoming->account_id 
-                    ? $incoming->account->account_number . ' - ' . $incoming->account->account_name 
+                return $incoming->account_id
+                    ? $incoming->account->account_number.' - '.$incoming->account->account_name
                     : '-';
             })
             ->addColumn('status', function ($incoming) {
@@ -268,6 +294,7 @@ class CashierIncomingController extends Controller
         if (preg_match('/realization no\.?\s*(\d+)/i', $description, $matches)) {
             return $matches[1];
         }
+
         return null;
     }
 }
