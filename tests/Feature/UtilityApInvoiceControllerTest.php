@@ -187,7 +187,7 @@ class UtilityApInvoiceControllerTest extends TestCase
             ->assertSessionHas('alert_type', 'error');
     }
 
-    public function test_preview_sap_payment_includes_comments_matching_journal_remarks(): void
+    public function test_preview_sap_payment_includes_sap_remarks_matching_journal_remarks(): void
     {
         $user = User::factory()->create();
         $user->givePermissionTo(['akses_utilities', 'submit_sap_utility_payment']);
@@ -213,10 +213,10 @@ class UtilityApInvoiceControllerTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('preview.journal_remarks', $expectedRemarks)
-            ->assertJsonPath('preview.comments', $expectedRemarks);
+            ->assertJsonPath('preview.sap_remarks', $expectedRemarks);
     }
 
-    public function test_submit_sap_payment_sends_comments_matching_journal_remarks(): void
+    public function test_submit_sap_payment_sends_remarks_matching_journal_remarks(): void
     {
         $user = User::factory()->create();
         $user->givePermissionTo(['akses_utilities', 'submit_sap_utility_payment']);
@@ -258,7 +258,8 @@ class UtilityApInvoiceControllerTest extends TestCase
 
         $this->assertNotNull($submittedPayload);
         $this->assertSame($expectedRemarks, $submittedPayload['JournalRemarks']);
-        $this->assertSame($submittedPayload['JournalRemarks'], $submittedPayload['Comments']);
+        $this->assertSame($submittedPayload['JournalRemarks'], $submittedPayload['Remarks']);
+        $this->assertArrayNotHasKey('Comments', $submittedPayload);
     }
 
     public function test_ap_invoices_index_includes_pph23_withholding_ui_markup(): void

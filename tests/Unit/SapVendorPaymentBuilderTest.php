@@ -88,6 +88,7 @@ class SapVendorPaymentBuilderTest extends TestCase
         ], $payload['PaymentInvoices']);
         $this->assertArrayNotHasKey('WithholdingTaxDataCollection', $payload['PaymentInvoices'][0]);
         $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
+        $this->assertArrayNotHasKey('Remarks', $payload);
         $this->assertArrayNotHasKey('Comments', $payload);
         $this->assertSame('John Preparer', $payload['U_MIS_Signature1']);
         $this->assertSame('Jane Approver', $payload['U_MIS_Signature2']);
@@ -280,44 +281,46 @@ class SapVendorPaymentBuilderTest extends TestCase
         );
     }
 
-    public function test_build_includes_comments_matching_journal_remarks_when_flag_enabled(): void
+    public function test_build_includes_remarks_matching_journal_remarks_when_flag_enabled(): void
     {
-        $builder = $this->makeBuilder()->withCommentsFromJournalRemarks();
+        $builder = $this->makeBuilder()->withRemarksFromJournalRemarks();
 
         $payload = $builder->build();
 
         $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
-        $this->assertSame($payload['JournalRemarks'], $payload['Comments']);
-    }
-
-    public function test_build_omits_comments_when_flag_disabled(): void
-    {
-        $builder = $this->makeBuilder();
-
-        $payload = $builder->build();
-
-        $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
+        $this->assertSame($payload['JournalRemarks'], $payload['Remarks']);
         $this->assertArrayNotHasKey('Comments', $payload);
     }
 
-    public function test_preview_data_includes_journal_remarks_and_comments_when_flag_enabled(): void
+    public function test_build_omits_remarks_when_flag_disabled(): void
     {
-        $builder = $this->makeBuilder()->withCommentsFromJournalRemarks();
+        $builder = $this->makeBuilder();
+
+        $payload = $builder->build();
+
+        $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
+        $this->assertArrayNotHasKey('Remarks', $payload);
+        $this->assertArrayNotHasKey('Comments', $payload);
+    }
+
+    public function test_preview_data_includes_journal_remarks_and_remarks_when_flag_enabled(): void
+    {
+        $builder = $this->makeBuilder()->withRemarksFromJournalRemarks();
 
         $preview = $builder->getPreviewData();
 
         $this->assertSame('Payment for Invoice INV-001', $preview['journal_remarks']);
-        $this->assertSame('Payment for Invoice INV-001', $preview['comments']);
+        $this->assertSame('Payment for Invoice INV-001', $preview['remarks']);
     }
 
-    public function test_preview_data_sets_comments_null_when_flag_disabled(): void
+    public function test_preview_data_sets_remarks_null_when_flag_disabled(): void
     {
         $builder = $this->makeBuilder();
 
         $preview = $builder->getPreviewData();
 
         $this->assertSame('Payment for Invoice INV-001', $preview['journal_remarks']);
-        $this->assertNull($preview['comments']);
+        $this->assertNull($preview['remarks']);
     }
 
     public function test_preview_data_includes_withholding_and_gross_applied(): void

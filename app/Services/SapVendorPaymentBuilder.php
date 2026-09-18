@@ -23,7 +23,7 @@ class SapVendorPaymentBuilder
      */
     protected array $withholding;
 
-    protected bool $commentsFromJournalRemarks = false;
+    protected bool $remarksFromJournalRemarks = false;
 
     public function __construct(
         protected array $invoice,
@@ -39,9 +39,9 @@ class SapVendorPaymentBuilder
         $this->withholding = self::openWithholdingTax($apInvoice);
     }
 
-    public function withCommentsFromJournalRemarks(bool $enabled = true): static
+    public function withRemarksFromJournalRemarks(bool $enabled = true): static
     {
-        $this->commentsFromJournalRemarks = $enabled;
+        $this->remarksFromJournalRemarks = $enabled;
 
         return $this;
     }
@@ -118,8 +118,9 @@ class SapVendorPaymentBuilder
             'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
         ];
 
-        if ($this->commentsFromJournalRemarks) {
-            $payment['Comments'] = $journalRemarks;
+        // SAP B1: OVPM.Comments dipetakan ke properti SL "Remarks" pada entity VendorPayments; "Comments" tidak ada di entity ini (pernah ditolak SAP, lihat commit 27b451d).
+        if ($this->remarksFromJournalRemarks) {
+            $payment['Remarks'] = $journalRemarks;
         }
 
         if ($this->paymentMeans === self::MEANS_CASH) {
@@ -263,7 +264,7 @@ class SapVendorPaymentBuilder
                 'sap_account' => $this->account->sap_account,
             ] : null,
             'journal_remarks' => $journalRemarks,
-            'comments' => $this->commentsFromJournalRemarks ? $journalRemarks : null,
+            'remarks' => $this->remarksFromJournalRemarks ? $journalRemarks : null,
         ];
     }
 
