@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
-use App\Models\CashJournal;
 use App\Models\Incoming;
 use App\Models\Outgoing;
 use App\Models\Payreq;
+use App\Services\ClearingAccountMonitorService;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 
 class CashierDashboardController extends Controller
 {
@@ -16,15 +15,16 @@ class CashierDashboardController extends Controller
     {
         $dashboard_data = $this->dashboard_data();
         $dashboard_report = $dashboard_data['dashboard_report'];
+        $clearing_cards = app(ClearingAccountMonitorService::class)->getCards();
 
-        return view('cashier.dashboard.index', compact(['dashboard_data', 'dashboard_report']));
+        return view('cashier.dashboard.index', compact(['dashboard_data', 'dashboard_report', 'clearing_cards']));
     }
 
     public function dashboard_data()
     {
         $project = auth()->user()->project;
 
-        // Payreqs ready to pay 
+        // Payreqs ready to pay
         $status_include = ['approved', 'split'];
 
         $ready_to_pay = Payreq::whereIn('status', $status_include)
@@ -49,7 +49,7 @@ class CashierDashboardController extends Controller
 
         $result['today_outgoing'] = [
             'amount' => Outgoing::where('project', $project)->where('outgoing_date', $today)->sum('amount'),
-            'count' => Outgoing::where('project', $project)->where('outgoing_date', $today)->count()
+            'count' => Outgoing::where('project', $project)->where('outgoing_date', $today)->count(),
         ];
 
         $account = Account::where('type', 'cash')->where('project', $project)->first();
