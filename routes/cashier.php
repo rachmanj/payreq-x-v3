@@ -72,11 +72,10 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/outgoings', [CashOnHandTransactionController::class, 'getOutgoings'])->name('outgoings');
     });
 
-    Route::prefix('dashboard')->name('dashboard.')->group(function () {
+    Route::prefix('dashboard')->name('dashboard.')->middleware('permission:cashier_dashboard')->group(function () {
         Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
         Route::get('/clearing/transactions', ClearingAccountTransactionController::class)
-            ->name('clearing.transactions')
-            ->middleware('permission:cashier_dashboard');
+            ->name('clearing.transactions');
     });
 
     Route::prefix('realization-attachments')->name('realization-attachments.')->group(function () {
