@@ -280,6 +280,46 @@ class SapVendorPaymentBuilderTest extends TestCase
         );
     }
 
+    public function test_build_includes_comments_matching_journal_remarks_when_flag_enabled(): void
+    {
+        $builder = $this->makeBuilder()->withCommentsFromJournalRemarks();
+
+        $payload = $builder->build();
+
+        $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
+        $this->assertSame($payload['JournalRemarks'], $payload['Comments']);
+    }
+
+    public function test_build_omits_comments_when_flag_disabled(): void
+    {
+        $builder = $this->makeBuilder();
+
+        $payload = $builder->build();
+
+        $this->assertSame('Payment for Invoice INV-001', $payload['JournalRemarks']);
+        $this->assertArrayNotHasKey('Comments', $payload);
+    }
+
+    public function test_preview_data_includes_journal_remarks_and_comments_when_flag_enabled(): void
+    {
+        $builder = $this->makeBuilder()->withCommentsFromJournalRemarks();
+
+        $preview = $builder->getPreviewData();
+
+        $this->assertSame('Payment for Invoice INV-001', $preview['journal_remarks']);
+        $this->assertSame('Payment for Invoice INV-001', $preview['comments']);
+    }
+
+    public function test_preview_data_sets_comments_null_when_flag_disabled(): void
+    {
+        $builder = $this->makeBuilder();
+
+        $preview = $builder->getPreviewData();
+
+        $this->assertSame('Payment for Invoice INV-001', $preview['journal_remarks']);
+        $this->assertNull($preview['comments']);
+    }
+
     public function test_preview_data_includes_withholding_and_gross_applied(): void
     {
         $this->apInvoice['DocTotal'] = 1831500;

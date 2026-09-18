@@ -187,6 +187,80 @@ class UtilityApInvoiceControllerTest extends TestCase
             ->assertSessionHas('alert_type', 'error');
     }
 
+    public function test_preview_sap_payment_includes_comments_matching_journal_remarks(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo(['akses_utilities', 'submit_sap_utility_payment']);
+
+        $context = $this->createPostedUtilityApInvoiceContext();
+        $expectedRemarks = 'Payment for Invoice '.$context['invoice']->num_at_card;
+
+        $this->mock(SapService::class, function ($mock) use ($context) {
+            $mock->shouldReceive('getPurchaseInvoiceByDocEntry')
+                ->once()
+                ->with($context['invoice']->sap_doc_entry)
+                ->andReturn($this->openUtilityApInvoicePayload($context));
+        });
+
+        $this->actingAs($user)
+            ->postJson(route('utilities.ap-invoices.sap-payment.preview', ['utilityApInvoice' => $context['invoice']->id]), [
+                'payment_means' => 'transfer',
+                'account_id' => $context['account']->id,
+                'payment_date' => '2026-09-18',
+                'payment_amount' => 14007142,
+                'prepared_by' => 'John Preparer',
+                'approved_by' => 'Jane Approver',
+            ])
+            ->assertOk()
+            ->assertJsonPath('preview.journal_remarks', $expectedRemarks)
+            ->assertJsonPath('preview.comments', $expectedRemarks);
+    }
+
+    public function test_submit_sap_payment_sends_comments_matching_journal_remarks(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo(['akses_utilities', 'submit_sap_utility_payment']);
+
+        $context = $this->createPostedUtilityApInvoiceContext();
+        $expectedRemarks = 'Payment for Invoice '.$context['invoice']->num_at_card;
+        $submittedPayload = null;
+
+        $this->mock(SapService::class, function ($mock) use ($context, &$submittedPayload) {
+            $mock->shouldReceive('getPurchaseInvoiceByDocEntry')
+                ->once()
+                ->with($context['invoice']->sap_doc_entry)
+                ->andReturn($this->openUtilityApInvoicePayload($context));
+
+            $mock->shouldReceive('createOutgoingPayment')
+                ->once()
+                ->with(\Mockery::on(function (array $payload) use (&$submittedPayload) {
+                    $submittedPayload = $payload;
+
+                    return true;
+                }))
+                ->andReturn([
+                    'success' => true,
+                    'doc_entry' => 88,
+                    'doc_num' => '12345',
+                    'data' => ['DocEntry' => 88, 'DocNum' => 12345],
+                ]);
+        });
+
+        $this->actingAs($user)
+            ->postJson(route('utilities.ap-invoices.sap-payment.submit', ['utilityApInvoice' => $context['invoice']->id]), [
+                'payment_means' => 'transfer',
+                'account_id' => $context['account']->id,
+                'payment_date' => '2026-09-18',
+                'payment_amount' => 14007142,
+                'prepared_by' => 'John Preparer',
+                'approved_by' => 'Jane Approver',
+            ]);
+
+        $this->assertNotNull($submittedPayload);
+        $this->assertSame($expectedRemarks, $submittedPayload['JournalRemarks']);
+        $this->assertSame($submittedPayload['JournalRemarks'], $submittedPayload['Comments']);
+    }
+
     public function test_ap_invoices_index_includes_pph23_withholding_ui_markup(): void
     {
         $user = User::factory()->create();
@@ -202,6 +276,59 @@ class UtilityApInvoiceControllerTest extends TestCase
             ->assertSee('Dibayar netto', false)
             ->assertSee('renderUtilityWithholdingUi', false)
             ->assertSee('Invoice ini mengandung PPh23 sebesar', false);
+    }
+
+    /**
+     * @return array{invoice: UtilityApInvoice, partner: SapBusinessPartner, account: Account}
+     */
+    protected function createPostedUtilityApInvoiceContext(): array
+    {
+        $partner = SapBusinessPartner::query()->create([
+            'code' => 'VPLNPIDR01',
+            'name' => 'PLN (Persero)',
+            'type' => SapBusinessPartner::TYPE_SUPPLIER,
+            'active' => true,
+        ]);
+
+        $invoice = UtilityApInvoice::factory()->posted()->create([
+            'sap_business_partner_id' => $partner->id,
+            'num_at_card' => 'PLN 8/26',
+            'total_amount' => 14007142,
+            'sap_doc_entry' => 2026,
+            'sap_doc_num' => '9001',
+        ]);
+
+        $account = Account::query()->create([
+            'account_number' => '11010001',
+            'account_name' => 'BCA Operating',
+            'type' => 'bank',
+            'sap_account' => '11010001',
+            'is_active' => true,
+            'is_hidden' => false,
+        ]);
+
+        return [
+            'invoice' => $invoice,
+            'partner' => $partner,
+            'account' => $account,
+        ];
+    }
+
+    /**
+     * @param  array{invoice: UtilityApInvoice, partner: SapBusinessPartner}  $context
+     * @return array<string, mixed>
+     */
+    protected function openUtilityApInvoicePayload(array $context): array
+    {
+        return [
+            'DocEntry' => $context['invoice']->sap_doc_entry,
+            'DocNum' => (int) $context['invoice']->sap_doc_num,
+            'CardCode' => $context['partner']->code,
+            'DocumentStatus' => 'bost_Open',
+            'Cancelled' => 'N',
+            'DocTotal' => (float) $context['invoice']->total_amount,
+            'PaidToDate' => 0,
+        ];
     }
 
     protected function authorizedUser(): User

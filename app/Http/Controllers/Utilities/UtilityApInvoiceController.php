@@ -220,7 +220,7 @@ class UtilityApInvoiceController extends Controller
 
             $invoicePayload = $this->invoicePayloadForBuilder($utilityApInvoice, $validated);
 
-            $builder = new SapVendorPaymentBuilder(
+            $builder = (new SapVendorPaymentBuilder(
                 $invoicePayload,
                 $apInvoice,
                 $partner,
@@ -230,7 +230,7 @@ class UtilityApInvoiceController extends Controller
                 $paymentAmount,
                 $validated['prepared_by'] ?? null,
                 $validated['approved_by'] ?? null,
-            );
+            ))->withCommentsFromJournalRemarks();
 
             $errors = $builder->validate(requirePaymentAccount: false);
             if ($errors !== []) {
@@ -295,7 +295,7 @@ class UtilityApInvoiceController extends Controller
 
             $invoicePayload = $this->invoicePayloadForBuilder($utilityApInvoice, $validated);
 
-            $builder = new SapVendorPaymentBuilder(
+            $builder = (new SapVendorPaymentBuilder(
                 $invoicePayload,
                 $apInvoice,
                 $partner,
@@ -305,7 +305,7 @@ class UtilityApInvoiceController extends Controller
                 $paymentAmount,
                 $validated['prepared_by'] ?? null,
                 $validated['approved_by'] ?? null,
-            );
+            ))->withCommentsFromJournalRemarks();
 
             $errors = $builder->validate(requirePaymentAccount: true);
             if ($errors !== []) {
@@ -594,6 +594,8 @@ class UtilityApInvoiceController extends Controller
             'remarks' => $remarks,
             'prepared_by' => $preview['prepared_by'] ?? null,
             'approved_by' => $preview['approved_by'] ?? null,
+            'journal_remarks' => $preview['journal_remarks'] ?? null,
+            'comments' => $preview['comments'] ?? null,
         ];
     }
 

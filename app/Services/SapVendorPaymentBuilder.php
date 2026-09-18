@@ -23,6 +23,8 @@ class SapVendorPaymentBuilder
      */
     protected array $withholding;
 
+    protected bool $commentsFromJournalRemarks = false;
+
     public function __construct(
         protected array $invoice,
         protected array $apInvoice,
@@ -35,6 +37,13 @@ class SapVendorPaymentBuilder
         protected ?string $approvedBy = null,
     ) {
         $this->withholding = self::openWithholdingTax($apInvoice);
+    }
+
+    public function withCommentsFromJournalRemarks(bool $enabled = true): static
+    {
+        $this->commentsFromJournalRemarks = $enabled;
+
+        return $this;
     }
 
     /**
@@ -108,6 +117,10 @@ class SapVendorPaymentBuilder
             'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
             'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
         ];
+
+        if ($this->commentsFromJournalRemarks) {
+            $payment['Comments'] = $journalRemarks;
+        }
 
         if ($this->paymentMeans === self::MEANS_CASH) {
             $payment['CashAccount'] = $cashAccount;
@@ -203,6 +216,7 @@ class SapVendorPaymentBuilder
         $amountMismatch = $apTotal !== null && abs($apTotal - $this->invoiceAmount()) > self::AMOUNT_TOLERANCE;
         $withholdingTotal = $this->withholdingTotal();
         $grossApplied = $amount + $withholdingTotal;
+        $journalRemarks = $this->buildJournalRemarks();
 
         if ($withholdingTotal > 0 && $remaining !== null) {
             $isPartial = $grossApplied < $remaining - self::AMOUNT_TOLERANCE;
@@ -248,6 +262,8 @@ class SapVendorPaymentBuilder
                 'account_name' => $this->account->account_name,
                 'sap_account' => $this->account->sap_account,
             ] : null,
+            'journal_remarks' => $journalRemarks,
+            'comments' => $this->commentsFromJournalRemarks ? $journalRemarks : null,
         ];
     }
 
