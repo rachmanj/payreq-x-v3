@@ -8,8 +8,12 @@
     accounting / journal-entries / create
 @endsection
 
+@section('styles')
+    @include('partials.vj-soft-ui-styles')
+@endsection
+
 @section('content')
-    <div class="row">
+    <div class="row vj-show">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
@@ -64,8 +68,8 @@
                         <h5 class="mt-4">Journal Lines</h5>
                         @php
                             $oldLines = old('lines', [
-                                ['account_code' => '', 'debit_credit' => 'debit', 'amount' => '', 'project' => '', 'cost_center' => '', 'description' => ''],
-                                ['account_code' => '', 'debit_credit' => 'credit', 'amount' => '', 'project' => '', 'cost_center' => '', 'description' => ''],
+                                ['account_code' => '', 'debit_credit' => 'debit', 'currency' => 'IDR', 'amount' => '', 'project' => '', 'cost_center' => '', 'description' => ''],
+                                ['account_code' => '', 'debit_credit' => 'credit', 'currency' => 'IDR', 'amount' => '', 'project' => '', 'cost_center' => '', 'description' => ''],
                             ]);
                         @endphp
                         @include('accounting.journal-entries.partials.line-grid', [
@@ -86,7 +90,8 @@
     </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
+    @include('partials.vj-soft-ui-swal')
     <script>
         $('#template_select').on('change', function() {
             const templateId = $(this).val();
@@ -110,6 +115,6 @@
             });
         });
     </script>
-@endsection
+@endpush
 
 @stack('styles')

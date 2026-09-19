@@ -8,8 +8,12 @@
     accounting / journal-entries / edit
 @endsection
 
+@section('styles')
+    @include('partials.vj-soft-ui-styles')
+@endsection
+
 @section('content')
-    <div class="row">
+    <div class="row vj-show">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
@@ -57,7 +61,10 @@
                             $editLines = old('lines', $journalEntry->lines->map(fn ($l) => [
                                 'account_code' => $l->account_code,
                                 'debit_credit' => $l->debit_credit,
+                                'currency' => $l->currency ?? 'IDR',
                                 'amount' => $l->amount,
+                                'fc_amount' => $l->fc_amount,
+                                'exchange_rate' => $l->exchange_rate,
                                 'project' => $l->project,
                                 'cost_center' => $l->cost_center,
                                 'description' => $l->description,
@@ -80,5 +87,9 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    @include('partials.vj-soft-ui-swal')
+@endpush
 
 @stack('styles')

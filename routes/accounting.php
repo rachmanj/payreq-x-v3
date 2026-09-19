@@ -55,6 +55,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/', [JournalEntryController::class, 'index'])->name('index');
         Route::get('/data', [JournalEntryController::class, 'data'])->name('data');
         Route::get('/create', [JournalEntryController::class, 'create'])->name('create');
+        Route::get('/default-usd-rate', [JournalEntryController::class, 'defaultUsdRate'])->name('default_usd_rate');
         Route::post('/', [JournalEntryController::class, 'store'])->name('store');
 
         Route::prefix('templates')->name('templates.')->group(function () {

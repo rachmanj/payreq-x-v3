@@ -11,6 +11,7 @@ use App\Models\JournalEntryLine;
 use App\Models\JournalEntryTemplate;
 use App\Models\Project;
 use App\Models\SapSubmissionLog;
+use App\Services\JournalEntryExchangeRateService;
 use App\Services\JournalEntryMulticurrencyService;
 use App\Services\JournalEntrySubmissionService;
 use Illuminate\Http\Request;
@@ -35,6 +36,14 @@ class JournalEntryController extends Controller
 
         return datatables()->of($entries)
             ->addIndexColumn()
+            ->editColumn('number', function (JournalEntry $entry) {
+                $html = e($entry->number);
+                if ($entry->has_foreign_currency) {
+                    $html .= ' <span class="badge badge-info ml-1">USD</span>';
+                }
+
+                return $html;
+            })
             ->editColumn('date', fn (JournalEntry $entry) => $entry->date?->format('d-M-Y'))
             ->editColumn('memo', fn (JournalEntry $entry) => \Illuminate\Support\Str::limit($entry->memo ?? '', 60))
             ->addColumn('status_badge', function (JournalEntry $entry) {
@@ -51,8 +60,19 @@ class JournalEntryController extends Controller
             ->addColumn('sap_journal_no', fn (JournalEntry $entry) => $entry->sap_journal_no ?? '<span class="text-muted">—</span>')
             ->addColumn('created_by_name', fn (JournalEntry $entry) => $entry->createdBy?->name ?? 'N/A')
             ->addColumn('action', 'accounting.journal-entries.action')
-            ->rawColumns(['status_badge', 'sap_journal_no', 'action'])
+            ->rawColumns(['number', 'status_badge', 'sap_journal_no', 'action'])
             ->toJson();
+    }
+
+    public function defaultUsdRate(Request $request, JournalEntryExchangeRateService $exchangeRateService)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        return response()->json([
+            'exchange_rate' => $exchangeRateService->defaultUsdToIdrRateForDate($request->date),
+        ]);
     }
 
     public function create()

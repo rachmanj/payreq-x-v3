@@ -1,3 +1,7 @@
+@php
+    $enableMulticurrency = $enableMulticurrency ?? false;
+    $lineCurrency = strtoupper($line['currency'] ?? 'IDR');
+@endphp
 <tr data-row-id="row_{{ $index }}">
     <td class="line-number">{{ is_numeric($index) ? $index + 1 : '' }}</td>
     <td>
@@ -14,6 +18,22 @@
             <option value="credit" {{ ($line['debit_credit'] ?? '') === 'credit' ? 'selected' : '' }}>Credit</option>
         </select>
     </td>
+    @if ($enableMulticurrency)
+        <td>
+            <select name="lines[{{ $index }}][currency]" class="form-control form-control-sm line-currency">
+                <option value="IDR" {{ $lineCurrency === 'IDR' ? 'selected' : '' }}>IDR</option>
+                <option value="USD" {{ $lineCurrency === 'USD' ? 'selected' : '' }}>USD</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" name="lines[{{ $index }}][fc_amount]" class="form-control form-control-sm line-fc-amount"
+                value="{{ $line['fc_amount'] ?? '' }}" step="0.01" min="0" placeholder="—">
+        </td>
+        <td>
+            <input type="number" name="lines[{{ $index }}][exchange_rate]" class="form-control form-control-sm line-exchange-rate"
+                value="{{ $line['exchange_rate'] ?? '' }}" step="0.000001" min="0" placeholder="—">
+        </td>
+    @endif
     <td>
         <input type="number" name="lines[{{ $index }}][{{ $amountField }}]" class="form-control form-control-sm line-amount"
             value="{{ $line[$amountField] ?? $line['amount'] ?? '' }}" step="0.01" min="{{ $requireAmount ? '0.01' : '0' }}"
