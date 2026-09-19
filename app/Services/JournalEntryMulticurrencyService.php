@@ -9,6 +9,8 @@ class JournalEntryMulticurrencyService
 {
     public const SUPPORTED_FOREIGN_CURRENCY = 'USD';
 
+    public const MIXED_IDR_AND_FOREIGN_CURRENCY_ERROR = 'SAP tidak menerima jurnal yang mencampur valas (USD) dan IDR dalam satu dokumen. Pisahkan menjadi dua jurnal: satu jurnal valas (USD) dan satu jurnal IDR.';
+
     private const BALANCE_TOLERANCE = 0.01;
 
     public function calculateIdrAmount(float $fcAmount, float $exchangeRate): float
@@ -110,6 +112,25 @@ class JournalEntryMulticurrencyService
 
         if (! empty($errors)) {
             return array_values(array_unique($errors));
+        }
+
+        $hasIdrLine = false;
+        $hasForeignCurrencyLine = false;
+
+        foreach ($lineArrays as $line) {
+            $currency = $this->resolveCurrency($line);
+
+            if ($currency === 'IDR') {
+                $hasIdrLine = true;
+            }
+
+            if ($currency === self::SUPPORTED_FOREIGN_CURRENCY) {
+                $hasForeignCurrencyLine = true;
+            }
+        }
+
+        if ($hasIdrLine && $hasForeignCurrencyLine) {
+            return [self::MIXED_IDR_AND_FOREIGN_CURRENCY_ERROR];
         }
 
         $totalDebit = collect($lineArrays)

@@ -44,10 +44,64 @@ class JournalEntryMulticurrencyUiTest extends TestCase
             ->assertSee('name="lines[0][currency]"', false)
             ->assertSee('name="lines[0][fc_amount]"', false)
             ->assertSee('name="lines[0][exchange_rate]"', false)
-            ->assertSee('id="je-currency-summary"', false);
+            ->assertSee('id="je-currency-summary"', false)
+            ->assertSee('dua jurnal terpisah', false);
     }
 
-    public function test_store_mixed_usd_and_idr_lines_persists_calculated_idr_amounts(): void
+    public function test_store_mixed_usd_and_idr_lines_is_rejected(): void
+    {
+        $user = $this->authorizedUser();
+        $exchangeRate = 15800;
+
+        $this->actingAs($user)
+            ->from(route('accounting.journal-entries.create'))
+            ->post(route('accounting.journal-entries.store'), [
+                'date' => now()->toDateString(),
+                'memo' => 'Campuran USD IDR',
+                'lines' => [
+                    [
+                        'account_code' => '11301006',
+                        'debit_credit' => 'debit',
+                        'currency' => 'USD',
+                        'fc_amount' => 10,
+                        'exchange_rate' => $exchangeRate,
+                        'amount' => 1,
+                    ],
+                    [
+                        'account_code' => '11201026',
+                        'debit_credit' => 'credit',
+                        'currency' => 'USD',
+                        'fc_amount' => 10,
+                        'exchange_rate' => $exchangeRate,
+                        'amount' => 1,
+                    ],
+                    [
+                        'account_code' => '61001001',
+                        'debit_credit' => 'debit',
+                        'currency' => 'IDR',
+                        'amount' => 50000,
+                    ],
+                    [
+                        'account_code' => '11201020',
+                        'debit_credit' => 'credit',
+                        'currency' => 'IDR',
+                        'amount' => 50000,
+                    ],
+                ],
+            ])
+            ->assertSessionHasErrors('lines');
+
+        $errors = session('errors')->get('lines');
+        $this->assertTrue(
+            collect($errors)->contains(
+                fn (string $msg) => str_contains($msg, 'USD') && str_contains($msg, 'IDR')
+            )
+        );
+
+        $this->assertNull(JournalEntry::first());
+    }
+
+    public function test_store_pure_usd_lines_persists_calculated_idr_amounts(): void
     {
         $user = $this->authorizedUser();
         $exchangeRate = 15800;
@@ -57,7 +111,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
         $this->actingAs($user)
             ->post(route('accounting.journal-entries.store'), [
                 'date' => now()->toDateString(),
-                'memo' => 'Campuran USD IDR',
+                'memo' => 'USD murni',
                 'lines' => [
                     [
                         'account_code' => '11301006',
@@ -74,18 +128,6 @@ class JournalEntryMulticurrencyUiTest extends TestCase
                         'fc_amount' => $fcDebit,
                         'exchange_rate' => $exchangeRate,
                         'amount' => 1,
-                    ],
-                    [
-                        'account_code' => '61001001',
-                        'debit_credit' => 'debit',
-                        'currency' => 'IDR',
-                        'amount' => 50000,
-                    ],
-                    [
-                        'account_code' => '11201020',
-                        'debit_credit' => 'credit',
-                        'currency' => 'IDR',
-                        'amount' => 50000,
                     ],
                 ],
             ])

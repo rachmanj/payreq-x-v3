@@ -111,18 +111,6 @@ class JournalEntryMulticurrencyTest extends TestCase
                         'fc_amount' => 90,
                         'exchange_rate' => $rate,
                     ],
-                    [
-                        'account_code' => '11201020',
-                        'debit_credit' => 'debit',
-                        'currency' => 'IDR',
-                        'amount' => 158000,
-                    ],
-                    [
-                        'account_code' => '11201020',
-                        'debit_credit' => 'credit',
-                        'currency' => 'IDR',
-                        'amount' => 158000,
-                    ],
                 ],
             ]);
 
@@ -156,25 +144,30 @@ class JournalEntryMulticurrencyTest extends TestCase
         JournalEntryLine::factory()->create([
             'journal_entry_id' => $entry->id,
             'line_no' => 2,
-            'account_code' => '11001',
+            'account_code' => '11201026',
             'debit_credit' => 'credit',
             'amount' => 1580000,
-            'currency' => 'IDR',
+            'currency' => 'USD',
+            'fc_amount' => 100,
+            'exchange_rate' => 15800,
         ]);
 
-        $payload = (new JournalEntryBuilder($entry->fresh(['lines'])))->build();
-        $usdLine = $payload['JournalEntryLines'][0];
-        $idrLine = $payload['JournalEntryLines'][1];
+        $builder = new JournalEntryBuilder($entry->fresh(['lines']));
+        $this->assertEmpty($builder->validate());
 
-        $this->assertSame('USD', $usdLine['FCCurrency']);
-        $this->assertSame(100.0, $usdLine['FCDebit']);
-        $this->assertSame(0.0, $usdLine['FCCredit']);
-        $this->assertSame(1580000.0, $usdLine['Debit']);
+        $payload = $builder->build();
+        $usdDebitLine = $payload['JournalEntryLines'][0];
+        $usdCreditLine = $payload['JournalEntryLines'][1];
 
-        $this->assertArrayNotHasKey('FCCurrency', $idrLine);
-        $this->assertArrayNotHasKey('FCDebit', $idrLine);
-        $this->assertArrayNotHasKey('FCCredit', $idrLine);
-        $this->assertSame(1580000.0, $idrLine['Credit']);
+        $this->assertSame('USD', $usdDebitLine['FCCurrency']);
+        $this->assertSame(100.0, $usdDebitLine['FCDebit']);
+        $this->assertSame(0.0, $usdDebitLine['FCCredit']);
+        $this->assertSame(1580000.0, $usdDebitLine['Debit']);
+
+        $this->assertSame('USD', $usdCreditLine['FCCurrency']);
+        $this->assertSame(100.0, $usdCreditLine['FCCredit']);
+        $this->assertSame(0.0, $usdCreditLine['FCDebit']);
+        $this->assertSame(1580000.0, $usdCreditLine['Credit']);
     }
 
     public function test_default_usd_rate_comes_from_exchange_rates_table(): void
@@ -225,28 +218,28 @@ class JournalEntryMulticurrencyTest extends TestCase
         $this->assertSame('15600.654321', $rate);
     }
 
-    public function test_mixed_obligasi_scenario_passes_validation_and_builds_correct_payload(): void
+    public function test_mixed_obligasi_scenario_is_rejected_with_usd_and_idr_in_message(): void
     {
         $exchangeRate = 15800.75;
         $user = $this->authorizedUser();
 
         $lines = [
             [
-                'account_code' => '11301006',
+                'account_code' => '11301007',
                 'debit_credit' => 'debit',
                 'currency' => 'USD',
                 'fc_amount' => 695100,
                 'exchange_rate' => $exchangeRate,
             ],
             [
-                'account_code' => '11301007',
+                'account_code' => '11301006',
                 'debit_credit' => 'debit',
                 'currency' => 'USD',
                 'fc_amount' => 11052.03,
                 'exchange_rate' => $exchangeRate,
             ],
             [
-                'account_code' => '61001001',
+                'account_code' => '71201015',
                 'debit_credit' => 'debit',
                 'currency' => 'IDR',
                 'amount' => 49950,
@@ -267,33 +260,92 @@ class JournalEntryMulticurrencyTest extends TestCase
         ];
 
         $normalized = $this->multicurrencyService->normalizeLines($lines);
+        $serviceErrors = $this->multicurrencyService->validateLines($normalized);
+        $this->assertContains(JournalEntryMulticurrencyService::MIXED_IDR_AND_FOREIGN_CURRENCY_ERROR, $serviceErrors);
+
+        $this->actingAs($user)
+            ->from(route('accounting.journal-entries.create'))
+            ->post(route('accounting.journal-entries.store'), [
+                'date' => '2026-09-18',
+                'memo' => 'Settlement obligasi campuran',
+                'lines' => $lines,
+            ])
+            ->assertSessionHasErrors('lines');
+
+        $errors = session('errors')->get('lines');
+        $this->assertTrue(
+            collect($errors)->contains(
+                fn (string $msg) => str_contains($msg, 'USD') && str_contains($msg, 'IDR')
+            )
+        );
+
+        $this->assertNull(JournalEntry::first());
+    }
+
+    public function test_pure_usd_three_line_journal_passes_validation_and_store(): void
+    {
+        $exchangeRate = 15800.75;
+        $user = $this->authorizedUser();
+
+        $lines = [
+            [
+                'account_code' => '11301007',
+                'debit_credit' => 'debit',
+                'currency' => 'USD',
+                'fc_amount' => 695100,
+                'exchange_rate' => $exchangeRate,
+            ],
+            [
+                'account_code' => '11301006',
+                'debit_credit' => 'debit',
+                'currency' => 'USD',
+                'fc_amount' => 11052.03,
+                'exchange_rate' => $exchangeRate,
+            ],
+            [
+                'account_code' => '11201026',
+                'debit_credit' => 'credit',
+                'currency' => 'USD',
+                'fc_amount' => 706152.03,
+                'exchange_rate' => $exchangeRate,
+            ],
+        ];
+
+        $normalized = $this->multicurrencyService->normalizeLines($lines);
         $this->assertEmpty($this->multicurrencyService->validateLines($normalized));
 
         $this->actingAs($user)
             ->post(route('accounting.journal-entries.store'), [
                 'date' => '2026-09-18',
-                'memo' => 'Settlement obligasi',
+                'memo' => 'Settlement obligasi USD',
                 'lines' => $lines,
             ])
             ->assertRedirect();
 
         $entry = JournalEntry::first();
         $this->assertTrue($entry->has_foreign_currency);
-        $this->assertCount(5, $entry->lines);
+        $this->assertCount(3, $entry->lines);
+        $this->assertEmpty((new JournalEntryBuilder($entry->fresh(['lines'])))->validate());
+    }
 
-        $builder = new JournalEntryBuilder($entry->fresh(['lines']));
-        $this->assertEmpty($builder->validate());
-        $payload = $builder->build();
+    public function test_pure_idr_two_line_journal_passes_validation_via_service(): void
+    {
+        $lines = [
+            [
+                'account_code' => '71201015',
+                'debit_credit' => 'debit',
+                'currency' => 'IDR',
+                'amount' => 49950,
+            ],
+            [
+                'account_code' => '11201020',
+                'debit_credit' => 'credit',
+                'currency' => 'IDR',
+                'amount' => 49950,
+            ],
+        ];
 
-        $usdDebitLines = collect($payload['JournalEntryLines'])->filter(
-            fn (array $line) => ($line['FCCurrency'] ?? null) === 'USD' && $line['FCDebit'] > 0
-        );
-        $this->assertCount(2, $usdDebitLines);
-
-        $usdCreditLine = collect($payload['JournalEntryLines'])->first(
-            fn (array $line) => ($line['FCCurrency'] ?? null) === 'USD' && $line['FCCredit'] > 0
-        );
-        $this->assertSame(706152.03, $usdCreditLine['FCCredit']);
+        $this->assertEmpty($this->multicurrencyService->validateLines($lines));
     }
 
     public function test_pure_idr_journal_entry_payload_unchanged(): void

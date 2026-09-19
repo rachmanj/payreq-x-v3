@@ -21,6 +21,13 @@
     ];
 @endphp
 
+@if ($requireAmount && $enableMulticurrency)
+    <p class="text-muted small mb-2">
+        <i class="fas fa-info-circle"></i>
+        SAP tidak menerima baris valas (USD) dan baris IDR dalam satu jurnal. Jika transaksi melibatkan keduanya, buat dua jurnal terpisah: satu jurnal USD murni dan satu jurnal IDR murni.
+    </p>
+@endif
+
 <div class="table-responsive">
     <table class="table table-bordered table-sm" id="je-lines-table">
         <thead>
