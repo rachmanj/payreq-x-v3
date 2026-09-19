@@ -16,6 +16,9 @@ class JournalEntryLine extends Model
         'account_code',
         'debit_credit',
         'amount',
+        'currency',
+        'fc_amount',
+        'exchange_rate',
         'project',
         'cost_center',
         'description',
@@ -23,6 +26,8 @@ class JournalEntryLine extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'fc_amount' => 'decimal:2',
+        'exchange_rate' => 'decimal:6',
     ];
 
     public function journalEntry(): BelongsTo

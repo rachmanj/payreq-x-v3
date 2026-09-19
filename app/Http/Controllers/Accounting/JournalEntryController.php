@@ -11,6 +11,7 @@ use App\Models\JournalEntryLine;
 use App\Models\JournalEntryTemplate;
 use App\Models\Project;
 use App\Models\SapSubmissionLog;
+use App\Services\JournalEntryMulticurrencyService;
 use App\Services\JournalEntrySubmissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -230,13 +231,29 @@ class JournalEntryController extends Controller
 
     protected function syncLines(JournalEntry $journalEntry, array $lines): void
     {
-        foreach ($lines as $index => $line) {
+        $multicurrencyService = app(JournalEntryMulticurrencyService::class);
+        $normalizedLines = $multicurrencyService->normalizeLines($lines);
+
+        $journalEntry->update([
+            'has_foreign_currency' => $multicurrencyService->entryHasForeignCurrency($normalizedLines),
+        ]);
+
+        foreach ($normalizedLines as $index => $line) {
+            $currency = $multicurrencyService->resolveCurrency($line);
+
             JournalEntryLine::create([
                 'journal_entry_id' => $journalEntry->id,
                 'line_no' => $index + 1,
                 'account_code' => $line['account_code'],
                 'debit_credit' => $line['debit_credit'],
                 'amount' => $line['amount'],
+                'currency' => $currency,
+                'fc_amount' => $currency === JournalEntryMulticurrencyService::SUPPORTED_FOREIGN_CURRENCY
+                    ? $line['fc_amount']
+                    : null,
+                'exchange_rate' => $currency === JournalEntryMulticurrencyService::SUPPORTED_FOREIGN_CURRENCY
+                    ? $line['exchange_rate']
+                    : null,
                 'project' => $line['project'] ?? null,
                 'cost_center' => $line['cost_center'] ?? null,
                 'description' => $line['description'] ?? null,

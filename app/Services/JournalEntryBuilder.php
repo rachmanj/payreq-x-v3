@@ -12,9 +12,14 @@ class JournalEntryBuilder
 
     protected $journalLines;
 
-    public function __construct(JournalEntry $journalEntry)
-    {
+    protected JournalEntryMulticurrencyService $multicurrencyService;
+
+    public function __construct(
+        JournalEntry $journalEntry,
+        ?JournalEntryMulticurrencyService $multicurrencyService = null,
+    ) {
         $this->journalEntry = $journalEntry;
+        $this->multicurrencyService = $multicurrencyService ?? app(JournalEntryMulticurrencyService::class);
         $this->journalLines = JournalEntryLine::where('journal_entry_id', $journalEntry->id)->orderBy('line_no')->get();
     }
 
@@ -33,12 +38,29 @@ class JournalEntryBuilder
                 'DueDate' => $dueDate,
             ];
 
+            $currency = $this->multicurrencyService->resolveCurrency([
+                'currency' => $detail->currency ?? 'IDR',
+            ]);
+
             if ($detail->debit_credit === 'debit') {
                 $line['Debit'] = (float) $detail->amount;
                 $line['Credit'] = 0.0;
             } else {
                 $line['Debit'] = 0.0;
                 $line['Credit'] = (float) $detail->amount;
+            }
+
+            if ($currency === JournalEntryMulticurrencyService::SUPPORTED_FOREIGN_CURRENCY) {
+                $line['FCCurrency'] = JournalEntryMulticurrencyService::SUPPORTED_FOREIGN_CURRENCY;
+                $fcAmount = (float) $detail->fc_amount;
+
+                if ($detail->debit_credit === 'debit') {
+                    $line['FCDebit'] = $fcAmount;
+                    $line['FCCredit'] = 0.0;
+                } else {
+                    $line['FCDebit'] = 0.0;
+                    $line['FCCredit'] = $fcAmount;
+                }
             }
 
             if ($detail->project) {
@@ -71,24 +93,15 @@ class JournalEntryBuilder
             $errors[] = 'Journal entry has no details';
         }
 
-        $totalDebit = $this->journalLines->where('debit_credit', 'debit')->sum('amount');
-        $totalCredit = $this->journalLines->where('debit_credit', 'credit')->sum('amount');
-
-        if (abs($totalDebit - $totalCredit) > 0.01) {
-            $errors[] = sprintf(
-                'Journal entry is not balanced. Debit: %s, Credit: %s, Difference: %s',
-                number_format($totalDebit, 2),
-                number_format($totalCredit, 2),
-                number_format(abs($totalDebit - $totalCredit), 2)
-            );
-        }
-
         foreach ($this->journalLines as $detail) {
             if (empty($detail->account_code)) {
                 $errors[] = 'One or more journal details have missing account code';
                 break;
             }
         }
+
+        $multicurrencyErrors = $this->multicurrencyService->validateLines($this->journalLines);
+        $errors = array_merge($errors, $multicurrencyErrors);
 
         return $errors;
     }

@@ -16,6 +16,7 @@ class JournalEntry extends Model
         'date',
         'memo',
         'reference',
+        'has_foreign_currency',
         'journal_entry_template_id',
         'created_by',
         'sap_journal_no',
@@ -33,6 +34,7 @@ class JournalEntry extends Model
     ];
 
     protected $casts = [
+        'has_foreign_currency' => 'boolean',
         'date' => 'date',
         'sap_posting_date' => 'date',
         'sap_submitted_at' => 'datetime',
