@@ -100,6 +100,12 @@
             @enderror
           </div>
           <div class="form-group">
+            <div class="form-check">
+              <input type="checkbox" name="is_payment_source" id="is_payment_source_{{ $model->id }}" class="form-check-input" value="1" {{ old('is_payment_source', $model->is_payment_source) ? 'checked' : '' }}>
+              <label class="form-check-label" for="is_payment_source_{{ $model->id }}">Dipakai sebagai akun sumber pembayaran</label>
+            </div>
+          </div>
+          <div class="form-group">
             <label for="is_active_{{ $model->id }}">Status</label>
             <div class="form-check">
               <input type="checkbox" name="is_active" id="is_active_{{ $model->id }}" class="form-check-input" value="1" {{ old('is_active', $model->is_active) ? 'checked' : '' }}>

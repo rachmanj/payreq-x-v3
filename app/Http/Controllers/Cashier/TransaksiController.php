@@ -11,7 +11,7 @@ class TransaksiController extends Controller
 {
     public function index()
     {
-        $account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+        $account = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
 
         return view('cashier.transaksis.index', compact('account'));
     }
@@ -35,7 +35,7 @@ class TransaksiController extends Controller
 
             return true;
         } else {
-            $account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+            $account = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
             $this->storeIncomingForAccount(
                 $account->id,
                 $data->id,

@@ -24,14 +24,14 @@ class CashJournalController extends Controller
 
         if ($cash_journal->type === 'cash-out') {
             $outgoings = Outgoing::where('cash_journal_id', $id)->get();
-            $debet_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
-            $credit_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+            $debet_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->orderBy('id')->first();
+            $credit_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
 
             return view('cash-journal.show_cash_out', compact(['cash_journal', 'outgoings', 'debet_account', 'credit_account']));
         } else {
             $incomings = Incoming::where('cash_journal_id', $id)->get();
-            $debet_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
-            $credit_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+            $debet_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
+            $credit_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->orderBy('id')->first();
 
             return view('cash-journal.show_cash_in', compact(['cash_journal', 'incomings', 'debet_account', 'credit_account']));
         }
@@ -78,14 +78,14 @@ class CashJournalController extends Controller
 
         if ($journal->type === 'cash-out') {
             $outgoings = Outgoing::where('cash_journal_id', $id)->get();
-            $debet_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
-            $credit_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+            $debet_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->orderBy('id')->first();
+            $credit_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
 
             return view('cash-journal.print_cash_out', compact(['journal', 'outgoings', 'debet_account', 'credit_account']));
         } else {
             $incomings = Incoming::where('cash_journal_id', $id)->get();
-            $debet_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
-            $credit_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+            $debet_account = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
+            $credit_account = Account::where('type', 'advance')->where('project', auth()->user()->project)->orderBy('id')->first();
 
             return view('cash-journal.print_cash_in', compact(['journal', 'incomings', 'debet_account', 'credit_account']));
         }

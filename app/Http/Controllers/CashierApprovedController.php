@@ -28,10 +28,10 @@ class CashierApprovedController extends Controller
         $request['amount'] = $payreq->amount;
         $request['cashier_id'] = $cashier->id;
         if ($payreq->payment_method === 'transfer') {
-            $account = Account::where('type', 'bank')->where('project', $cashier->project)->first()
-                ?? Account::where('type', 'cash')->where('project', $cashier->project)->first();
+            $account = Account::where('type', 'bank')->where('project', $cashier->project)->orderBy('id')->first()
+                ?? Account::where('type', 'cash')->where('project', $cashier->project)->orderBy('id')->first();
         } else {
-            $account = Account::where('type', 'cash')->where('project', $cashier->project)->first();
+            $account = Account::where('type', 'cash')->where('project', $cashier->project)->orderBy('id')->first();
         }
 
         $request['account_id'] = $account->id;

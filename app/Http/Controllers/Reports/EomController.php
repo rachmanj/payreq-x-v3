@@ -70,16 +70,16 @@ class EomController extends Controller
         foreach ($projects as $project) {
             $journal[] = [
                 'debit' => [
-                    'account_number' => Account::where('type', 'advance')->where('project', $project)->first()->account_number,
-                    'account_name' => Account::where('type', 'advance')->where('project', $project)->first()->account_name,
+                    'account_number' => Account::where('type', 'advance')->where('project', $project)->orderBy('id')->first()->account_number,
+                    'account_name' => Account::where('type', 'advance')->where('project', $project)->orderBy('id')->first()->account_name,
                     'description' => 'EOM '.date('dmY').' Journal',
                     'project_code' => $project,
                     'cost_center' => '30',
                     'amount' => app(OngoingDashboardController::class)->dashboard_data($project)['total_advance_employee'],
                 ],
                 'credit' => [
-                    'account_number' => Account::where('type', 'cash')->where('project', $project)->first()->account_number,
-                    'account_name' => Account::where('type', 'advance')->where('project', $project)->first()->account_name,
+                    'account_number' => Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first()->account_number,
+                    'account_name' => Account::where('type', 'advance')->where('project', $project)->orderBy('id')->first()->account_name,
                     'description' => 'EOM '.date('dmY').' Journal',
                     'project_code' => $project,
                     'cost_center' => '30',

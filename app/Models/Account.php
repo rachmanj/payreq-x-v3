@@ -16,7 +16,16 @@ class Account extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_hidden' => 'boolean',
+        'is_payment_source' => 'boolean',
     ];
+
+    public function scopePaymentSourceEligible(Builder $query): Builder
+    {
+        return $query->where(function (Builder $inner) {
+            $inner->whereIn('type', ['cash', 'bank'])
+                ->orWhere('is_payment_source', true);
+        });
+    }
 
     public function scopeSelectable(Builder $query): Builder
     {

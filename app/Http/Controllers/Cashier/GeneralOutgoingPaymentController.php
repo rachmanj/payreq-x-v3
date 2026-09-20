@@ -120,7 +120,10 @@ class GeneralOutgoingPaymentController extends Controller
         $bilyets = $bilyetsQuery->get();
 
         $cashAccountsQuery = Account::query()
-            ->where('type', 'cash')
+            ->where(function ($query) {
+                $query->where('type', 'cash')
+                    ->orWhere('is_payment_source', true);
+            })
             ->where('is_active', true)
             ->whereNotNull('sap_account')
             ->where('sap_account', '!=', '')

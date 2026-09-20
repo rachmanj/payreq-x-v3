@@ -22,6 +22,7 @@ class AccountController extends Controller
             'type' => 'required',
             'project' => 'required',
             'sap_account' => 'nullable|string|max:50',
+            'is_payment_source' => 'sometimes|boolean',
         ]);
 
         $account = Account::where('account_number', $validated['account_number'])
@@ -34,6 +35,7 @@ class AccountController extends Controller
         Account::create(array_merge($validated, [
             'description' => $request->description,
             'sap_account' => $this->normalizedSapAccount($request->input('sap_account')),
+            'is_payment_source' => $request->boolean('is_payment_source'),
         ]));
 
         return redirect()->route('accounts.index')->with('success', 'Account created successfully!');
@@ -47,6 +49,7 @@ class AccountController extends Controller
             'type' => 'nullable|string',
             'project' => 'required',
             'sap_account' => 'nullable|string|max:50',
+            'is_payment_source' => 'sometimes|boolean',
         ]);
 
         $account = Account::where('account_number', $validated['account_number'])
@@ -60,6 +63,7 @@ class AccountController extends Controller
         Account::where('id', $id)->update(array_merge($validated, [
             'description' => $request->description,
             'is_active' => $request->has('is_active') ? 1 : 0,
+            'is_payment_source' => $request->boolean('is_payment_source'),
             'sap_account' => $this->normalizedSapAccount($request->input('sap_account')),
         ]));
 
@@ -76,8 +80,8 @@ class AccountController extends Controller
 
     public function outgoing($amount)
     {
-        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
-        $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
+        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
+        $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->orderBy('id')->first();
 
         // if account is not found
         if (! $account_cash || ! $account_advance) {
@@ -95,7 +99,7 @@ class AccountController extends Controller
 
     public function outgoing_manual($amount)
     {
-        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->first();
+        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
         // $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
 
         $account_cash->app_balance = $account_cash->app_balance - $amount;
@@ -110,8 +114,8 @@ class AccountController extends Controller
     public function incoming($amount)
     {
         $cashier_project = auth()->user()->project;
-        $account_cash = Account::where('type', 'cash')->where('project', $cashier_project)->first();
-        $account_advance = Account::where('type', 'advance')->where('project', $cashier_project)->first();
+        $account_cash = Account::where('type', 'cash')->where('project', $cashier_project)->orderBy('id')->first();
+        $account_advance = Account::where('type', 'advance')->where('project', $cashier_project)->orderBy('id')->first();
 
         // if account is not found
         if (! $account_cash || ! $account_advance) {
@@ -123,7 +127,7 @@ class AccountController extends Controller
 
     public function incomingTo(Account $account, float $amount): bool
     {
-        $account_advance = Account::where('type', 'advance')->where('project', $account->project)->first();
+        $account_advance = Account::where('type', 'advance')->where('project', $account->project)->orderBy('id')->first();
 
         if (! $account_advance) {
             return false;
@@ -177,13 +181,21 @@ class AccountController extends Controller
 
         return datatables()->of($accounts)
             ->addIndexColumn()
+            ->editColumn('type', function ($account) {
+                $html = e($account->type);
+                if ($account->is_payment_source) {
+                    $html .= ' <span class="badge badge-info" title="Dipakai sebagai akun sumber pembayaran">Bayar</span>';
+                }
+
+                return $html;
+            })
             ->editColumn('is_active', function ($account) {
                 return $account->is_active
                     ? '<span class="badge badge-success">Active</span>'
                     : '<span class="badge badge-secondary">Inactive</span>';
             })
             ->addColumn('action', 'accounts.action')
-            ->rawColumns(['action', 'is_active'])
+            ->rawColumns(['action', 'is_active', 'type'])
             ->toJson();
     }
 

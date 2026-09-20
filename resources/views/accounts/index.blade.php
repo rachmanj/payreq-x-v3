@@ -136,6 +136,14 @@
               </div>
             @enderror
           </div>
+
+          <div class="form-group">
+            <div class="form-check">
+              <input type="checkbox" name="is_payment_source" id="is_payment_source" class="form-check-input" value="1" {{ old('is_payment_source') ? 'checked' : '' }}>
+              <label class="form-check-label" for="is_payment_source">Dipakai sebagai akun sumber pembayaran</label>
+            </div>
+            <small class="form-text text-muted">Centang untuk akun clearing/prepaid yang boleh dipilih saat outgoing payment, tanpa mengubah jenis akun menjadi kas.</small>
+          </div>
         </div> <!-- /.modal-body -->
 
         <div class="modal-footer float-left">

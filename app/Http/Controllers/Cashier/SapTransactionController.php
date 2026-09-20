@@ -16,7 +16,8 @@ class SapTransactionController extends Controller
 
     public function index()
     {
-        $accountsQuery = Account::whereIn('type', ['cash', 'bank'])
+        $accountsQuery = Account::query()
+            ->paymentSourceEligible()
             ->select('account_number', 'account_name')
             ->orderBy('account_number');
 

@@ -52,7 +52,7 @@ class CashierDashboardController extends Controller
             'count' => Outgoing::where('project', $project)->where('outgoing_date', $today)->count(),
         ];
 
-        $account = Account::where('type', 'cash')->where('project', $project)->first();
+        $account = Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first();
         if ($account) {
             $result['today_pc_balance'] = $account->app_balance;
         } else {

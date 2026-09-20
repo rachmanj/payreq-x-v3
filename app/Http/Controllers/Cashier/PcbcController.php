@@ -150,6 +150,7 @@ class PcbcController extends Controller
         $defaultSystemAmount = 0;
         $cashAccount = Account::where('project', auth()->user()->project)
             ->where('type', 'cash')
+            ->orderBy('id')
             ->first();
 
         if ($cashAccount && isset($cashAccount->app_balance)) {
@@ -542,6 +543,7 @@ class PcbcController extends Controller
         if ($design == '3') {
             $cashAccount = Account::where('project', $pcbc->project)
                 ->where('type', 'cash')
+                ->orderBy('id')
                 ->first();
 
             if ($cashAccount && isset($cashAccount->app_balance)) {

@@ -14,7 +14,6 @@ use App\Models\User;
 use App\Models\VerificationJournalDetail;
 use Illuminate\Support\Facades\DB;
 
-
 class OngoingDashboardController extends Controller
 {
     public function dashboard()
@@ -34,7 +33,7 @@ class OngoingDashboardController extends Controller
 
     public function dashboard_data($project)
     {
-        $saldo_pc_payreq_system = Account::where('type', 'cash')->where('project', $project)->first()->app_balance;
+        $saldo_pc_payreq_system = Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first()->app_balance;
         $payreq_belum_realisasi_amount = $this->payreq_belum_realisasi_amount($project);
         $realisasi_belum_verifikasi_amount = $this->realisasi_belum_verifikasi_amount($project);
         $verifikasi_belum_posted_amount = $this->verifikasi_belum_posted_amount($project); // this is not used anymore, so we just set it to '0.00
@@ -168,9 +167,9 @@ class OngoingDashboardController extends Controller
     public function dana_belum_diselesaikan($user_id)
     {
         $total = $this->payreqs_belum_realisasi_by_user_amount($user_id) + $this->realisasi_belum_verifikasi_by_user_amount($user_id) + $this->variance_realisasi_belum_incoming_by_user_amount($user_id) - $this->variance_realisasi_belum_outgoing_by_user_amount($user_id);
+
         return $total > 0 ? number_format($total, 2) : 0;
     }
-
 
     public function payreqs_belum_realisasi_by_user_amount($user_id)
     {

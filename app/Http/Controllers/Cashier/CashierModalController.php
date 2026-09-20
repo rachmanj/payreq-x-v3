@@ -219,6 +219,7 @@ class CashierModalController extends Controller
         $account = Account::query()
             ->where('project', auth()->user()->project)
             ->where('type', 'cash')
+            ->orderBy('id')
             ->first();
 
         return (float) ($account?->app_balance ?? 0);

@@ -433,7 +433,7 @@ class UtilityApInvoiceController extends Controller
     {
         $eligibleAccountIds = Account::query()
             ->selectable()
-            ->whereIn('type', ['cash', 'bank'])
+            ->paymentSourceEligible()
             ->whereNotNull('sap_account')
             ->where('sap_account', '!=', '')
             ->pluck('id')
@@ -559,7 +559,7 @@ class UtilityApInvoiceController extends Controller
         return Account::query()
             ->selectable()
             ->whereKey($accountId)
-            ->whereIn('type', ['cash', 'bank'])
+            ->paymentSourceEligible()
             ->whereNotNull('sap_account')
             ->where('sap_account', '!=', '')
             ->first();
@@ -606,7 +606,7 @@ class UtilityApInvoiceController extends Controller
     {
         return Account::query()
             ->selectable()
-            ->whereIn('type', ['cash', 'bank'])
+            ->paymentSourceEligible()
             ->whereNotNull('sap_account')
             ->where('sap_account', '!=', '')
             ->orderBy('account_name')
