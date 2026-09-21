@@ -743,7 +743,12 @@
 .vj-show #installments-table thead th,
 .vj-show #unpaid-table thead th,
 .vj-show #paid-table thead th,
-.vj-show #cashier-modal thead th {
+.vj-show #cashier-modal thead th,
+.vj-show #journal-entries thead th,
+.vj-show #je-lines-table thead th,
+.vj-show #je-templates-table thead th,
+.vj-show #je-show-lines-table thead th,
+.vj-show #je-submission-logs-table thead th {
     background: #f8f9fa;
     border-color: #e9ecef;
     color: #495057;

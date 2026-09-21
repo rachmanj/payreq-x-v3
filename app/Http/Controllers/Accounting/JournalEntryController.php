@@ -39,7 +39,7 @@ class JournalEntryController extends Controller
             ->editColumn('number', function (JournalEntry $entry) {
                 $html = e($entry->number);
                 if ($entry->has_foreign_currency) {
-                    $html .= ' <span class="badge badge-info ml-1">USD</span>';
+                    $html .= ' <span class="vj-chip vj-chip-info ml-1">USD</span>';
                 }
 
                 return $html;
@@ -48,13 +48,13 @@ class JournalEntryController extends Controller
             ->editColumn('memo', fn (JournalEntry $entry) => \Illuminate\Support\Str::limit($entry->memo ?? '', 60))
             ->addColumn('status_badge', function (JournalEntry $entry) {
                 if ($entry->isReversed()) {
-                    return '<span class="badge badge-secondary">Reversed</span>';
+                    return '<span class="vj-chip vj-chip-neutral">Reversed</span>';
                 }
 
                 return match ($entry->sap_submission_status) {
-                    'success' => '<span class="badge badge-success">Posted</span>',
-                    'failed' => '<span class="badge badge-danger">Failed</span>',
-                    default => '<span class="badge badge-warning">Draft</span>',
+                    'success' => '<span class="vj-chip vj-chip-success">Posted</span>',
+                    'failed' => '<span class="vj-chip vj-chip-danger">Failed</span>',
+                    default => '<span class="vj-chip vj-chip-warning">Draft</span>',
                 };
             })
             ->addColumn('sap_journal_no', fn (JournalEntry $entry) => $entry->sap_journal_no ?? '<span class="text-muted">—</span>')

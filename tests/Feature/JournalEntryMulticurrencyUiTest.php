@@ -189,7 +189,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
         $this->actingAs($user)
             ->getJson(route('accounting.journal-entries.data'))
             ->assertOk()
-            ->assertJsonFragment(['number' => $entry->number.' <span class="badge badge-info ml-1">USD</span>']);
+            ->assertJsonFragment(['number' => $entry->number.' <span class="vj-chip vj-chip-info ml-1">USD</span>']);
     }
 
     public function test_pure_idr_journal_create_and_store_regression(): void

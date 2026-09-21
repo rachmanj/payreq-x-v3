@@ -9,61 +9,74 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Journal Entry Templates</h3>
-                    <div class="float-right">
-                        <a href="{{ route('accounting.journal-entries.index') }}" class="btn btn-sm btn-secondary mr-2">
-                            <i class="fas fa-arrow-left"></i> Journal Entries
-                        </a>
-                        <a href="{{ route('accounting.journal-entries.templates.create') }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-plus"></i> New Template
-                        </a>
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-copy"></i> Journal Entry Templates
+                        </h3>
+                        <div class="vj-inline-actions">
+                            <a href="{{ route('accounting.journal-entries.index') }}" class="vj-action-item vj-action-back">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Journal Entries</span>
+                            </a>
+                            <a href="{{ route('accounting.journal-entries.templates.create') }}" class="vj-btn vj-btn-success">
+                                <i class="fas fa-plus"></i> New Template
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="card-body">
-                    <table class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Lines</th>
-                                <th>Created By</th>
-                                <th>Updated</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($templates as $template)
+                    <div class="card-body">
+                        <table id="je-templates-table" class="table table-bordered table-striped table-hover">
+                            <thead>
                                 <tr>
-                                    <td><strong>{{ $template->name }}</strong></td>
-                                    <td>{{ $template->description ?? '—' }}</td>
-                                    <td>{{ $template->lines_count }}</td>
-                                    <td>{{ $template->createdBy?->name }}</td>
-                                    <td>{{ $template->updated_at->format('d-M-Y') }}</td>
-                                    <td>
-                                        <a href="{{ route('accounting.journal-entries.templates.edit', $template->id) }}" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <form action="{{ route('accounting.journal-entries.templates.destroy', $template->id) }}" method="POST" class="d-inline"
-                                            onsubmit="return confirm('Delete template {{ $template->name }}?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                                        </form>
-                                    </td>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Lines</th>
+                                    <th>Created By</th>
+                                    <th>Updated</th>
+                                    <th></th>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted">No templates yet. Create one to reuse recurring journal entry layouts.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @forelse ($templates as $template)
+                                    <tr>
+                                        <td><strong>{{ $template->name }}</strong></td>
+                                        <td>{{ $template->description ?? '—' }}</td>
+                                        <td>{{ $template->lines_count }}</td>
+                                        <td>{{ $template->createdBy?->name }}</td>
+                                        <td>{{ $template->updated_at->format('d-M-Y') }}</td>
+                                        <td>
+                                            <div class="vj-inline-actions">
+                                                <a href="{{ route('accounting.journal-entries.templates.edit', $template->id) }}" class="vj-action-item vj-action-item-xs vj-action-edit" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form action="{{ route('accounting.journal-entries.templates.destroy', $template->id) }}" method="POST" class="vj-action-item-form"
+                                                    onsubmit="return confirm('Delete template {{ $template->name }}?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">No templates yet. Create one to reuse recurring journal entry layouts.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+@endsection
+
+@section('styles')
+    @include('partials.vj-soft-ui-styles')
 @endsection
