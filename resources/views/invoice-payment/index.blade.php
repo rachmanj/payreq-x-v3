@@ -40,6 +40,14 @@
                     @endif
                 </div>
             </div>
+        @elseif (($departmentValidation['status'] ?? '') === 'rate_limited')
+            <div class="vj-alert vj-alert-warning mb-3">
+                <i class="fas fa-hourglass-half"></i>
+                <div>
+                    <strong>Batas permintaan API DDS (rate limit)</strong><br>
+                    {{ $departmentValidation['message'] ?? 'API DDS sedang membatasi permintaan. Coba lagi nanti.' }}
+                </div>
+            </div>
         @elseif (($departmentValidation['status'] ?? '') === 'api_error')
             <div class="vj-alert vj-alert-secondary mb-3">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -1067,8 +1075,16 @@
 
             function handleApiError(xhr, fallbackMessage) {
                 const response = xhr.responseJSON || {};
-                const title = response.error || 'Request Failed';
-                const message = response.message || fallbackMessage;
+                let title = response.error || 'Request Failed';
+                let message = response.message || fallbackMessage;
+                if (response.rate_limited) {
+                    title = 'Batas permintaan API DDS (rate limit)';
+                    if (!response.message) {
+                        const minutes = response.retry_after_minutes || 60;
+                        message = 'API DDS sedang membatasi permintaan (rate limit). Coba lagi dalam ' +
+                            minutes + ' menit.';
+                    }
+                }
                 showApiError(title, message);
                 console.error(fallbackMessage, xhr);
             }

@@ -10,6 +10,7 @@ use App\Models\SapSubmissionLog;
 use App\Models\User;
 use App\Services\SapService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -34,6 +35,8 @@ class InvoicePaymentControllerTest extends TestCase
         Parameter::query()
             ->where('name1', 'invoice_payment_accounts')
             ->delete();
+
+        Cache::forget('dds.departments');
     }
 
     public function test_dashboard_counts_waiting_and_paid_by_payment_date(): void
@@ -1057,6 +1060,146 @@ class InvoicePaymentControllerTest extends TestCase
             ->assertSee('Dibayar netto', false)
             ->assertSee('renderSapWithholdingUi', false)
             ->assertSee('Invoice ini mengandung PPh23 sebesar', false);
+    }
+
+    public function test_dashboard_returns_rate_limit_message_when_dds_responds_with_429(): void
+    {
+        Http::preventStrayRequests();
+
+        Http::fake(function ($request) {
+            $url = $request->url();
+
+            if (str_ends_with($url, '/api/v1/departments')) {
+                return Http::response([
+                    'success' => false,
+                    'error' => 'Rate limit exceeded',
+                    'message' => 'Hourly rate limit exceeded. Please try again later.',
+                    'retry_after' => 3600,
+                ], 429);
+            }
+
+            if (str_contains($url, '/invoices')) {
+                return Http::response([
+                    'success' => false,
+                    'error' => 'Rate limit exceeded',
+                    'retry_after' => 3600,
+                ], 429);
+            }
+
+            return Http::response(['success' => false], 404);
+        });
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.dashboard'))
+            ->assertStatus(429)
+            ->assertJson([
+                'rate_limited' => true,
+                'retry_after_minutes' => 60,
+            ])
+            ->assertJsonPath('message', 'API DDS sedang membatasi permintaan (rate limit). Coba lagi dalam 60 menit.');
+
+        $this->assertStringNotContainsString(
+            'API URL and key',
+            (string) $this->actingAs($user)->getJson(route('cashier.invoice-payment.dashboard'))->json('message')
+        );
+    }
+
+    public function test_department_list_is_cached_across_requests_within_ttl(): void
+    {
+        Http::preventStrayRequests();
+
+        Http::fake(function ($request) {
+            if (str_ends_with($request->url(), '/api/v1/departments')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        'departments' => [
+                            ['location_code' => '000HCASHO', 'name' => 'Cashier HO'],
+                        ],
+                    ],
+                ]);
+            }
+
+            if (str_contains($url = $request->url(), '/wait-payment-invoices')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => ['invoices' => []],
+                ]);
+            }
+
+            return Http::response(['success' => false], 404);
+        });
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)->get(route('cashier.invoice-payment.index'))->assertOk();
+        $this->actingAs($user)->get(route('cashier.invoice-payment.index'))->assertOk();
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_failed_department_fetch_does_not_fill_cache_and_retries_http(): void
+    {
+        Http::preventStrayRequests();
+
+        $departmentCalls = 0;
+
+        Http::fake(function ($request) use (&$departmentCalls) {
+            if (str_ends_with($request->url(), '/api/v1/departments')) {
+                $departmentCalls++;
+
+                return Http::response([
+                    'success' => false,
+                    'error' => 'Rate limit exceeded',
+                    'retry_after' => 3600,
+                ], 429);
+            }
+
+            return Http::response(['success' => false], 404);
+        });
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)->get(route('cashier.invoice-payment.index'))->assertOk();
+        $this->actingAs($user)->get(route('cashier.invoice-payment.index'))->assertOk();
+
+        $this->assertSame(2, $departmentCalls);
+        $this->assertNull(Cache::get('dds.departments'));
+
+        Cache::put('dds.departments', ['000HCASHO'], now()->addMinutes(10));
+
+        $this->actingAs($user)->get(route('cashier.invoice-payment.index'))->assertOk();
+        $this->assertSame(2, $departmentCalls);
+        $this->assertTrue(Cache::has('dds.departments'));
+    }
+
+    public function test_index_shows_rate_limit_banner_not_connection_issue(): void
+    {
+        Http::preventStrayRequests();
+
+        Http::fake(function ($request) {
+            if (str_ends_with($request->url(), '/api/v1/departments')) {
+                return Http::response([
+                    'success' => false,
+                    'error' => 'Rate limit exceeded',
+                    'retry_after' => 3600,
+                ], 429);
+            }
+
+            return Http::response(['success' => false], 404);
+        });
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)
+            ->get(route('cashier.invoice-payment.index'))
+            ->assertOk()
+            ->assertSee('Batas permintaan API DDS (rate limit)', false)
+            ->assertSee('rate limit', false)
+            ->assertDontSee('Check API URL and key', false)
+            ->assertDontSee('DDS Connection Issue', false);
     }
 
     protected function ddsDepartmentFake(): callable

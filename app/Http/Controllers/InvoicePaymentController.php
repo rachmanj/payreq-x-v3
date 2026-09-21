@@ -12,8 +12,10 @@ use App\Models\SapSubmissionLog;
 use App\Services\SapService;
 use App\Services\SapVendorPaymentBuilder;
 use Carbon\Carbon;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -25,8 +27,16 @@ class InvoicePaymentController extends Controller
 
     protected ?string $departmentCode;
 
+    private const DDS_DEPARTMENTS_CACHE_KEY = 'dds.departments';
+
+    private const DDS_DEPARTMENTS_CACHE_TTL_MINUTES = 10;
+
     /** @var array<string>|null */
     private ?array $departmentCodesCache = null;
+
+    private ?string $departmentFetchFailureReason = null;
+
+    private ?int $departmentFetchRetryAfterMinutes = null;
 
     public function __construct()
     {
@@ -560,6 +570,17 @@ class InvoicePaymentController extends Controller
         $codes = $this->fetchDepartmentLocationCodes();
 
         if ($codes === null) {
+            if ($this->departmentFetchFailureReason === 'rate_limited') {
+                $minutes = $this->departmentFetchRetryAfterMinutes ?? 60;
+
+                return [
+                    'status' => 'rate_limited',
+                    'message' => "API DDS sedang membatasi permintaan (rate limit). Coba lagi dalam {$minutes} menit.",
+                    'rate_limited' => true,
+                    'retry_after_minutes' => $minutes,
+                ];
+            }
+
             return [
                 'status' => 'api_error',
                 'message' => 'Could not retrieve the department list from DDS. Check API URL and key.',
@@ -594,8 +615,27 @@ class InvoicePaymentController extends Controller
             return null;
         }
 
+        $cached = Cache::get(self::DDS_DEPARTMENTS_CACHE_KEY);
+        if (is_array($cached)) {
+            $this->departmentCodesCache = $cached;
+
+            return $cached;
+        }
+
         $response = Http::withHeaders($this->ddsHeaders())
             ->get("{$this->apiUrl}/api/v1/departments");
+
+        if ($this->isDdsRateLimited($response)) {
+            $this->departmentFetchFailureReason = 'rate_limited';
+            $this->departmentFetchRetryAfterMinutes = $this->ddsRateLimitRetryAfterMinutes($response);
+
+            Log::warning('Invoice Payment: DDS departments rate limited', [
+                'status' => $response->status(),
+                'retry_after_minutes' => $this->departmentFetchRetryAfterMinutes,
+            ]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             Log::warning('Invoice Payment: failed to fetch DDS departments', [
@@ -603,14 +643,30 @@ class InvoicePaymentController extends Controller
                 'body' => $response->body(),
             ]);
 
+            $this->departmentFetchFailureReason = 'api_error';
+
             return null;
         }
 
-        $departments = $response->json()['data']['departments'] ?? [];
-        $this->departmentCodesCache = array_values(array_filter(
+        $departments = $response->json()['data']['departments'] ?? null;
+        if (! is_array($departments)) {
+            $this->departmentFetchFailureReason = 'api_error';
+
+            return null;
+        }
+
+        $codes = array_values(array_filter(
             array_column($departments, 'location_code'),
             fn ($code) => is_string($code) && $code !== ''
         ));
+
+        Cache::put(
+            self::DDS_DEPARTMENTS_CACHE_KEY,
+            $codes,
+            now()->addMinutes(self::DDS_DEPARTMENTS_CACHE_TTL_MINUTES)
+        );
+
+        $this->departmentCodesCache = $codes;
 
         return $this->departmentCodesCache;
     }
@@ -626,6 +682,7 @@ class InvoicePaymentController extends Controller
         $statusCode = match ($state['status']) {
             'invalid_department' => 400,
             'api_error' => 502,
+            'rate_limited' => 429,
             default => 500,
         };
 
@@ -633,10 +690,16 @@ class InvoicePaymentController extends Controller
             'error' => match ($state['status']) {
                 'invalid_department' => 'Invalid department code',
                 'api_error' => 'DDS unavailable',
+                'rate_limited' => 'DDS rate limit',
                 default => 'Configuration error',
             },
             'message' => $state['message'],
         ];
+
+        if ($state['status'] === 'rate_limited') {
+            $payload['rate_limited'] = true;
+            $payload['retry_after_minutes'] = $state['retry_after_minutes'] ?? 60;
+        }
 
         if ($state['status'] === 'invalid_department') {
             $payload['department_code'] = $state['department_code'];
@@ -701,8 +764,12 @@ class InvoicePaymentController extends Controller
         ];
     }
 
-    private function ddsFailureResponse($response, string $message): JsonResponse
+    private function ddsFailureResponse(Response $response, string $message): JsonResponse
     {
+        if ($this->isDdsRateLimited($response)) {
+            return $this->ddsRateLimitJsonResponse($response);
+        }
+
         Log::warning('Invoice Payment DDS request failed', [
             'message' => $message,
             'status' => $response->status(),
@@ -714,6 +781,53 @@ class InvoicePaymentController extends Controller
             'status' => $response->status(),
             'response_body' => $response->body(),
         ], $response->status() >= 400 && $response->status() < 600 ? $response->status() : 500);
+    }
+
+    private function isDdsRateLimited(Response $response): bool
+    {
+        if ($response->status() === 429) {
+            return true;
+        }
+
+        $error = $response->json('error');
+
+        return is_string($error) && strcasecmp($error, 'Rate limit exceeded') === 0;
+    }
+
+    private function ddsRateLimitRetryAfterMinutes(Response $response): int
+    {
+        $retryAfterSeconds = $response->json('retry_after');
+
+        if (! is_numeric($retryAfterSeconds)) {
+            $header = $response->header('Retry-After');
+            if (is_numeric($header)) {
+                $retryAfterSeconds = (int) $header;
+            }
+        }
+
+        if (! is_numeric($retryAfterSeconds) || (int) $retryAfterSeconds <= 0) {
+            return 60;
+        }
+
+        return (int) ceil((int) $retryAfterSeconds / 60);
+    }
+
+    private function ddsRateLimitJsonResponse(Response $response): JsonResponse
+    {
+        $minutes = $this->ddsRateLimitRetryAfterMinutes($response);
+
+        Log::warning('Invoice Payment DDS rate limit', [
+            'status' => $response->status(),
+            'retry_after_minutes' => $minutes,
+            'body' => $response->body(),
+        ]);
+
+        return response()->json([
+            'error' => 'DDS rate limit',
+            'message' => "API DDS sedang membatasi permintaan (rate limit). Coba lagi dalam {$minutes} menit.",
+            'rate_limited' => true,
+            'retry_after_minutes' => $minutes,
+        ], 429);
     }
 
     private function exceptionResponse(\Exception $e, string $context): JsonResponse
