@@ -279,7 +279,7 @@ class InstallmentOpService
                 SapSubmissionLog::create([
                     'document_type' => SapSubmissionLog::DOCUMENT_TYPE_AP_OUTGOING_INSTALLMENT,
                     'status' => 'success',
-                    'action' => 'sync',
+                    'action' => SapSubmissionLog::ACTION_SYNC,
                     'sap_doc_num' => $installment->sap_payment_doc_num ?? ($apInvoice['DocNum'] ?? null),
                     'sap_doc_entry' => $installment->sap_payment_doc_entry ?? ($apInvoice['DocEntry'] ?? null),
                     'sap_response' => $apInvoice,

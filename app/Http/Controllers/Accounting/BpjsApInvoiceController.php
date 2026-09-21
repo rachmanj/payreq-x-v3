@@ -441,7 +441,7 @@ class BpjsApInvoiceController extends Controller
                 'bpjs_ap_invoice_id' => $bpjsApInvoice->id,
                 'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_CANCELLATION,
                 'status' => 'success',
-                'action' => 'cancellation',
+                'action' => SapSubmissionLog::ACTION_CANCELLATION,
                 'sap_doc_num' => $bpjsApInvoice->sap_doc_num,
                 'sap_doc_entry' => $bpjsApInvoice->sap_doc_entry,
                 'sap_response' => $cancelResult['data'] ?? null,

@@ -23,6 +23,14 @@ class SapSubmissionLog extends Model
 
     public const DOCUMENT_TYPE_GENERAL_OUTGOING_PAYMENT = 'general_outgoing_payment';
 
+    public const ACTION_SUBMISSION = 'submission';
+
+    public const ACTION_REVERSAL = 'reversal';
+
+    public const ACTION_CANCELLATION = 'cancellation';
+
+    public const ACTION_SYNC = 'sync';
+
     protected $fillable = [
         'verification_journal_id',
         'journal_entry_id',
