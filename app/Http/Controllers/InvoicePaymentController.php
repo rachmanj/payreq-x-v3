@@ -6,6 +6,7 @@ use App\Http\Requests\PreviewSapInvoicePaymentRequest;
 use App\Http\Requests\SubmitSapInvoicePaymentRequest;
 use App\Models\Account;
 use App\Models\BpjsApInvoice;
+use App\Models\Parameter;
 use App\Models\SapBusinessPartner;
 use App\Models\SapSubmissionLog;
 use App\Services\SapService;
@@ -367,15 +368,35 @@ class InvoicePaymentController extends Controller
                 ], 422);
             }
 
-            $account = Account::query()
-                ->selectable()
-                ->whereKey($request->integer('account_id'))
-                ->first();
+            $accountId = $request->integer('account_id');
+            $eligibleAccountIds = collect($this->eligiblePaymentAccounts())
+                ->pluck('id')
+                ->filter(fn ($id) => $id !== null)
+                ->map(fn ($id) => (int) $id)
+                ->all();
 
-            if (! $account || empty($account->sap_account) || ! in_array($account->type, ['cash', 'bank'], true)) {
+            if (! in_array($accountId, $eligibleAccountIds, true)) {
+                $whitelist = $this->paymentAccountWhitelist();
+                $message = 'Akun yang dipilih tidak termasuk akun pembayaran yang diizinkan.';
+                if ($whitelist !== []) {
+                    $message .= ' Akun yang diizinkan: '.implode(', ', $whitelist).'.';
+                }
+
                 return response()->json([
                     'error' => 'Invalid account',
-                    'message' => 'Selected account is not a valid cash/bank account with SAP mapping.',
+                    'message' => $message,
+                ], 422);
+            }
+
+            $account = Account::query()
+                ->selectable()
+                ->whereKey($accountId)
+                ->first();
+
+            if (! $account) {
+                return response()->json([
+                    'error' => 'Invalid account',
+                    'message' => 'Akun yang dipilih tidak termasuk akun pembayaran yang diizinkan.',
                 ], 422);
             }
 
@@ -1076,27 +1097,94 @@ class InvoicePaymentController extends Controller
     }
 
     /**
+     * @return list<string>
+     */
+    private function paymentAccountWhitelist(): array
+    {
+        $parameter = Parameter::query()
+            ->where('name1', 'invoice_payment_accounts')
+            ->where('name2', 'ALL')
+            ->first();
+
+        if ($parameter === null || trim((string) $parameter->param_value) === '') {
+            return [];
+        }
+
+        return collect(explode(',', (string) $parameter->param_value))
+            ->map(fn (string $code) => trim($code))
+            ->filter(fn (string $code) => $code !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     private function eligiblePaymentAccounts(): array
     {
+        $whitelist = $this->paymentAccountWhitelist();
+
+        if ($whitelist !== []) {
+            $accountsByNumber = Account::query()
+                ->selectable()
+                ->whereIn('account_number', $whitelist)
+                ->orderBy('account_name')
+                ->get(['id', 'account_number', 'account_name', 'sap_account', 'type'])
+                ->keyBy('account_number');
+
+            $result = $accountsByNumber
+                ->map(fn (Account $account) => $this->mapEligiblePaymentAccount($account))
+                ->values()
+                ->all();
+
+            foreach ($whitelist as $accountNumber) {
+                if ($accountsByNumber->has($accountNumber)) {
+                    continue;
+                }
+
+                Log::warning('Invoice Payment: whitelist account number not found in accounts table', [
+                    'account_number' => $accountNumber,
+                ]);
+
+                $result[] = [
+                    'id' => null,
+                    'label' => $accountNumber,
+                    'account_number' => $accountNumber,
+                    'account_name' => $accountNumber,
+                    'sap_account' => null,
+                    'type' => null,
+                ];
+            }
+
+            return $result;
+        }
+
         return Account::query()
             ->selectable()
-            ->whereIn('type', ['cash', 'bank'])
+            ->paymentSourceEligible()
             ->whereNotNull('sap_account')
             ->where('sap_account', '!=', '')
             ->orderBy('account_name')
             ->get(['id', 'account_number', 'account_name', 'sap_account', 'type'])
-            ->map(fn (Account $account) => [
-                'id' => $account->id,
-                'label' => trim($account->account_name.' ('.$account->account_number.')'),
-                'account_number' => $account->account_number,
-                'account_name' => $account->account_name,
-                'sap_account' => $account->sap_account,
-                'type' => $account->type,
-            ])
+            ->map(fn (Account $account) => $this->mapEligiblePaymentAccount($account))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapEligiblePaymentAccount(Account $account): array
+    {
+        return [
+            'id' => $account->id,
+            'label' => trim($account->account_name.' ('.$account->account_number.')'),
+            'account_number' => $account->account_number,
+            'account_name' => $account->account_name,
+            'sap_account' => $account->sap_account,
+            'type' => $account->type,
+        ];
     }
 
     /**

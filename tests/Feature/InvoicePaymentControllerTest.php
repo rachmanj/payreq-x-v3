@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\BpjsApInvoice;
+use App\Models\Parameter;
 use App\Models\SapBusinessPartner;
 use App\Models\SapSubmissionLog;
 use App\Models\User;
@@ -29,6 +30,10 @@ class InvoicePaymentControllerTest extends TestCase
 
         Permission::firstOrCreate(['name' => 'submit_sap_invoice_payment', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'mark_invoice_paid_without_sap', 'guard_name' => 'web']);
+
+        Parameter::query()
+            ->where('name1', 'invoice_payment_accounts')
+            ->delete();
     }
 
     public function test_dashboard_counts_waiting_and_paid_by_payment_date(): void
