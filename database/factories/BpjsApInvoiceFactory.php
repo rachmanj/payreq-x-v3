@@ -39,6 +39,7 @@ class BpjsApInvoiceFactory extends Factory
             'sap_doc_num' => (string) fake()->unique()->numberBetween(10000, 99999),
             'sap_doc_entry' => fake()->unique()->numberBetween(10000, 99999),
             'submitted_at' => now(),
+            'sap_status_synced_at' => now(),
         ]);
     }
 
@@ -62,6 +63,7 @@ class BpjsApInvoiceFactory extends Factory
                 'sap_doc_num' => (string) fake()->unique()->numberBetween(10000, 99999),
                 'sap_doc_entry' => fake()->unique()->numberBetween(10000, 99999),
                 'submitted_at' => now(),
+                'sap_status_synced_at' => now(),
             ];
         });
     }
@@ -73,6 +75,7 @@ class BpjsApInvoiceFactory extends Factory
             'sap_doc_num' => (string) fake()->unique()->numberBetween(10000, 99999),
             'sap_doc_entry' => fake()->unique()->numberBetween(10000, 99999),
             'submitted_at' => now(),
+            'sap_status_synced_at' => now(),
             'cancelled_at' => now(),
             'cancel_reason' => 'Cancelled for testing',
         ]);

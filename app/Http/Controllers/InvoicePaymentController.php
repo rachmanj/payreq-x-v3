@@ -270,13 +270,13 @@ class InvoicePaymentController extends Controller
                             'payment_date' => $invoice['payment_date'] ?? Carbon::today()->format('Y-m-d'),
                             'remarks' => $invoice['remarks'] ?? null,
                         ],
-                        'ap_invoice' => [
+                        'ap_invoice' => array_merge([
                             'doc_entry' => $apInvoice['DocEntry'] ?? null,
                             'doc_num' => $apInvoice['DocNum'] ?? null,
                             'doc_total' => isset($apInvoice['DocTotal']) ? (float) $apInvoice['DocTotal'] : null,
                             'paid_to_date' => (float) ($apInvoice['PaidToDate'] ?? 0),
                             'remaining_balance' => $remaining,
-                        ],
+                        ], $this->sapApInvoiceDocumentMeta($apInvoice)),
                         'sap_payment' => $latestSuccess ? [
                             'doc_num' => $latestSuccess->sap_doc_num,
                             'doc_entry' => $latestSuccess->sap_doc_entry,
@@ -1032,6 +1032,20 @@ class InvoicePaymentController extends Controller
         $paidToDate = (float) ($apInvoice['PaidToDate'] ?? 0);
 
         return max(0.0, $docTotal - $paidToDate);
+    }
+
+    /**
+     * @param  array<string, mixed>  $apInvoice
+     * @return array{cancelled: bool, document_status: string|null}
+     */
+    private function sapApInvoiceDocumentMeta(array $apInvoice): array
+    {
+        $cancelled = strtoupper((string) ($apInvoice['Cancelled'] ?? ''));
+
+        return [
+            'cancelled' => in_array($cancelled, ['TYES', 'Y'], true),
+            'document_status' => isset($apInvoice['DocumentStatus']) ? (string) $apInvoice['DocumentStatus'] : null,
+        ];
     }
 
     /**

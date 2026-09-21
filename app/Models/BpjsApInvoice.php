@@ -76,6 +76,8 @@ class BpjsApInvoice extends Model
         'je_posting_date' => 'date',
         'je_submitted_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'sap_cancelled' => 'boolean',
+        'sap_status_synced_at' => 'datetime',
     ];
 
     public function submittedBy(): BelongsTo

@@ -381,6 +381,11 @@ class BpjsApInvoiceCancelTest extends TestCase
                     'message' => 'Purchase invoice cancelled successfully.',
                     'data' => array_merge($this->openSapInvoice($docEntry), ['Cancelled' => 'tYES']),
                 ]);
+            $mock->shouldReceive('getPurchaseInvoiceStatus')
+                ->andReturn(array_merge($this->openSapInvoice($docEntry), [
+                    'Cancelled' => 'tYES',
+                    'DocumentStatus' => 'bost_Open',
+                ]));
         });
     }
 

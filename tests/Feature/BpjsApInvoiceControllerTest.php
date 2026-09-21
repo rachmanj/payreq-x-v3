@@ -73,6 +73,14 @@ class BpjsApInvoiceControllerTest extends TestCase
                     'doc_entry' => 28625,
                     'data' => ['DocEntry' => 28625, 'DocNum' => 55001],
                 ]);
+            $mock->shouldReceive('getPurchaseInvoiceStatus')
+                ->once()
+                ->andReturn([
+                    'DocEntry' => 28625,
+                    'DocNum' => 55001,
+                    'DocumentStatus' => 'bost_Open',
+                    'Cancelled' => 'tNO',
+                ]);
         });
 
         $this->actingAs($this->authorizedUser())

@@ -19,6 +19,8 @@ Route::prefix('bpjs-ap-invoices')
             Route::post('/{bpjsApInvoice}/submit', [BpjsApInvoiceController::class, 'submit'])->name('submit');
             Route::post('/{bpjsApInvoice}/retry', [BpjsApInvoiceController::class, 'retry'])->name('retry');
             Route::post('/{bpjsApInvoice}/retry-je', [BpjsApInvoiceController::class, 'retryJe'])->name('retry-je');
+            Route::post('/sync-sap-status', [BpjsApInvoiceController::class, 'syncSapStatusAll'])->name('sync-sap-status-all');
+            Route::post('/{bpjsApInvoice}/sync-sap-status', [BpjsApInvoiceController::class, 'syncSapStatus'])->name('sync-sap-status');
         });
 
         Route::middleware('permission:cancel_sap_ap_invoice_bpjs')->group(function () {

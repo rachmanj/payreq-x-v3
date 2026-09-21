@@ -1263,10 +1263,16 @@
                             $('#sap_payment_amount').val(0).prop('disabled', true);
 
                             if ((response.source || row.source || 'dds') === 'bpjs') {
-                                $('#sapPaymentAlreadyPostedMessage').text(
-                                    'SAP AP Invoice sudah lunas (Paid to Date = Doc Total, sisa 0) sehingga tidak ada pembayaran/akun yang perlu dipilih. Tidak ada tindakan yang diperlukan di halaman ini.' +
-                                    (sapPayment.doc_num ? ' OP terakhir di SAP: #' + sapPayment.doc_num + '.' : '')
-                                );
+                                if (apInvoice.cancelled === true) {
+                                    $('#sapPaymentAlreadyPostedMessage').text(
+                                        'AP Invoice sudah DIBATALKAN di SAP (tidak bisa dibayar) — hubungi tim SAP/akunting.'
+                                    );
+                                } else {
+                                    $('#sapPaymentAlreadyPostedMessage').text(
+                                        'SAP AP Invoice sudah lunas (Paid to Date = Doc Total, sisa 0) sehingga tidak ada pembayaran/akun yang perlu dipilih. Tidak ada tindakan yang diperlukan di halaman ini.' +
+                                        (sapPayment.doc_num ? ' OP terakhir di SAP: #' + sapPayment.doc_num + '.' : '')
+                                    );
+                                }
                                 $('#sapPaymentAlreadyPostedAlert').removeClass('d-none');
                                 $('#sap_payment_means, #sap_account_id, #sap_payment_amount, #sap_prepared_by, #sap_approved_by')
                                     .closest('.form-group').addClass('d-none');

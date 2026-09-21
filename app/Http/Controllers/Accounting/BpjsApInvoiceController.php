@@ -8,6 +8,7 @@ use App\Http\Requests\StoreBpjsApInvoiceRequest;
 use App\Models\BpjsApInvoice;
 use App\Models\Project;
 use App\Models\SapSubmissionLog;
+use App\Services\BpjsApInvoiceSapStatusService;
 use App\Services\BpjsTkAccrualJournalService;
 use App\Services\JournalEntrySubmissionService;
 use App\Services\SapBpjsApInvoiceBuilder;
@@ -32,8 +33,14 @@ class BpjsApInvoiceController extends Controller
         ]);
     }
 
-    public function data(Request $request): JsonResponse
+    public function data(Request $request, BpjsApInvoiceSapStatusService $sapStatusService): JsonResponse
     {
+        try {
+            $sapStatusService->refreshStale();
+        } catch (Throwable) {
+            // SAP sync must not break the listing.
+        }
+
         $query = BpjsApInvoice::query()
             ->with(['submittedBy', 'journalEntry', 'cancelledBy'])
             ->orderByDesc('id');
@@ -101,6 +108,7 @@ class BpjsApInvoiceController extends Controller
 
                 return $html;
             })
+            ->addColumn('sap_status', fn (BpjsApInvoice $invoice) => $this->renderSapStatusColumn($invoice))
             ->addColumn('sap_doc', function (BpjsApInvoice $invoice) {
                 if ($invoice->sap_doc_num) {
                     return '<span class="vj-chip vj-chip-info">'.e($invoice->sap_doc_num).'</span>';
@@ -166,8 +174,43 @@ class BpjsApInvoiceController extends Controller
                     'canSubmit' => auth()->user()?->can('submit_sap_ap_invoice_bpjs') ?? false,
                 ])->render();
             })
-            ->rawColumns(['jenis_badge', 'unit_label', 'dates', 'status_chip', 'sap_doc', 'accrual_je', 'submitted_info', 'action'])
+            ->rawColumns(['jenis_badge', 'unit_label', 'dates', 'status_chip', 'sap_status', 'sap_doc', 'accrual_je', 'submitted_info', 'action'])
             ->make(true);
+    }
+
+    public function syncSapStatus(
+        BpjsApInvoice $bpjsApInvoice,
+        BpjsApInvoiceSapStatusService $sapStatusService
+    ): RedirectResponse {
+        $result = $sapStatusService->refresh($bpjsApInvoice);
+
+        if ($result === null && empty($bpjsApInvoice->sap_doc_entry)) {
+            return redirect()
+                ->back()
+                ->with('error', 'Invoice belum memiliki SAP Doc Entry.');
+        }
+
+        if ($result === null) {
+            return redirect()
+                ->back()
+                ->with('error', 'Gagal memperbarui status SAP untuk invoice ini.');
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Status SAP diperbarui untuk invoice #'.$bpjsApInvoice->id.'.');
+    }
+
+    public function syncSapStatusAll(BpjsApInvoiceSapStatusService $sapStatusService): RedirectResponse
+    {
+        $summary = $sapStatusService->refreshAll();
+
+        return redirect()
+            ->back()
+            ->with(
+                'success',
+                'Status SAP diperbarui: '.$summary['updated'].' baris, gagal '.$summary['failed'].' baris.'
+            );
     }
 
     public function store(StoreBpjsApInvoiceRequest $request): RedirectResponse
@@ -230,7 +273,8 @@ class BpjsApInvoiceController extends Controller
     public function submit(
         BpjsApInvoice $bpjsApInvoice,
         SapService $sapService,
-        BpjsTkAccrualJournalService $accrualJournalService
+        BpjsTkAccrualJournalService $accrualJournalService,
+        BpjsApInvoiceSapStatusService $sapStatusService
     ): RedirectResponse {
         if (! in_array($bpjsApInvoice->status, [BpjsApInvoice::STATUS_PENDING, BpjsApInvoice::STATUS_FAILED], true)) {
             return redirect()
@@ -309,6 +353,12 @@ class BpjsApInvoiceController extends Controller
         }
 
         $bpjsApInvoice->refresh();
+        try {
+            $sapStatusService->refresh($bpjsApInvoice);
+        } catch (Throwable) {
+            // Non-blocking SAP status sync after submit.
+        }
+
         $jeResult = $accrualJournalService->createAndSubmit($bpjsApInvoice, auth()->user());
 
         $successMessage = 'AP Invoice BPJS berhasil dibuat di SAP. DocNum: '.($bpjsApInvoice->sap_doc_num ?? '-');
@@ -349,7 +399,7 @@ class BpjsApInvoiceController extends Controller
             ->with('error', 'Gagal posting jurnal akrual: '.($result['message'] ?? 'Unknown error'));
     }
 
-    public function retry(BpjsApInvoice $bpjsApInvoice, SapService $sapService, BpjsTkAccrualJournalService $accrualJournalService): RedirectResponse
+    public function retry(BpjsApInvoice $bpjsApInvoice, SapService $sapService, BpjsTkAccrualJournalService $accrualJournalService, BpjsApInvoiceSapStatusService $sapStatusService): RedirectResponse
     {
         if ($bpjsApInvoice->status !== BpjsApInvoice::STATUS_FAILED) {
             return redirect()
@@ -357,14 +407,15 @@ class BpjsApInvoiceController extends Controller
                 ->with('error', 'Retry hanya tersedia untuk invoice berstatus failed.');
         }
 
-        return $this->submit($bpjsApInvoice, $sapService, $accrualJournalService);
+        return $this->submit($bpjsApInvoice, $sapService, $accrualJournalService, $sapStatusService);
     }
 
     public function cancel(
         CancelBpjsApInvoiceRequest $request,
         BpjsApInvoice $bpjsApInvoice,
         SapService $sapService,
-        JournalEntrySubmissionService $journalEntrySubmissionService
+        JournalEntrySubmissionService $journalEntrySubmissionService,
+        BpjsApInvoiceSapStatusService $sapStatusService
     ): RedirectResponse {
         $user = $request->user();
         $reason = $request->validated('cancel_reason');
@@ -480,6 +531,13 @@ class BpjsApInvoiceController extends Controller
             $successMessage .= ' Jurnal akrual berhasil di-reverse.';
         }
 
+        $bpjsApInvoice->refresh();
+        try {
+            $sapStatusService->refresh($bpjsApInvoice);
+        } catch (Throwable) {
+            // Non-blocking SAP status sync after cancel.
+        }
+
         return redirect()
             ->route('bpjs-ap-invoices.index')
             ->with('success', $successMessage);
@@ -487,7 +545,8 @@ class BpjsApInvoiceController extends Controller
 
     public function cancelJe(
         BpjsApInvoice $bpjsApInvoice,
-        JournalEntrySubmissionService $journalEntrySubmissionService
+        JournalEntrySubmissionService $journalEntrySubmissionService,
+        BpjsApInvoiceSapStatusService $sapStatusService
     ): RedirectResponse {
         if ($bpjsApInvoice->status !== BpjsApInvoice::STATUS_CANCELLED) {
             return redirect()
@@ -528,6 +587,13 @@ class BpjsApInvoiceController extends Controller
                 'je_error' => null,
             ]);
 
+            $bpjsApInvoice->refresh();
+            try {
+                $sapStatusService->refresh($bpjsApInvoice);
+            } catch (Throwable) {
+                // Non-blocking SAP status sync after JE cancel retry.
+            }
+
             return redirect()
                 ->route('bpjs-ap-invoices.index')
                 ->with('success', 'Jurnal akrual berhasil di-reverse.');
@@ -550,6 +616,34 @@ class BpjsApInvoiceController extends Controller
         $cancelled = strtoupper((string) ($sapInvoice['Cancelled'] ?? ''));
 
         return in_array($cancelled, ['TYES', 'Y'], true);
+    }
+
+    protected function renderSapStatusColumn(BpjsApInvoice $invoice): string
+    {
+        if (empty($invoice->sap_doc_entry)) {
+            return '<span class="text-muted">Belum diposting ke SAP</span>';
+        }
+
+        if ($invoice->sap_cancelled === true) {
+            $html = '<span class="vj-chip vj-chip-danger">Cancelled in SAP</span>';
+            $html .= '<small class="text-muted d-block">dokumen SAP dibatalkan</small>';
+        } elseif ($invoice->sap_document_status === 'bost_Close' && $invoice->sap_cancelled !== true) {
+            $html = '<span class="vj-chip vj-chip-neutral">Closed</span>';
+            $html .= '<small class="text-muted d-block">lunas/tertutup di SAP</small>';
+        } elseif ($invoice->sap_document_status === 'bost_Open') {
+            $html = '<span class="vj-chip vj-chip-success">Open</span>';
+            $html .= '<small class="text-muted d-block">bisa dibayar</small>';
+        } elseif ($invoice->sap_status_synced_at === null) {
+            return '<span class="vj-chip vj-chip-warning">Belum dicek</span>';
+        } else {
+            $html = '<span class="vj-chip vj-chip-warning">Belum dicek</span>';
+        }
+
+        if ($invoice->sap_status_synced_at !== null) {
+            $html .= '<small class="text-muted d-block">Dicek '.$invoice->sap_status_synced_at->format('d-M-Y H:i').'</small>';
+        }
+
+        return $html;
     }
 
     public function lastAmount(Request $request): JsonResponse

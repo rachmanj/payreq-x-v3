@@ -498,6 +498,39 @@ class SapService
         });
     }
 
+    /**
+     * @return array{DocEntry: int, DocNum: int|string, DocTotal?: float, PaidToDate?: float, DocumentStatus?: string, Cancelled?: string, NumAtCard?: string}|null
+     */
+    public function getPurchaseInvoiceStatus(string|int $docEntry): ?array
+    {
+        $this->ensureSession();
+
+        $docEntry = trim((string) $docEntry);
+        if ($docEntry === '') {
+            return null;
+        }
+
+        return $this->handleSessionExpiration(function () use ($docEntry) {
+            try {
+                $response = $this->client->get("PurchaseInvoices({$docEntry})", [
+                    'query' => [
+                        '$select' => 'DocEntry,DocNum,DocTotal,PaidToDate,DocumentStatus,Cancelled,NumAtCard',
+                    ],
+                ]);
+
+                $body = json_decode($response->getBody()->getContents(), true);
+
+                return is_array($body) && isset($body['DocEntry']) ? $body : null;
+            } catch (RequestException $e) {
+                if ($e->getResponse()?->getStatusCode() === 404) {
+                    return null;
+                }
+
+                throw $e;
+            }
+        });
+    }
+
     public function cancelPurchaseInvoice(string|int $docEntry): array
     {
         $this->ensureSession();

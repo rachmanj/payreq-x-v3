@@ -16,10 +16,19 @@
                     <i class="fas fa-file-invoice"></i> AP Invoice BPJS
                 </h3>
                 @if ($canSubmit)
-                    <button type="button" class="vj-btn vj-btn-primary" data-toggle="modal" data-target="#createBpjsModal">
-                        <i class="fas fa-plus"></i>
-                        <span>Buat AP Invoice</span>
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+                        <form id="syncSapStatusAllForm" method="POST" action="{{ route('bpjs-ap-invoices.sync-sap-status-all') }}" class="d-inline">
+                            @csrf
+                            <button type="button" class="vj-btn vj-btn-secondary" id="btnSyncSapStatusAll">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Sinkron status SAP</span>
+                            </button>
+                        </form>
+                        <button type="button" class="vj-btn vj-btn-primary" data-toggle="modal" data-target="#createBpjsModal">
+                            <i class="fas fa-plus"></i>
+                            <span>Buat AP Invoice</span>
+                        </button>
+                    </div>
                 @endif
             </div>
             <div class="card-body">
@@ -78,6 +87,7 @@
                                 <th>Nominal</th>
                                 <th>Tanggal</th>
                                 <th>Status</th>
+                                <th>Status SAP</th>
                                 <th>No. SAP</th>
                                 <th>Jurnal Akrual</th>
                                 <th>Dikirim</th>
@@ -134,6 +144,7 @@
                     { data: 'amount', name: 'amount', className: 'text-right' },
                     { data: 'dates', name: 'doc_date', orderable: false, searchable: false },
                     { data: 'status_chip', name: 'status', orderable: false, searchable: false },
+                    { data: 'sap_status', name: 'sap_document_status', orderable: false, searchable: false },
                     { data: 'sap_doc', name: 'sap_doc_num', orderable: false, searchable: false },
                     { data: 'accrual_je', name: 'je_posting_date', orderable: false, searchable: false },
                     { data: 'submitted_info', name: 'submitted_at', orderable: false, searchable: false },
@@ -157,6 +168,21 @@
             $('#btnResetFilter').on('click', function() {
                 $('#filter_jenis, #filter_unit, #filter_periode, #filter_status').val('');
                 table.ajax.reload();
+            });
+
+            $('#btnSyncSapStatusAll').on('click', function() {
+                Swal.fire({
+                    title: 'Sinkron status SAP?',
+                    text: 'Status dokumen AP Invoice BPJS akan diambil ulang dari SAP B1 untuk semua baris yang sudah diposting.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, sinkronkan',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#syncSapStatusAllForm').submit();
+                    }
+                });
             });
 
             @if (session('success'))
