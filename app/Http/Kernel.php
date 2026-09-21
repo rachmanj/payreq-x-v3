@@ -39,6 +39,8 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\SharePcbcComplianceForViews::class,
             \App\Http\Middleware\ShareVjRejectionAlertForViews::class,
             \App\Http\Middleware\PreventHtmlResponseCaching::class,
+            // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi cache)
+            \App\Http\Middleware\DebugInvoicePaymentRequestsTemp::class,
         ],
 
         'api' => [
