@@ -175,14 +175,31 @@
                     <pre class="bg-light p-2 small mt-2" style="max-height: 300px; overflow: auto;">{{ json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                 </details>
             </div>
-            @if ($canSubmit && in_array($invoice->status, ['pending', 'failed'], true))
+            @php
+                $showRepostSap = $canSubmit
+                    && ! empty($invoice->sap_doc_entry)
+                    && $invoice->sap_cancelled === true
+                    && $invoice->status !== \App\Models\BpjsApInvoice::STATUS_CANCELLED
+                    && (float) $invoice->paid_amount <= 0;
+            @endphp
+            @if (($canSubmit && in_array($invoice->status, ['pending', 'failed'], true)) || $showRepostSap)
                 <div class="card-footer d-flex justify-content-end gap-2">
-                    <form method="POST" action="{{ route('bpjs-ap-invoices.submit', $invoice) }}" id="submitBpjsForm">
-                        @csrf
-                        <button type="button" class="vj-btn vj-btn-success" id="btnSubmitSap">
-                            <i class="fas fa-paper-plane"></i> Submit ke SAP
-                        </button>
-                    </form>
+                    @if ($canSubmit && in_array($invoice->status, ['pending', 'failed'], true))
+                        <form method="POST" action="{{ route('bpjs-ap-invoices.submit', $invoice) }}" id="submitBpjsForm">
+                            @csrf
+                            <button type="button" class="vj-btn vj-btn-success" id="btnSubmitSap">
+                                <i class="fas fa-paper-plane"></i> Submit ke SAP
+                            </button>
+                        </form>
+                    @endif
+                    @if ($showRepostSap)
+                        <form method="POST" action="{{ route('bpjs-ap-invoices.repost-sap', $invoice) }}" id="repostSapForm">
+                            @csrf
+                            <button type="button" class="vj-btn vj-btn-warning" id="btnRepostSap">
+                                <i class="fas fa-file-import"></i> Post ulang AP Invoice ke SAP
+                            </button>
+                        </form>
+                    @endif
                 </div>
             @endif
         </div>
@@ -215,6 +232,21 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         $('#submitBpjsForm').submit();
+                    }
+                });
+            });
+
+            $('#btnRepostSap').on('click', function() {
+                Swal.fire({
+                    title: 'Post ulang AP Invoice ke SAP?',
+                    text: 'Dokumen SAP lama sudah dibatalkan. Sistem akan membuat AP Invoice baru di SAP untuk data yang sama, sehingga Outgoing Payment dapat dibuat.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, posting ulang',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#repostSapForm').submit();
                     }
                 });
             });

@@ -271,6 +271,23 @@
                 });
             });
 
+            $(document).on('click', '.bpjs-repost-sap-btn', function(e) {
+                e.preventDefault();
+                const form = $(this).closest('form');
+                Swal.fire({
+                    title: 'Post ulang AP Invoice ke SAP?',
+                    text: 'Dokumen SAP lama sudah dibatalkan. Sistem akan membuat AP Invoice baru di SAP untuk data yang sama, sehingga Outgoing Payment dapat dibuat.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, posting ulang',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+
             $(document).on('click', '.bpjs-cancel-je-btn', function(e) {
                 e.preventDefault();
                 const form = $(this).closest('form');

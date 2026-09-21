@@ -7,7 +7,12 @@
         && $invoice->status === \App\Models\BpjsApInvoice::STATUS_CANCELLED
         && $invoice->je_status === \App\Models\BpjsApInvoice::JE_STATUS_FAILED;
     $showPrintOp = (float) $invoice->paid_amount > 0;
-    $hasActions = ($canSubmit ?? false) || $showCancel || $showRetryCancelJe || $showPrintOp;
+    $showRepostSap = ($canSubmit ?? false)
+        && ! empty($invoice->sap_doc_entry)
+        && $invoice->sap_cancelled === true
+        && $invoice->status !== \App\Models\BpjsApInvoice::STATUS_CANCELLED
+        && (float) $invoice->paid_amount <= 0;
+    $hasActions = ($canSubmit ?? false) || $showCancel || $showRetryCancelJe || $showPrintOp || $showRepostSap;
 @endphp
 
 @if ($hasActions)
@@ -49,6 +54,17 @@
                     class="vj-action-item vj-action-item-xs vj-action-show" title="Detail">
                     <i class="fas fa-info-circle"></i>
                 </a>
+            @endif
+
+            @if ($showRepostSap)
+                <form method="POST" action="{{ route('bpjs-ap-invoices.repost-sap', $invoice) }}"
+                    class="d-inline bpjs-repost-sap-form">
+                    @csrf
+                    <button type="submit" class="vj-action-item vj-action-item-xs vj-action-submit bpjs-repost-sap-btn"
+                        title="Post ulang AP Invoice ke SAP">
+                        <i class="fas fa-file-import"></i>
+                    </button>
+                </form>
             @endif
         @endif
 

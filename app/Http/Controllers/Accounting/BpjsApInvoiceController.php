@@ -111,7 +111,12 @@ class BpjsApInvoiceController extends Controller
             ->addColumn('sap_status', fn (BpjsApInvoice $invoice) => $this->renderSapStatusColumn($invoice))
             ->addColumn('sap_doc', function (BpjsApInvoice $invoice) {
                 if ($invoice->sap_doc_num) {
-                    return '<span class="vj-chip vj-chip-info">'.e($invoice->sap_doc_num).'</span>';
+                    $html = '<span class="vj-chip vj-chip-info">'.e($invoice->sap_doc_num).'</span>';
+                    if ($invoice->sap_previous_doc_num) {
+                        $html .= '<small class="d-block text-muted">Sebelumnya: '.e($invoice->sap_previous_doc_num).'</small>';
+                    }
+
+                    return $html;
                 }
 
                 return '<span class="text-muted">-</span>';
@@ -282,16 +287,13 @@ class BpjsApInvoiceController extends Controller
                 ->with('error', 'Hanya invoice berstatus pending atau failed yang bisa disubmit.');
         }
 
-        $builder = new SapBpjsApInvoiceBuilder($bpjsApInvoice);
-        $errors = $builder->validate();
-
-        if ($errors !== []) {
+        try {
+            $payload = $this->validatedSapSubmitPayload($bpjsApInvoice);
+        } catch (\RuntimeException $exception) {
             return redirect()
                 ->route('bpjs-ap-invoices.preview', $bpjsApInvoice)
-                ->with('error', implode(' ', $errors));
+                ->with('error', $exception->getMessage());
         }
-
-        $payload = $builder->build();
         $attemptNumber = ($bpjsApInvoice->submissionLogs()->count() + 1);
         $sapError = null;
 
@@ -643,7 +645,202 @@ class BpjsApInvoiceController extends Controller
             $html .= '<small class="text-muted d-block">Dicek '.$invoice->sap_status_synced_at->format('d-M-Y H:i').'</small>';
         }
 
+        if ($invoice->sap_previous_doc_num) {
+            $html .= '<small class="text-muted d-block">Doc. lama: '.e($invoice->sap_previous_doc_num).'</small>';
+        }
+
         return $html;
+    }
+
+    public function repostSap(
+        BpjsApInvoice $bpjsApInvoice,
+        SapService $sapService,
+        BpjsApInvoiceSapStatusService $statusService
+    ): RedirectResponse {
+        if ($bpjsApInvoice->status === BpjsApInvoice::STATUS_CANCELLED) {
+            return redirect()
+                ->back()
+                ->with('error', 'Invoice sudah dibatalkan di aplikasi, tidak bisa diposting ulang.');
+        }
+
+        if ($bpjsApInvoice->status !== BpjsApInvoice::STATUS_POSTED || empty($bpjsApInvoice->sap_doc_entry)) {
+            return redirect()
+                ->back()
+                ->with('error', 'Invoice belum pernah diposting ke SAP.');
+        }
+
+        if ((float) $bpjsApInvoice->paid_amount > 0) {
+            return redirect()
+                ->back()
+                ->with('error', 'Invoice sudah memiliki pembayaran tercatat (paid_amount > 0).');
+        }
+
+        try {
+            $sapStatus = $sapService->getPurchaseInvoiceStatus($bpjsApInvoice->sap_doc_entry);
+        } catch (Throwable $exception) {
+            return redirect()
+                ->back()
+                ->with('error', 'Gagal memverifikasi AP Invoice di SAP B1: '.$exception->getMessage());
+        }
+
+        if ($sapStatus !== null && ! $this->isSapPurchaseInvoiceCancelled($sapStatus)) {
+            try {
+                $statusService->refresh($bpjsApInvoice, $sapService);
+            } catch (Throwable) {
+                // Non-blocking status sync before rejection.
+            }
+
+            return redirect()
+                ->back()
+                ->with('error', 'AP Invoice di SAP masih aktif (belum dibatalkan) — posting ulang tidak diperlukan.');
+        }
+
+        try {
+            $payload = $this->validatedSapSubmitPayload($bpjsApInvoice);
+        } catch (\RuntimeException $exception) {
+            return redirect()
+                ->back()
+                ->with('error', $exception->getMessage());
+        }
+
+        $attemptNumber = ($bpjsApInvoice->submissionLogs()->count() + 1);
+        $sapError = null;
+        $newDocNum = null;
+        $newDocEntry = null;
+
+        try {
+            DB::transaction(function () use ($bpjsApInvoice, $payload, $sapService, $statusService, $attemptNumber, &$newDocNum, &$newDocEntry) {
+                $invoice = BpjsApInvoice::query()
+                    ->whereKey($bpjsApInvoice->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($invoice === null) {
+                    throw new \RuntimeException('Invoice tidak ditemukan.');
+                }
+
+                if ($invoice->status === BpjsApInvoice::STATUS_CANCELLED) {
+                    throw new \RuntimeException('Invoice sudah dibatalkan di aplikasi, tidak bisa diposting ulang.');
+                }
+
+                if ($invoice->status !== BpjsApInvoice::STATUS_POSTED || empty($invoice->sap_doc_entry)) {
+                    throw new \RuntimeException('Invoice belum pernah diposting ke SAP.');
+                }
+
+                if ((float) $invoice->paid_amount > 0) {
+                    throw new \RuntimeException('Invoice sudah memiliki pembayaran tercatat (paid_amount > 0).');
+                }
+
+                $sapStatus = $sapService->getPurchaseInvoiceStatus($invoice->sap_doc_entry);
+
+                if ($sapStatus !== null && ! $this->isSapPurchaseInvoiceCancelled($sapStatus)) {
+                    try {
+                        $statusService->refresh($invoice, $sapService);
+                    } catch (Throwable) {
+                        // Non-blocking status sync before rejection.
+                    }
+
+                    throw new \RuntimeException('AP Invoice di SAP masih aktif (belum dibatalkan) — posting ulang tidak diperlukan.');
+                }
+
+                $oldDocNum = (string) ($invoice->sap_doc_num ?? '');
+                $sapResult = $sapService->createApInvoice($payload);
+
+                if (! ($sapResult['success'] ?? false)) {
+                    throw new \RuntimeException($sapResult['message'] ?? 'Gagal membuat AP Invoice di SAP B1.');
+                }
+
+                $newDocNum = $sapResult['doc_num'] ?? null;
+                $newDocEntry = $sapResult['doc_entry'] ?? null;
+
+                $previousDocNums = $invoice->sap_previous_doc_num;
+                if ($oldDocNum !== '') {
+                    $previousDocNums = $previousDocNums
+                        ? $previousDocNums.','.$oldDocNum
+                        : $oldDocNum;
+                }
+
+                $invoice->update([
+                    'status' => BpjsApInvoice::STATUS_POSTED,
+                    'sap_doc_num' => $newDocNum,
+                    'sap_doc_entry' => $newDocEntry,
+                    'sap_previous_doc_num' => $previousDocNums,
+                    'sap_error_message' => null,
+                    'submitted_at' => now(),
+                    'submitted_by' => auth()->id(),
+                ]);
+
+                SapSubmissionLog::create([
+                    'bpjs_ap_invoice_id' => $invoice->id,
+                    'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE,
+                    'status' => 'success',
+                    'action' => 'submission',
+                    'sap_doc_num' => $newDocNum,
+                    'sap_doc_entry' => $newDocEntry,
+                    'sap_response' => $sapResult['data'] ?? $sapResult,
+                    'attempt_number' => $attemptNumber,
+                    'submitted_by' => auth()->id(),
+                    'user_id' => auth()->id(),
+                ]);
+            });
+        } catch (Throwable $exception) {
+            $sapError = $exception->getMessage();
+
+            SapSubmissionLog::create([
+                'bpjs_ap_invoice_id' => $bpjsApInvoice->id,
+                'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE,
+                'status' => 'failed',
+                'action' => 'submission',
+                'error_message' => $sapError,
+                'sap_error' => $sapError,
+                'attempt_number' => $attemptNumber,
+                'submitted_by' => auth()->id(),
+                'user_id' => auth()->id(),
+            ]);
+        }
+
+        if ($sapError !== null) {
+            return redirect()
+                ->back()
+                ->with('error', $sapError);
+        }
+
+        $bpjsApInvoice->refresh();
+
+        try {
+            $statusService->refresh($bpjsApInvoice, $sapService);
+        } catch (Throwable) {
+            // Non-blocking SAP status sync after repost.
+        }
+
+        $successMessage = 'AP Invoice BPJS berhasil diposting ulang ke SAP. DocNum baru: '.($newDocNum ?? $bpjsApInvoice->sap_doc_num ?? '-');
+
+        if ($sapStatus === null) {
+            $successMessage .= ' Dokumen SAP sebelumnya tidak ditemukan; dokumen baru telah dibuat.';
+        }
+
+        if ($bpjsApInvoice->je_status === BpjsApInvoice::JE_STATUS_FAILED) {
+            $successMessage .= ' Jurnal akrual masih gagal — gunakan tombol Retry Jurnal Akrual jika perlu.';
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', $successMessage);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function validatedSapSubmitPayload(BpjsApInvoice $bpjsApInvoice): array
+    {
+        $builder = new SapBpjsApInvoiceBuilder($bpjsApInvoice);
+        $errors = $builder->validate();
+
+        if ($errors !== []) {
+            throw new \RuntimeException(implode(' ', $errors));
+        }
+
+        return $builder->build();
     }
 
     public function lastAmount(Request $request): JsonResponse
