@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Prevents browser/proxy caching of dynamic HTML pages and JSON/AJAX API responses on GET/HEAD.
+ * Skips file downloads, streamed responses, 304 responses, and responses with explicit cache policy.
+ */
 class PreventHtmlResponseCaching
 {
     public function handle(Request $request, Closure $next): Response
@@ -30,8 +34,10 @@ class PreventHtmlResponseCaching
             return $response;
         }
 
-        $contentType = (string) $response->headers->get('Content-Type', '');
-        if (! str_contains(strtolower($contentType), 'text/html')) {
+        $contentType = strtolower((string) $response->headers->get('Content-Type', ''));
+        $isHtml = str_contains($contentType, 'text/html');
+        $isJson = str_contains($contentType, 'application/json');
+        if (! $isHtml && ! $isJson) {
             return $response;
         }
 

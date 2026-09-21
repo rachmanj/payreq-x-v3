@@ -24,7 +24,7 @@ class PreventHtmlResponseCachingTest extends TestCase
         $this->assertSame('0', $response->headers->get('Expires'));
     }
 
-    public function test_json_ajax_response_is_not_altered(): void
+    public function test_json_ajax_response_includes_no_store_cache_control(): void
     {
         $user = User::factory()->create();
 
@@ -32,7 +32,26 @@ class PreventHtmlResponseCachingTest extends TestCase
 
         $response->assertOk();
         $cacheControl = (string) $response->headers->get('Cache-Control');
-        $this->assertFalse(str_contains($cacheControl, 'no-store'));
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertSame('no-cache', $response->headers->get('Pragma'));
+        $this->assertSame('0', $response->headers->get('Expires'));
+    }
+
+    public function test_existing_cache_control_on_json_is_preserved(): void
+    {
+        Route::middleware('web')->get('/__test/prevent-html-cache-json-explicit', function () {
+            return response()->json(['ok' => true], 200, [
+                'Cache-Control' => 'public, max-age=600',
+            ]);
+        });
+
+        $response = $this->getJson('/__test/prevent-html-cache-json-explicit');
+
+        $response->assertOk();
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringContainsString('max-age=600', $cacheControl);
+        $this->assertStringNotContainsString('no-store', $cacheControl);
     }
 
     public function test_file_download_response_is_not_altered(): void

@@ -527,12 +527,18 @@
                         <input type="hidden" id="sap_close_invoice_in_dds" value="0">
                         <input type="hidden" id="sap_close_dds_only" value="0">
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="vj-btn vj-btn-warning" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="vj-btn vj-btn-primary" id="sapPaymentSubmitBtn">
-                            <i class="fas fa-paper-plane" aria-hidden="true"></i>
-                            <span id="sapPaymentSubmitBtnLabel">Post to SAP</span>
-                        </button>
+                    <div class="modal-footer flex-column align-items-stretch">
+                        <p class="small text-muted mb-2 text-center mb-md-2">
+                            UI build: {{ \Illuminate\Support\Str::limit((string) config('app.version'), 7, '') }}
+                            — {{ config('app.version_date') }}
+                        </p>
+                        <div class="d-flex flex-wrap justify-content-end w-100 gap-2">
+                            <button type="button" class="vj-btn vj-btn-warning" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="vj-btn vj-btn-primary" id="sapPaymentSubmitBtn">
+                                <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                                <span id="sapPaymentSubmitBtnLabel">Post to SAP</span>
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -557,6 +563,10 @@
 
     <script>
         $(document).ready(function() {
+            $.ajaxSetup({
+                cache: false
+            });
+
             let waitingTable = null;
             let paidTable = null;
             let sapPaymentContext = 'paid';
@@ -660,6 +670,7 @@
                     serverSide: false,
                     ajax: {
                         url: '{{ route('cashier.invoice-payment.waiting') }}',
+                        cache: false,
                         data: function() {
                             return getFilterParams();
                         },
@@ -759,6 +770,7 @@
                     serverSide: false,
                     ajax: {
                         url: '{{ route('cashier.invoice-payment.paid') }}',
+                        cache: false,
                         data: function() {
                             return getFilterParams();
                         },

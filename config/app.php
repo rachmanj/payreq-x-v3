@@ -60,6 +60,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | UI build stamp (shown in modals for support / cache diagnostics)
+    |--------------------------------------------------------------------------
+    |
+    | Set APP_VERSION to the first 7 characters of the deployed git commit.
+    | Set APP_VERSION_DATE to the deploy date (e.g. 2026-09-21).
+    |
+    */
+
+    'version' => env('APP_VERSION', 'devlocal'),
+    'version_date' => env('APP_VERSION_DATE', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
