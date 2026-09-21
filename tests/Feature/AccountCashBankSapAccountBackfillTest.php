@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\Parameter;
 use App\Models\SapBusinessPartner;
 use App\Models\User;
 use App\Services\SapService;
@@ -178,6 +179,11 @@ class AccountCashBankSapAccountBackfillTest extends TestCase
         ]);
 
         $migration->up();
+
+        // Sejak 2026-09-21 daftar akun pembayaran invoice dibatasi parameter whitelist
+        // 'invoice_payment_accounts'. Test ini menguji jalur backfill sap_account (perilaku lama),
+        // jadi kosongkan whitelist dulu supaya daftar akun kembali memakai aturan type/sap_account.
+        Parameter::query()->where('name1', 'invoice_payment_accounts')->delete();
 
         $this->mock(SapService::class, function ($mock) {
             $mock->shouldReceive('getPurchaseInvoiceByNumAtCard')
