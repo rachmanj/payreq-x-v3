@@ -1271,6 +1271,17 @@
                         sap_doc: row.sap_doc || ''
                     },
                     success: function(response) {
+                        if (response === null || response === undefined || typeof response !== 'object') {
+                            showSapPreviewError(
+                                'Respons tidak valid',
+                                'Respons server tidak valid (kosong). Muat ulang halaman; bila berulang laporkan ke admin.'
+                            );
+                            $('#sap_ap_doc_display').val('-');
+                            $('#sap_account_id').html('<option value="">Select account</option>');
+                            $('#sapPaymentSubmitBtn').prop('disabled', true);
+                            return;
+                        }
+
                         const preview = response.preview || {};
                         const apInvoice = preview.ap_invoice || {};
                         const invoice = preview.invoice || {};
@@ -1367,12 +1378,27 @@
 
                         $('#sapPaymentSubmitBtn').prop('disabled', accounts.length === 0);
                         if (accounts.length === 0) {
-                            showSapPreviewError('No accounts',
-                                'No cash/bank accounts with SAP mapping are available.');
+                            showSapPreviewError(
+                                'Tidak ada akun',
+                                'Tidak ada akun sumber pembayaran yang tersedia (whitelist parameter invoice_payment_accounts kosong atau akun tidak aktif). Hubungi admin.'
+                            );
                         }
                     },
                     error: function(xhr) {
                         const response = xhr.responseJSON || {};
+                        if (xhr.status === 403 || response.error === 'forbidden') {
+                            showSapPreviewError(
+                                'Izin ditolak',
+                                'Anda tidak punya izin submit Outgoing Payment ke SAP (permission: submit_sap_invoice_payment). Minta admin memberikan izin ini ke akun Anda.'
+                            );
+                            $('#sap_payment_means, #sap_account_id, #sap_payment_amount, #sap_prepared_by, #sap_approved_by')
+                                .closest('.form-group').addClass('d-none');
+                            $('#sap_ap_doc_display').val('-');
+                            $('#sap_account_id').html('<option value="">Select account</option>');
+                            $('#sapPaymentSubmitBtn').prop('disabled', true);
+                            $('#sapPaymentSubmitBtnLabel').text('Post to SAP');
+                            return;
+                        }
                         showSapPreviewError(response.error || 'Preview failed', response.message ||
                             'Could not resolve the SAP AP Invoice.');
                         $('#sap_ap_doc_display').val('-');

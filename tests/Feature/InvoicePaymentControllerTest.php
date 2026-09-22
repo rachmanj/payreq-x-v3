@@ -718,7 +718,11 @@ class InvoicePaymentControllerTest extends TestCase
                 'supplier_sap_code' => 'VSUP01',
                 'amount' => 1500000,
             ]))
-            ->assertForbidden();
+            ->assertForbidden()
+            ->assertJson([
+                'error' => 'forbidden',
+                'reason' => 'permission',
+            ]);
 
         $this->actingAs($user)
             ->postJson(route('cashier.invoice-payment.sap-payment.submit', ['invoiceId' => 42]), [
@@ -732,7 +736,54 @@ class InvoicePaymentControllerTest extends TestCase
                 'approved_by' => 'Jane Approver',
                 'account_id' => 1,
             ])
-            ->assertForbidden();
+            ->assertForbidden()
+            ->assertJson([
+                'error' => 'forbidden',
+                'reason' => 'permission',
+            ]);
+    }
+
+    public function test_preview_sap_payment_without_permission_returns_forbidden_json_shape(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.sap-payment.preview', [
+                'invoiceId' => 42,
+                'invoice_number' => 'INV-001',
+                'supplier_sap_code' => 'VSUP01',
+                'amount' => 1500000,
+            ]))
+            ->assertStatus(403)
+            ->assertJsonPath('error', 'forbidden')
+            ->assertJsonPath('reason', 'permission');
+    }
+
+    public function test_index_remains_accessible_without_submit_sap_invoice_payment_permission(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake($this->ddsDepartmentFake());
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)
+            ->get(route('cashier.invoice-payment.index'))
+            ->assertOk();
+    }
+
+    public function test_index_includes_sap_preview_permission_and_invalid_response_messages(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake($this->ddsDepartmentFake());
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)
+            ->get(route('cashier.invoice-payment.index'))
+            ->assertOk()
+            ->assertSee('submit_sap_invoice_payment', false)
+            ->assertSee('Respons server tidak valid (kosong). Muat ulang halaman; bila berulang laporkan ke admin.', false)
+            ->assertSee('Anda tidak punya izin submit Outgoing Payment ke SAP (permission: submit_sap_invoice_payment). Minta admin memberikan izin ini ke akun Anda.', false);
     }
 
     protected function authorizedUser(): User

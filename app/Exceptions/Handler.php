@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Spatie\Permission\Exceptions\UnauthorizedException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -45,23 +46,19 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
 
-        // Handle Spatie Permission UnauthorizedException
-        $this->renderable(function (UnauthorizedException $e, $request) {
-            if ($request->expectsJson()) {
-                // For API requests, return JSON response
-                return response()->json([
-                    'responseMessage' => 'You do not have the required authorization.',
-                    'responseStatus'  => 403,
-                ], 403);
-            }
+    public function render($request, Throwable $e)
+    {
+        if ($request->expectsJson()
+            && ($e instanceof UnauthorizedException || $e instanceof AccessDeniedHttpException)) {
+            return response()->json([
+                'error' => 'forbidden',
+                'reason' => 'permission',
+                'message' => 'Anda tidak memiliki izin untuk aksi ini.',
+            ], 403);
+        }
 
-            // For web requests, redirect with flash message for SweetAlert2
-            return redirect()
-                ->back()
-                ->with('alert_type', 'error')
-                ->with('alert_title', 'Access Denied')
-                ->with('alert_message', 'You do not have the required permissions to perform this action.');
-        });
+        return parent::render($request, $e);
     }
 }
