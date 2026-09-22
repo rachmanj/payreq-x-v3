@@ -1093,6 +1093,94 @@ class InvoicePaymentControllerTest extends TestCase
             ->assertSee(route('bpjs-ap-invoices.print-op', ['bpjsApInvoice' => ':id']), false);
     }
 
+    public function test_index_encodes_invoice_id_in_sap_payment_and_print_urls(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake($this->ddsDepartmentFake());
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+        $user->givePermissionTo('submit_sap_invoice_payment');
+
+        $html = $this->actingAs($user)
+            ->get(route('cashier.invoice-payment.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(
+            "sapPreviewUrlTemplate.replace(':invoiceId', encodeURIComponent(row.id))",
+            $html
+        );
+        $this->assertStringContainsString(
+            "sapSubmitUrlTemplate.replace(':invoiceId', encodeURIComponent(invoiceId))",
+            $html
+        );
+        $this->assertStringContainsString(
+            "bpjsPrintOpUrlTemplate.replace(':id', encodeURIComponent(row.local_id))",
+            $html
+        );
+        $this->assertStringContainsString(
+            "ddsPrintOpUrlTemplate.replace(':id', encodeURIComponent(row.id))",
+            $html
+        );
+        $this->assertStringContainsString(
+            ".replace(':invoiceId', encodeURIComponent(invoiceId))",
+            $html
+        );
+    }
+
+    public function test_preview_sap_payment_with_url_encoded_bpjs_invoice_id_returns_accounts(): void
+    {
+        $this->seedVendorAndAccount();
+
+        SapBusinessPartner::query()->create([
+            'code' => 'VBPKEIDR01',
+            'name' => 'BPJS KESEHATAN',
+            'type' => SapBusinessPartner::TYPE_SUPPLIER,
+            'active' => true,
+        ]);
+
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'jenis' => BpjsApInvoice::JENIS_KESEHATAN,
+            'unit' => '000H',
+            'amount' => 2000000,
+            'paid_amount' => 0,
+            'sap_doc_entry' => 28625,
+            'sap_doc_num' => '55001',
+            'num_at_card' => '10/26',
+        ]);
+
+        $this->mock(SapService::class, function ($mock) {
+            $mock->shouldReceive('getPurchaseInvoiceByDocEntry')
+                ->once()
+                ->with(28625)
+                ->andReturn([
+                    'DocEntry' => 28625,
+                    'DocNum' => 55001,
+                    'CardCode' => 'VBPKEIDR01',
+                    'DocumentStatus' => 'bost_Open',
+                    'Cancelled' => 'N',
+                    'NumAtCard' => '10/26',
+                    'DocTotal' => 2000000,
+                    'PaidToDate' => 0,
+                ]);
+        });
+
+        $previewPath = '/cashier/invoice-payment/invoices/bpjs%3A'.$bpjs->id.'/sap-payment/preview';
+
+        $this->actingAs($this->authorizedUser())
+            ->getJson($previewPath.'?'.http_build_query([
+                'invoice_number' => $bpjs->invoiceNumber(),
+                'supplier_sap_code' => 'VBPKEIDR01',
+                'amount' => 2000000,
+                'payment_date' => '2026-08-20',
+            ]))
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('fully_paid', false)
+            ->assertJsonCount(1, 'accounts')
+            ->assertJsonPath('accounts.0.sap_account', '11010101');
+    }
+
     public function test_index_includes_pph23_withholding_ui_markup(): void
     {
         Http::preventStrayRequests();

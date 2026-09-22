@@ -269,8 +269,6 @@ class InvoicePaymentController extends Controller
             $latestSuccess = $this->latestSuccessfulSapPaymentLog($invoice);
 
             if ($remaining <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE) {
-                $this->logInvpayPreviewDebugTemp($request, $invoiceId, $apInvoice, [], true);
-
                 return response()->json([
                     'success' => true,
                     'fully_paid' => true,
@@ -325,7 +323,6 @@ class InvoicePaymentController extends Controller
             }
 
             $accounts = $this->eligiblePaymentAccounts();
-            $this->logInvpayPreviewDebugTemp($request, $invoiceId, $apInvoice, $accounts, false);
 
             return response()->json([
                 'success' => true,
@@ -335,18 +332,6 @@ class InvoicePaymentController extends Controller
                 'accounts' => $accounts,
             ]);
         } catch (\Exception $e) {
-            // TEMP DEBUG (hapus setelah investigasi 21 Sep 2026)
-            Log::info('INVPAY PREVIEW DEBUG', [
-                'user_id' => auth()->id(),
-                'route_invoice_id' => (string) $invoiceId,
-                'query' => $request->only(['invoice_number', 'supplier_sap_code', 'amount', 'payment_date', 'remarks', 'sap_doc']),
-                'accounts_count' => null,
-                'ap_doc_num' => null,
-                'fully_paid' => null,
-                'cancelled' => null,
-                'error' => $e->getMessage(),
-            ]);
-
             return $this->exceptionResponse($e, 'Invoice Payment SAP Preview Error');
         }
     }
@@ -1177,28 +1162,6 @@ class InvoicePaymentController extends Controller
             'cancelled' => in_array($cancelled, ['TYES', 'Y'], true),
             'document_status' => isset($apInvoice['DocumentStatus']) ? (string) $apInvoice['DocumentStatus'] : null,
         ];
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $accounts
-     */
-    private function logInvpayPreviewDebugTemp(
-        PreviewSapInvoicePaymentRequest $request,
-        mixed $invoiceId,
-        array $apInvoice,
-        array $accounts,
-        bool $fullyPaid,
-    ): void {
-        // TEMP DEBUG (hapus setelah investigasi 21 Sep 2026)
-        Log::info('INVPAY PREVIEW DEBUG', [
-            'user_id' => auth()->id(),
-            'route_invoice_id' => (string) $invoiceId,
-            'query' => $request->only(['invoice_number', 'supplier_sap_code', 'amount', 'payment_date', 'remarks', 'sap_doc']),
-            'accounts_count' => count($accounts),
-            'ap_doc_num' => $apInvoice['DocNum'] ?? null,
-            'fully_paid' => $fullyPaid,
-            'cancelled' => $this->sapApInvoiceDocumentMeta($apInvoice)['cancelled'],
-        ]);
     }
 
     /**

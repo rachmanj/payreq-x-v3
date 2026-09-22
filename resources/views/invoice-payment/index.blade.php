@@ -987,9 +987,9 @@
 
                 let url;
                 if ((row.source || 'dds') === 'bpjs') {
-                    url = bpjsPrintOpUrlTemplate.replace(':id', row.local_id);
+                    url = bpjsPrintOpUrlTemplate.replace(':id', encodeURIComponent(row.local_id));
                 } else {
-                    url = ddsPrintOpUrlTemplate.replace(':id', row.id);
+                    url = ddsPrintOpUrlTemplate.replace(':id', encodeURIComponent(row.id));
                 }
 
                 return '<a href="' + escapeAttr(url) + '" class="vj-action-item vj-action-item-xs vj-action-print" target="_blank" title="Print OP">' +
@@ -1149,7 +1149,7 @@
 
                 $.ajax({
                     url: '{{ route('cashier.invoice-payment.update-payment', ['invoiceId' => ':invoiceId']) }}'
-                        .replace(':invoiceId', invoiceId),
+                        .replace(':invoiceId', encodeURIComponent(invoiceId)),
                     method: 'PUT',
                     data: formData,
                     headers: {
@@ -1260,7 +1260,7 @@
                 $('#sapPaymentModal').modal('show');
 
                 $.ajax({
-                    url: sapPreviewUrlTemplate.replace(':invoiceId', row.id),
+                    url: sapPreviewUrlTemplate.replace(':invoiceId', encodeURIComponent(row.id)),
                     method: 'GET',
                     data: {
                         invoice_number: row.invoice_number,
@@ -1438,7 +1438,7 @@
                 }
 
                 $.ajax({
-                    url: sapSubmitUrlTemplate.replace(':invoiceId', invoiceId),
+                    url: sapSubmitUrlTemplate.replace(':invoiceId', encodeURIComponent(invoiceId)),
                     method: 'POST',
                     data: payload,
                     headers: {
