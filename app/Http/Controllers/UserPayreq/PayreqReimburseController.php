@@ -21,10 +21,7 @@ use App\Services\PayreqTransferDestinationService;
 use App\Support\PayreqPaymentMethod;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
-use Throwable;
 
 class PayreqReimburseController extends Controller
 {
@@ -283,215 +280,105 @@ class PayreqReimburseController extends Controller
 
     public function update_rab(Request $request)
     {
-        try {
-            $request->merge([
-                'payment_method' => $request->input('payment_method', 'cash'),
-            ]);
+        $request->merge([
+            'payment_method' => $request->input('payment_method', 'cash'),
+        ]);
 
-            $this->normalizeTransferDestinationsInput($request);
+        $this->normalizeTransferDestinationsInput($request);
 
-            try {
-                $validated = $request->validate(array_merge([
-                    'payreq_id' => 'required|exists:payreqs,id',
-                    'rab_id' => 'nullable|exists:anggarans,id',
-                    'remarks' => 'nullable|string',
-                ], PayreqPaymentMethod::rules(), PayreqTransferDestinationService::rules()));
-            } catch (ValidationException $e) {
-                // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi)
-                try {
-                    Log::info('RAB UPDATE DEBUG', [
-                        'phase' => 'validation_error',
-                        'payreq_id' => $request->input('payreq_id'),
-                        'user_id' => auth()->id(),
-                        'payment_method' => $request->input('payment_method'),
-                        'rab_id' => $request->input('rab_id'),
-                        'transfer_destinations_count' => is_array($request->input('transfer_destinations'))
-                            ? count($request->input('transfer_destinations'))
-                            : null,
-                        'transfer_destinations_present' => $request->input('transfer_destinations_present'),
-                        'error' => $e->getMessage(),
-                        'errors' => $e->errors(),
-                    ]);
-                } catch (Throwable) {
-                }
+        $validated = $request->validate(array_merge([
+            'payreq_id' => 'required|exists:payreqs,id',
+            'rab_id' => 'nullable|exists:anggarans,id',
+            'remarks' => 'nullable|string',
+        ], PayreqPaymentMethod::rules(), PayreqTransferDestinationService::rules()));
 
-                throw $e;
-            }
+        $payreq = Payreq::findOrFail($validated['payreq_id']);
 
-            // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi)
-            try {
-                Log::info('RAB UPDATE DEBUG', [
-                    'phase' => 'after_validation',
-                    'payreq_id' => $validated['payreq_id'],
-                    'user_id' => auth()->id(),
-                    'payment_method' => $validated['payment_method'],
-                    'rab_id' => $validated['rab_id'] ?? null,
-                    'transfer_destinations_count' => count($validated['transfer_destinations'] ?? []),
-                    'transfer_destinations_present' => $validated['transfer_destinations_present'] ?? null,
-                ]);
-            } catch (Throwable) {
-            }
+        if ((int) $payreq->user_id !== (int) auth()->id()) {
+            $errorPayload = [
+                'status' => 'error',
+                'message' => 'RAB tidak dapat diubah karena payreq ini bukan milik akun Anda. Silakan login dengan akun pemilik payreq.',
+            ];
 
-            $payreq = Payreq::findOrFail($validated['payreq_id']);
+            return response()->json($errorPayload, 403);
+        }
 
-            if ((int) $payreq->user_id !== (int) auth()->id()) {
-                $errorPayload = [
-                    'status' => 'error',
-                    'message' => 'RAB tidak dapat diubah karena payreq ini bukan milik akun Anda. Silakan login dengan akun pemilik payreq.',
-                ];
-                // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi)
-                try {
-                    Log::info('RAB UPDATE DEBUG', [
-                        'phase' => 'error_response',
-                        'payreq_id' => $validated['payreq_id'],
-                        'user_id' => auth()->id(),
-                        'http_status' => 403,
-                        'error' => $errorPayload['message'],
-                    ]);
-                } catch (Throwable) {
-                }
+        if (! in_array($payreq->status, ['draft', 'revise'], true)) {
+            $errorPayload = [
+                'status' => 'error',
+                'message' => 'Metode pembayaran tidak dapat diubah pada status payreq ini.',
+            ];
 
-                return response()->json($errorPayload, 403);
-            }
+            return response()->json($errorPayload, 403);
+        }
 
-            if (! in_array($payreq->status, ['draft', 'revise'], true)) {
-                $errorPayload = [
-                    'status' => 'error',
-                    'message' => 'Metode pembayaran tidak dapat diubah pada status payreq ini.',
-                ];
-                // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi)
-                try {
-                    Log::info('RAB UPDATE DEBUG', [
-                        'phase' => 'error_response',
-                        'payreq_id' => $validated['payreq_id'],
-                        'user_id' => auth()->id(),
-                        'http_status' => 403,
-                        'error' => $errorPayload['message'],
-                    ]);
-                } catch (Throwable) {
-                }
+        $destinationErrors = $this->validateTransferDestinations(
+            $validated['transfer_destinations'] ?? null,
+            $payreq->amount !== null ? (int) $payreq->amount : null
+        );
+        if ($destinationErrors->isNotEmpty()) {
+            $errorMessage = $destinationErrors->first();
 
-                return response()->json($errorPayload, 403);
-            }
+            return response()->json([
+                'status' => 'error',
+                'message' => $errorMessage,
+            ], 422);
+        }
 
-            $destinationErrors = $this->validateTransferDestinations(
-                $validated['transfer_destinations'] ?? null,
-                $payreq->amount !== null ? (int) $payreq->amount : null
-            );
-            if ($destinationErrors->isNotEmpty()) {
-                $errorMessage = $destinationErrors->first();
-                // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi)
-                try {
-                    Log::info('RAB UPDATE DEBUG', [
-                        'phase' => 'error_response',
-                        'payreq_id' => $validated['payreq_id'],
-                        'user_id' => auth()->id(),
-                        'http_status' => 422,
-                        'error' => $errorMessage,
-                    ]);
-                } catch (Throwable) {
-                }
+        if ($validated['payment_method'] === 'transfer' && ! PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
+            $owned = TransferAccount::where('id', $validated['transfer_account_id'])
+                ->where('user_id', auth()->id())
+                ->exists();
+            if (! $owned) {
+                $errorMessage = 'Akun transfer tidak valid atau bukan milik Anda.';
 
                 return response()->json([
                     'status' => 'error',
                     'message' => $errorMessage,
                 ], 422);
             }
-
-            if ($validated['payment_method'] === 'transfer' && ! PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
-                $owned = TransferAccount::where('id', $validated['transfer_account_id'])
-                    ->where('user_id', auth()->id())
-                    ->exists();
-                if (! $owned) {
-                    $errorMessage = 'Akun transfer tidak valid atau bukan milik Anda.';
-                    // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi)
-                    try {
-                        Log::info('RAB UPDATE DEBUG', [
-                            'phase' => 'error_response',
-                            'payreq_id' => $validated['payreq_id'],
-                            'user_id' => auth()->id(),
-                            'http_status' => 422,
-                            'error' => $errorMessage,
-                        ]);
-                    } catch (Throwable) {
-                    }
-
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => $errorMessage,
-                    ], 422);
-                }
-            }
-
-            $paymentData = $validated;
-            if (PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
-                $paymentData['payment_method'] = 'transfer';
-                $paymentData['transfer_account_id'] = PayreqTransferDestinationService::firstTransferAccountId(
-                    $validated['transfer_destinations'] ?? null
-                );
-            }
-
-            $paymentAttrs = PayreqPaymentMethod::normalizedAttributes($paymentData);
-            $finalPaymentMethod = $paymentAttrs['payment_method'];
-
-            $updateAttributes = [
-                'rab_id' => $validated['rab_id'] ?? $payreq->rab_id,
-                'remarks' => $validated['remarks'] ?? $payreq->remarks,
-            ];
-
-            if ($finalPaymentMethod === 'transfer') {
-                $updateAttributes['payment_method'] = $paymentAttrs['payment_method'];
-                $updateAttributes['transfer_account_id'] = $paymentAttrs['transfer_account_id'];
-            }
-
-            $payreq->update($updateAttributes);
-
-            if ($finalPaymentMethod === 'transfer') {
-                PayreqTransferDestinationService::sync(
-                    $payreq->fresh(),
-                    $validated['transfer_destinations'] ?? null,
-                    (int) auth()->id(),
-                    PayreqTransferDestinationService::isPresentMarked($validated['transfer_destinations_present'] ?? null)
-                );
-            }
-
-            // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi)
-            try {
-                Log::info('RAB UPDATE DEBUG', [
-                    'phase' => 'before_success',
-                    'payreq_id' => $validated['payreq_id'],
-                    'user_id' => auth()->id(),
-                    'final_payment_method' => $finalPaymentMethod,
-                    'rab_id' => $updateAttributes['rab_id'],
-                ]);
-            } catch (Throwable) {
-            }
-
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'RAB updated successfully',
-                ]);
-            }
-
-            return redirect()->route('user-payreqs.index')->with('success', 'RAB updated successfully');
-        } catch (Throwable $e) {
-            if (! $e instanceof ValidationException) {
-                // TEMP DEBUG 22 Sep 2026 (hapus setelah investigasi)
-                try {
-                    Log::info('RAB UPDATE DEBUG', [
-                        'phase' => 'unhandled_exception',
-                        'payreq_id' => $request->input('payreq_id'),
-                        'user_id' => auth()->id(),
-                        'error' => $e->getMessage(),
-                        'exception' => $e::class,
-                    ]);
-                } catch (Throwable) {
-                }
-            }
-
-            throw $e;
         }
+
+        $paymentData = $validated;
+        if (PayreqTransferDestinationService::hasDestinations($validated['transfer_destinations'] ?? null)) {
+            $paymentData['payment_method'] = 'transfer';
+            $paymentData['transfer_account_id'] = PayreqTransferDestinationService::firstTransferAccountId(
+                $validated['transfer_destinations'] ?? null
+            );
+        }
+
+        $paymentAttrs = PayreqPaymentMethod::normalizedAttributes($paymentData);
+        $finalPaymentMethod = $paymentAttrs['payment_method'];
+
+        $updateAttributes = [
+            'rab_id' => $validated['rab_id'] ?? $payreq->rab_id,
+            'remarks' => $validated['remarks'] ?? $payreq->remarks,
+        ];
+
+        if ($finalPaymentMethod === 'transfer') {
+            $updateAttributes['payment_method'] = $paymentAttrs['payment_method'];
+            $updateAttributes['transfer_account_id'] = $paymentAttrs['transfer_account_id'];
+        }
+
+        $payreq->update($updateAttributes);
+
+        if ($finalPaymentMethod === 'transfer') {
+            PayreqTransferDestinationService::sync(
+                $payreq->fresh(),
+                $validated['transfer_destinations'] ?? null,
+                (int) auth()->id(),
+                PayreqTransferDestinationService::isPresentMarked($validated['transfer_destinations_present'] ?? null)
+            );
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'RAB updated successfully',
+            ]);
+        }
+
+        return redirect()->route('user-payreqs.index')->with('success', 'RAB updated successfully');
     }
 
     private function normalizeTransferDestinationsInput(Request $request): void
