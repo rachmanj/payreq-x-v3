@@ -761,6 +761,24 @@
             }
         }
 
+        function resolvePayreqAjaxErrorMessage(xhr) {
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                return xhr.responseJSON.message;
+            }
+            var contentType = xhr.getResponseHeader ? xhr.getResponseHeader('Content-Type') : '';
+            if (contentType && contentType.indexOf('text/html') !== -1 && xhr.responseText) {
+                var titleMatch = xhr.responseText.match(/<title[^>]*>([^<]+)<\/title>/i);
+                if (titleMatch && titleMatch[1]) {
+                    return titleMatch[1].trim();
+                }
+            }
+            if (xhr.statusText && xhr.statusText !== 'error' && xhr.statusText !== 'parsererror') {
+                return xhr.statusText;
+            }
+
+            return 'Terjadi kesalahan (HTTP ' + (xhr.status || '?') + ')';
+        }
+
         // Function to add a new row to the table
         function addDetailRow(detail, index) {
             const expenseYmd = detail.expense_date ? String(detail.expense_date).substring(0, 10) : '';
@@ -1087,8 +1105,7 @@
                     },
                     error: function(xhr) {
                         $button.prop('disabled', false).html('update');
-                        showAlert('Error updating RAB: ' + (xhr.responseJSON?.message ||
-                            'An error occurred'), 'error');
+                        showAlert('Error updating RAB: ' + resolvePayreqAjaxErrorMessage(xhr), 'error');
                     }
                 });
             });
@@ -1123,7 +1140,7 @@
                     },
                     error: function(xhr) {
                         $button.prop('disabled', false).html('Simpan Metode Pembayaran');
-                        showAlert('Gagal menyimpan metode pembayaran', 'error');
+                        showAlert('Gagal menyimpan: ' + resolvePayreqAjaxErrorMessage(xhr), 'error');
                     }
                 });
             });

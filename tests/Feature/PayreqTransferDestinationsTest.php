@@ -386,6 +386,39 @@ class PayreqTransferDestinationsTest extends TestCase
         $this->assertSame(2, PayreqTransferDestination::query()->where('payreq_id', $payreq->id)->count());
     }
 
+    public function test_reimburse_update_rab_returns_json_403_when_caller_is_not_owner(): void
+    {
+        $anggaran = $this->makeApprovedAnggaran($this->user);
+        $payreq = Payreq::query()->create([
+            'user_id' => $this->user->id,
+            'nomor' => 'REIMB-OTHER-001',
+            'type' => 'reimburse',
+            'status' => 'draft',
+            'amount' => 500000,
+            'project' => $this->user->project,
+            'department_id' => $this->user->department_id,
+            'rab_id' => $anggaran->id,
+            'payment_method' => 'cash',
+            'transfer_account_id' => null,
+        ]);
+
+        $response = $this->actingAs($this->otherUser)->postJson(route('user-payreqs.reimburse.update_rab'), [
+            'payreq_id' => $payreq->id,
+            'rab_id' => $anggaran->id,
+            'payment_method' => 'cash',
+        ]);
+
+        $response
+            ->assertForbidden()
+            ->assertJson([
+                'status' => 'error',
+            ])
+            ->assertJsonFragment([
+                'message' => 'RAB tidak dapat diubah karena payreq ini bukan milik akun Anda. Silakan login dengan akun pemilik payreq.',
+            ]);
+        $this->assertStringContainsString('application/json', (string) $response->headers->get('Content-Type'));
+    }
+
     public function test_advance_edit_with_transfer_shows_transfer_destinations_form_data(): void
     {
         $payreq = Payreq::query()->create([

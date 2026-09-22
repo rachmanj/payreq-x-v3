@@ -295,7 +295,10 @@ class PayreqReimburseController extends Controller
         $payreq = Payreq::findOrFail($validated['payreq_id']);
 
         if ((int) $payreq->user_id !== (int) auth()->id()) {
-            abort(403, 'Invalid request.');
+            return response()->json([
+                'status' => 'error',
+                'message' => 'RAB tidak dapat diubah karena payreq ini bukan milik akun Anda. Silakan login dengan akun pemilik payreq.',
+            ], 403);
         }
 
         if (! in_array($payreq->status, ['draft', 'revise'], true)) {
