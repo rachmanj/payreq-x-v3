@@ -72,6 +72,7 @@ class InvoicePaymentController extends Controller
                 return $error;
             }
 
+            // Dashboard totals always combine DDS + BPJS; the `source` filter param is ignored here.
             $response = Http::withHeaders($this->ddsHeaders())
                 ->get(
                     "{$this->apiUrl}/api/v1/departments/{$this->departmentCode}/invoices",
@@ -111,6 +112,18 @@ class InvoicePaymentController extends Controller
                 return $error;
             }
 
+            $sourceFilter = $this->normalizeInvoiceListSource($request);
+
+            if ($sourceFilter === 'bpjs') {
+                // Skip DDS API entirely to preserve rate-limit quota when listing BPJS only.
+                $waitingInvoices = $this->buildWaitingPaymentInvoiceList(
+                    $this->fetchBpjsWaitingInvoices($request),
+                    $request
+                );
+
+                return response()->json(['invoices' => array_values($waitingInvoices)]);
+            }
+
             $queryParams = $this->buildDdsQueryParams($request);
 
             $response = Http::withHeaders($this->ddsHeaders())
@@ -118,16 +131,12 @@ class InvoicePaymentController extends Controller
 
             if ($response->successful()) {
                 $invoices = $response->json()['data']['invoices'] ?? [];
-                $waitingInvoices = $this->addDaysCalculation($invoices);
-                $bpjsWaiting = $this->fetchBpjsWaitingInvoices($request);
-                $waitingInvoices = array_merge($waitingInvoices, $this->addDaysCalculation($bpjsWaiting));
 
-                if ($request->filled('search')) {
-                    $waitingInvoices = $this->filterInvoicesBySearch($waitingInvoices, $request->search);
+                if ($sourceFilter !== 'dds') {
+                    $invoices = array_merge($invoices, $this->fetchBpjsWaitingInvoices($request));
                 }
 
-                $waitingInvoices = $this->attachSapPaymentStatus($waitingInvoices);
-                usort($waitingInvoices, fn ($a, $b) => ($b['days_diff'] ?? 0) <=> ($a['days_diff'] ?? 0));
+                $waitingInvoices = $this->buildWaitingPaymentInvoiceList($invoices, $request);
 
                 return response()->json(['invoices' => array_values($waitingInvoices)]);
             }
@@ -149,6 +158,18 @@ class InvoicePaymentController extends Controller
                 return $error;
             }
 
+            $sourceFilter = $this->normalizeInvoiceListSource($request);
+
+            if ($sourceFilter === 'bpjs') {
+                // Skip DDS API entirely to preserve rate-limit quota when listing BPJS only.
+                $paidInvoices = $this->buildPaidInvoiceList(
+                    $this->fetchBpjsPaidInvoices($request),
+                    $request
+                );
+
+                return response()->json(['invoices' => array_values($paidInvoices)]);
+            }
+
             $queryParams = $this->buildDdsQueryParams($request);
 
             $response = Http::withHeaders($this->ddsHeaders())
@@ -156,15 +177,12 @@ class InvoicePaymentController extends Controller
 
             if ($response->successful()) {
                 $invoices = $response->json()['data']['invoices'] ?? [];
-                $paidInvoices = $this->addDaysCalculation($invoices);
-                $paidInvoices = array_merge($paidInvoices, $this->fetchBpjsPaidInvoices($request));
-                $paidInvoices = $this->addDaysCalculation($paidInvoices);
 
-                if ($request->filled('search')) {
-                    $paidInvoices = $this->filterInvoicesBySearch($paidInvoices, $request->search);
+                if ($sourceFilter !== 'dds') {
+                    $invoices = array_merge($invoices, $this->fetchBpjsPaidInvoices($request));
                 }
 
-                $paidInvoices = $this->attachSapPaymentStatus($paidInvoices);
+                $paidInvoices = $this->buildPaidInvoiceList($invoices, $request);
 
                 return response()->json(['invoices' => array_values($paidInvoices)]);
             }
@@ -790,6 +808,50 @@ class InvoicePaymentController extends Controller
             'project' => $request->input('project'),
             'supplier' => $request->input('supplier'),
         ], fn ($value) => $value !== null && $value !== '');
+    }
+
+    private function normalizeInvoiceListSource(Request $request): string
+    {
+        $source = strtolower(trim((string) $request->input('source', '')));
+
+        if (in_array($source, ['bpjs', 'dds'], true)) {
+            return $source;
+        }
+
+        return '';
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $invoices
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildWaitingPaymentInvoiceList(array $invoices, Request $request): array
+    {
+        $waitingInvoices = $this->addDaysCalculation($invoices);
+
+        if ($request->filled('search')) {
+            $waitingInvoices = $this->filterInvoicesBySearch($waitingInvoices, $request->search);
+        }
+
+        $waitingInvoices = $this->attachSapPaymentStatus($waitingInvoices);
+        usort($waitingInvoices, fn ($a, $b) => ($b['days_diff'] ?? 0) <=> ($a['days_diff'] ?? 0));
+
+        return $waitingInvoices;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $invoices
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildPaidInvoiceList(array $invoices, Request $request): array
+    {
+        $paidInvoices = $this->addDaysCalculation($invoices);
+
+        if ($request->filled('search')) {
+            $paidInvoices = $this->filterInvoicesBySearch($paidInvoices, $request->search);
+        }
+
+        return $this->attachSapPaymentStatus($paidInvoices);
     }
 
     /**

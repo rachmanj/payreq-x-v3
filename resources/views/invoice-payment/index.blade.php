@@ -140,6 +140,14 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label class="small text-muted mb-1">Source</label>
+                                <select id="filter_source" class="form-control form-control-sm">
+                                    <option value="">Semua Source</option>
+                                    <option value="bpjs">BPJS</option>
+                                    <option value="dds">DDS</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="small text-muted mb-1">Invoice Date From</label>
                                 <input type="date" id="filter_date_from" class="form-control form-control-sm">
                             </div>
@@ -698,6 +706,7 @@
             function getFilterParams() {
                 return {
                     status: $('#filter_status').val(),
+                    source: $('#filter_source').val(),
                     date_from: $('#filter_date_from').val(),
                     date_to: $('#filter_date_to').val(),
                     project: $('#filter_project').val(),

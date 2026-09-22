@@ -889,6 +889,187 @@ class InvoicePaymentControllerTest extends TestCase
         ];
     }
 
+    public function test_waiting_payment_source_bpjs_returns_only_bpjs_without_dds_http(): void
+    {
+        $this->cacheValidDdsDepartment();
+
+        Http::preventStrayRequests();
+        Http::fake();
+
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'amount' => 2000000,
+            'paid_amount' => 0,
+            'doc_date' => '2026-09-01',
+        ]);
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $response = $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.waiting', ['source' => 'bpjs']))
+            ->assertOk();
+
+        $invoices = $response->json('invoices');
+        $this->assertCount(1, $invoices);
+        $this->assertSame('bpjs', $invoices[0]['source']);
+        $this->assertSame($bpjs->id, $invoices[0]['local_id']);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_waiting_payment_source_dds_excludes_bpjs_rows(): void
+    {
+        $this->cacheValidDdsDepartment();
+
+        Http::preventStrayRequests();
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/wait-payment-invoices')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        'invoices' => [
+                            [
+                                'id' => 501,
+                                'invoice_number' => 'DDS-INV-501',
+                                'amount' => 750000,
+                                'receive_date' => '2026-08-01',
+                                'payment_date' => null,
+                                'status' => 'open',
+                            ],
+                        ],
+                    ],
+                ]);
+            }
+
+            return Http::response(['success' => false], 404);
+        });
+
+        BpjsApInvoice::factory()->posted()->create([
+            'amount' => 2000000,
+            'paid_amount' => 0,
+            'doc_date' => '2026-09-01',
+        ]);
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $response = $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.waiting', ['source' => 'dds']))
+            ->assertOk();
+
+        $invoices = $response->json('invoices');
+        $this->assertCount(1, $invoices);
+        $this->assertSame(501, $invoices[0]['id']);
+        $this->assertArrayNotHasKey('source', $invoices[0]);
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_waiting_payment_without_source_includes_dds_and_bpjs(): void
+    {
+        $this->cacheValidDdsDepartment();
+
+        Http::preventStrayRequests();
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/wait-payment-invoices')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        'invoices' => [
+                            [
+                                'id' => 88,
+                                'invoice_number' => 'DDS-INV-88',
+                                'amount' => 100000,
+                                'receive_date' => '2026-08-15',
+                                'payment_date' => null,
+                                'status' => 'open',
+                            ],
+                        ],
+                    ],
+                ]);
+            }
+
+            return Http::response(['success' => false], 404);
+        });
+
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'amount' => 2000000,
+            'paid_amount' => 0,
+            'doc_date' => '2026-09-01',
+        ]);
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $response = $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.waiting'))
+            ->assertOk();
+
+        $ids = collect($response->json('invoices'))->pluck('id')->all();
+        $this->assertContains(88, $ids);
+        $this->assertContains('bpjs:'.$bpjs->id, $ids);
+    }
+
+    public function test_waiting_payment_invalid_source_treated_as_all_sources(): void
+    {
+        $this->cacheValidDdsDepartment();
+
+        Http::preventStrayRequests();
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/wait-payment-invoices')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        'invoices' => [
+                            [
+                                'id' => 77,
+                                'invoice_number' => 'DDS-INV-77',
+                                'amount' => 50000,
+                                'receive_date' => '2026-08-10',
+                                'payment_date' => null,
+                                'status' => 'open',
+                            ],
+                        ],
+                    ],
+                ]);
+            }
+
+            return Http::response(['success' => false], 404);
+        });
+
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'amount' => 1500000,
+            'paid_amount' => 0,
+            'doc_date' => '2026-09-02',
+        ]);
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $response = $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.waiting', ['source' => 'xyz']))
+            ->assertOk();
+
+        $ids = collect($response->json('invoices'))->pluck('id')->all();
+        $this->assertContains(77, $ids);
+        $this->assertContains('bpjs:'.$bpjs->id, $ids);
+    }
+
+    public function test_index_includes_source_filter_dropdown(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake($this->ddsDepartmentFake());
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)
+            ->get(route('cashier.invoice-payment.index'))
+            ->assertOk()
+            ->assertSee('id="filter_source"', false)
+            ->assertSee('Semua Source', false)
+            ->assertSee('value="bpjs"', false)
+            ->assertSee('value="dds"', false);
+    }
+
     public function test_waiting_payment_includes_bpjs_posted_invoices(): void
     {
         Http::preventStrayRequests();
@@ -1439,6 +1620,11 @@ class InvoicePaymentControllerTest extends TestCase
             ->assertSee('rate limit', false)
             ->assertDontSee('Check API URL and key', false)
             ->assertDontSee('DDS Connection Issue', false);
+    }
+
+    protected function cacheValidDdsDepartment(): void
+    {
+        Cache::put('dds.departments', ['000HCASHO'], now()->addMinutes(10));
     }
 
     protected function ddsDepartmentFake(): callable
