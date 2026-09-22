@@ -160,6 +160,21 @@ class UtilityBillController extends Controller
             ->filterColumn('id_pelanggan', function ($query, $keyword) {
                 $query->where('utility_customers.id_pelanggan', 'like', "%{$keyword}%");
             })
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value', ''));
+                if ($keyword === '') {
+                    return;
+                }
+
+                $like = '%'.$keyword.'%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('utility_customers.nama', 'like', $like)
+                        ->orWhere('utility_customers.lokasi', 'like', $like)
+                        ->orWhere('utility_customers.id_pelanggan', 'like', $like)
+                        ->orWhere('utility_bills.periode', 'like', $like)
+                        ->orWhere('utility_bills.nomor_token', 'like', $like);
+                });
+            })
             ->orderColumn('lokasi', 'utility_customers.lokasi $1')
             ->rawColumns(['checkbox', 'status_badge', 'tipe_badge', 'nomor_token_display', 'payreq_badge', 'sap_badge', 'action'])
             ->toJson();

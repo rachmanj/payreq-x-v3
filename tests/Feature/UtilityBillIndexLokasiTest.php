@@ -72,9 +72,99 @@ class UtilityBillIndexLokasiTest extends TestCase
             ]));
 
         $response->assertOk();
-        $rows = collect($response->json('data'));
+        $payload = $response->json();
+        $rows = collect($payload['data']);
+        $this->assertSame(1, $payload['recordsFiltered']);
         $this->assertCount(1, $rows);
         $this->assertSame('Mess GBR', $rows->first()['lokasi']);
+    }
+
+    public function test_global_search_finds_rows_by_periode(): void
+    {
+        $user = $this->utilitiesUser();
+        $periode = '2026-08';
+        $this->seedBillsForLokasiTest($periode);
+
+        $response = $this->actingAs($user)
+            ->getJson($this->dataTablesUrl([
+                'periode' => $periode,
+                'search' => [
+                    'value' => '2026-08',
+                    'regex' => 'false',
+                ],
+            ]));
+
+        $response->assertOk();
+        $payload = $response->json();
+        $this->assertSame(2, $payload['recordsFiltered']);
+        $this->assertCount(2, $payload['data']);
+        foreach ($payload['data'] as $row) {
+            $this->assertSame('2026-08', $row['periode']);
+        }
+    }
+
+    public function test_global_search_finds_rows_by_customer_name(): void
+    {
+        $user = $this->utilitiesUser();
+        $periode = '2026-09';
+        $this->seedBillsForLokasiTest($periode);
+
+        $response = $this->actingAs($user)
+            ->getJson($this->dataTablesUrl([
+                'periode' => $periode,
+                'search' => [
+                    'value' => 'Pelanggan Kantor',
+                    'regex' => 'false',
+                ],
+            ]));
+
+        $response->assertOk();
+        $payload = $response->json();
+        $rows = collect($payload['data']);
+        $this->assertSame(1, $payload['recordsFiltered']);
+        $this->assertCount(1, $rows);
+        $this->assertSame('Pelanggan Kantor', $rows->first()['nama_customer']);
+    }
+
+    public function test_data_without_global_search_returns_all_matching_rows(): void
+    {
+        $user = $this->utilitiesUser();
+        $periode = '2026-09';
+        $this->seedBillsForLokasiTest($periode);
+
+        $response = $this->actingAs($user)
+            ->getJson($this->dataTablesUrl(['periode' => $periode]));
+
+        $response->assertOk();
+        $payload = $response->json();
+        $this->assertSame(2, $payload['recordsFiltered']);
+        $this->assertSame(2, $payload['recordsTotal']);
+        $this->assertCount(2, $payload['data']);
+    }
+
+    public function test_lokasi_filter_works_combined_with_global_search(): void
+    {
+        $user = $this->utilitiesUser();
+        $periode = '2026-09';
+        $this->seedBillsForLokasiTest($periode);
+
+        $response = $this->actingAs($user)
+            ->getJson($this->dataTablesUrl([
+                'periode' => $periode,
+                'lokasi' => 'Mess',
+                'search' => [
+                    'value' => 'Pelanggan',
+                    'regex' => 'false',
+                ],
+            ]));
+
+        $response->assertOk();
+        $payload = $response->json();
+        $rows = collect($payload['data']);
+        $this->assertSame(1, $payload['recordsFiltered']);
+        $this->assertCount(1, $rows);
+        $this->assertSame('Mess GBR', $rows->first()['lokasi']);
+        $this->assertStringContainsString('Pelanggan', $rows->first()['nama_customer']);
     }
 
     public function test_index_view_has_lokasi_column_filter_and_ajax_parameter(): void
@@ -87,7 +177,9 @@ class UtilityBillIndexLokasiTest extends TestCase
             ->assertSee('>Lokasi</th>', false)
             ->assertSee('id="filter_lokasi"', false)
             ->assertSee('Cari lokasi...', false)
-            ->assertSee("d.lokasi = $('#filter_lokasi').val();", false);
+            ->assertSee("d.lokasi = $('#filter_lokasi').val();", false)
+            ->assertSee('searchPlaceholder', false)
+            ->assertSee('nama pelanggan, lokasi, ID pelanggan, periode, nomor token', false);
     }
 
     /**

@@ -84,6 +84,9 @@
                                 </button>
                             </div>
                         </div>
+                        <p class="small text-muted mb-2">
+                            Kotak Search: nama pelanggan, lokasi, ID pelanggan, periode, nomor token.
+                        </p>
 
                         <table id="bills-table" class="table table-bordered table-striped">
                             <thead>
@@ -190,9 +193,13 @@
             const table = $('#bills-table').DataTable({
                 processing: true,
                 serverSide: true,
+                searching: true,
                 order: [
                     [6, 'desc']
                 ],
+                language: {
+                    searchPlaceholder: 'Nama, lokasi, ID pelanggan, periode, token...',
+                },
                 ajax: {
                     url: '{{ route('utilities.bills.data') }}',
                     data: function(d) {
