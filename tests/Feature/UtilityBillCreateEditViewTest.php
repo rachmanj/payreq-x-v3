@@ -71,6 +71,28 @@ class UtilityBillCreateEditViewTest extends TestCase
             ->assertSee('data-lokasi', false);
     }
 
+    public function test_create_page_shows_tipe_pembayaran_before_id_pelanggan(): void
+    {
+        $user = $this->utilitiesUser();
+        $this->createSampleCustomer();
+
+        $response = $this->actingAs($user)->get(route('utilities.bills.create'));
+        $response->assertOk();
+
+        $html = $response->getContent();
+        $tipePos = strpos($html, 'id="tipe"');
+        $customerPos = strpos($html, 'id="utility_customer_id"');
+
+        $this->assertNotFalse($tipePos);
+        $this->assertNotFalse($customerPos);
+        $this->assertLessThan($customerPos, $tipePos);
+
+        $response
+            ->assertSee('Tipe Pembayaran', false)
+            ->assertSee('ID Pelanggan', false)
+            ->assertSee('text-danger">*</span>', false);
+    }
+
     protected function utilitiesUser(): User
     {
         $user = User::factory()->create();

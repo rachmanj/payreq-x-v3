@@ -24,10 +24,6 @@
                 <form action="{{ route('utilities.bills.store') }}" method="POST">
                     @csrf
                     <div class="card-body">
-                        @include('utilities.bills.partials.customer-select-field', [
-                            'selectedCustomerId' => old('utility_customer_id'),
-                        ])
-
                         <div class="form-group">
                             <label for="tipe">Tipe Pembayaran <span class="text-danger">*</span></label>
                             <select name="tipe" id="tipe" class="form-control @error('tipe') is-invalid @enderror" required>
@@ -41,6 +37,10 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        @include('utilities.bills.partials.customer-select-field', [
+                            'selectedCustomerId' => old('utility_customer_id'),
+                        ])
 
                         <div class="row">
                             <div class="col-md-6">
