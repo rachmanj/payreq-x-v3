@@ -24,23 +24,9 @@
                 <form action="{{ route('utilities.bills.store') }}" method="POST">
                     @csrf
                     <div class="card-body">
-                        <div class="form-group">
-                            <label for="utility_customer_id">ID Pelanggan <span class="text-danger">*</span></label>
-                            <select name="utility_customer_id" id="utility_customer_id"
-                                class="form-control select2bs4 @error('utility_customer_id') is-invalid @enderror" required>
-                                <option value="">Pilih ID Pelanggan</option>
-                                @foreach ($customers as $customer)
-                                    <option value="{{ $customer->id }}" data-tipe="{{ $customer->tipe ?? 'postpaid' }}"
-                                        {{ old('utility_customer_id') == $customer->id ? 'selected' : '' }}>
-                                        [{{ strtoupper($customer->jenis_utilitas) }}] {{ $customer->id_pelanggan }} —
-                                        {{ $customer->nama }} ({{ $customer->project }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('utility_customer_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        @include('utilities.bills.partials.customer-select-field', [
+                            'selectedCustomerId' => old('utility_customer_id'),
+                        ])
 
                         <div class="form-group">
                             <label for="tipe">Tipe Pembayaran <span class="text-danger">*</span></label>
@@ -184,6 +170,7 @@
 
 @section('scripts')
     <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
+    @include('utilities.bills.partials.customer-select-scripts')
     <script>
         $(function() {
             function toggleTipeFields() {
@@ -210,54 +197,20 @@
 
             $('#periode').on('change', syncJatuhTempo);
             $('#tipe').on('change', function() {
-                toggleTipeFields();
-                if ($('#tipe').val() !== 'prepaid') {
-                    syncJatuhTempo();
-                }
-            });
-
-            function initCustomerSelect(tipe) {
-                const $select = $('#utility_customer_id');
-
-                if ($select.hasClass('select2-hidden-accessible')) {
-                    $select.select2('destroy');
-                }
-
-                $select.select2({
-                    theme: 'bootstrap4',
-                    matcher: function(params, data) {
-                        const $opt = $(data.element);
-                        // Placeholder ("Pilih ID Pelanggan") selalu tampil
-                        if ($opt.val() === '') {
-                            return data;
-                        }
-                        const optTipe = $opt.data('tipe') || 'postpaid';
-                        if (optTipe !== tipe) {
-                            return null;
-                        }
-                        const term = $.trim(params.term).toLowerCase();
-                        if (term === '') {
-                            return data;
-                        }
-                        return data.text.toLowerCase().indexOf(term) > -1 ? data : null;
-                    }
-                });
-
-                // Hapus pilihan jika customer terpilih tidak cocok dengan tipe
-                const $selected = $select.find(':selected');
-                if ($selected.length && $selected.val() !== '' && ($selected.data('tipe') || 'postpaid') !== tipe) {
-                    $select.val('').trigger('change');
-                }
-            }
-
-            $('#tipe').on('change', function() {
                 const tipe = $(this).val();
                 toggleTipeFields();
-                initCustomerSelect(tipe);
+                if (tipe !== 'prepaid') {
+                    syncJatuhTempo();
+                }
+                if (window.__utilityBillInitCustomerSelect) {
+                    window.__utilityBillInitCustomerSelect(tipe);
+                }
             });
 
             toggleTipeFields();
-            initCustomerSelect($('#tipe').val());
+            if (window.__utilityBillInitCustomerSelect) {
+                window.__utilityBillInitCustomerSelect($('#tipe').val());
+            }
         });
     </script>
 @endsection
