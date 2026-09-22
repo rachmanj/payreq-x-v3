@@ -544,6 +544,80 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="sapPaymentDetailModal" tabindex="-1" role="dialog"
+        aria-labelledby="sapPaymentDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sapPaymentDetailModalLabel">
+                        <i class="fas fa-receipt text-primary" aria-hidden="true"></i>
+                        Detail pembayaran (Outgoing Payment SAP)
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="sapPaymentDetailLoading" class="text-center py-4 text-muted d-none">
+                        <i class="fas fa-spinner fa-spin fa-2x" aria-hidden="true"></i>
+                        <p class="mb-0 mt-2">Memuat rincian pembayaran...</p>
+                    </div>
+                    <div id="sapPaymentDetailContent" class="d-none">
+                        <p class="mb-2" id="sapPaymentDetailInvoiceHeading">-</p>
+                        <div class="vj-form-panel mb-3">
+                            <h6 class="mb-2">Ringkasan</h6>
+                            <div class="row small">
+                                <div class="col-md-3">
+                                    <p class="mb-1 text-muted">OP terakhir</p>
+                                    <p class="mb-0 font-weight-bold" id="sapPaymentDetailLastOp">-</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p class="mb-1 text-muted">Total dibayar</p>
+                                    <p class="mb-0 font-weight-bold" id="sapPaymentDetailTotalPaid">-</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p class="mb-1 text-muted">Jumlah pembayaran</p>
+                                    <p class="mb-0 font-weight-bold" id="sapPaymentDetailPaymentCount">-</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p class="mb-1 text-muted">Status</p>
+                                    <p class="mb-0 font-weight-bold" id="sapPaymentDetailPaidStatus">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>No OP</th>
+                                        <th>Tanggal</th>
+                                        <th class="text-right">Jumlah</th>
+                                        <th>Cara &amp; Akun</th>
+                                        <th>Reference / Bilyet</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sapPaymentDetailPaymentsBody"></tbody>
+                            </table>
+                        </div>
+                        <p class="small text-muted mb-0" id="sapPaymentDetailMeta">-</p>
+                        <p class="small text-muted mt-2 mb-0">
+                            Sumber: catatan submit aplikasi (log SAP). Untuk status terkini dokumen, cek di SAP B1.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="vj-btn vj-btn-primary d-none" id="sapPaymentDetailPrintBtn" target="_blank"
+                        rel="noopener noreferrer">
+                        <i class="fas fa-print" aria-hidden="true"></i>
+                        <span>Cetak OP</span>
+                    </a>
+                    <button type="button" class="vj-btn vj-btn-warning" data-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('styles')
@@ -581,6 +655,8 @@
                 '{{ route('bpjs-ap-invoices.print-op', ['bpjsApInvoice' => ':id']) }}';
             const ddsPrintOpUrlTemplate =
                 '{{ route('cashier.invoice-payment.print-op', ['ddsInvoiceId' => ':id']) }}';
+            const sapPaymentDetailUrlTemplate =
+                '{{ route('cashier.invoice-payment.sap-payment.detail', ['invoiceId' => ':invoiceId']) }}';
 
             initializeWaitingTable();
             initializePaidTable();
@@ -751,7 +827,7 @@
                             orderable: false,
                             searchable: false,
                             render: function(data, type, row) {
-                                return renderWaitingAction(row);
+                                return renderWaitingAction(row) + renderDetailOpAction(row);
                             }
                         }
                     ],
@@ -863,7 +939,7 @@
                             orderable: false,
                             searchable: false,
                             render: function(data, type, row) {
-                                return renderPrintOpAction(row);
+                                return renderPrintOpAction(row) + renderDetailOpAction(row);
                             }
                         }
                     ],
@@ -994,6 +1070,171 @@
 
                 return '<a href="' + escapeAttr(url) + '" class="vj-action-item vj-action-item-xs vj-action-print" target="_blank" title="Print OP">' +
                     '<i class="fas fa-print"></i></a>';
+            }
+
+            function hasSapPaymentHistory(row) {
+                if (!row.sap_payment) {
+                    return false;
+                }
+
+                return parseInt(row.sap_payment.payment_count || 0, 10) > 0;
+            }
+
+            function renderDetailOpAction(row) {
+                if (!hasSapPaymentHistory(row)) {
+                    return '';
+                }
+
+                return '<button type="button" class="vj-action-item vj-action-item-xs sap-payment-detail-btn" title="Detail pembayaran (OP)">' +
+                    '<i class="fas fa-receipt" aria-hidden="true"></i></button>';
+            }
+
+            function renderPaymentMeansLabel(means, accountLabel) {
+                if (!means && !accountLabel) {
+                    return '-';
+                }
+
+                const meansLabel = means === 'cash' ? 'Cash' : (means === 'transfer' ? 'Transfer' : '-');
+
+                if (accountLabel) {
+                    return meansLabel + ' — ' + escapeAttr(accountLabel);
+                }
+
+                return meansLabel;
+            }
+
+            function renderPaymentReferenceLine(payment) {
+                const parts = [];
+                if (payment.transfer_reference) {
+                    parts.push(payment.transfer_reference);
+                }
+                if (payment.reference1) {
+                    parts.push(payment.reference1);
+                }
+                if (payment.reference2) {
+                    parts.push(payment.reference2);
+                }
+
+                return parts.length > 0 ? parts.join(' / ') : '-';
+            }
+
+            function openSapPaymentDetailModal(row) {
+                $('#sapPaymentDetailContent').addClass('d-none');
+                $('#sapPaymentDetailLoading').removeClass('d-none');
+                $('#sapPaymentDetailPrintBtn').addClass('d-none').attr('href', '#');
+                $('#sapPaymentDetailModal').modal('show');
+
+                $.ajax({
+                    url: sapPaymentDetailUrlTemplate.replace(':invoiceId', encodeURIComponent(row.id)),
+                    method: 'GET',
+                    cache: false,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(response) {
+                        $('#sapPaymentDetailLoading').addClass('d-none');
+
+                        if (response === null || response === undefined || typeof response !== 'object') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Respons tidak valid',
+                                text: 'Respons server tidak valid (kosong). Muat ulang halaman; bila berulang laporkan ke admin.'
+                            });
+                            $('#sapPaymentDetailModal').modal('hide');
+                            return;
+                        }
+
+                        if (!response.success) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: response.error || 'Error',
+                                text: response.message || 'Gagal memuat detail pembayaran.'
+                            });
+                            $('#sapPaymentDetailModal').modal('hide');
+                            return;
+                        }
+
+                        const invoice = response.invoice || {};
+                        const summary = response.summary || {};
+                        const payments = response.payments || [];
+
+                        const headingParts = [
+                            invoice.number || row.invoice_number || '-',
+                            row.supplier_name || '',
+                            invoice.project || row.invoice_project || ''
+                        ].filter(function(part) {
+                            return part && String(part).trim() !== '';
+                        });
+
+                        $('#sapPaymentDetailModalLabel').html(
+                            '<i class="fas fa-receipt text-primary" aria-hidden="true"></i> Detail OP — ' +
+                            escapeAttr(invoice.number || row.invoice_number || '-')
+                        );
+                        $('#sapPaymentDetailInvoiceHeading').text(headingParts.join(' · '));
+                        $('#sapPaymentDetailLastOp').text(summary.doc_num ? '#' + summary.doc_num : '-');
+                        $('#sapPaymentDetailTotalPaid').text(summary.total_paid != null ?
+                            formatCurrency(summary.total_paid) : '-');
+                        $('#sapPaymentDetailPaymentCount').text(summary.payment_count != null ?
+                            summary.payment_count : payments.length);
+                        $('#sapPaymentDetailPaidStatus').text(summary.is_fully_paid ? 'Lunas' :
+                            (summary.is_partial ? 'Sebagian' : '-'));
+
+                        let paymentsHtml = '';
+                        payments.forEach(function(payment) {
+                            const remarks = payment.journal_remarks || payment.remarks || '-';
+                            paymentsHtml += '<tr>' +
+                                '<td>' + (payment.doc_num ? '#' + escapeAttr(payment.doc_num) : '-') + '</td>' +
+                                '<td>' + (payment.date ? formatDate(payment.date) : '-') + '</td>' +
+                                '<td class="text-right">' + (payment.amount != null ? formatCurrency(payment.amount) :
+                                    '-') + '</td>' +
+                                '<td>' + renderPaymentMeansLabel(payment.means, payment.account_label) + '</td>' +
+                                '<td>' + escapeAttr(renderPaymentReferenceLine(payment)) + '</td>' +
+                                '<td>' + escapeAttr(remarks) + '</td>' +
+                                '</tr>';
+                        });
+                        $('#sapPaymentDetailPaymentsBody').html(paymentsHtml || '<tr><td colspan="6" class="text-center text-muted">Tidak ada baris pembayaran.</td></tr>');
+
+                        const latestPayment = payments[0] || {};
+                        const metaParts = [];
+                        if (latestPayment.submitted_by) {
+                            metaParts.push('Disubmit oleh: ' + latestPayment.submitted_by);
+                        }
+                        if (latestPayment.submitted_at) {
+                            metaParts.push(formatDate(latestPayment.submitted_at.substring(0, 10)));
+                        }
+                        if (latestPayment.attempt_number != null) {
+                            metaParts.push('Attempt ' + latestPayment.attempt_number);
+                        }
+                        $('#sapPaymentDetailMeta').text(metaParts.length > 0 ? metaParts.join(' · ') : '-');
+
+                        if (response.print_op_url) {
+                            $('#sapPaymentDetailPrintBtn').attr('href', response.print_op_url).removeClass('d-none');
+                        }
+
+                        $('#sapPaymentDetailContent').removeClass('d-none');
+                    },
+                    error: function(xhr) {
+                        $('#sapPaymentDetailLoading').addClass('d-none');
+                        $('#sapPaymentDetailModal').modal('hide');
+
+                        const response = xhr.responseJSON || {};
+                        if (xhr.status === 403 || response.error === 'forbidden') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Izin ditolak',
+                                text: response.message ||
+                                    'Anda tidak punya izin mengakses Invoice Payment (permission: akses_invoice_payment).'
+                            });
+                            return;
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: response.error || 'Gagal memuat',
+                            text: response.message || 'Gagal memuat detail pembayaran.'
+                        });
+                    }
+                });
             }
 
             function hideSapWithholdingUi() {
@@ -1198,6 +1439,17 @@
                     return;
                 }
                 openSapPaymentModal(row, 'paid');
+            });
+
+            $(document).on('click', '.sap-payment-detail-btn', function() {
+                let row = getDataTableRowData(waitingTable, this);
+                if (!row && paidTable) {
+                    row = getDataTableRowData(paidTable, this);
+                }
+                if (!row) {
+                    return;
+                }
+                openSapPaymentDetailModal(row);
             });
 
             $('#sapPaymentForm').on('submit', function(e) {

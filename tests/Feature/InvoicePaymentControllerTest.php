@@ -31,6 +31,7 @@ class InvoicePaymentControllerTest extends TestCase
 
         Permission::firstOrCreate(['name' => 'submit_sap_invoice_payment', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'mark_invoice_paid_without_sap', 'guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'akses_invoice_payment', 'guard_name' => 'web']);
 
         Parameter::query()
             ->where('name1', 'invoice_payment_accounts')
@@ -1093,6 +1094,101 @@ class InvoicePaymentControllerTest extends TestCase
             ->assertSee(route('bpjs-ap-invoices.print-op', ['bpjsApInvoice' => ':id']), false);
     }
 
+    public function test_sap_payment_detail_maps_payment_logs_and_sap_response(): void
+    {
+        $this->seedVendorAndAccount();
+
+        $submitter = User::factory()->create(['name' => 'Kasir Utama']);
+        $submitter->givePermissionTo('akses_invoice_payment');
+
+        $bpjs = BpjsApInvoice::factory()->posted()->create([
+            'jenis' => BpjsApInvoice::JENIS_KESEHATAN,
+            'unit' => '000H',
+            'amount' => 2000000,
+            'paid_amount' => 2000000,
+            'status' => BpjsApInvoice::STATUS_PAID,
+        ]);
+
+        SapSubmissionLog::create([
+            'bpjs_ap_invoice_id' => $bpjs->id,
+            'document_type' => SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT,
+            'status' => 'success',
+            'action' => 'submission',
+            'amount' => 2000000,
+            'sap_doc_num' => '88001',
+            'sap_doc_entry' => 501,
+            'attempt_number' => 1,
+            'submitted_by' => $submitter->id,
+            'user_id' => $submitter->id,
+            'sap_response' => [
+                'DocNum' => 88001,
+                'DocEntry' => 501,
+                'DocDate' => '2026-09-07',
+                'TransferAccount' => '11010101',
+                'TransferSum' => 2000000,
+                'TransferReference' => 'TRF-001',
+                'Reference1' => 'REF1',
+                'Reference2' => 'REF2',
+                'Remarks' => 'Remarks OP',
+                'JournalRemarks' => 'Journal OP',
+                'PaymentInvoices' => [
+                    ['DocNum' => 55001, 'SumApplied' => 2000000.0],
+                ],
+            ],
+        ]);
+
+        $this->actingAs($submitter)
+            ->getJson(route('cashier.invoice-payment.sap-payment.detail', ['invoiceId' => 'bpjs:'.$bpjs->id]))
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('invoice.source', 'bpjs')
+            ->assertJsonPath('payments.0.doc_num', '88001')
+            ->assertJsonPath('payments.0.means', 'transfer')
+            ->assertJsonPath('payments.0.account', '11010101')
+            ->assertJsonPath('payments.0.account_label', 'Bank BCA HO (110101)')
+            ->assertJsonPath('payments.0.applied_invoices.0.doc_num', '55001')
+            ->assertJsonPath('payments.0.applied_invoices.0.sum_applied', 2000000)
+            ->assertJsonPath('summary.payment_count', 1)
+            ->assertJsonPath('print_op_url', route('bpjs-ap-invoices.print-op', $bpjs));
+    }
+
+    public function test_sap_payment_detail_requires_akses_invoice_payment_permission(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.sap-payment.detail', ['invoiceId' => 42]))
+            ->assertForbidden();
+    }
+
+    public function test_sap_payment_detail_returns_404_when_invoice_not_found(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo('akses_invoice_payment');
+
+        $this->actingAs($user)
+            ->getJson(route('cashier.invoice-payment.sap-payment.detail', ['invoiceId' => 'bpjs:999999']))
+            ->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', 'Not found');
+    }
+
+    public function test_index_includes_detail_op_action_scripts(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake($this->ddsDepartmentFake());
+
+        $user = User::factory()->create(['dds_department_code' => '000HCASHO']);
+
+        $this->actingAs($user)
+            ->get(route('cashier.invoice-payment.index'))
+            ->assertOk()
+            ->assertSee('Detail pembayaran (OP)', false)
+            ->assertSee('sap-payment-detail-btn', false)
+            ->assertSee('renderDetailOpAction', false)
+            ->assertSee(route('cashier.invoice-payment.sap-payment.detail', ['invoiceId' => ':invoiceId']), false);
+    }
+
     public function test_index_encodes_invoice_id_in_sap_payment_and_print_urls(): void
     {
         Http::preventStrayRequests();
@@ -1120,6 +1216,10 @@ class InvoicePaymentControllerTest extends TestCase
         );
         $this->assertStringContainsString(
             "ddsPrintOpUrlTemplate.replace(':id', encodeURIComponent(row.id))",
+            $html
+        );
+        $this->assertStringContainsString(
+            "sapPaymentDetailUrlTemplate.replace(':invoiceId', encodeURIComponent(row.id))",
             $html
         );
         $this->assertStringContainsString(

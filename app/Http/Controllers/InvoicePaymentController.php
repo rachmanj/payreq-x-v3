@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -239,6 +240,59 @@ class InvoicePaymentController extends Controller
         } catch (\Exception $e) {
             return $this->exceptionResponse($e, 'Invoice Payment Update Error');
         }
+    }
+
+    public function sapPaymentDetail(int|string $invoiceId): JsonResponse
+    {
+        $invoiceRow = $this->resolveInvoiceRowForSapPaymentDetail($invoiceId);
+        if ($invoiceRow === null) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Not found',
+                'message' => 'Invoice tidak ditemukan atau belum ada pembayaran SAP tercatat untuk invoice ini.',
+            ], 404);
+        }
+
+        $logs = $this->successfulPaymentLogsForInvoice($invoiceId);
+        if ($logs->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Not found',
+                'message' => 'Invoice tidak ditemukan atau belum ada pembayaran SAP tercatat untuk invoice ini.',
+            ], 404);
+        }
+
+        $summary = $this->buildSapPaymentSummary($invoiceRow, $logs);
+        $sapAccounts = $this->collectSapAccountsFromPaymentLogs($logs);
+        $accountLabels = $this->accountLabelsBySapAccount($sapAccounts);
+
+        $payments = $logs->map(fn (SapSubmissionLog $log) => $this->mapSapPaymentLogToDetail(
+            $log,
+            $accountLabels
+        ))->values()->all();
+
+        $source = $invoiceRow['source'] ?? 'dds';
+        $printOpUrl = $source === 'bpjs'
+            ? route('bpjs-ap-invoices.print-op', ['bpjsApInvoice' => $invoiceRow['local_id']])
+            : route('cashier.invoice-payment.print-op', ['ddsInvoiceId' => $invoiceRow['id']]);
+
+        return response()->json([
+            'success' => true,
+            'invoice' => [
+                'number' => $invoiceRow['invoice_number'] ?? null,
+                'source' => $source,
+                'project' => $invoiceRow['payment_project']
+                    ?? $invoiceRow['invoice_project']
+                    ?? $invoiceRow['receive_project']
+                    ?? null,
+                'amount' => isset($invoiceRow['amount']) ? (float) $invoiceRow['amount'] : null,
+                'payment_date' => $invoiceRow['payment_date'] ?? null,
+                'status' => $invoiceRow['status'] ?? null,
+            ],
+            'summary' => $summary,
+            'payments' => $payments,
+            'print_op_url' => $printOpUrl,
+        ]);
     }
 
     public function previewSapPayment(PreviewSapInvoicePaymentRequest $request, $invoiceId, SapService $sapService): JsonResponse
@@ -1509,6 +1563,212 @@ class InvoicePaymentController extends Controller
         }
 
         return $existing.' | '.$note;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveInvoiceRowForSapPaymentDetail(int|string $invoiceId): ?array
+    {
+        $parsed = $this->parseInvoiceRouteId($invoiceId);
+
+        if ($parsed['source'] === 'bpjs') {
+            $bpjsInvoice = BpjsApInvoice::query()->find($parsed['id']);
+            if ($bpjsInvoice === null) {
+                return null;
+            }
+
+            return $this->mapBpjsInvoiceToRow($bpjsInvoice);
+        }
+
+        $logs = $this->successfulPaymentLogsForInvoice($parsed['id']);
+        if ($logs->isEmpty()) {
+            return null;
+        }
+
+        $latestLog = $logs->first();
+        $totalPaid = (float) $logs->sum(fn (SapSubmissionLog $log) => (float) ($log->amount ?? 0));
+
+        return [
+            'id' => $parsed['id'],
+            'source' => 'dds',
+            'invoice_number' => $latestLog->dds_invoice_number ?? (string) $parsed['id'],
+            'amount' => $totalPaid,
+            'payment_date' => null,
+            'status' => null,
+            'invoice_project' => null,
+            'payment_project' => null,
+            'receive_project' => null,
+        ];
+    }
+
+    /**
+     * @return Collection<int, SapSubmissionLog>
+     */
+    private function successfulPaymentLogsForInvoice(array|int|string $invoice): Collection
+    {
+        if (is_array($invoice)) {
+            if (($invoice['source'] ?? 'dds') === 'bpjs') {
+                return SapSubmissionLog::query()
+                    ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT)
+                    ->where('bpjs_ap_invoice_id', $invoice['local_id'])
+                    ->where('status', 'success')
+                    ->with('submittedBy')
+                    ->orderByDesc('id')
+                    ->get();
+            }
+
+            $invoiceId = $invoice['id'] ?? null;
+        } else {
+            $parsed = $this->parseInvoiceRouteId($invoice);
+            if ($parsed['source'] === 'bpjs') {
+                return SapSubmissionLog::query()
+                    ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_BPJS_AP_INVOICE_PAYMENT)
+                    ->where('bpjs_ap_invoice_id', $parsed['id'])
+                    ->where('status', 'success')
+                    ->with('submittedBy')
+                    ->orderByDesc('id')
+                    ->get();
+            }
+
+            $invoiceId = $parsed['id'];
+        }
+
+        return SapSubmissionLog::query()
+            ->where('document_type', SapSubmissionLog::DOCUMENT_TYPE_INVOICE_PAYMENT)
+            ->where('dds_invoice_id', $invoiceId)
+            ->where('status', 'success')
+            ->with('submittedBy')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
+     * @param  Collection<int, SapSubmissionLog>  $logs
+     * @return list<string>
+     */
+    private function collectSapAccountsFromPaymentLogs(Collection $logs): array
+    {
+        $accounts = [];
+
+        foreach ($logs as $log) {
+            $response = $this->decodeSapResponsePayload($log->sap_response);
+            if ($response === null) {
+                continue;
+            }
+
+            foreach (['CashAccount', 'TransferAccount'] as $key) {
+                $value = trim((string) ($response[$key] ?? ''));
+                if ($value !== '') {
+                    $accounts[] = $value;
+                }
+            }
+        }
+
+        return array_values(array_unique($accounts));
+    }
+
+    /**
+     * @param  list<string>  $sapAccounts
+     * @return array<string, string>
+     */
+    private function accountLabelsBySapAccount(array $sapAccounts): array
+    {
+        if ($sapAccounts === []) {
+            return [];
+        }
+
+        return Account::query()
+            ->whereIn('sap_account', $sapAccounts)
+            ->get(['sap_account', 'account_name', 'account_number'])
+            ->mapWithKeys(function (Account $account) {
+                $label = trim($account->account_name.' ('.$account->account_number.')');
+
+                return [(string) $account->sap_account => $label];
+            })
+            ->all();
+    }
+
+    /**
+     * @param  array<string, string>  $accountLabels
+     * @return array<string, mixed>
+     */
+    private function mapSapPaymentLogToDetail(SapSubmissionLog $log, array $accountLabels): array
+    {
+        $response = $this->decodeSapResponsePayload($log->sap_response);
+        $cashAccount = $response !== null ? trim((string) ($response['CashAccount'] ?? '')) : '';
+        $transferAccount = $response !== null ? trim((string) ($response['TransferAccount'] ?? '')) : '';
+
+        $means = null;
+        $account = null;
+        if ($cashAccount !== '') {
+            $means = 'cash';
+            $account = $cashAccount;
+        } elseif ($transferAccount !== '') {
+            $means = 'transfer';
+            $account = $transferAccount;
+        }
+
+        $accountLabel = $account !== null
+            ? ($accountLabels[$account] ?? $account)
+            : null;
+
+        $appliedInvoices = [];
+        if ($response !== null && isset($response['PaymentInvoices']) && is_array($response['PaymentInvoices'])) {
+            foreach ($response['PaymentInvoices'] as $line) {
+                if (! is_array($line)) {
+                    continue;
+                }
+                $appliedInvoices[] = [
+                    'doc_num' => isset($line['DocNum']) ? (string) $line['DocNum'] : null,
+                    'sum_applied' => isset($line['SumApplied']) ? (float) $line['SumApplied'] : null,
+                ];
+            }
+        }
+
+        $docDate = $response['DocDate'] ?? null;
+        if (is_string($docDate) && str_contains($docDate, 'T')) {
+            $docDate = substr($docDate, 0, 10);
+        }
+
+        return [
+            'doc_num' => $log->sap_doc_num ?? ($response['DocNum'] ?? null),
+            'doc_entry' => $log->sap_doc_entry ?? ($response['DocEntry'] ?? null),
+            'date' => is_string($docDate) && $docDate !== '' ? $docDate : $log->created_at?->format('Y-m-d'),
+            'amount' => $log->amount !== null ? (float) $log->amount : null,
+            'means' => $means,
+            'account' => $account,
+            'account_label' => $accountLabel,
+            'transfer_sum' => $response !== null && isset($response['TransferSum']) ? (float) $response['TransferSum'] : null,
+            'transfer_reference' => $response !== null ? ($response['TransferReference'] ?? null) : null,
+            'reference1' => $response !== null ? ($response['Reference1'] ?? null) : null,
+            'reference2' => $response !== null ? ($response['Reference2'] ?? null) : null,
+            'remarks' => $response !== null ? ($response['Remarks'] ?? null) : null,
+            'journal_remarks' => $response !== null ? ($response['JournalRemarks'] ?? null) : null,
+            'applied_invoices' => $appliedInvoices,
+            'submitted_by' => $log->submittedBy?->name,
+            'submitted_at' => $log->created_at?->toIso8601String(),
+            'attempt_number' => $log->attempt_number,
+            'status' => $log->status,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function decodeSapResponsePayload(mixed $sapResponse): ?array
+    {
+        if (is_array($sapResponse)) {
+            return $sapResponse;
+        }
+
+        if (! is_string($sapResponse) || trim($sapResponse) === '') {
+            return null;
+        }
+
+        $decoded = json_decode($sapResponse, true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     /**

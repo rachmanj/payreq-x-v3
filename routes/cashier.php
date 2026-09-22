@@ -269,6 +269,9 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/invoices/{invoiceId}/sap-payment/submit', [InvoicePaymentController::class, 'submitSapPayment'])
             ->middleware('permission:submit_sap_invoice_payment')
             ->name('sap-payment.submit');
+        Route::get('/invoices/{invoiceId}/sap-payment/detail', [InvoicePaymentController::class, 'sapPaymentDetail'])
+            ->middleware('permission:akses_invoice_payment')
+            ->name('sap-payment.detail');
         Route::get('/{ddsInvoiceId}/print-op', [OpVoucherPrintController::class, 'printDds'])->name('print-op');
     });
 });
