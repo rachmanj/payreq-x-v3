@@ -83,6 +83,10 @@ class UtilityBillController extends Controller
             }
         }
 
+        if ($request->filled('lokasi')) {
+            $query->where('utility_customers.lokasi', 'like', '%'.$request->lokasi.'%');
+        }
+
         return datatables()->of($query)
             ->addColumn('checkbox', function (UtilityBill $bill) {
                 $eligiblePayreq = $bill->tanggal_bayar && ! $bill->payreq_id && ! $bill->utility_ap_invoice_id;
@@ -105,6 +109,7 @@ class UtilityBillController extends Controller
             })
             ->addColumn('id_pelanggan', fn (UtilityBill $bill) => $bill->customer->id_pelanggan ?? '-')
             ->addColumn('nama_customer', fn (UtilityBill $bill) => $bill->customer->nama ?? '-')
+            ->addColumn('lokasi', fn (UtilityBill $bill) => $bill->customer->lokasi ?? '-')
             ->addColumn('jenis_utilitas', fn (UtilityBill $bill) => UtilityCustomer::JENIS_UTILITAS[$bill->customer->jenis_utilitas ?? ''] ?? ($bill->customer->jenis_utilitas ?? '-'))
             ->addColumn('tipe_badge', function (UtilityBill $bill) {
                 $tipe = $bill->customer->tipe ?? 'postpaid';
@@ -146,6 +151,16 @@ class UtilityBillController extends Controller
                 return '<a href="'.$url.'" class="vj-chip vj-chip-info" title="Lihat AP Invoice SAP">SAP '.$label.'</a>';
             })
             ->addColumn('action', 'utilities.bills.action')
+            ->filterColumn('lokasi', function ($query, $keyword) {
+                $query->where('utility_customers.lokasi', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('nama_customer', function ($query, $keyword) {
+                $query->where('utility_customers.nama', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('id_pelanggan', function ($query, $keyword) {
+                $query->where('utility_customers.id_pelanggan', 'like', "%{$keyword}%");
+            })
+            ->orderColumn('lokasi', 'utility_customers.lokasi $1')
             ->rawColumns(['checkbox', 'status_badge', 'tipe_badge', 'nomor_token_display', 'payreq_badge', 'sap_badge', 'action'])
             ->toJson();
     }

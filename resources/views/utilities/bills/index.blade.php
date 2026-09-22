@@ -56,6 +56,11 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label class="small text-muted">Lokasi</label>
+                                <input type="text" id="filter_lokasi" class="form-control form-control-sm"
+                                    placeholder="Cari lokasi...">
+                            </div>
+                            <div class="col-md-2">
                                 <label class="small text-muted">Status</label>
                                 <select id="filter_status" class="form-control form-control-sm">
                                     <option value="">Semua</option>
@@ -86,6 +91,7 @@
                                     <th></th>
                                     <th>ID Pelanggan</th>
                                     <th>Nama</th>
+                                    <th>Lokasi</th>
                                     <th>Jenis</th>
                                     <th>Tipe</th>
                                     <th>Periode</th>
@@ -185,7 +191,7 @@
                 processing: true,
                 serverSide: true,
                 order: [
-                    [5, 'desc']
+                    [6, 'desc']
                 ],
                 ajax: {
                     url: '{{ route('utilities.bills.data') }}',
@@ -193,6 +199,7 @@
                         d.periode = $('#filter_periode').val();
                         d.jenis_utilitas = $('#filter_jenis').val();
                         d.project = $('#filter_project').val();
+                        d.lokasi = $('#filter_lokasi').val();
                         d.status = $('#filter_status').val();
                         d.claimed = $('#filter_claimed').val();
                     }
@@ -209,6 +216,17 @@
                     {
                         data: 'nama_customer',
                         name: 'utility_customers.nama'
+                    },
+                    {
+                        data: 'lokasi',
+                        name: 'utility_customers.lokasi',
+                        render: function(data, type) {
+                            if (type === 'display' && (!data || data === '-')) {
+                                return '<span class="text-muted">-</span>';
+                            }
+
+                            return data;
+                        }
                     },
                     {
                         data: 'jenis_utilitas',
