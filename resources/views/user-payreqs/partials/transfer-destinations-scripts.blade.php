@@ -114,15 +114,28 @@
         }
 
         window.payreqCollectTransferDestinationsPayload = function() {
+            const method = $('input.payment-method-radio:checked').val()
+                || $('input[name="payment_method"]:checked').val()
+                || 'cash';
+            const isTransfer = method === 'transfer';
             const payload = {
-                transfer_destinations_present: '1',
+                transfer_destinations_present: isTransfer ? '1' : '0',
                 transfer_destinations: {}
             };
 
+            if (!isTransfer) {
+                return payload;
+            }
+
             $('#transfer-destinations-body tr.transfer-destination-row').each(function() {
+                const transferAccountId = $(this).find('.transfer-destination-account').val();
+                if (!transferAccountId) {
+                    return;
+                }
+
                 const index = $(this).data('row-index');
                 payload.transfer_destinations[index] = {
-                    transfer_account_id: $(this).find('.transfer-destination-account').val(),
+                    transfer_account_id: transferAccountId,
                     planned_amount: $(this).find('.transfer-destination-planned-amount').val(),
                     remark: $(this).find('.transfer-destination-remark').val()
                 };

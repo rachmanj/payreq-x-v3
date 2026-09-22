@@ -386,6 +386,61 @@ class PayreqTransferDestinationsTest extends TestCase
         $this->assertSame(2, PayreqTransferDestination::query()->where('payreq_id', $payreq->id)->count());
     }
 
+    public function test_reimburse_update_rab_cash_with_present_flag_and_no_destinations_preserves_payment_method(): void
+    {
+        $anggaran = $this->makeApprovedAnggaran($this->user);
+        $otherAnggaran = $this->makeApprovedAnggaran($this->user);
+        $payreq = Payreq::query()->create([
+            'user_id' => $this->user->id,
+            'nomor' => 'REIMB-CASH-PRESENT',
+            'type' => 'reimburse',
+            'status' => 'draft',
+            'amount' => 500000,
+            'project' => $this->user->project,
+            'department_id' => $this->user->department_id,
+            'rab_id' => $anggaran->id,
+            'payment_method' => 'cash',
+            'transfer_account_id' => null,
+        ]);
+
+        Realization::query()->create([
+            'payreq_id' => $payreq->id,
+            'project' => $payreq->project,
+            'department_id' => $payreq->department_id,
+            'remarks' => 'Cash present flag test',
+            'user_id' => $payreq->user_id,
+            'nomor' => 'REAL-CASH-PRESENT',
+            'status' => 'reimburse-draft',
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson(route('user-payreqs.reimburse.update_rab'), [
+            'payreq_id' => $payreq->id,
+            'rab_id' => $otherAnggaran->id,
+            'payment_method' => 'cash',
+            'transfer_destinations_present' => '1',
+            'transfer_destinations' => [],
+        ]);
+
+        $response->assertOk()->assertJson(['status' => 'success']);
+
+        $payreq->refresh();
+        $this->assertSame('cash', $payreq->payment_method);
+        $this->assertNull($payreq->transfer_account_id);
+        $this->assertSame($otherAnggaran->id, (int) $payreq->rab_id);
+        $this->assertSame(0, PayreqTransferDestination::query()->where('payreq_id', $payreq->id)->count());
+    }
+
+    public function test_transfer_destinations_scripts_sets_present_flag_based_on_payment_method(): void
+    {
+        $path = resource_path('views/user-payreqs/partials/transfer-destinations-scripts.blade.php');
+        $contents = file_get_contents($path);
+
+        $this->assertIsString($contents);
+        $this->assertStringContainsString('transfer_destinations_present: isTransfer ? \'1\' : \'0\'', $contents);
+        $this->assertStringContainsString('input.payment-method-radio:checked', $contents);
+        $this->assertStringContainsString('if (!transferAccountId)', $contents);
+    }
+
     public function test_reimburse_update_rab_returns_json_403_when_caller_is_not_owner(): void
     {
         $anggaran = $this->makeApprovedAnggaran($this->user);
