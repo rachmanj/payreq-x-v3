@@ -120,7 +120,7 @@
             const isTransfer = method === 'transfer';
             const payload = {
                 transfer_destinations_present: isTransfer ? '1' : '0',
-                transfer_destinations: {}
+                transfer_destinations: []
             };
 
             if (!isTransfer) {
@@ -133,12 +133,11 @@
                     return;
                 }
 
-                const index = $(this).data('row-index');
-                payload.transfer_destinations[index] = {
+                payload.transfer_destinations.push({
                     transfer_account_id: transferAccountId,
                     planned_amount: $(this).find('.transfer-destination-planned-amount').val(),
                     remark: $(this).find('.transfer-destination-remark').val()
-                };
+                });
             });
 
             return payload;

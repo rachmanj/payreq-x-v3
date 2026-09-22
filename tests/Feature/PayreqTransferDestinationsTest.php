@@ -439,6 +439,99 @@ class PayreqTransferDestinationsTest extends TestCase
         $this->assertStringContainsString('transfer_destinations_present: isTransfer ? \'1\' : \'0\'', $contents);
         $this->assertStringContainsString('input.payment-method-radio:checked', $contents);
         $this->assertStringContainsString('if (!transferAccountId)', $contents);
+        $this->assertStringContainsString('transfer_destinations: []', $contents);
+        $this->assertStringContainsString('payload.transfer_destinations.push', $contents);
+    }
+
+    public function test_reimburse_update_rab_cash_with_present_zero_and_nested_destinations_succeeds(): void
+    {
+        $anggaran = $this->makeApprovedAnggaran($this->user);
+        $otherAnggaran = $this->makeApprovedAnggaran($this->user);
+        $payreq = Payreq::query()->create([
+            'user_id' => $this->user->id,
+            'nomor' => 'REIMB-CASH-ZERO',
+            'type' => 'reimburse',
+            'status' => 'draft',
+            'amount' => 500000,
+            'project' => $this->user->project,
+            'department_id' => $this->user->department_id,
+            'rab_id' => $anggaran->id,
+            'payment_method' => 'cash',
+            'transfer_account_id' => null,
+        ]);
+
+        Realization::query()->create([
+            'payreq_id' => $payreq->id,
+            'project' => $payreq->project,
+            'department_id' => $payreq->department_id,
+            'remarks' => 'Cash nested destinations test',
+            'user_id' => $payreq->user_id,
+            'nomor' => 'REAL-CASH-ZERO',
+            'status' => 'reimburse-draft',
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson(route('user-payreqs.reimburse.update_rab'), [
+            'payreq_id' => $payreq->id,
+            'rab_id' => $otherAnggaran->id,
+            'payment_method' => 'cash',
+            'transfer_destinations_present' => '0',
+            'transfer_destinations' => [],
+        ]);
+
+        $response->assertOk()->assertJson(['status' => 'success']);
+
+        $payreq->refresh();
+        $this->assertSame('cash', $payreq->payment_method);
+        $this->assertNull($payreq->transfer_account_id);
+        $this->assertSame($otherAnggaran->id, (int) $payreq->rab_id);
+    }
+
+    public function test_reimburse_update_rab_rejects_serialized_object_object_transfer_destinations(): void
+    {
+        $anggaran = $this->makeApprovedAnggaran($this->user);
+        $payreq = Payreq::query()->create([
+            'user_id' => $this->user->id,
+            'nomor' => 'REIMB-OBJ-STR',
+            'type' => 'reimburse',
+            'status' => 'draft',
+            'amount' => 500000,
+            'project' => $this->user->project,
+            'department_id' => $this->user->department_id,
+            'rab_id' => $anggaran->id,
+            'payment_method' => 'transfer',
+            'transfer_account_id' => null,
+        ]);
+
+        Realization::query()->create([
+            'payreq_id' => $payreq->id,
+            'project' => $payreq->project,
+            'department_id' => $payreq->department_id,
+            'remarks' => 'Object string regression',
+            'user_id' => $payreq->user_id,
+            'nomor' => 'REAL-OBJ-STR',
+            'status' => 'reimburse-draft',
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson(route('user-payreqs.reimburse.update_rab'), [
+            'payreq_id' => $payreq->id,
+            'rab_id' => $anggaran->id,
+            'payment_method' => 'transfer',
+            'transfer_destinations' => '[object Object]',
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['transfer_destinations']);
+    }
+
+    public function test_reimburse_add_details_update_rab_ajax_does_not_use_traditional_param(): void
+    {
+        $path = resource_path('views/user-payreqs/reimburse/add_details.blade.php');
+        $contents = file_get_contents($path);
+
+        $this->assertIsString($contents);
+        $this->assertStringNotContainsString('traditional: true', $contents);
+        $this->assertStringContainsString("$('#update_rab').click", $contents);
+        $this->assertStringContainsString("$('#update_payment_method').click", $contents);
     }
 
     public function test_reimburse_update_rab_returns_json_403_when_caller_is_not_owner(): void

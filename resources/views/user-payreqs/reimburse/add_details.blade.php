@@ -1086,7 +1086,6 @@
                 $.ajax({
                     url: '{{ route('user-payreqs.reimburse.update_rab') }}',
                     method: 'POST',
-                    traditional: true,
                     data: $.extend({
                         _token: '{{ csrf_token() }}',
                         rab_id: rab_id,
@@ -1121,7 +1120,6 @@
                 $.ajax({
                     url: '{{ route('user-payreqs.reimburse.update_rab') }}',
                     method: 'POST',
-                    traditional: true,
                     data: $.extend({
                         _token: '{{ csrf_token() }}',
                         rab_id: '{{ $payreq->rab_id }}',
