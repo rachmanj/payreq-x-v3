@@ -46,19 +46,33 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
-    }
 
-    public function render($request, Throwable $e)
-    {
-        if ($request->expectsJson()
-            && ($e instanceof UnauthorizedException || $e instanceof AccessDeniedHttpException)) {
-            return response()->json([
-                'error' => 'forbidden',
-                'reason' => 'permission',
-                'message' => 'Anda tidak memiliki izin untuk aksi ini.',
-            ], 403);
-        }
+        $permissionDeniedJson = fn () => response()->json([
+            'responseMessage' => 'You do not have the required authorization.',
+            'responseStatus' => 403,
+            'error' => 'forbidden',
+            'reason' => 'permission',
+            'message' => 'Anda tidak memiliki izin untuk aksi ini.',
+        ], 403);
 
-        return parent::render($request, $e);
+        $permissionDeniedRedirect = fn () => redirect()
+            ->back()
+            ->with('alert_type', 'error')
+            ->with('alert_title', 'Access Denied')
+            ->with('alert_message', 'You do not have the required permissions to perform this action.');
+
+        $this->renderable(function (UnauthorizedException $e, $request) use ($permissionDeniedJson, $permissionDeniedRedirect) {
+            if ($request->expectsJson()) {
+                return $permissionDeniedJson();
+            }
+
+            return $permissionDeniedRedirect();
+        });
+
+        $this->renderable(function (AccessDeniedHttpException $e, $request) use ($permissionDeniedJson) {
+            if ($request->expectsJson()) {
+                return $permissionDeniedJson();
+            }
+        });
     }
 }
