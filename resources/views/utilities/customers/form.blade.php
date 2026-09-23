@@ -51,6 +51,18 @@
             @enderror
         </div>
     </div>
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="nomor_meter">No. Meter</label>
+            <input type="text" name="nomor_meter" id="nomor_meter"
+                class="form-control @error('nomor_meter') is-invalid @enderror"
+                value="{{ old('nomor_meter', $customer->nomor_meter ?? '') }}">
+            <small class="form-text text-muted">Nomor meter PLN (biasanya 11 digit). Berbeda dari ID Pelanggan.</small>
+            @error('nomor_meter')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+    </div>
 </div>
 
 <div class="form-group">

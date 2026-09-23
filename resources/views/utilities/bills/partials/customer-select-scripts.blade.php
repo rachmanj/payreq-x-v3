@@ -9,7 +9,7 @@
         function updateCustomerInfoPanel() {
             const $opt = $('#utility_customer_id').find(':selected');
             if (!$opt.length || $opt.val() === '') {
-                $('#uci-id-pelanggan, #uci-nama, #uci-lokasi, #uci-jenis, #uci-tipe, #uci-project').text(emptyLabel);
+                $('#uci-id-pelanggan, #uci-nama, #uci-lokasi, #uci-jenis, #uci-nomor-meter, #uci-tipe, #uci-project').text(emptyLabel);
                 return;
             }
             const tipeKey = $opt.data('tipe') || 'postpaid';
@@ -17,6 +17,8 @@
             $('#uci-nama').text($opt.data('nama') || emptyLabel);
             $('#uci-lokasi').text($opt.data('lokasi') || emptyLabel);
             $('#uci-jenis').text($opt.data('jenis') || emptyLabel);
+            const nomorMeter = $opt.data('nomor-meter');
+            $('#uci-nomor-meter').text(nomorMeter ? nomorMeter : emptyLabel);
             $('#uci-tipe').text(tipeLabels[tipeKey] || tipeKey || emptyLabel);
             $('#uci-project').text($opt.data('project') || emptyLabel);
         }
@@ -37,7 +39,10 @@
                 }
                 const nama = String($opt.data('nama') || '').toLowerCase();
                 const lokasi = String($opt.data('lokasi') || '').toLowerCase();
-                const haystack = (data.text + ' ' + nama + ' ' + lokasi).toLowerCase();
+                const idPelanggan = String($opt.data('id-pelanggan') || '').toLowerCase();
+                const nomorMeter = String($opt.data('nomor-meter') || '').toLowerCase();
+                const project = String($opt.data('project') || '').toLowerCase();
+                const haystack = (data.text + ' ' + nama + ' ' + lokasi + ' ' + idPelanggan + ' ' + nomorMeter + ' ' + project).toLowerCase();
                 return haystack.indexOf(term) > -1 ? data : null;
             };
         }
@@ -51,13 +56,13 @@
 
             $select.select2({
                 theme: 'bootstrap4',
-                placeholder: 'Cari nama pelanggan atau lokasi...',
+                placeholder: 'Cari nama, lokasi, ID pelanggan, atau no. meter...',
                 matcher: customerSelectMatcher(tipe)
             });
 
             $select.off('select2:open.utilityCustomer').on('select2:open.utilityCustomer', function() {
                 $('.select2-container--open .select2-search__field').attr('placeholder',
-                    'Cari nama pelanggan atau lokasi...');
+                    'Cari nama, lokasi, ID pelanggan, atau no. meter...');
             });
 
             const $selected = $select.find(':selected');

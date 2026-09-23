@@ -107,7 +107,15 @@ class UtilityBillController extends Controller
                     .'" data-eligible-ap-invoice="'.($eligibleApInvoice ? '1' : '0')
                     .'">';
             })
-            ->addColumn('id_pelanggan', fn (UtilityBill $bill) => $bill->customer->id_pelanggan ?? '-')
+            ->addColumn('id_pelanggan', function (UtilityBill $bill) {
+                $id = e($bill->customer->id_pelanggan ?? '-');
+                $meter = $bill->customer->nomor_meter ?? null;
+                if (! filled($meter)) {
+                    return $id;
+                }
+
+                return $id.'<br><small class="text-muted">Meter '.e($meter).'</small>';
+            })
             ->addColumn('nama_customer', fn (UtilityBill $bill) => $bill->customer->nama ?? '-')
             ->addColumn('lokasi', fn (UtilityBill $bill) => $bill->customer->lokasi ?? '-')
             ->addColumn('jenis_utilitas', fn (UtilityBill $bill) => UtilityCustomer::JENIS_UTILITAS[$bill->customer->jenis_utilitas ?? ''] ?? ($bill->customer->jenis_utilitas ?? '-'))
@@ -158,7 +166,10 @@ class UtilityBillController extends Controller
                 $query->where('utility_customers.nama', 'like', "%{$keyword}%");
             })
             ->filterColumn('id_pelanggan', function ($query, $keyword) {
-                $query->where('utility_customers.id_pelanggan', 'like', "%{$keyword}%");
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('utility_customers.id_pelanggan', 'like', "%{$keyword}%")
+                        ->orWhere('utility_customers.nomor_meter', 'like', "%{$keyword}%");
+                });
             })
             ->filter(function ($query) use ($request) {
                 $keyword = trim((string) $request->input('search.value', ''));
@@ -171,12 +182,13 @@ class UtilityBillController extends Controller
                     $q->where('utility_customers.nama', 'like', $like)
                         ->orWhere('utility_customers.lokasi', 'like', $like)
                         ->orWhere('utility_customers.id_pelanggan', 'like', $like)
+                        ->orWhere('utility_customers.nomor_meter', 'like', $like)
                         ->orWhere('utility_bills.periode', 'like', $like)
                         ->orWhere('utility_bills.nomor_token', 'like', $like);
                 });
             })
             ->orderColumn('lokasi', 'utility_customers.lokasi $1')
-            ->rawColumns(['checkbox', 'status_badge', 'tipe_badge', 'nomor_token_display', 'payreq_badge', 'sap_badge', 'action'])
+            ->rawColumns(['checkbox', 'id_pelanggan', 'status_badge', 'tipe_badge', 'nomor_token_display', 'payreq_badge', 'sap_badge', 'action'])
             ->toJson();
     }
 

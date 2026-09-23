@@ -198,7 +198,7 @@
                     [6, 'desc']
                 ],
                 language: {
-                    searchPlaceholder: 'Nama, lokasi, ID pelanggan, periode, token...',
+                    searchPlaceholder: 'Nama, lokasi, ID pelanggan, no. meter, periode, token...',
                 },
                 ajax: {
                     url: '{{ route('utilities.bills.data') }}',

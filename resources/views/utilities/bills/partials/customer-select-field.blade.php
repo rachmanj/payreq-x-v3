@@ -6,12 +6,14 @@
         @foreach ($customers as $customer)
             @php
                 $lokasiPart = filled($customer->lokasi) ? ' · '.$customer->lokasi : '';
-                $optionLabel = '['.strtoupper($customer->jenis_utilitas).'] '.$customer->id_pelanggan.' — '.$customer->nama.$lokasiPart.' ('.$customer->project.')';
+                $meterPart = filled($customer->nomor_meter) ? ' · Meter '.$customer->nomor_meter : '';
+                $optionLabel = '['.strtoupper($customer->jenis_utilitas).'] '.$customer->id_pelanggan.' — '.$customer->nama.$lokasiPart.' ('.$customer->project.')'.$meterPart;
                 $tipe = $customer->tipe ?? 'postpaid';
             @endphp
             <option value="{{ $customer->id }}"
                 data-tipe="{{ $tipe }}"
                 data-id-pelanggan="{{ $customer->id_pelanggan }}"
+                data-nomor-meter="{{ $customer->nomor_meter ?? '' }}"
                 data-nama="{{ $customer->nama }}"
                 data-lokasi="{{ $customer->lokasi ?? '' }}"
                 data-project="{{ $customer->project }}"
@@ -47,10 +49,16 @@
         </div>
         <div class="row mt-1">
             <div class="col-sm-6 mb-1 mb-sm-0">
+                <span class="text-muted">No. Meter:</span>
+                <span id="uci-nomor-meter" class="font-weight-bold">—</span>
+            </div>
+            <div class="col-sm-6">
                 <span class="text-muted">Tipe:</span>
                 <span id="uci-tipe" class="font-weight-bold">—</span>
             </div>
-            <div class="col-sm-6">
+        </div>
+        <div class="row mt-1">
+            <div class="col-sm-6 mb-1 mb-sm-0">
                 <span class="text-muted">Project:</span>
                 <span id="uci-project" class="font-weight-bold">—</span>
             </div>

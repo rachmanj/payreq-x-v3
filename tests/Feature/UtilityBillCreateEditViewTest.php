@@ -65,10 +65,11 @@ class UtilityBillCreateEditViewTest extends TestCase
         $this->actingAs($user)
             ->get(route('utilities.bills.create'))
             ->assertOk()
-            ->assertSee('Cari nama pelanggan atau lokasi...', false)
+            ->assertSee('Cari nama, lokasi, ID pelanggan, atau no. meter...', false)
             ->assertSee('customerSelectMatcher', false)
             ->assertSee('data-nama', false)
-            ->assertSee('data-lokasi', false);
+            ->assertSee('data-lokasi', false)
+            ->assertSee('data-nomor-meter', false);
     }
 
     public function test_create_page_shows_tipe_pembayaran_before_id_pelanggan(): void

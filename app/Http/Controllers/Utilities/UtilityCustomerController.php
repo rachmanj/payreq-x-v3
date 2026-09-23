@@ -26,6 +26,13 @@ class UtilityCustomerController extends Controller
         return datatables()->of(
             UtilityCustomer::query()->with('account')->orderBy('nama')
         )
+            ->editColumn('nomor_meter', function (UtilityCustomer $customer) {
+                if (! filled($customer->nomor_meter)) {
+                    return '<span class="text-muted">-</span>';
+                }
+
+                return e($customer->nomor_meter);
+            })
             ->addColumn('jenis_label', fn (UtilityCustomer $customer) => UtilityCustomer::JENIS_UTILITAS[$customer->jenis_utilitas] ?? $customer->jenis_utilitas)
             ->addColumn('tipe_badge', function (UtilityCustomer $customer) {
                 if ($customer->tipe === 'prepaid') {
@@ -45,7 +52,7 @@ class UtilityCustomerController extends Controller
                 ? '<span class="vj-chip vj-chip-success">Aktif</span>'
                 : '<span class="vj-chip vj-chip-neutral">Nonaktif</span>')
             ->addColumn('action', 'utilities.customers.action')
-            ->rawColumns(['account_info', 'is_active_badge', 'tipe_badge', 'action'])
+            ->rawColumns(['nomor_meter', 'account_info', 'is_active_badge', 'tipe_badge', 'action'])
             ->toJson();
     }
 
@@ -126,6 +133,7 @@ class UtilityCustomerController extends Controller
             'jenis_utilitas' => 'required|in:pln,pdam,telkom',
             'tipe' => 'required|in:postpaid,prepaid',
             'id_pelanggan' => ['required', 'string', 'max:50', $uniqueRule],
+            'nomor_meter' => 'nullable|string|max:50',
             'nama' => 'required|string|max:255',
             'lokasi' => 'nullable|string|max:255',
             'project' => 'required|string|max:20',

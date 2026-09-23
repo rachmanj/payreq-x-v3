@@ -26,6 +26,7 @@
                             <thead>
                                 <tr>
                                     <th>ID Pelanggan</th>
+                                    <th>No. Meter</th>
                                     <th>Nama</th>
                                     <th>Jenis</th>
                                     <th>Tipe</th>
@@ -60,9 +61,13 @@
                 processing: true,
                 serverSide: true,
                 ajax: '{{ route('utilities.customers.data') }}',
-                columns: [{
+                columns: [                    {
                         data: 'id_pelanggan',
                         name: 'id_pelanggan'
+                    },
+                    {
+                        data: 'nomor_meter',
+                        name: 'nomor_meter'
                     },
                     {
                         data: 'nama',
