@@ -87,6 +87,13 @@ class UtilityBillController extends Controller
             $query->where('utility_customers.lokasi', 'like', '%'.$request->lokasi.'%');
         }
 
+        if ($request->filled('tipe') && in_array($request->tipe, ['prepaid', 'postpaid'], true)) {
+            $query->where('utility_customers.tipe', $request->tipe);
+        }
+
+        $query->orderByDesc('utility_bills.created_at')
+            ->orderByDesc('utility_bills.id');
+
         return datatables()->of($query)
             ->addColumn('checkbox', function (UtilityBill $bill) {
                 $eligiblePayreq = $bill->tanggal_bayar && ! $bill->payreq_id && ! $bill->utility_ap_invoice_id;

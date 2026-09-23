@@ -47,6 +47,14 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label class="small text-muted">Tipe</label>
+                                <select id="filter_tipe" class="form-control form-control-sm">
+                                    <option value="">Semua</option>
+                                    <option value="prepaid">Prepaid</option>
+                                    <option value="postpaid">Postpaid</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="small text-muted">Project</label>
                                 <select id="filter_project" class="form-control form-control-sm">
                                     <option value="">Semua</option>
@@ -194,9 +202,7 @@
                 processing: true,
                 serverSide: true,
                 searching: true,
-                order: [
-                    [6, 'desc']
-                ],
+                order: [],
                 language: {
                     searchPlaceholder: 'Nama, lokasi, ID pelanggan, no. meter, periode, token...',
                 },
@@ -209,6 +215,7 @@
                         d.lokasi = $('#filter_lokasi').val();
                         d.status = $('#filter_status').val();
                         d.claimed = $('#filter_claimed').val();
+                        d.tipe = $('#filter_tipe').val();
                     }
                 },
                 columns: [{
