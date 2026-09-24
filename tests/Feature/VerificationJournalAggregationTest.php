@@ -271,7 +271,7 @@ class VerificationJournalAggregationTest extends TestCase
         $this->assertEquals($debits->sum('amount'), $credits->sum('amount'));
     }
 
-    public function test_aggregated_credit_description_uses_single_activity_name(): void
+    public function test_activity_credit_description_uses_note_text_and_activity_suffix(): void
     {
         $meals = $this->createExpenseAccount('61201001', 'Meals');
 
@@ -291,11 +291,12 @@ class VerificationJournalAggregationTest extends TestCase
         $credit = collect($lines)->firstWhere('debit_credit', 'credit');
 
         $this->assertNotNull($credit);
-        $this->assertSame('Kegiatan: Rapat Koordinasi Proyek', $credit['description']);
+        $this->assertSame('Snack rapat · Kegiatan: Rapat Koordinasi Proyek', $credit['description']);
         $this->assertNull($credit['activity_id']);
+        $this->assertStringNotContainsString('biaya non-kegiatan', $credit['description']);
     }
 
-    public function test_aggregated_credit_description_marks_mixed_non_activity_costs(): void
+    public function test_activity_credit_description_for_mixed_activity_and_excluded_detail(): void
     {
         $meals = $this->createExpenseAccount('61201001', 'Meals');
         $office = $this->createExpenseAccount('61203001', 'Office');
@@ -319,8 +320,142 @@ class VerificationJournalAggregationTest extends TestCase
         $credit = collect($lines)->firstWhere('debit_credit', 'credit');
 
         $this->assertNotNull($credit);
-        $this->assertSame('Kegiatan: Mobilisasi Camp · biaya non-kegiatan', $credit['description']);
+        $this->assertSame('Meals mobilisasi · Kegiatan: Mobilisasi Camp', $credit['description']);
         $this->assertEquals(150000.0, (float) $credit['amount']);
+        $this->assertStringNotContainsString('biaya non-kegiatan', $credit['description']);
+    }
+
+    public function test_activity_realization_emits_debits_then_credit_in_order(): void
+    {
+        $meals = $this->createExpenseAccount('61201001', 'Meals');
+        $security = $this->createExpenseAccount('61202001', 'Security');
+
+        $activity = Activity::query()->create([
+            'code' => 'KEG-2026-007',
+            'name' => 'Peringatan HUT ARKA',
+            'periode' => '2026-09',
+            'mode' => 'tanpa_reklasifikasi',
+            'status' => 'open',
+            'created_by' => $this->user->id,
+        ]);
+
+        $realization = $this->createRealization($activity->id);
+        $this->createDetail($realization, $meals, 100000, 'Snack');
+        $this->createDetail($realization, $security, 200000, 'Keamanan');
+
+        $lines = $this->aggregateRealizations([$realization]);
+
+        $this->assertCount(3, $lines);
+        $this->assertSame('debit', $lines[0]['debit_credit']);
+        $this->assertSame($meals->account_number, $lines[0]['account_code']);
+        $this->assertSame('debit', $lines[1]['debit_credit']);
+        $this->assertSame($security->account_number, $lines[1]['account_code']);
+        $this->assertSame('credit', $lines[2]['debit_credit']);
+        $this->assertSame('Snack · Kegiatan: Peringatan HUT ARKA', $lines[2]['description']);
+    }
+
+    public function test_multiple_realizations_interleave_credits_after_each_nota_debits(): void
+    {
+        $expense = $this->createExpenseAccount('61201001', 'Meals');
+
+        $deptA = $this->department;
+        $deptB = Department::query()->create([
+            'department_name' => 'Ops',
+            'akronim' => 'OPS',
+            'sap_code' => 'OPS-02',
+            'is_active' => true,
+            'is_selectable' => true,
+        ]);
+        $deptC = Department::query()->create([
+            'department_name' => 'HR',
+            'akronim' => 'HR',
+            'sap_code' => 'HR-03',
+            'is_active' => true,
+            'is_selectable' => true,
+        ]);
+
+        $activity = Activity::query()->create([
+            'code' => 'KEG-2026-008',
+            'name' => 'Event CC',
+            'periode' => '2026-09',
+            'mode' => 'tanpa_reklasifikasi',
+            'status' => 'open',
+            'created_by' => $this->user->id,
+        ]);
+
+        $realizations = [];
+        foreach ([$deptA, $deptB, $deptC] as $index => $dept) {
+            $realization = Realization::query()->create([
+                'nomor' => 'RLZ-CC-'.$index,
+                'payreq_id' => $this->createPayreq()->id,
+                'user_id' => $this->user->id,
+                'project' => '000H',
+                'department_id' => $dept->id,
+                'activity_id' => $activity->id,
+                'status' => 'verification-complete',
+            ]);
+            RealizationDetail::query()->create([
+                'realization_id' => $realization->id,
+                'project' => '000H',
+                'department_id' => $dept->id,
+                'account_id' => $expense->id,
+                'amount' => 10000 * ($index + 1),
+                'description' => 'Nota dept '.$dept->sap_code,
+                'activity_id' => $activity->id,
+            ]);
+            $realizations[] = $realization;
+        }
+
+        $lines = $this->aggregateRealizations($realizations);
+
+        $this->assertCount(6, $lines);
+        for ($i = 0; $i < 3; $i++) {
+            $this->assertSame('debit', $lines[$i * 2]['debit_credit']);
+            $this->assertSame('credit', $lines[$i * 2 + 1]['debit_credit']);
+        }
+
+        $debits = collect($lines)->where('debit_credit', 'debit');
+        $credits = collect($lines)->where('debit_credit', 'credit');
+        $this->assertEquals($debits->sum('amount'), $credits->sum('amount'));
+
+        $lastCreditIndex = null;
+        foreach ($lines as $idx => $line) {
+            if ($line['debit_credit'] === 'credit') {
+                $this->assertTrue($lastCreditIndex === null || $idx > $lastCreditIndex + 1);
+                $lastCreditIndex = $idx;
+            }
+        }
+    }
+
+    public function test_nota_without_activity_in_mixed_vj_uses_plain_credit_description(): void
+    {
+        $office = $this->createExpenseAccount('61203001', 'Office');
+        $meals = $this->createExpenseAccount('61201001', 'Meals');
+
+        $activity = Activity::query()->create([
+            'code' => 'KEG-2026-009',
+            'name' => 'Rapat Tim',
+            'periode' => '2026-09',
+            'mode' => 'tanpa_reklasifikasi',
+            'status' => 'open',
+            'created_by' => $this->user->id,
+        ]);
+
+        $withActivity = $this->createRealization($activity->id);
+        $this->createDetail($withActivity, $meals, 100000, 'Snack rapat');
+
+        $withoutActivity = $this->createRealization();
+        $this->createDetail($withoutActivity, $office, 50000, 'ATK rutin saja');
+
+        $lines = $this->aggregateRealizations([$withActivity, $withoutActivity]);
+        $creditPlain = collect($lines)->first(
+            fn (array $line) => $line['debit_credit'] === 'credit'
+                && $line['realization_no'] === $withoutActivity->nomor
+        );
+
+        $this->assertNotNull($creditPlain);
+        $this->assertSame('ATK rutin saja', $creditPlain['description']);
+        $this->assertStringNotContainsString('Kegiatan:', $creditPlain['description']);
     }
 
     public function test_legacy_credit_description_uses_realization_note_descriptions(): void

@@ -141,33 +141,18 @@ class VerificationJournalAggregator
      */
     protected function buildAggregatedLines(Collection $realizations, int $verificationJournalId, ?User $user): array
     {
-        $debitBuckets = [];
-        $creditBuckets = [];
-        $creditActivityNames = [];
-        $creditHasNonActivity = [];
+        $lines = [];
 
         foreach ($realizations as $realization) {
-            $cashAccountForMeta = $this->resolveCashAccount($realization, $user);
+            $debitBuckets = [];
+            $realizationDetails = $realization->realizationDetails;
 
-            foreach ($realization->realizationDetails as $detail) {
+            foreach ($realizationDetails as $detail) {
                 $activity = $this->effectiveActivity($detail);
                 $resolved = $this->resolveEffectiveAccount($detail);
                 $account = Account::query()->find($resolved['account_id']);
                 if (! $account) {
                     continue;
-                }
-
-                if ($cashAccountForMeta) {
-                    $creditMetaKey = implode('|', [
-                        $cashAccountForMeta->account_number,
-                        (string) $realization->department?->sap_code,
-                    ]);
-
-                    if ($activity === null) {
-                        $creditHasNonActivity[$creditMetaKey] = true;
-                    } else {
-                        $creditActivityNames[$creditMetaKey][$activity->name] = true;
-                    }
                 }
 
                 $costCenter = $detail->department?->sap_code;
@@ -209,12 +194,6 @@ class VerificationJournalAggregator
                         $activity->id,
                     );
                     $debitBuckets[$bucketKey]['account_code'] = $account->account_number;
-                } else {
-                    $existingNos = array_filter(explode(', ', (string) $debitBuckets[$bucketKey]['realization_no']));
-                    if (! in_array($realization->nomor, $existingNos, true)) {
-                        $existingNos[] = $realization->nomor;
-                        $debitBuckets[$bucketKey]['realization_no'] = implode(', ', $existingNos);
-                    }
                 }
 
                 $debitBuckets[$bucketKey]['amount'] = round(
@@ -227,85 +206,20 @@ class VerificationJournalAggregator
                 }
             }
 
-            $cashAccount = $this->resolveCashAccount($realization, $user);
-            if (! $cashAccount) {
-                continue;
+            foreach ($debitBuckets as $debitLine) {
+                $lines[] = $debitLine;
             }
 
-            $creditKey = implode('|', [
-                $cashAccount->account_number,
-                (string) $realization->department?->sap_code,
-            ]);
-
-            if (! isset($creditBuckets[$creditKey])) {
-                $creditBuckets[$creditKey] = [
-                    'verification_journal_id' => $verificationJournalId,
-                    'realization_date' => Carbon::parse($realization->created_at)->format('Y-m-d'),
-                    'debit_credit' => 'credit',
-                    'realization_no' => $realization->nomor,
-                    'account_code' => $cashAccount->account_number,
-                    'amount' => 0.0,
-                    'description' => '',
-                    'project' => $realization->project,
-                    'cost_center' => $realization->department?->sap_code,
-                    'is_reclassified' => false,
-                    'reclassified_reason' => null,
-                    'activity_id' => null,
-                ];
-            } else {
-                $existingNos = array_filter(explode(', ', (string) $creditBuckets[$creditKey]['realization_no']));
-                if (! in_array($realization->nomor, $existingNos, true)) {
-                    $existingNos[] = $realization->nomor;
-                    $creditBuckets[$creditKey]['realization_no'] = implode(', ', $existingNos);
-                }
-            }
-
-            $creditBuckets[$creditKey]['amount'] = round(
-                (float) $creditBuckets[$creditKey]['amount'] + (float) $realization->realizationDetails->sum('amount'),
-                2
+            $lines[] = $this->creditLineForRealization(
+                $verificationJournalId,
+                $realization,
+                $realizationDetails,
+                $user,
+                true,
             );
         }
 
-        foreach ($creditBuckets as $creditKey => $creditBucket) {
-            $activityNames = array_keys($creditActivityNames[$creditKey] ?? []);
-            $creditBuckets[$creditKey]['description'] = $this->buildAggregatedCreditDescription(
-                $activityNames,
-                $creditHasNonActivity[$creditKey] ?? false,
-            );
-        }
-
-        return array_values(array_merge($debitBuckets, $creditBuckets));
-    }
-
-    /**
-     * @param  array<int, string>  $activityNames
-     */
-    protected function buildAggregatedCreditDescription(array $activityNames, bool $hasNonActivity): string
-    {
-        $suffix = $hasNonActivity ? ' · biaya non-kegiatan' : '';
-        $prefix = 'Kegiatan: ';
-        $maxLength = 180;
-
-        $names = $activityNames;
-        while (true) {
-            $description = $prefix.implode(', ', $names).$suffix;
-            if (strlen($description) <= $maxLength) {
-                return $description;
-            }
-
-            if (count($names) > 1) {
-                array_pop($names);
-
-                continue;
-            }
-
-            $available = $maxLength - strlen($prefix) - strlen($suffix);
-            if ($available < 1) {
-                return rtrim(substr($description, 0, $maxLength), ', ');
-            }
-
-            return $prefix.rtrim(substr($names[0], 0, $available), ', ').$suffix;
-        }
+        return $lines;
     }
 
     /**
@@ -350,13 +264,12 @@ class VerificationJournalAggregator
         Realization $realization,
         Collection $realizationDetails,
         ?User $user,
+        bool $withActivitySuffix = false,
     ): array {
         $cashAccount = $this->resolveCashAccount($realization, $user);
-        $arrayDesc = $realizationDetails->pluck('description')->unique();
-        $descriptions = implode(', ', $arrayDesc->toArray());
-        if (strlen($descriptions) > 100) {
-            $descriptions = substr($descriptions, 0, 100);
-        }
+        $descriptions = $withActivitySuffix
+            ? $this->buildCreditDescriptionWithActivity($realizationDetails)
+            : $this->buildLegacyCreditDescription($realizationDetails);
 
         return [
             'verification_journal_id' => $verificationJournalId,
@@ -372,6 +285,54 @@ class VerificationJournalAggregator
             'reclassified_reason' => null,
             'activity_id' => null,
         ];
+    }
+
+    /**
+     * @param  Collection<int, RealizationDetail>  $realizationDetails
+     */
+    protected function buildLegacyCreditDescription(Collection $realizationDetails): string
+    {
+        $arrayDesc = $realizationDetails->pluck('description')->unique();
+        $descriptions = implode(', ', $arrayDesc->toArray());
+        if (strlen($descriptions) > 100) {
+            $descriptions = substr($descriptions, 0, 100);
+        }
+
+        return $descriptions;
+    }
+
+    /**
+     * @param  Collection<int, RealizationDetail>  $realizationDetails
+     */
+    protected function buildCreditDescriptionWithActivity(Collection $realizationDetails): string
+    {
+        $firstDetail = $realizationDetails->first();
+        $description = $firstDetail ? (string) $firstDetail->description : '';
+
+        $activity = null;
+        foreach ($realizationDetails as $detail) {
+            $effective = $this->effectiveActivity($detail);
+            if ($effective !== null) {
+                $activity = $effective;
+                break;
+            }
+        }
+
+        if ($activity !== null) {
+            $description .= ' · Kegiatan: '.$activity->name;
+        }
+
+        return $this->truncateCreditDescription($description);
+    }
+
+    protected function truncateCreditDescription(string $description): string
+    {
+        $maxLength = 180;
+        if (strlen($description) <= $maxLength) {
+            return $description;
+        }
+
+        return rtrim(substr($description, 0, $maxLength - 1), ' ').'…';
     }
 
     protected function resolveCashAccount(Realization $realization, ?User $user): ?Account
