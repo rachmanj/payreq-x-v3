@@ -44,7 +44,7 @@
                 <tr>
                     <td>{{ $line->line_no }}</td>
                     <td>{{ $line->account_code }}</td>
-                    <td>{{ $accountNames[$line->account_code] ?? '' }}</td>
+                    <td>{{ $accountNames[$line->account_code] ?? $line->account_code }}</td>
                     <td>{{ $line->project }}</td>
                     <td>{{ $line->cost_center }}</td>
                     <td>{{ $line->description }}</td>

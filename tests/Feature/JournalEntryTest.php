@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
 use App\Models\JournalEntry;
 use App\Models\JournalEntryLine;
 use App\Models\User;
@@ -158,5 +159,120 @@ class JournalEntryTest extends TestCase
             ->assertSessionHas('error');
 
         $this->assertDatabaseHas('journal_entries', ['id' => $entry->id]);
+    }
+
+    public function test_show_displays_account_number_when_account_not_in_master(): void
+    {
+        $user = $this->authorizedUser();
+        $unknownAccount = '11201026';
+        $entry = JournalEntry::factory()->create(['created_by' => $user->id]);
+        JournalEntryLine::factory()->create([
+            'journal_entry_id' => $entry->id,
+            'line_no' => 1,
+            'account_code' => $unknownAccount,
+            'debit_credit' => 'debit',
+            'amount' => 1000,
+        ]);
+        JournalEntryLine::factory()->create([
+            'journal_entry_id' => $entry->id,
+            'line_no' => 2,
+            'account_code' => '99999999',
+            'debit_credit' => 'credit',
+            'amount' => 1000,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('accounting.journal-entries.show', $entry->id));
+
+        $response->assertOk();
+        $response->assertSeeInOrder([
+            '<td>'.$unknownAccount.'</td>',
+            '<td>'.$unknownAccount.'</td>',
+        ], false);
+    }
+
+    public function test_show_displays_master_account_name_when_account_exists(): void
+    {
+        $user = $this->authorizedUser();
+        $accountNumber = '11010001';
+        $accountName = 'Cash HO';
+        Account::query()->create([
+            'account_number' => $accountNumber,
+            'account_name' => $accountName,
+            'type' => 'cash',
+            'project' => '000H',
+            'is_active' => true,
+            'is_hidden' => false,
+        ]);
+
+        $entry = JournalEntry::factory()->create(['created_by' => $user->id]);
+        JournalEntryLine::factory()->create([
+            'journal_entry_id' => $entry->id,
+            'line_no' => 1,
+            'account_code' => $accountNumber,
+            'debit_credit' => 'debit',
+            'amount' => 500,
+        ]);
+        JournalEntryLine::factory()->create([
+            'journal_entry_id' => $entry->id,
+            'line_no' => 2,
+            'account_code' => '21001001',
+            'debit_credit' => 'credit',
+            'amount' => 500,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('accounting.journal-entries.show', $entry->id));
+
+        $response->assertOk();
+        $response->assertSeeInOrder([
+            '<td>'.$accountNumber.'</td>',
+            '<td>'.$accountName.'</td>',
+        ], false);
+    }
+
+    public function test_print_displays_account_number_or_name_consistently_with_show(): void
+    {
+        $user = $this->authorizedUser();
+        $unknownAccount = '11201026';
+        $knownNumber = '11010001';
+        $knownName = 'Cash HO';
+        Account::query()->create([
+            'account_number' => $knownNumber,
+            'account_name' => $knownName,
+            'type' => 'cash',
+            'project' => '000H',
+            'is_active' => true,
+            'is_hidden' => false,
+        ]);
+
+        $entry = JournalEntry::factory()->create(['created_by' => $user->id]);
+        JournalEntryLine::factory()->create([
+            'journal_entry_id' => $entry->id,
+            'line_no' => 1,
+            'account_code' => $unknownAccount,
+            'debit_credit' => 'debit',
+            'amount' => 1000,
+        ]);
+        JournalEntryLine::factory()->create([
+            'journal_entry_id' => $entry->id,
+            'line_no' => 2,
+            'account_code' => $knownNumber,
+            'debit_credit' => 'credit',
+            'amount' => 1000,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('accounting.journal-entries.print', $entry->id));
+
+        $response->assertOk();
+        $response->assertSeeInOrder([
+            '<td>'.$unknownAccount.'</td>',
+            '<td>'.$unknownAccount.'</td>',
+        ], false);
+        $response->assertSeeInOrder([
+            '<td>'.$knownNumber.'</td>',
+            '<td>'.$knownName.'</td>',
+        ], false);
     }
 }
