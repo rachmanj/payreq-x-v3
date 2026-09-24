@@ -7,6 +7,7 @@
     $enableMulticurrency = $enableMulticurrency ?? ($amountField === 'amount');
     $amountLabel = $amountField === 'default_amount' ? 'Default Amount' : ($enableMulticurrency ? 'IDR (Rp)' : 'Amount');
     $requireAmount = $amountField === 'amount';
+    $requireDimensions = $requireDimensions ?? true;
     $lineRowDefaults = [
         'account_code' => '',
         'debit_credit' => 'debit',
@@ -41,8 +42,8 @@
                     <th style="width: 9%">Kurs</th>
                 @endif
                 <th style="width: {{ $enableMulticurrency ? '9%' : '12%' }}">{{ $amountLabel }}</th>
-                <th style="width: 8%">Project @if ($requireAmount)<span class="text-danger">*</span>@endif</th>
-                <th style="width: 9%">Cost Center @if ($requireAmount)<span class="text-danger">*</span>@endif</th>
+                <th style="width: 8%">Project @if ($requireDimensions)<span class="text-danger">*</span>@endif</th>
+                <th style="width: 9%">Cost Center @if ($requireDimensions)<span class="text-danger">*</span>@endif</th>
                 <th>Description</th>
                 <th style="width: 4%"></th>
             </tr>
@@ -57,7 +58,7 @@
                     'amountField' => $amountField,
                     'requireAmount' => $requireAmount,
                     'enableMulticurrency' => $enableMulticurrency,
-                    'requireDimensions' => $requireAmount,
+                    'requireDimensions' => $requireDimensions,
                 ])
             @endforeach
         </tbody>
@@ -117,7 +118,7 @@
         'amountField' => $amountField,
         'requireAmount' => $requireAmount,
         'enableMulticurrency' => $enableMulticurrency,
-        'requireDimensions' => $requireAmount,
+        'requireDimensions' => $requireDimensions,
     ])
 </template>
 
@@ -142,6 +143,7 @@
     <script>
         const jeAmountField = @json($amountField);
         const jeRequireAmount = @json($requireAmount);
+        const jeRequireDimensions = @json($requireDimensions);
         const jeMulticurrencyEnabled = @json($enableMulticurrency);
         const jeDefaultUsdRateUrl = @json($enableMulticurrency ? route('accounting.journal-entries.default_usd_rate') : null);
         let jeSubmitConfirmed = false;
@@ -293,7 +295,7 @@
         }
 
         function jeValidateDimensions() {
-            if (!jeRequireAmount) {
+            if (!jeRequireDimensions) {
                 return true;
             }
 
@@ -475,6 +477,11 @@
 
         $('#je-form').on('submit', function(e) {
             if (!jeRequireAmount) {
+                if (!jeValidateDimensions()) {
+                    e.preventDefault();
+                    return false;
+                }
+
                 return true;
             }
 

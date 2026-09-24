@@ -1,6 +1,6 @@
 @php
     $enableMulticurrency = $enableMulticurrency ?? false;
-    $requireDimensions = $requireDimensions ?? false;
+    $requireDimensions = $requireDimensions ?? true;
     $lineCurrency = strtoupper($line['currency'] ?? 'IDR');
 @endphp
 <tr data-row-id="row_{{ $index }}">

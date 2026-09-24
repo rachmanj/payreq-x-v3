@@ -12,6 +12,33 @@ class StoreJournalEntryTemplateRequest extends FormRequest
         return $this->user()->can('create_manual_journal_entry');
     }
 
+    protected function prepareForValidation(): void
+    {
+        $lines = $this->input('lines', []);
+
+        if (! is_array($lines)) {
+            return;
+        }
+
+        foreach ($lines as $index => $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+
+            if (array_key_exists('project', $line) && is_string($line['project'])) {
+                $lines[$index]['project'] = trim($line['project']);
+            }
+
+            if (array_key_exists('cost_center', $line) && is_string($line['cost_center'])) {
+                $lines[$index]['cost_center'] = trim($line['cost_center']);
+            }
+        }
+
+        $this->merge([
+            'lines' => $lines,
+        ]);
+    }
+
     public function rules(): array
     {
         $templateId = $this->route('id') ?? $this->route('template');
@@ -28,9 +55,17 @@ class StoreJournalEntryTemplateRequest extends FormRequest
             'lines.*.account_code' => 'required|string|max:50',
             'lines.*.debit_credit' => ['required', Rule::in(['debit', 'credit'])],
             'lines.*.default_amount' => 'nullable|numeric|min:0',
-            'lines.*.project' => 'nullable|string|max:20',
-            'lines.*.cost_center' => 'nullable|string|max:50',
+            'lines.*.project' => 'required|string|max:50',
+            'lines.*.cost_center' => 'required|string|max:50',
             'lines.*.description' => 'nullable|string|max:500',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'lines.*.project.required' => 'The project field is required for line :position.',
+            'lines.*.cost_center.required' => 'Cost center is required for line :position.',
         ];
     }
 }
