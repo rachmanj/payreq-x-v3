@@ -871,7 +871,7 @@
                         <div class="vj-alert vj-alert-warning">
                             <div class="font-weight-bold mb-2"><i class="fas fa-exclamation-triangle"></i> Important Notes</div>
                             <ul class="mb-0 pl-3">
-                                <li>The journal will be saved as a <strong>draft</strong> in SAP B1.</li>
+                                <li>The journal will be <strong>posted immediately</strong> in SAP B1. It cannot be edited afterwards — corrections require a reversal (storno) from this page.</li>
                                 <li>Please ensure account codes, projects, and cost centers exist in SAP B1.</li>
                                 <li>If SAP rejects the submission, you can retry after fixing the issue.</li>
                                 <li>If needed later, authorized users can reverse the posted journal from this page.</li>
@@ -955,7 +955,7 @@
                             if (result.isConfirmed) {
                                 VjSwal.fire({
                                     title: 'Submitting...',
-                                    html: 'Please wait while we save this journal as a draft in SAP B1.',
+                                    html: 'Please wait while we post this journal to SAP B1.',
                                     allowOutsideClick: false,
                                     allowEscapeKey: false,
                                     showConfirmButton: false,

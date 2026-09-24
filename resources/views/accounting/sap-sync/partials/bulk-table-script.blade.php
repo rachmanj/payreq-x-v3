@@ -84,7 +84,7 @@
                 <div class="text-left">
                     <p>You are about to submit <strong>${count}</strong> verification journal(s) to SAP Business One.</p>
                     <ul class="pl-3 mb-0">
-                        <li>Journals will be created as <strong>drafts</strong> in SAP B1.</li>
+                        <li>Journals will be <strong>posted immediately</strong> in SAP B1. They cannot be edited afterwards — corrections require a reversal (storno) from the SAP Sync page for each journal.</li>
                         <li>Each submission attempt is logged for audit purposes.</li>
                         <li>If SAP rejects a journal, you can retry from this page.</li>
                     </ul>

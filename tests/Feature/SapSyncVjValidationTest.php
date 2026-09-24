@@ -195,6 +195,28 @@ class SapSyncVjValidationTest extends TestCase
             ->assertSee('Submit to SAP B1', false);
     }
 
+    public function test_show_page_sap_submit_modal_notes_reflect_posted_journal_not_draft(): void
+    {
+        $user = $this->createCashierUser();
+        $journal = $this->createJournal([
+            'validation_status' => VerificationJournal::VALIDATION_VALIDATED,
+            'validated_by' => $user->id,
+            'validated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('accounting.sap-sync.show', $journal->id));
+
+        $response->assertOk();
+        $content = $response->getContent();
+        $this->assertFalse(
+            (bool) preg_match('/saved as a draft/i', $content),
+            'SAP submit modal must not claim the journal is saved as a draft in SAP B1.'
+        );
+        $response->assertSee('posted immediately', false)
+            ->assertSee('reversal', false);
+    }
+
     public function test_user_without_validate_permission_cannot_validate(): void
     {
         $user = $this->createCashierUser();
