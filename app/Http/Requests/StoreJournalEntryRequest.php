@@ -19,8 +19,24 @@ class StoreJournalEntryRequest extends FormRequest
         $lines = $this->input('lines', []);
 
         if (is_array($lines)) {
+            $lines = $multicurrencyService->normalizeLines($lines);
+
+            foreach ($lines as $index => $line) {
+                if (! is_array($line)) {
+                    continue;
+                }
+
+                if (array_key_exists('project', $line) && is_string($line['project'])) {
+                    $lines[$index]['project'] = trim($line['project']);
+                }
+
+                if (array_key_exists('cost_center', $line) && is_string($line['cost_center'])) {
+                    $lines[$index]['cost_center'] = trim($line['cost_center']);
+                }
+            }
+
             $this->merge([
-                'lines' => $multicurrencyService->normalizeLines($lines),
+                'lines' => $lines,
             ]);
         }
     }
@@ -39,8 +55,8 @@ class StoreJournalEntryRequest extends FormRequest
             'lines.*.amount' => 'nullable|numeric|min:0',
             'lines.*.fc_amount' => 'nullable|numeric|min:0',
             'lines.*.exchange_rate' => 'nullable|numeric|min:0',
-            'lines.*.project' => 'nullable|string|max:20',
-            'lines.*.cost_center' => 'nullable|string|max:50',
+            'lines.*.project' => 'required|string|max:50',
+            'lines.*.cost_center' => 'required|string|max:50',
             'lines.*.description' => 'nullable|string|max:500',
         ];
     }
@@ -61,6 +77,8 @@ class StoreJournalEntryRequest extends FormRequest
     {
         return [
             'lines.*.currency.in' => 'Baris valas hanya mendukung USD untuk saat ini',
+            'lines.*.project.required' => 'The project field is required for line :position.',
+            'lines.*.cost_center.required' => 'Cost center is required for line :position.',
         ];
     }
 }

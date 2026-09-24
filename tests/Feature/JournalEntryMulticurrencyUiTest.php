@@ -32,6 +32,18 @@ class JournalEntryMulticurrencyUiTest extends TestCase
         return $user;
     }
 
+    /**
+     * @param  array<int, array<string, mixed>>  $lines
+     * @return array<int, array<string, mixed>>
+     */
+    protected function linesWithRequiredDimensions(array $lines): array
+    {
+        return array_map(
+            fn (array $line) => array_merge(['project' => '000H', 'cost_center' => 'FIN'], $line),
+            $lines
+        );
+    }
+
     public function test_create_page_includes_multicurrency_form_fields(): void
     {
         $user = $this->authorizedUser();
@@ -58,7 +70,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
             ->post(route('accounting.journal-entries.store'), [
                 'date' => now()->toDateString(),
                 'memo' => 'Campuran USD IDR',
-                'lines' => [
+                'lines' => $this->linesWithRequiredDimensions([
                     [
                         'account_code' => '11301006',
                         'debit_credit' => 'debit',
@@ -87,7 +99,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
                         'currency' => 'IDR',
                         'amount' => 50000,
                     ],
-                ],
+                ]),
             ])
             ->assertSessionHasErrors('lines');
 
@@ -112,7 +124,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
             ->post(route('accounting.journal-entries.store'), [
                 'date' => now()->toDateString(),
                 'memo' => 'USD murni',
-                'lines' => [
+                'lines' => $this->linesWithRequiredDimensions([
                     [
                         'account_code' => '11301006',
                         'debit_credit' => 'debit',
@@ -129,7 +141,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
                         'exchange_rate' => $exchangeRate,
                         'amount' => 1,
                     ],
-                ],
+                ]),
             ])
             ->assertRedirect();
 
@@ -151,7 +163,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
             ->post(route('accounting.journal-entries.store'), [
                 'date' => now()->toDateString(),
                 'memo' => 'USD tidak seimbang',
-                'lines' => [
+                'lines' => $this->linesWithRequiredDimensions([
                     [
                         'account_code' => '11301006',
                         'debit_credit' => 'debit',
@@ -166,7 +178,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
                         'fc_amount' => 90,
                         'exchange_rate' => $rate,
                     ],
-                ],
+                ]),
             ])
             ->assertSessionHasErrors('lines');
 
@@ -205,7 +217,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
             ->post(route('accounting.journal-entries.store'), [
                 'date' => now()->toDateString(),
                 'memo' => 'IDR murni',
-                'lines' => [
+                'lines' => $this->linesWithRequiredDimensions([
                     [
                         'account_code' => '11001',
                         'debit_credit' => 'debit',
@@ -218,7 +230,7 @@ class JournalEntryMulticurrencyUiTest extends TestCase
                         'currency' => 'IDR',
                         'amount' => 1000,
                     ],
-                ],
+                ]),
             ])
             ->assertRedirect();
 

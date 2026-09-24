@@ -1,5 +1,6 @@
 @php
     $enableMulticurrency = $enableMulticurrency ?? false;
+    $requireDimensions = $requireDimensions ?? false;
     $lineCurrency = strtoupper($line['currency'] ?? 'IDR');
 @endphp
 <tr data-row-id="row_{{ $index }}">
@@ -40,7 +41,7 @@
             {{ $requireAmount ? 'required' : '' }}>
     </td>
     <td>
-        <select name="lines[{{ $index }}][project]" class="form-control form-control-sm">
+        <select name="lines[{{ $index }}][project]" class="form-control form-control-sm line-project" {{ $requireDimensions ? 'required' : '' }}>
             <option value="">—</option>
             @foreach ($projects as $project)
                 <option value="{{ $project->code }}" {{ ($line['project'] ?? '') === $project->code ? 'selected' : '' }}>
@@ -50,7 +51,7 @@
         </select>
     </td>
     <td>
-        <select name="lines[{{ $index }}][cost_center]" class="form-control form-control-sm">
+        <select name="lines[{{ $index }}][cost_center]" class="form-control form-control-sm line-cost-center" {{ $requireDimensions ? 'required' : '' }}>
             <option value="">—</option>
             @foreach ($departments as $department)
                 <option value="{{ $department->sap_code ?? $department->akronim }}"

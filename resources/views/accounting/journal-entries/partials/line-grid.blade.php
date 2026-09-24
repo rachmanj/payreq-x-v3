@@ -41,8 +41,8 @@
                     <th style="width: 9%">Kurs</th>
                 @endif
                 <th style="width: {{ $enableMulticurrency ? '9%' : '12%' }}">{{ $amountLabel }}</th>
-                <th style="width: 8%">Project</th>
-                <th style="width: 9%">Cost Center</th>
+                <th style="width: 8%">Project @if ($requireAmount)<span class="text-danger">*</span>@endif</th>
+                <th style="width: 9%">Cost Center @if ($requireAmount)<span class="text-danger">*</span>@endif</th>
                 <th>Description</th>
                 <th style="width: 4%"></th>
             </tr>
@@ -57,6 +57,7 @@
                     'amountField' => $amountField,
                     'requireAmount' => $requireAmount,
                     'enableMulticurrency' => $enableMulticurrency,
+                    'requireDimensions' => $requireAmount,
                 ])
             @endforeach
         </tbody>
@@ -116,6 +117,7 @@
         'amountField' => $amountField,
         'requireAmount' => $requireAmount,
         'enableMulticurrency' => $enableMulticurrency,
+        'requireDimensions' => $requireAmount,
     ])
 </template>
 
@@ -290,6 +292,33 @@
             }
         }
 
+        function jeValidateDimensions() {
+            if (!jeRequireAmount) {
+                return true;
+            }
+
+            let valid = true;
+            $('#je-lines-body tr').each(function() {
+                const $row = $(this);
+                const project = ($row.find('.line-project').val() || '').trim();
+                const costCenter = ($row.find('.line-cost-center').val() || '').trim();
+                if (!project || !costCenter) {
+                    valid = false;
+                }
+            });
+
+            if (!valid) {
+                Swal.fire(
+                    'Required fields',
+                    'Project and Cost Center are required for every line.',
+                    'error'
+                );
+                return false;
+            }
+
+            return true;
+        }
+
         function jeValidateBalances() {
             const totals = jeCollectTotals();
             const idrDiff = Math.abs(totals.idrDebit - totals.idrCredit);
@@ -455,6 +484,10 @@
 
             e.preventDefault();
             jeSyncAllUsdAmounts();
+
+            if (!jeValidateDimensions()) {
+                return false;
+            }
 
             if (!jeValidateBalances()) {
                 return false;
