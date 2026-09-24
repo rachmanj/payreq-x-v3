@@ -245,8 +245,17 @@
 
                 $("#alert-container").append(alertDiv);
 
+                alertDiv.find('.close').on('click', function(e) {
+                    e.preventDefault();
+                    alertDiv.fadeOut(250, function() {
+                        $(this).remove();
+                    });
+                });
+
                 setTimeout(function() {
-                    alertDiv.alert('close');
+                    alertDiv.fadeOut(250, function() {
+                        $(this).remove();
+                    });
                 }, 5000);
             }
 
