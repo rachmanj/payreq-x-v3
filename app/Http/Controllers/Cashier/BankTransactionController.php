@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Models\Incoming;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
+use App\Services\CashierBankTransactionDirectSapService;
+use App\Services\SapJournalSubmissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +15,11 @@ use Yajra\DataTables\Facades\DataTables;
 
 class BankTransactionController extends Controller
 {
+    public function __construct(
+        protected CashierBankTransactionDirectSapService $directSapService,
+        protected SapJournalSubmissionService $journalSubmissionService
+    ) {}
+
     public function index()
     {
         return view('cashier.bank-transactions.index');
@@ -33,6 +41,21 @@ class BankTransactionController extends Controller
             })
             ->addColumn('bank_account', function ($journal) {
                 return $journal->bank_account ?? '-';
+            })
+            ->editColumn('status', function ($journal) {
+                $badgeClass = match ($journal->status) {
+                    'draft' => 'warning',
+                    'submitted' => 'info',
+                    'posted' => 'success',
+                    'canceled' => 'danger',
+                    default => 'secondary',
+                };
+                $html = '<span class="badge badge-'.$badgeClass.'">'.ucfirst($journal->status).'</span>';
+                if ($journal->auto_validated_by_cashier) {
+                    $html .= '<br><small class="text-muted">Auto-validated by cashier</small>';
+                }
+
+                return $html;
             })
             ->addColumn('action', function ($journal) {
                 $viewBtn = '<a href="'.route('cashier.bank-transactions.show', $journal->id).'" class="btn btn-info btn-xs mr-1" title="View transaction details"><i class="fas fa-eye"></i></a>';
@@ -61,21 +84,19 @@ class BankTransactionController extends Controller
 
     public function create()
     {
-        return view('cashier.bank-transactions.create');
+        return view('cashier.bank-transactions.create', $this->formViewData());
     }
 
     public function store(Request $request)
     {
-        // Ensure project is a string
         $project = is_array($request->project) ? strval($request->project[0]) : strval($request->project);
-
-        $document_number = app('App\Http\Controllers\DocumentNumberController')->generate_document_number('verification-journal', $project);
 
         $request->validate([
             'date' => 'required|date',
             'project' => 'required',
             'bank_account' => 'required',
             'description' => 'required|string',
+            'transaction_type' => 'required|in:transfer_to_petty_cash,bank_admin_fee,bank_interest',
             'account_code.*' => 'required|string',
             'debit_credit.*' => 'required|in:debit,credit',
             'detail_description.*' => 'required|string',
@@ -84,9 +105,18 @@ class BankTransactionController extends Controller
             'amount.*' => 'required|numeric',
         ]);
 
+        $accountError = $this->directSapService->validateDebitAccountsForTransactionType(
+            (string) $request->transaction_type,
+            $request->account_code ?? []
+        );
+        if ($accountError !== null) {
+            return redirect()->back()->withInput()->withErrors(['account_code' => $accountError]);
+        }
+
+        $document_number = app('App\Http\Controllers\DocumentNumberController')->generate_document_number('verification-journal', $project);
+
         DB::beginTransaction();
         try {
-            // Convert bank_account to string if it's not already
             $bankAccount = is_array($request->bank_account) ? strval($request->bank_account[0]) : strval($request->bank_account);
 
             $journal = VerificationJournal::create([
@@ -101,7 +131,6 @@ class BankTransactionController extends Controller
                 'amount' => array_sum($request->amount),
             ]);
 
-            // create new verification_journal_details for credit side. other fields based on $journal
             $journal->verificationJournalDetails()->create([
                 'verification_journal_id' => $journal->id,
                 'account_code' => $journal->bank_account,
@@ -146,15 +175,16 @@ class BankTransactionController extends Controller
         $journal = VerificationJournal::with(['verificationJournalDetails', 'createdBy', 'postedBy'])
             ->findOrFail($id);
 
-        // Check if there's a related incoming record (for submitted transactions)
         $incoming = null;
-        if ($journal->status == 'submitted') {
-            $incoming = \App\Models\Incoming::where('description', 'like', '%Bank Transaction: '.$journal->nomor.'%')
+        if (in_array($journal->status, ['submitted', 'posted'], true)) {
+            $incoming = Incoming::where('description', 'like', '%Bank Transaction: '.$journal->nomor.'%')
                 ->latest()
                 ->first();
         }
 
-        return view('cashier.bank-transactions.show', compact('journal', 'incoming'));
+        $eligibleForDirectSap = $this->directSapService->isEligibleForDirectSapSubmission($journal, Auth::user());
+
+        return view('cashier.bank-transactions.show', compact('journal', 'incoming', 'eligibleForDirectSap'));
     }
 
     public function edit($id)
@@ -167,7 +197,10 @@ class BankTransactionController extends Controller
                 ->with('error', 'Cannot edit a transaction that is not in draft status');
         }
 
-        return view('cashier.bank-transactions.edit', compact('journal'));
+        return view('cashier.bank-transactions.edit', array_merge(
+            ['journal' => $journal],
+            $this->formViewData()
+        ));
     }
 
     public function update(Request $request, $id)
@@ -177,6 +210,7 @@ class BankTransactionController extends Controller
             'project' => 'required',
             'bank_account' => 'required',
             'description' => 'required|string',
+            'transaction_type' => 'required|in:transfer_to_petty_cash,bank_admin_fee,bank_interest',
             'account_code.*' => 'required|string',
             'debit_credit.*' => 'required|in:debit,credit',
             'detail_description.*' => 'required|string',
@@ -184,6 +218,14 @@ class BankTransactionController extends Controller
             'cost_center.*' => 'required|string',
             'amount.*' => 'required|numeric',
         ]);
+
+        $accountError = $this->directSapService->validateDebitAccountsForTransactionType(
+            (string) $request->transaction_type,
+            $request->account_code ?? []
+        );
+        if ($accountError !== null) {
+            return redirect()->back()->withInput()->withErrors(['account_code' => $accountError]);
+        }
 
         $journal = VerificationJournal::findOrFail($id);
 
@@ -194,9 +236,7 @@ class BankTransactionController extends Controller
 
         DB::beginTransaction();
         try {
-            // Convert bank_account to string if it's not already
             $bankAccount = is_array($request->bank_account) ? strval($request->bank_account[0]) : strval($request->bank_account);
-            // Convert project to string if it's not already
             $project = is_array($request->project) ? strval($request->project[0]) : strval($request->project);
 
             $journal->update([
@@ -208,20 +248,31 @@ class BankTransactionController extends Controller
                 'amount' => array_sum($request->amount),
             ]);
 
-            // Delete all existing details
             $journal->verificationJournalDetails()->delete();
 
-            // Create new details
+            $journal->verificationJournalDetails()->create([
+                'verification_journal_id' => $journal->id,
+                'account_code' => $journal->bank_account,
+                'debit_credit' => 'credit',
+                'description' => $journal->description,
+                'project' => $journal->project,
+                'cost_center' => Auth::user()->department->sap_code,
+                'amount' => $journal->amount,
+                'realization_no' => $journal->nomor,
+                'realization_date' => $journal->date,
+            ]);
+
             foreach ($request->account_code as $key => $account_code) {
                 VerificationJournalDetail::create([
                     'verification_journal_id' => $journal->id,
                     'account_code' => $account_code,
-                    'debit_credit' => $request->debit_credit[$key],
+                    'debit_credit' => 'debit',
                     'description' => $request->detail_description[$key],
                     'project' => $request->project[$key],
                     'cost_center' => $request->cost_center[$key],
                     'amount' => $request->amount[$key],
-                    'realization_date' => $request->date, // Use the main transaction date
+                    'realization_no' => $journal->nomor,
+                    'realization_date' => $journal->date,
                 ]);
             }
 
@@ -249,9 +300,7 @@ class BankTransactionController extends Controller
 
         DB::beginTransaction();
         try {
-            // Delete all details first
             $journal->verificationJournalDetails()->delete();
-            // Then delete the journal
             $journal->delete();
 
             DB::commit();
@@ -267,42 +316,125 @@ class BankTransactionController extends Controller
 
     public function submit($id)
     {
-        $journal = VerificationJournal::findOrFail($id);
+        $journal = VerificationJournal::with('verificationJournalDetails')->findOrFail($id);
 
-        // Check if journal is in draft status
-        if ($journal->status != 'draft') {
+        if (! $this->canSubmitBankTransaction($journal)) {
             return redirect()->route('cashier.bank-transactions.index')
-                ->with('error', 'Only transactions in draft status can be submitted');
+                ->with('error', 'Only draft transactions (or failed SAP submissions) can be submitted');
+        }
+
+        if ($this->directSapService->isEligibleForDirectSapSubmission($journal, Auth::user())) {
+            return $this->submitWithDirectSap($journal);
+        }
+
+        return $this->submitLegacyPendingValidation($journal);
+    }
+
+    protected function canSubmitBankTransaction(VerificationJournal $journal): bool
+    {
+        if ($journal->type !== 'bank') {
+            return false;
+        }
+
+        if ($journal->status === 'draft') {
+            return true;
+        }
+
+        if ($journal->status === 'submitted'
+            && empty($journal->sap_journal_no)
+            && $journal->auto_validated_by_cashier
+            && in_array($journal->sap_submission_status, [null, 'failed'], true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    protected function submitWithDirectSap(VerificationJournal $journal)
+    {
+        $user = Auth::user();
+
+        DB::beginTransaction();
+        try {
+            $journal->update([
+                'status' => 'submitted',
+                'validation_status' => VerificationJournal::VALIDATION_VALIDATED,
+                'validated_by' => $user->id,
+                'validated_at' => now(),
+                'auto_validated_by_cashier' => true,
+                'rejection_reason' => null,
+            ]);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->with('error', 'Error occurred: '.$e->getMessage());
+        }
+
+        $journal->refresh();
+        $result = $this->journalSubmissionService->submit($journal, $user);
+
+        if (! ($result['success'] ?? false)) {
+            $journal->refresh();
+            if ($journal->status !== 'submitted') {
+                $journal->update(['status' => 'submitted']);
+            }
+
+            return redirect()->route('cashier.bank-transactions.show', $journal->id)
+                ->with('error', $result['message'] ?? 'Failed to submit to SAP B1.');
         }
 
         DB::beginTransaction();
         try {
-            // 1. Update journal status to 'submitted'
+            $journal->refresh();
+
+            $incoming = new Incoming;
+            $incoming->nomor = $journal->nomor;
+            $incoming->cashier_id = $user->id;
+            $incoming->description = 'Bank Transaction: '.$journal->nomor.' - '.$journal->description;
+            $incoming->amount = $journal->amount;
+            $incoming->project = $journal->project;
+            $incoming->receive_date = now();
+            $incoming->will_post = true;
+            $incoming->sap_journal_no = $journal->sap_journal_no;
+            $incoming->save();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return redirect()->route('cashier.bank-transactions.show', $journal->id)
+                ->with('error', 'SAP posting succeeded but incoming record could not be created: '.$e->getMessage());
+        }
+
+        $sapJournalNo = $journal->sap_journal_no ?? ($result['sap_journal_no'] ?? null);
+
+        return redirect()->route('cashier.bank-transactions.show', $journal->id)
+            ->with('success', 'Bank transaction posted to SAP B1. SAP Journal Number: '.$sapJournalNo);
+    }
+
+    protected function submitLegacyPendingValidation(VerificationJournal $journal)
+    {
+        DB::beginTransaction();
+        try {
             $journal->update([
                 'status' => 'submitted',
                 'validation_status' => VerificationJournal::VALIDATION_PENDING,
                 'validated_at' => null,
                 'validated_by' => null,
+                'auto_validated_by_cashier' => false,
                 'rejection_reason' => null,
             ]);
 
-            // 2. Create an incoming record
-            $incoming = new \App\Models\Incoming;
+            $incoming = new Incoming;
             $incoming->nomor = $journal->nomor;
             $incoming->cashier_id = Auth::id();
             $incoming->description = 'Bank Transaction: '.$journal->nomor.' - '.$journal->description;
             $incoming->amount = $journal->amount;
             $incoming->project = $journal->project;
-            $incoming->receive_date = now(); // Mark as received immediately
+            $incoming->receive_date = now();
             $incoming->will_post = true;
             $incoming->save();
-
-            // Log the action
-            \Log::info('Bank transaction submitted and incoming created', [
-                'bank_transaction_id' => $journal->id,
-                'incoming_id' => $incoming->id,
-                'user_id' => Auth::id(),
-            ]);
 
             DB::commit();
 
@@ -310,13 +442,20 @@ class BankTransactionController extends Controller
                 ->with('success', 'Bank transaction submitted successfully and incoming record created');
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('Error submitting bank transaction', [
-                'bank_transaction_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
 
             return redirect()->back()
                 ->with('error', 'Error occurred: '.$e->getMessage());
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function formViewData(): array
+    {
+        return [
+            'transactionTypeAccountMap' => CashierBankTransactionDirectSapService::transactionTypeAccountMap(),
+            'cashierVjSapLimit' => $this->directSapService->getSapLimit(),
+        ];
     }
 }

@@ -23,6 +23,7 @@ class VerificationJournal extends Model
         'sap_submitted_at' => 'datetime',
         'sap_reversed_at' => 'datetime',
         'validated_at' => 'datetime',
+        'auto_validated_by_cashier' => 'boolean',
     ];
 
     public function realization_details()

@@ -141,7 +141,7 @@ External integration follows a proven **Builder + Service + Log + Preview** patt
 
 1. **Do not touch the live `payreq_live` database** without explicit approval. All dev/test work targets `payreq_x` (local).
 2. **SAP submissions are irreversible without a reversal flow** — always require explicit user confirmation before posting, and use DB transactions + rollback on failure.
-3. **Verification Journals must be manually validated** before they can be posted to SAP (see `add_validation_to_verification_journals_table`). Do not bypass validation.
+3. **Verification Journals must be manually validated** before they can be posted to SAP (see `add_validation_to_verification_journals_table`). Do not bypass validation. **Exception:** Bank Transaction journals (`type = bank`) that match the cashier direct-SAP pattern (single bank credit line + allowed debit accounts + amount ≤ `cashier_vj_sap_limit`) may be auto-validated and posted by a user with permission `cashier_submit_vj_to_sap` via `Cashier\BankTransactionController::submit` (see `docs/spec-cashier-bank-transaction-direct-sap.md`).
 4. **Faktur `doc_num` must be unique** — enforce uniqueness checks before save (see `VatController::sales_update`).
 5. **Wtax23 `bupot_no` must be unique** — enforce before save (see `Wtax23Controller::update`).
 6. **Money values** are stored as integers (IDR, no decimals in DB); format only at display layer via `number_format()`. Never store floats for currency.

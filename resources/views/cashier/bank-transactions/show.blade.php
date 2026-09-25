@@ -30,8 +30,22 @@
                             <form action="{{ route('cashier.bank-transactions.submit', $journal->id) }}" method="POST"
                                 class="d-inline">
                                 @csrf
-                                <button type="button" class="btn btn-success btn-sm submit-transaction">
+                                <button type="button" class="btn btn-success btn-sm submit-transaction"
+                                    data-direct-sap="{{ $eligibleForDirectSap ? '1' : '0' }}">
                                     <i class="fas fa-paper-plane"></i> Submit
+                                </button>
+                            </form>
+                        @elseif(
+                            $journal->status == 'submitted' &&
+                                empty($journal->sap_journal_no) &&
+                                $journal->auto_validated_by_cashier &&
+                                in_array($journal->sap_submission_status, [null, 'failed'], true))
+                            <form action="{{ route('cashier.bank-transactions.submit', $journal->id) }}" method="POST"
+                                class="d-inline">
+                                @csrf
+                                <button type="button" class="btn btn-success btn-sm submit-transaction"
+                                    data-direct-sap="1">
+                                    <i class="fas fa-redo"></i> Retry SAP Submit
                                 </button>
                             </form>
                         @endif
@@ -83,6 +97,10 @@
                                         @else
                                             <span class="badge badge-secondary">{{ $journal->status }}</span>
                                         @endif
+                                        @if ($journal->auto_validated_by_cashier)
+                                            <br><small class="text-muted"><i class="fas fa-check-circle"></i>
+                                                Auto-validated by cashier</small>
+                                        @endif
                                     </td>
                                 </tr>
                                 <tr>
@@ -91,7 +109,13 @@
                                 </tr>
                                 <tr>
                                     <th>SAP Journal No</th>
-                                    <td>{{ $journal->sap_journal_no ?? '-' }}</td>
+                                    <td>
+                                        {{ $journal->sap_journal_no ?? '-' }}
+                                        @if ($journal->sap_journal_no)
+                                            <a href="{{ route('accounting.sap-sync.show', $journal->id) }}"
+                                                class="btn btn-xs btn-outline-primary ml-2">View in SAP Sync</a>
+                                        @endif
+                                    </td>
                                 </tr>
                                 <tr>
                                     <th>SAP Posting Date</th>
@@ -148,7 +172,7 @@
                         </table>
                     </div>
 
-                    @if ($journal->status == 'submitted' && $incoming)
+                    @if (in_array($journal->status, ['submitted', 'posted'], true) && $incoming)
                         <div class="mt-4">
                             <h4>Linked Incoming Record</h4>
                             <div class="alert alert-info">
@@ -180,11 +204,17 @@
             // Handle submit transaction button click
             $('.submit-transaction').on('click', function() {
                 const form = $(this).closest('form');
+                const directSap = $(this).data('direct-sap') === 1 || $(this).data('direct-sap') === '1';
+
+                const title = directSap ? 'Post to SAP B1?' : 'Submit Transaction?';
+                const text = directSap
+                    ? 'The journal will be posted immediately in SAP B1. It cannot be edited afterwards; corrections require a reversal (storno) by Accounting.'
+                    : 'This will submit the transaction for Accounting validation. An incoming record will be created and you will not be able to edit it afterwards.';
 
                 Swal.fire({
-                    title: 'Submit Transaction?',
-                    text: "This will submit the transaction and create an incoming record. You won't be able to edit it afterwards.",
-                    icon: 'question',
+                    title: title,
+                    text: text,
+                    icon: directSap ? 'warning' : 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, submit it!',
                     cancelButtonText: 'Cancel',

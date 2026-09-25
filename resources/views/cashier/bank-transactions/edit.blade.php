@@ -71,6 +71,50 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="transaction_type">Transaction Type</label>
+                                    @php
+                                        $debitAccounts = $journal->verificationJournalDetails
+                                            ->where('debit_credit', 'debit')
+                                            ->pluck('account_code')
+                                            ->all();
+                                        $inferredType = 'transfer_to_petty_cash';
+                                        foreach ($transactionTypeAccountMap as $typeKey => $accounts) {
+                                            if (count(array_intersect($debitAccounts, $accounts)) > 0) {
+                                                $inferredType = $typeKey;
+                                                break;
+                                            }
+                                        }
+                                    @endphp
+                                    <select class="form-control @error('transaction_type') is-invalid @enderror"
+                                        id="transaction_type" name="transaction_type" required>
+                                        <option value="">-- Select Transaction Type --</option>
+                                        <option value="transfer_to_petty_cash"
+                                            {{ old('transaction_type', $inferredType) === 'transfer_to_petty_cash' ? 'selected' : '' }}>
+                                            Transfer to Petty Cash</option>
+                                        <option value="bank_admin_fee"
+                                            {{ old('transaction_type', $inferredType) === 'bank_admin_fee' ? 'selected' : '' }}>
+                                            Bank Admin Fee</option>
+                                        <option value="bank_interest"
+                                            {{ old('transaction_type', $inferredType) === 'bank_interest' ? 'selected' : '' }}>
+                                            Bank Interest</option>
+                                    </select>
+                                    @error('transaction_type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Transactions above {{ number_format($cashierVjSapLimit, 0, ',', '.') }} IDR will require
+                            Accounting validation before SAP posting. Eligible transactions are posted to SAP immediately
+                            when you submit.
+                        </p>
+                        @error('account_code')
+                            <div class="alert alert-danger">{{ $message }}</div>
+                        @enderror
 
                         <h4 class="mt-4">Transaction Details</h4>
                         <div class="mb-3">
@@ -208,6 +252,9 @@
     <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 
     <script>
+        const transactionTypeAccountMap = @json($transactionTypeAccountMap);
+        let allAccounts = [];
+
         $(document).ready(function() {
             // Initialize toastr
             toastr.options = {
@@ -253,6 +300,10 @@
 
             // Add detail button click
             $('#add-detail-btn').on('click', function() {
+                if (!$('#transaction_type').val()) {
+                    toastr.error('Please select a Transaction Type first');
+                    return;
+                }
                 // Reset form
                 $('#detail-form')[0].reset();
                 $('#modal-edit-id').val('');
@@ -263,7 +314,7 @@
                 $('#modal-cost-center').val('{{ Auth::user()->department->sap_code ?? '' }}');
                 $('#modal-debit-credit').val('debit');
 
-                // Clear select2
+                populateAccountSelectForTransactionType();
                 $('#modal-account-code').val('').trigger('change');
 
                 // Change modal title
@@ -593,6 +644,10 @@
                 });
             }
 
+            $('#transaction_type').on('change', function() {
+                populateAccountSelectForTransactionType();
+            });
+
             // Function to load account codes
             function loadAccountCodes() {
                 console.log('Loading account codes...');
@@ -602,31 +657,31 @@
                     dataType: 'json',
                     success: function(response) {
                         console.log('Accounts loaded:', response);
-
-                        const accountSelect = $('#modal-account-code');
-                        accountSelect.empty();
-                        accountSelect.append('<option value="">-- Select Account --</option>');
-
-                        const userProject = "{{ Auth::user()->project }}";
-                        console.log('User project:', userProject);
-
-                        if (response && response.length > 0) {
-                            // Add all accounts - filtering will be handled on the server side
-                            response.forEach(function(account) {
-                                accountSelect.append(
-                                    `<option value="${account.account_number}">${account.account_number} - ${account.account_name}</option>`
-                                );
-                            });
-                            console.log('Total accounts added to select:', response.length);
-                        } else {
-                            console.warn('No accounts returned from server');
-                        }
+                        allAccounts = response || [];
+                        populateAccountSelectForTransactionType();
                     },
                     error: function(xhr, status, error) {
                         console.error('Error loading account codes:', error);
                         console.error('Status:', status);
                         console.error('Response:', xhr.responseText);
                         toastr.error('Failed to load account codes: ' + error);
+                    }
+                });
+            }
+
+            function populateAccountSelectForTransactionType() {
+                const accountSelect = $('#modal-account-code');
+                accountSelect.empty();
+                accountSelect.append('<option value="">-- Select Account --</option>');
+
+                const transactionType = $('#transaction_type').val();
+                const allowed = transactionTypeAccountMap[transactionType] || [];
+
+                allAccounts.forEach(function(account) {
+                    if (allowed.includes(String(account.account_number))) {
+                        accountSelect.append(
+                            `<option value="${account.account_number}">${account.account_number} - ${account.account_name}</option>`
+                        );
                     }
                 });
             }
