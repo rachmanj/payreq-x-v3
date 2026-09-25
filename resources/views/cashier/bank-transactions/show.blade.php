@@ -10,199 +10,224 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
+    @include('partials.vj-soft-ui-styles')
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card card-outline card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">Bank Transaction Details</h3>
-                    <div class="float-right">
-                        <a href="{{ route('cashier.bank-transactions.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Back to List
-                        </a>
-                        @if ($journal->status == 'draft')
-                            <a href="{{ route('cashier.bank-transactions.edit', $journal->id) }}"
-                                class="btn btn-warning btn-sm">
-                                <i class="fas fa-edit"></i> Edit
+    @php
+        $statusChip = match ($journal->status) {
+            'draft' => 'vj-chip-warning',
+            'submitted' => 'vj-chip-info',
+            'posted' => 'vj-chip-success',
+            'canceled' => 'vj-chip-danger',
+            default => 'vj-chip-neutral',
+        };
+    @endphp
+
+    <div class="vj-show">
+        <div class="vj-stat-grid vj-stat-grid-4 mb-3">
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-hashtag"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Journal Number</span>
+                    <span class="vj-stat-value">{{ $journal->nomor ?? 'Not assigned yet' }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-neutral">
+                <div class="vj-stat-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Posting Date</span>
+                    <span class="vj-stat-value">{{ $journal->date ? date('d M Y', strtotime($journal->date)) : '—' }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-success">
+                <div class="vj-stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Amount</span>
+                    <span class="vj-stat-value">{{ number_format($journal->amount, 2) }}</span>
+                </div>
+            </div>
+            <div class="vj-stat vj-stat-info">
+                <div class="vj-stat-icon"><i class="fas fa-flag"></i></div>
+                <div class="vj-stat-body">
+                    <span class="vj-stat-label">Status</span>
+                    <span class="vj-stat-value">
+                        <span class="vj-chip {{ $statusChip }}">{{ ucfirst($journal->status) }}</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-university"></i> Bank Transaction Details
+                        </h3>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <a href="{{ route('cashier.bank-transactions.index') }}" class="vj-action-item vj-action-back">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Back to List</span>
                             </a>
-                            <form action="{{ route('cashier.bank-transactions.submit', $journal->id) }}" method="POST"
-                                class="d-inline">
-                                @csrf
-                                <button type="button" class="btn btn-success btn-sm submit-transaction"
-                                    data-direct-sap="{{ $eligibleForDirectSap ? '1' : '0' }}">
-                                    <i class="fas fa-paper-plane"></i> Submit
-                                </button>
-                            </form>
-                        @elseif(
-                            $journal->status == 'submitted' &&
-                                empty($journal->sap_journal_no) &&
-                                $journal->auto_validated_by_cashier &&
-                                in_array($journal->sap_submission_status, [null, 'failed'], true))
-                            <form action="{{ route('cashier.bank-transactions.submit', $journal->id) }}" method="POST"
-                                class="d-inline">
-                                @csrf
-                                <button type="button" class="btn btn-success btn-sm submit-transaction"
-                                    data-direct-sap="1">
-                                    <i class="fas fa-redo"></i> Retry SAP Submit
-                                </button>
-                            </form>
-                        @endif
-                        @can('recalculate_cashier_balance')
-                            @if ($needsRecalculateBalance && $recalculateIncoming)
-                                <form action="{{ route('cashier.bank-transactions.recalculate-balance', $journal->id) }}"
-                                    method="POST" class="d-inline" id="recalculate-balance-form">
+                            @if ($journal->status == 'draft')
+                                <a href="{{ route('cashier.bank-transactions.edit', $journal->id) }}"
+                                    class="vj-action-item vj-action-item-xs vj-action-edit">
+                                    <i class="fas fa-edit"></i>
+                                    <span>Edit</span>
+                                </a>
+                                <form action="{{ route('cashier.bank-transactions.submit', $journal->id) }}" method="POST"
+                                    class="vj-action-item-form">
                                     @csrf
-                                    <button type="button" class="btn btn-warning btn-sm" id="recalculate-balance-btn"
-                                        data-journal-nomor="{{ $journal->nomor }}"
-                                        data-amount="{{ number_format($recalculateIncoming->amount, 0, ',', '.') }}">
-                                        <i class="fas fa-calculator"></i> Recalculate Balance
+                                    <button type="button" class="vj-action-item vj-action-item-xs vj-action-success submit-transaction"
+                                        data-direct-sap="{{ $eligibleForDirectSap ? '1' : '0' }}">
+                                        <i class="fas fa-paper-plane"></i>
+                                        <span>Submit</span>
+                                    </button>
+                                </form>
+                            @elseif(
+                                $journal->status == 'submitted' &&
+                                    empty($journal->sap_journal_no) &&
+                                    $journal->auto_validated_by_cashier &&
+                                    in_array($journal->sap_submission_status, [null, 'failed'], true))
+                                <form action="{{ route('cashier.bank-transactions.submit', $journal->id) }}" method="POST"
+                                    class="vj-action-item-form">
+                                    @csrf
+                                    <button type="button" class="vj-action-item vj-action-item-xs vj-action-success submit-transaction"
+                                        data-direct-sap="1">
+                                        <i class="fas fa-redo"></i>
+                                        <span>Retry SAP Submit</span>
                                     </button>
                                 </form>
                             @endif
-                        @endcan
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-bordered">
-                                <tr>
-                                    <th style="width: 30%">Journal Number</th>
-                                    <td>{{ $journal->nomor ?? 'Not assigned yet' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Date</th>
-                                    <td>{{ $journal->date ? date('d M Y', strtotime($journal->date)) : '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Type</th>
-                                    <td>{{ $journal->type ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Project</th>
-                                    <td>{{ $journal->project ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <th><strong>Bank Account</strong></th>
-                                    <td>{{ $journal->bank_account ? $journal->bank_account : 'Not specified' }}</td>
-                                </tr>
-                                <tr>
-                                    <th><strong>Description</strong></th>
-                                    <td>{{ $journal->description ?? '-' }}</td>
-                                </tr>
-                            </table>
+                            @can('recalculate_cashier_balance')
+                                @if ($needsRecalculateBalance && $recalculateIncoming)
+                                    <form action="{{ route('cashier.bank-transactions.recalculate-balance', $journal->id) }}"
+                                        method="POST" class="vj-action-item-form" id="recalculate-balance-form">
+                                        @csrf
+                                        <button type="button" class="vj-action-item vj-action-item-xs vj-action-warning"
+                                            id="recalculate-balance-btn"
+                                            data-journal-nomor="{{ $journal->nomor }}"
+                                            data-amount="{{ number_format($recalculateIncoming->amount, 0, ',', '.') }}">
+                                            <i class="fas fa-calculator"></i>
+                                            <span>Recalculate Balance</span>
+                                        </button>
+                                    </form>
+                                @endif
+                            @endcan
                         </div>
-                        <div class="col-md-6">
-                            <table class="table table-bordered">
-                                <tr>
-                                    <th style="width: 30%">Status</th>
-                                    <td>
-                                        @if ($journal->status == 'draft')
-                                            <span class="badge badge-warning">Draft</span>
-                                        @elseif($journal->status == 'submitted')
-                                            <span class="badge badge-info">Submitted</span>
-                                        @elseif($journal->status == 'posted')
-                                            <span class="badge badge-success">Posted</span>
-                                        @elseif($journal->status == 'canceled')
-                                            <span class="badge badge-danger">Canceled</span>
-                                        @else
-                                            <span class="badge badge-secondary">{{ $journal->status }}</span>
-                                        @endif
-                                        @if ($journal->auto_validated_by_cashier)
-                                            <br><small class="text-muted"><i class="fas fa-check-circle"></i>
-                                                Auto-validated by cashier</small>
-                                        @endif
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Created By</th>
-                                    <td>{{ $journal->createdBy->name ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>SAP Journal No</th>
-                                    <td>
-                                        {{ $journal->sap_journal_no ?? '-' }}
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Type</dt>
+                                    <dd class="col-sm-8">{{ $journal->type ?? '—' }}</dd>
+                                    <dt class="col-sm-4">Project</dt>
+                                    <dd class="col-sm-8">{{ $journal->project ?? '—' }}</dd>
+                                    <dt class="col-sm-4">Bank Account</dt>
+                                    <dd class="col-sm-8">{{ $journal->bank_account ? $journal->bank_account : 'Not specified' }}</dd>
+                                    <dt class="col-sm-4">Description</dt>
+                                    <dd class="col-sm-8 mb-0">{{ $journal->description ?? '—' }}</dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Created By</dt>
+                                    <dd class="col-sm-8">{{ $journal->createdBy->name ?? '—' }}</dd>
+                                    <dt class="col-sm-4">SAP Journal No</dt>
+                                    <dd class="col-sm-8">
+                                        {{ $journal->sap_journal_no ?? '—' }}
                                         @if ($journal->sap_journal_no)
                                             <a href="{{ route('accounting.sap-sync.show', $journal->id) }}"
-                                                class="btn btn-xs btn-outline-primary ml-2">View in SAP Sync</a>
+                                                class="vj-action-item vj-action-item-xs vj-action-sap ml-1">
+                                                <i class="fas fa-cloud"></i>
+                                                <span>View in SAP Sync</span>
+                                            </a>
                                         @endif
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>SAP Posting Date</th>
-                                    <td>{{ $journal->sap_posting_date ? date('d M Y', strtotime($journal->sap_posting_date)) : '-' }}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Posted By</th>
-                                    <td>{{ $journal->postedBy->name ?? '-' }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <h4 class="mt-4">Transaction Details</h4>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                                <tr>
-                                    <th>No.</th>
-                                    <th>Realization Date</th>
-                                    <th>Account Code</th>
-                                    <th>Debit/Credit</th>
-                                    <th>Description</th>
-                                    <th>Project</th>
-                                    <th>Cost Center</th>
-                                    <th>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($journal->verificationJournalDetails as $detail)
-                                    <tr>
-                                        <td>{{ $loop->iteration }}</td>
-                                        <td>{{ date('d M Y', strtotime($detail->realization_date)) }}</td>
-                                        <td>{{ $detail->account_code }}</td>
-                                        <td>{{ ucfirst($detail->debit_credit) }}</td>
-                                        <td>{{ $detail->description }}</td>
-                                        <td>{{ $detail->project }}</td>
-                                        <td>{{ $detail->cost_center }}</td>
-                                        <td class="text-right">{{ number_format($detail->amount, 2) }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center">No details found</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="7" class="text-right">Total:</th>
-                                    <th class="text-right">{{ number_format($journal->amount, 2) }}</th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    @if (in_array($journal->status, ['submitted', 'posted'], true) && $incoming)
-                        <div class="mt-4">
-                            <h4>Linked Incoming Record</h4>
-                            <div class="alert alert-info">
-                                <p><strong>Incoming ID:</strong> {{ $incoming->id }}</p>
-                                <p><strong>Description:</strong> {{ $incoming->description }}</p>
-                                <p><strong>Amount:</strong> {{ number_format($incoming->amount, 2) }}</p>
-                                <p><strong>Received Date:</strong>
-                                    {{ $incoming->receive_date ? date('d M Y H:i', strtotime($incoming->receive_date)) : 'Not received yet' }}
-                                </p>
-                                <p><strong>Created At:</strong> {{ date('d M Y H:i', strtotime($incoming->created_at)) }}
-                                </p>
-                                <a href="{{ route('cashier.incomings.received.index') }}" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye"></i> View in Received Incomings
-                                </a>
+                                    </dd>
+                                    <dt class="col-sm-4">SAP Posting Date</dt>
+                                    <dd class="col-sm-8">
+                                        {{ $journal->sap_posting_date ? date('d M Y', strtotime($journal->sap_posting_date)) : '—' }}
+                                    </dd>
+                                    <dt class="col-sm-4">Posted By</dt>
+                                    <dd class="col-sm-8 mb-0">{{ $journal->postedBy->name ?? '—' }}</dd>
+                                </dl>
                             </div>
                         </div>
-                    @endif
+
+                        @if ($journal->auto_validated_by_cashier)
+                            <div class="vj-note mt-3 mb-0">
+                                <i class="fas fa-check-circle"></i>
+                                <div>Auto-validated by cashier</div>
+                            </div>
+                        @endif
+
+                        <h4 class="mt-4 mb-3"><i class="fas fa-list"></i> Transaction Details</h4>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="details-table">
+                                <thead>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>Realization Date</th>
+                                        <th>Account Code</th>
+                                        <th>Debit/Credit</th>
+                                        <th>Description</th>
+                                        <th>Project</th>
+                                        <th>Cost Center</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($journal->verificationJournalDetails as $detail)
+                                        <tr>
+                                            <td>{{ $loop->iteration }}</td>
+                                            <td>{{ date('d M Y', strtotime($detail->realization_date)) }}</td>
+                                            <td>{{ $detail->account_code }}</td>
+                                            <td>{{ ucfirst($detail->debit_credit) }}</td>
+                                            <td>{{ $detail->description }}</td>
+                                            <td>{{ $detail->project }}</td>
+                                            <td>{{ $detail->cost_center }}</td>
+                                            <td class="text-right">{{ number_format($detail->amount, 2) }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="8" class="text-center">No details found</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="7" class="text-right">Total:</th>
+                                        <th class="text-right">{{ number_format($journal->amount, 2) }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        @if (in_array($journal->status, ['submitted', 'posted'], true) && $incoming)
+                            <div class="mt-4">
+                                <h4 class="mb-3"><i class="fas fa-link"></i> Linked Incoming Record</h4>
+                                <div class="vj-note">
+                                    <i class="fas fa-arrow-circle-down"></i>
+                                    <div>
+                                        <p class="mb-1"><strong>Incoming ID:</strong> {{ $incoming->id }}</p>
+                                        <p class="mb-1"><strong>Description:</strong> {{ $incoming->description }}</p>
+                                        <p class="mb-1"><strong>Amount:</strong> {{ number_format($incoming->amount, 2) }}</p>
+                                        <p class="mb-1"><strong>Received Date:</strong>
+                                            {{ $incoming->receive_date ? date('d M Y H:i', strtotime($incoming->receive_date)) : 'Not received yet' }}
+                                        </p>
+                                        <p class="mb-2"><strong>Created At:</strong>
+                                            {{ date('d M Y H:i', strtotime($incoming->created_at)) }}
+                                        </p>
+                                        <a href="{{ route('cashier.incomings.received.index') }}" class="vj-btn vj-btn-primary">
+                                            <i class="fas fa-eye"></i> View in Received Incomings
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -210,11 +235,9 @@
 @endsection
 
 @push('scripts')
-    <!-- SweetAlert2 -->
     <script src="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <script>
         $(function() {
-            // Handle submit transaction button click
             $('.submit-transaction').on('click', function() {
                 const form = $(this).closest('form');
                 const directSap = $(this).data('direct-sap') === 1 || $(this).data('direct-sap') === '1';

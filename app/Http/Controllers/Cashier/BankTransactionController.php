@@ -32,7 +32,9 @@ class BankTransactionController extends Controller
     {
         $journals = VerificationJournal::with('createdBy', 'postedBy')
             ->where('type', 'bank')
-            ->select('verification_journals.*');
+            ->select('verification_journals.*')
+            ->orderByDesc('verification_journals.created_at')
+            ->orderByDesc('verification_journals.id');
 
         return DataTables::of($journals)
             ->addIndexColumn()
@@ -46,14 +48,14 @@ class BankTransactionController extends Controller
                 return $journal->bank_account ?? '-';
             })
             ->editColumn('status', function ($journal) {
-                $badgeClass = match ($journal->status) {
-                    'draft' => 'warning',
-                    'submitted' => 'info',
-                    'posted' => 'success',
-                    'canceled' => 'danger',
-                    default => 'secondary',
+                $chipClass = match ($journal->status) {
+                    'draft' => 'vj-chip-warning',
+                    'submitted' => 'vj-chip-info',
+                    'posted' => 'vj-chip-success',
+                    'canceled' => 'vj-chip-danger',
+                    default => 'vj-chip-neutral',
                 };
-                $html = '<span class="badge badge-'.$badgeClass.'">'.ucfirst($journal->status).'</span>';
+                $html = '<span class="vj-chip '.$chipClass.'">'.ucfirst($journal->status).'</span>';
                 if ($journal->auto_validated_by_cashier) {
                     $html .= '<br><small class="text-muted">Auto-validated by cashier</small>';
                 }
@@ -61,25 +63,25 @@ class BankTransactionController extends Controller
                 return $html;
             })
             ->addColumn('action', function ($journal) {
-                $viewBtn = '<a href="'.route('cashier.bank-transactions.show', $journal->id).'" class="btn btn-info btn-xs mr-1" title="View transaction details"><i class="fas fa-eye"></i></a>';
-                $editBtn = '';
-                $deleteBtn = '';
-                $submitBtn = '';
+                $html = '<div class="vj-inline-actions">';
+                $html .= '<a href="'.route('cashier.bank-transactions.show', $journal->id).'" class="vj-action-item vj-action-item-xs vj-action-primary" title="View transaction details"><i class="fas fa-eye"></i><span>view</span></a>';
 
                 if ($journal->status == 'draft') {
-                    $editBtn = '<a href="'.route('cashier.bank-transactions.edit', $journal->id).'" class="btn btn-warning btn-xs mr-1" title="Edit transaction"><i class="fas fa-edit"></i></a>';
-                    $deleteBtn = '<form action="'.route('cashier.bank-transactions.destroy', $journal->id).'" method="POST" style="display: inline;">
-                                '.csrf_field().'
-                                '.method_field('DELETE').'
-                                <button type="submit" class="btn btn-danger btn-xs mr-1 delete-transaction" title="Delete transaction"><i class="fas fa-trash"></i></button>
-                            </form>';
-                    $submitBtn = '<form action="'.route('cashier.bank-transactions.submit', $journal->id).'" method="POST" style="display: inline;">
-                                '.csrf_field().'
-                                <button type="submit" class="btn btn-success btn-xs submit-transaction" title="Submit transaction"><i class="fas fa-paper-plane"></i></button>
-                            </form>';
+                    $html .= '<a href="'.route('cashier.bank-transactions.edit', $journal->id).'" class="vj-action-item vj-action-item-xs vj-action-edit" title="Edit transaction"><i class="fas fa-edit"></i><span>edit</span></a>';
+                    $html .= '<form action="'.route('cashier.bank-transactions.destroy', $journal->id).'" method="POST" class="vj-action-item-form">'
+                        .csrf_field()
+                        .method_field('DELETE')
+                        .'<button type="submit" class="vj-action-item vj-action-item-xs vj-action-cancel delete-transaction" title="Delete transaction"><i class="fas fa-trash"></i><span>delete</span></button>'
+                        .'</form>';
+                    $html .= '<form action="'.route('cashier.bank-transactions.submit', $journal->id).'" method="POST" class="vj-action-item-form">'
+                        .csrf_field()
+                        .'<button type="submit" class="vj-action-item vj-action-item-xs vj-action-success submit-transaction" title="Submit transaction"><i class="fas fa-paper-plane"></i><span>submit</span></button>'
+                        .'</form>';
                 }
 
-                return '<div class="btn-group">'.$viewBtn.$editBtn.$deleteBtn.$submitBtn.'</div>';
+                $html .= '</div>';
+
+                return $html;
             })
             ->rawColumns(['action', 'status'])
             ->make(true);

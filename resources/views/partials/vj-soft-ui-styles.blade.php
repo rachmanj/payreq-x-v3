@@ -748,7 +748,8 @@
 .vj-show #je-lines-table thead th,
 .vj-show #je-templates-table thead th,
 .vj-show #je-show-lines-table thead th,
-.vj-show #je-submission-logs-table thead th {
+.vj-show #je-submission-logs-table thead th,
+.vj-show #bank-transactions-table thead th {
     background: #f8f9fa;
     border-color: #e9ecef;
     color: #495057;

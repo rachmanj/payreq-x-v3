@@ -9,15 +9,23 @@
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card card-outline card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">Create Bank Transaction</h3>
-                </div>
-                <div class="card-body">
+    <div class="vj-show">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-plus-circle"></i> Create Bank Transaction
+                        </h3>
+                        <a href="{{ route('cashier.bank-transactions.index') }}" class="vj-action-item vj-action-back">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back</span>
+                        </a>
+                    </div>
+                    <div class="card-body">
 
-                    <form action="{{ route('cashier.bank-transactions.store') }}" method="POST" id="transaction-form">
+                        <form action="{{ route('cashier.bank-transactions.store') }}" method="POST" id="transaction-form">
+                            <div class="vj-form-panel mb-3">
                         @csrf
                         <div class="row">
                             <div class="col-md-6">
@@ -91,18 +99,22 @@
                                 </div>
                             </div>
                         </div>
-                        <p class="text-muted small mb-3">
-                            Transactions above {{ number_format($cashierVjSapLimit, 0, ',', '.') }} IDR will require
-                            Accounting validation before SAP posting. Eligible transactions are posted to SAP immediately
-                            when you submit.
-                        </p>
+                            </div>
+                        <div class="vj-note mb-3">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                Transactions above {{ number_format($cashierVjSapLimit, 0, ',', '.') }} IDR will require
+                                Accounting validation before SAP posting. Eligible transactions are posted to SAP immediately
+                                when you submit.
+                            </div>
+                        </div>
                         @error('account_code')
                             <div class="alert alert-danger">{{ $message }}</div>
                         @enderror
 
-                        <h4 class="mt-4">Transaction Details</h4>
+                        <h4 class="mt-4"><i class="fas fa-list"></i> Transaction Details</h4>
                         <div class="mb-3">
-                            <button type="button" class="btn btn-primary btn-sm" id="add-detail-btn">
+                            <button type="button" class="vj-btn vj-btn-primary" id="add-detail-btn">
                                 <i class="fas fa-plus"></i> Add Detail
                             </button>
                         </div>
@@ -139,16 +151,23 @@
                             <!-- Will be filled dynamically -->
                         </div>
 
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-primary btn-sm" id="save-transaction-btn">Save
-                                Transaction</button>
-                            <a href="{{ route('cashier.bank-transactions.index') }}"
-                                class="btn btn-secondary btn-sm">Cancel</a>
+                        <div class="vj-actions vj-form-actions mt-4">
+                            <div class="vj-actions-primary">
+                                <button type="submit" class="vj-btn vj-btn-primary" id="save-transaction-btn">
+                                    <i class="fas fa-save"></i> Save Transaction
+                                </button>
+                                <a href="{{ route('cashier.bank-transactions.index') }}"
+                                    class="vj-action-item vj-action-back">
+                                    <i class="fas fa-times"></i>
+                                    <span>Cancel</span>
+                                </a>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- Modal for adding detail -->
@@ -210,6 +229,7 @@
 @endsection
 
 @push('styles')
+    @include('partials.vj-soft-ui-styles')
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
