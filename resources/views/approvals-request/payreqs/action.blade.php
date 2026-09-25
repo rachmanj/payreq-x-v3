@@ -134,6 +134,14 @@
 
                         <div class="row">
                             <div class="col-12">
+                                @include('approvals-request.payreqs._payment_method_readonly', [
+                                    'payreq' => $model->payreq,
+                                ])
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
                                 <div class="form-group">
                                     <label for="status">Approval Status</label>
                                     <select name="status" id="status" class="form-control">

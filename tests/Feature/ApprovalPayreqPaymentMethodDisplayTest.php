@@ -143,6 +143,137 @@ class ApprovalPayreqPaymentMethodDisplayTest extends TestCase
         $response->assertSee('Approval for Payreq', false);
     }
 
+    public function test_approval_modal_datatables_action_displays_cash_without_transfer_destination_block(): void
+    {
+        $plan = $this->createAdvanceApprovalPlan(paymentMethod: 'cash', transferAccountId: null, withDestinations: false);
+
+        $actionHtml = $this->actionHtmlForPlan($plan);
+
+        $this->assertStringContainsString('id="payment-method-readonly"', $actionHtml);
+        $this->assertStringContainsString('Metode Pembayaran', $actionHtml);
+        $this->assertStringContainsString('vj-chip-neutral', $actionHtml);
+        $this->assertStringContainsString('Cash', $actionHtml);
+        $this->assertStringNotContainsString('id="single-transfer-destination-readonly"', $actionHtml);
+        $this->assertStringNotContainsString('id="transfer-destinations-readonly"', $actionHtml);
+    }
+
+    public function test_approval_modal_datatables_action_displays_single_transfer_destination(): void
+    {
+        $plan = $this->createAdvanceApprovalPlan(
+            paymentMethod: 'transfer',
+            transferAccountId: $this->transferAccount->id,
+            withDestinations: false
+        );
+
+        $actionHtml = $this->actionHtmlForPlan($plan);
+
+        $this->assertStringContainsString('vj-chip-info', $actionHtml);
+        $this->assertStringContainsString('Transfer', $actionHtml);
+        $this->assertStringContainsString('id="single-transfer-destination-readonly"', $actionHtml);
+        $this->assertStringContainsString('9876543210', $actionHtml);
+        $this->assertStringContainsString('Mandiri', $actionHtml);
+        $this->assertStringNotContainsString('id="transfer-destinations-readonly"', $actionHtml);
+    }
+
+    public function test_approval_modal_datatables_action_displays_multi_transfer_without_single_duplicate(): void
+    {
+        $plan = $this->createAdvanceApprovalPlan(
+            paymentMethod: 'transfer',
+            transferAccountId: $this->transferAccount->id,
+            withDestinations: true
+        );
+
+        $actionHtml = $this->actionHtmlForPlan($plan);
+
+        $this->assertStringContainsString('Transfer', $actionHtml);
+        $this->assertStringContainsString('id="transfer-destinations-readonly"', $actionHtml);
+        $this->assertStringContainsString('Daftar Tujuan Transfer', $actionHtml);
+        $this->assertStringNotContainsString('id="single-transfer-destination-readonly"', $actionHtml);
+    }
+
+    public function test_datatables_data_eager_loads_transfer_relations_for_modal_payment_display(): void
+    {
+        $this->createAdvanceApprovalPlan(
+            paymentMethod: 'transfer',
+            transferAccountId: $this->transferAccount->id,
+            withDestinations: false
+        );
+        $this->createAdvanceApprovalPlan(
+            paymentMethod: 'transfer',
+            transferAccountId: $this->transferAccount->id,
+            withDestinations: false
+        );
+
+        DB::enableQueryLog();
+        $response = $this->actingAs($this->approver)->get(route('approvals.request.payreqs.data'));
+        $queries = collect(DB::getQueryLog())->pluck('query');
+        DB::disableQueryLog();
+
+        $response->assertOk();
+        $response->assertJsonStructure(['data']);
+
+        $transferAccountSelects = $queries->filter(
+            static fn (string $sql) => preg_match('/\bfrom\s+[`"]?transfer_accounts[`"]?/i', $sql) === 1
+        );
+
+        $this->assertLessThanOrEqual(1, $transferAccountSelects->count());
+    }
+
+    private function actionHtmlForPlan(ApprovalPlan $plan): string
+    {
+        $response = $this->actingAs($this->approver)->get(route('approvals.request.payreqs.data'));
+        $response->assertOk();
+
+        $row = collect($response->json('data'))->first(
+            static fn (array $item) => (int) $item['id'] === $plan->id
+        );
+
+        $this->assertNotNull($row);
+        $this->assertArrayHasKey('action', $row);
+
+        return (string) $row['action'];
+    }
+
+    private function createAdvanceApprovalPlan(
+        string $paymentMethod,
+        ?int $transferAccountId,
+        bool $withDestinations
+    ): ApprovalPlan {
+        $payreq = Payreq::query()->create([
+            'nomor' => 'PR-ADV-MODAL-'.uniqid(),
+            'user_id' => $this->requestor->id,
+            'project' => '000H',
+            'department_id' => $this->department->id,
+            'amount' => 600000,
+            'status' => 'submitted',
+            'type' => 'advance',
+            'payment_method' => $paymentMethod,
+            'transfer_account_id' => $transferAccountId,
+            'editable' => '0',
+            'deletable' => '0',
+            'submit_at' => now(),
+            'remarks' => 'Advance untuk modal approval',
+        ]);
+
+        if ($withDestinations) {
+            PayreqTransferDestination::query()->create([
+                'payreq_id' => $payreq->id,
+                'transfer_account_id' => $this->transferAccount->id,
+                'planned_amount' => 600000,
+                'remark' => 'Satu tujuan advance',
+                'created_by' => $this->requestor->id,
+            ]);
+        }
+
+        return ApprovalPlan::query()->create([
+            'document_id' => $payreq->id,
+            'document_type' => 'payreq',
+            'approver_id' => $this->approver->id,
+            'status' => 0,
+            'is_open' => 1,
+        ]);
+    }
+
     private function createApprovalPlan(
         string $paymentMethod,
         ?int $transferAccountId,

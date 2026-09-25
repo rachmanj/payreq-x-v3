@@ -82,6 +82,9 @@ class ApprovalRequestPayreqController extends Controller
                 'payreq.requestor',
                 'payreq.anggaran',
                 'payreq.anggaranAllocations.anggaran',
+                'payreq.anggaranAllocations.transferAccount.bank',
+                'payreq.transferAccount.bank',
+                'payreq.transferDestinations.transferAccount.bank',
                 'payreq.realization.realizationDetails',
             ])
             ->get();
