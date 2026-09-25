@@ -44,12 +44,12 @@ class ReportCashierController extends Controller
                 ->get()
                 ->sum('receive_amount');
         } else {
-            $today_terima_modal = CashierModal::where('type', 'bod')
+            $row = CashierModal::where('type', 'bod')
                 ->where('receiver', auth()->user()->id)
                 // ->where('status', 'close')
                 ->where('date', date('Y-m-d'))
-                ->first()
-                ->receive_amount;
+                ->first();
+            $today_terima_modal = $row?->receive_amount ?? 0;
         }
 
         if ($today_terima_modal) {
