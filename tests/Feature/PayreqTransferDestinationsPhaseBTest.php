@@ -109,6 +109,12 @@ class PayreqTransferDestinationsPhaseBTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('id="transfer-destinations-readonly"', false);
         $response->assertDontSee('Daftar Tujuan Transfer', false);
+        $response->assertSee('id="payment-method-readonly"', false);
+        $response->assertSee('vj-chip-info', false);
+        $response->assertSee('Transfer', false);
+        $response->assertSee('id="single-transfer-destination-readonly"', false);
+        $response->assertSee($this->accountA->account_number, false);
+        $response->assertSee('BCA', false);
     }
 
     public function test_payreq_print_includes_transfer_destinations_block_when_present(): void

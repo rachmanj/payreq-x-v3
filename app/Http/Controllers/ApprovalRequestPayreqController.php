@@ -7,6 +7,7 @@ use App\Models\ApprovalPlan;
 use App\Models\Department;
 use App\Models\Project;
 use App\Models\RealizationDetail;
+use App\Models\TransferAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -48,6 +49,10 @@ class ApprovalRequestPayreqController extends Controller
             ? ApprovalActivityController::modalFormOptions()
             : [];
 
+        $singleTransferAccount = filled($payreq->transfer_account_id)
+            ? TransferAccount::query()->with('bank')->find($payreq->transfer_account_id)
+            : null;
+
         return view('approvals-request.payreqs.show', compact([
             'document',
             'payreq',
@@ -59,6 +64,7 @@ class ApprovalRequestPayreqController extends Controller
             'showActivityColumn',
             'activityLocked',
             'activityModalOptions',
+            'singleTransferAccount',
         ]));
     }
 
