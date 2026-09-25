@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cashier;
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Controller;
 use App\Models\Incoming;
 use App\Models\VerificationJournal;
@@ -399,6 +400,8 @@ class BankTransactionController extends Controller
             $incoming->sap_journal_no = $journal->sap_journal_no;
             $incoming->save();
 
+            $this->bookIncomingPettyCashBalance($incoming);
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -436,6 +439,8 @@ class BankTransactionController extends Controller
             $incoming->will_post = true;
             $incoming->save();
 
+            $this->bookIncomingPettyCashBalance($incoming);
+
             DB::commit();
 
             return redirect()->route('cashier.bank-transactions.index')
@@ -446,6 +451,12 @@ class BankTransactionController extends Controller
             return redirect()->back()
                 ->with('error', 'Error occurred: '.$e->getMessage());
         }
+    }
+
+    protected function bookIncomingPettyCashBalance(Incoming $incoming): void
+    {
+        app(AccountController::class)->incoming($incoming->amount);
+        app(TransaksiController::class)->store('incoming', $incoming);
     }
 
     /**

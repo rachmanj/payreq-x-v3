@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
 use App\Models\Department;
 use App\Models\Incoming;
 use App\Models\Parameter;
+use App\Models\Transaksi;
 use App\Models\User;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
@@ -33,6 +35,7 @@ class BankTransactionDirectSapTest extends TestCase
         ]);
 
         $this->seedCashierVjParameters();
+        $this->seedProjectPettyCashAccounts();
     }
 
     protected function seedCashierVjParameters(): void
@@ -46,6 +49,45 @@ class BankTransactionDirectSapTest extends TestCase
             ['name1' => 'cashier_vj_sap_accounts', 'name2' => 'ALL'],
             ['param_value' => '11101005,11101008,11101010,11101004,11101006,71201001,71201006,71201007,71201002,71101001']
         );
+    }
+
+    /**
+     * @return array{cash: Account, advance: Account}
+     */
+    protected function seedProjectPettyCashAccounts(string $project = '021C', int $initialCashBalance = 10_000_000): array
+    {
+        $cash = Account::query()->create([
+            'type' => 'cash',
+            'account_number' => '11101005',
+            'account_name' => 'Petty Cash',
+            'project' => $project,
+            'app_balance' => $initialCashBalance,
+            'is_active' => true,
+        ]);
+
+        $advance = Account::query()->create([
+            'type' => 'advance',
+            'account_number' => '13101021',
+            'account_name' => 'Advance Clearing',
+            'project' => $project,
+            'app_balance' => 100_000_000,
+            'is_active' => true,
+        ]);
+
+        return ['cash' => $cash, 'advance' => $advance];
+    }
+
+    protected function assertIncomingBookedToPettyCash(Incoming $incoming, Account $cashAccount, int $expectedBalance): void
+    {
+        $this->assertTrue(
+            Transaksi::query()
+                ->where('document_type', 'incoming')
+                ->where('document_id', $incoming->id)
+                ->exists()
+        );
+
+        $cashAccount->refresh();
+        $this->assertSame($expectedBalance, (int) $cashAccount->app_balance);
     }
 
     protected function createAuthorizedCashier(): User
@@ -106,6 +148,8 @@ class BankTransactionDirectSapTest extends TestCase
     {
         $user = $this->createAuthorizedCashier();
         $journal = $this->createBankJournal($user);
+        $amount = (int) $journal->amount;
+        $cashAccount = Account::query()->where('type', 'cash')->where('project', '021C')->orderBy('id')->firstOrFail();
 
         $this->mock(SapJournalSubmissionService::class, function ($mock) {
             $mock->shouldReceive('submit')
@@ -139,12 +183,64 @@ class BankTransactionDirectSapTest extends TestCase
         $incoming = Incoming::query()->where('nomor', $journal->nomor)->first();
         $this->assertNotNull($incoming);
         $this->assertSame('SAP-DIRECT-001', $incoming->sap_journal_no);
+        $this->assertIncomingBookedToPettyCash($incoming, $cashAccount, 10_000_000 + $amount);
+    }
+
+    public function test_legacy_submit_credits_app_balance_and_creates_transaksi(): void
+    {
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankJournal($user, [], 150_000_000);
+        $amount = (int) $journal->amount;
+        $cashAccount = Account::query()->where('type', 'cash')->where('project', '021C')->orderBy('id')->firstOrFail();
+
+        $this->mock(SapJournalSubmissionService::class, function ($mock) {
+            $mock->shouldNotReceive('submit');
+        });
+
+        $this->actingAs($user)
+            ->post(route('cashier.bank-transactions.submit', $journal->id))
+            ->assertRedirect(route('cashier.bank-transactions.index'))
+            ->assertSessionHas('success');
+
+        $incoming = Incoming::query()->where('nomor', $journal->nomor)->first();
+        $this->assertNotNull($incoming);
+        $this->assertIncomingBookedToPettyCash($incoming, $cashAccount, 10_000_000 + $amount);
+    }
+
+    public function test_manual_receive_after_bank_submit_is_rejected_by_anti_double_guard(): void
+    {
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankJournal($user, [], 150_000_000);
+
+        $this->mock(SapJournalSubmissionService::class, function ($mock) {
+            $mock->shouldNotReceive('submit');
+        });
+
+        $this->actingAs($user)
+            ->post(route('cashier.bank-transactions.submit', $journal->id))
+            ->assertSessionHas('success');
+
+        $incoming = Incoming::query()->where('nomor', $journal->nomor)->firstOrFail();
+        $balanceAfterSubmit = (int) Account::query()->where('type', 'cash')->where('project', '021C')->value('app_balance');
+
+        $this->actingAs($user)
+            ->from(route('cashier.incomings.index'))
+            ->post(route('cashier.incomings.receive'), [
+                'incoming_id' => $incoming->id,
+                'receive_date' => now()->toDateString(),
+            ])
+            ->assertRedirect(route('cashier.incomings.index'))
+            ->assertSessionHas('error');
+
+        $this->assertSame($balanceAfterSubmit, (int) Account::query()->where('type', 'cash')->where('project', '021C')->value('app_balance'));
+        $this->assertSame(1, Transaksi::query()->where('document_type', 'incoming')->where('document_id', $incoming->id)->count());
     }
 
     public function test_sap_failure_leaves_no_incoming_and_allows_resubmit(): void
     {
         $user = $this->createAuthorizedCashier();
         $journal = $this->createBankJournal($user);
+        $initialBalance = (int) Account::query()->where('type', 'cash')->where('project', '021C')->orderBy('id')->value('app_balance');
 
         $this->mock(SapJournalSubmissionService::class, function ($mock) {
             $mock->shouldReceive('submit')
@@ -164,6 +260,8 @@ class BankTransactionDirectSapTest extends TestCase
         $this->assertSame('submitted', $journal->status);
         $this->assertNull($journal->sap_journal_no);
         $this->assertSame(0, Incoming::query()->where('nomor', $journal->nomor)->count());
+
+        $this->assertSame($initialBalance, (int) Account::query()->where('type', 'cash')->where('project', '021C')->orderBy('id')->value('app_balance'));
 
         $this->actingAs($user)
             ->post(route('cashier.bank-transactions.submit', $journal->id))

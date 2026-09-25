@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
 use App\Models\User;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
@@ -146,6 +147,24 @@ class VjRejectionAlertTest extends TestCase
     public function test_alert_disappears_after_bank_transaction_resubmit(): void
     {
         $creator = User::factory()->create(['project' => '022C']);
+
+        Account::query()->create([
+            'type' => 'cash',
+            'account_number' => '11101006',
+            'account_name' => 'Petty Cash',
+            'project' => '022C',
+            'app_balance' => 0,
+            'is_active' => true,
+        ]);
+
+        Account::query()->create([
+            'type' => 'advance',
+            'account_number' => '13101022',
+            'account_name' => 'Advance Clearing',
+            'project' => '022C',
+            'app_balance' => 0,
+            'is_active' => true,
+        ]);
 
         $journal = $this->createRejectedJournal($creator, [
             'type' => 'bank',
