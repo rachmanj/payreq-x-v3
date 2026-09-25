@@ -171,6 +171,7 @@
                                         <th>No.</th>
                                         <th>Realization Date</th>
                                         <th>Account Code</th>
+                                        <th>Account Name</th>
                                         <th>Debit/Credit</th>
                                         <th>Description</th>
                                         <th>Project</th>
@@ -184,6 +185,7 @@
                                             <td>{{ $loop->iteration }}</td>
                                             <td>{{ date('d M Y', strtotime($detail->realization_date)) }}</td>
                                             <td>{{ $detail->account_code }}</td>
+                                            <td>{{ $accountNames[$detail->account_code] ?? $detail->account_code }}</td>
                                             <td>{{ ucfirst($detail->debit_credit) }}</td>
                                             <td>{{ $detail->description }}</td>
                                             <td>{{ $detail->project }}</td>
@@ -192,13 +194,13 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center">No details found</td>
+                                            <td colspan="9" class="text-center">No details found</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="7" class="text-right">Total:</th>
+                                        <th colspan="8" class="text-right">Total:</th>
                                         <th class="text-right">{{ number_format($journal->amount, 2) }}</th>
                                     </tr>
                                 </tfoot>

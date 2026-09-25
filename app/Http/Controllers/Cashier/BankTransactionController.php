@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Controller;
+use App\Models\Account;
 use App\Models\Incoming;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
@@ -193,12 +194,16 @@ class BankTransactionController extends Controller
             ? $this->balanceRecalculationService->findIncomingByJournalNumber($journal)
             : null;
 
+        $accountNames = Account::whereIn('account_number', $journal->verificationJournalDetails->pluck('account_code'))
+            ->pluck('account_name', 'account_number');
+
         return view('cashier.bank-transactions.show', compact(
             'journal',
             'incoming',
             'eligibleForDirectSap',
             'needsRecalculateBalance',
             'recalculateIncoming',
+            'accountNames',
         ));
     }
 
