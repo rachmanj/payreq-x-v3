@@ -29,7 +29,13 @@
                 <div class="vj-stat-icon"><i class="fas fa-file-invoice"></i></div>
                 <div class="vj-stat-body">
                     <span class="vj-stat-label">Realization No</span>
-                    <span class="vj-stat-value">{{ $realization->nomor }}</span>
+                    <span class="vj-stat-value">
+                        @if ($realization)
+                            {{ $realization->nomor }}
+                        @else
+                            Belum ada realization
+                        @endif
+                    </span>
                 </div>
             </div>
             <div class="vj-stat vj-stat-success">
@@ -72,10 +78,17 @@
                                     <i class="fas fa-hourglass-half"></i> Not yet paid
                                 </span>
                             @endif
-                            <span class="vj-chip vj-chip-neutral">
-                                <i class="far fa-clock"></i>
-                                {{ $realization->submit_at->format('d-M-Y H:i') }}
-                            </span>
+                            @if ($realization)
+                                <span class="vj-chip vj-chip-neutral">
+                                    <i class="far fa-clock"></i>
+                                    {{ $realization->submit_at->format('d-M-Y H:i') }}
+                                </span>
+                            @elseif ($payreq->submit_at)
+                                <span class="vj-chip vj-chip-neutral">
+                                    <i class="far fa-clock"></i>
+                                    Payreq {{ $payreq->submit_at->format('d-M-Y H:i') }}
+                                </span>
+                            @endif
                         </div>
 
                         <div class="form-group mb-3">

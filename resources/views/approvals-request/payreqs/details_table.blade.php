@@ -3,7 +3,9 @@
     $activityColspanOffset = auth()->user()->can('manage_activities') && ($showActivityColumn ?? false) ? 1 : 0;
 @endphp
 
-@include('approvals-request.partials.activity-header')
+@if ($realization)
+    @include('approvals-request.partials.activity-header')
+@endif
 
 <div class="row">
     <div class="col-12">
@@ -13,8 +15,9 @@
                     <i class="fas fa-list"></i> Details
                 </h3>
                 <div class="vj-inline-actions">
-                    @can('edit-submitted-realization')
-                        <button type="button" class="vj-action-item vj-action-item-xs vj-action-edit" id="btn-edit-details">
+                    @if ($realization)
+                        @can('edit-submitted-realization')
+                            <button type="button" class="vj-action-item vj-action-item-xs vj-action-edit" id="btn-edit-details">
                             <i class="fas fa-edit"></i>
                             <span>Edit Details</span>
                         </button>
@@ -31,7 +34,8 @@
                                 <span>Cancel</span>
                             </button>
                         </div>
-                    @endcan
+                        @endcan
+                    @endif
                 </div>
             </div>
             <div class="card-body table-responsive p-0">
@@ -92,7 +96,7 @@
                                                 <div class="activity-display">
                                                     @include('approvals-request.partials.activity-badge', [
                                                         'detail' => $item,
-                                                        'headerActivity' => $realization->activity,
+                                                        'headerActivity' => $realization?->activity,
                                                     ])
                                                 </div>
                                             </td>
@@ -138,7 +142,13 @@
                     @else
                         <tbody>
                             <tr>
-                                <td colspan="{{ 5 + $activityColspanOffset }}" class="text-center">No Data Found</td>
+                                <td colspan="{{ 5 + $activityColspanOffset }}" class="text-center">
+                                    @if ($realization)
+                                        No Data Found
+                                    @else
+                                        Belum ada realization
+                                    @endif
+                                </td>
                             </tr>
                         </tbody>
                     @endif

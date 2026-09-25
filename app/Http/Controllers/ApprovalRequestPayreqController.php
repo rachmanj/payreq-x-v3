@@ -32,11 +32,14 @@ class ApprovalRequestPayreqController extends Controller
             'transferDestinations.transferAccount.bank',
             'anggaranAllocations.transferAccount.bank',
         ]);
-        $realization = $payreq->realization->load('activity');
-        $realization_details = $realization->realizationDetails()->with('activity')->get();
+        $realization = $payreq->realization;
+        $realization?->load('activity');
+        $realization_details = $realization
+            ? $realization->realizationDetails()->with('activity')->get()
+            : collect();
         $departments = Department::orderBy('department_name')->get();
         $projects = Project::where('is_active', 1)->orderBy('code')->get();
-        $projectsForActivities = collect([$realization->project])
+        $projectsForActivities = collect([$realization?->project])
             ->merge($realization_details->pluck('project'))
             ->filter()
             ->unique()
@@ -106,7 +109,9 @@ class ApprovalRequestPayreqController extends Controller
                 if ($approval_request->payreq->type == 'advance') {
                     return number_format($approval_request->payreq->amount, 2);
                 } else {
-                    return number_format($approval_request->payreq->realization->realizationDetails->sum('amount'), 2);
+                    $detailsSum = $approval_request->payreq->realization?->realizationDetails?->sum('amount');
+
+                    return number_format($detailsSum ?? 0, 2);
                 }
             })
             ->addColumn('requestor', function ($approval_request) {
@@ -161,6 +166,13 @@ class ApprovalRequestPayreqController extends Controller
             DB::beginTransaction();
 
             $realization = $payreq->realization;
+            if (! $realization) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Realization belum tersedia untuk payreq ini.',
+                ], 422);
+            }
+
             $canUpdateActivity = $payreq->type === 'reimburse' && $this->canUpdateActivityOnPlan($document);
 
             if ($request->has('deleted_ids') && ! empty($request->deleted_ids)) {
