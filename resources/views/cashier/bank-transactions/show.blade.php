@@ -49,6 +49,19 @@
                                 </button>
                             </form>
                         @endif
+                        @can('recalculate_cashier_balance')
+                            @if ($needsRecalculateBalance && $recalculateIncoming)
+                                <form action="{{ route('cashier.bank-transactions.recalculate-balance', $journal->id) }}"
+                                    method="POST" class="d-inline" id="recalculate-balance-form">
+                                    @csrf
+                                    <button type="button" class="btn btn-warning btn-sm" id="recalculate-balance-btn"
+                                        data-journal-nomor="{{ $journal->nomor }}"
+                                        data-amount="{{ number_format($recalculateIncoming->amount, 0, ',', '.') }}">
+                                        <i class="fas fa-calculator"></i> Recalculate Balance
+                                    </button>
+                                </form>
+                            @endif
+                        @endcan
                     </div>
                 </div>
                 <div class="card-body">
@@ -220,6 +233,31 @@
                     cancelButtonText: 'Cancel',
                     confirmButtonColor: '#3085d6',
                     cancelButtonColor: '#d33',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+
+            $('#recalculate-balance-btn').on('click', function() {
+                const form = $('#recalculate-balance-form');
+                const journalNomor = $(this).data('journal-nomor');
+                const amount = $(this).data('amount');
+
+                Swal.fire({
+                    title: 'Recalculate Petty Cash Balance?',
+                    html: '<p>Transaction <strong>' + journalNomor +
+                        '</strong> will credit petty cash by <strong>IDR ' + amount +
+                        '</strong>.</p><p class="text-danger mb-0"><small>This updates application balances and is recorded in the audit log. Use only when SAP was posted but petty cash booking failed.</small></p>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, recalculate',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#f0ad4e',
+                    cancelButtonColor: '#6c757d',
                     allowOutsideClick: false,
                     allowEscapeKey: false
                 }).then((result) => {

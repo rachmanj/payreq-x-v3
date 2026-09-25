@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Incoming;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
+use App\Services\CashierBankTransactionBalanceRecalculationService;
 use App\Services\CashierBankTransactionDirectSapService;
 use App\Services\SapJournalSubmissionService;
 use Illuminate\Http\Request;
@@ -18,7 +19,8 @@ class BankTransactionController extends Controller
 {
     public function __construct(
         protected CashierBankTransactionDirectSapService $directSapService,
-        protected SapJournalSubmissionService $journalSubmissionService
+        protected SapJournalSubmissionService $journalSubmissionService,
+        protected CashierBankTransactionBalanceRecalculationService $balanceRecalculationService
     ) {}
 
     public function index()
@@ -184,8 +186,54 @@ class BankTransactionController extends Controller
         }
 
         $eligibleForDirectSap = $this->directSapService->isEligibleForDirectSapSubmission($journal, Auth::user());
+        $needsRecalculateBalance = $this->balanceRecalculationService->needsRecalculateBalance($journal);
+        $recalculateIncoming = $needsRecalculateBalance
+            ? $this->balanceRecalculationService->findIncomingByJournalNumber($journal)
+            : null;
 
-        return view('cashier.bank-transactions.show', compact('journal', 'incoming', 'eligibleForDirectSap'));
+        return view('cashier.bank-transactions.show', compact(
+            'journal',
+            'incoming',
+            'eligibleForDirectSap',
+            'needsRecalculateBalance',
+            'recalculateIncoming',
+        ));
+    }
+
+    public function recalculateBalance($id)
+    {
+        $journal = VerificationJournal::query()->findOrFail($id);
+
+        if ($journal->type !== 'bank') {
+            return redirect()->route('cashier.bank-transactions.show', $journal->id)
+                ->with('error', 'Only bank transactions can have petty cash balance recalculated.');
+        }
+
+        try {
+            $result = $this->balanceRecalculationService->recalculate($journal, Auth::user());
+        } catch (\Exception $e) {
+            return redirect()->route('cashier.bank-transactions.show', $journal->id)
+                ->with('error', 'Failed to recalculate balance: '.$e->getMessage());
+        }
+
+        if (($result['status'] ?? '') === 'already_booked') {
+            return redirect()->route('cashier.bank-transactions.show', $journal->id)
+                ->with('info', $result['message'] ?? 'Saldo transaksi ini sudah dibukukan, tidak dihitung ulang.');
+        }
+
+        if (($result['status'] ?? '') !== 'success') {
+            return redirect()->route('cashier.bank-transactions.show', $journal->id)
+                ->with('error', $result['message'] ?? 'Balance recalculation could not be completed.');
+        }
+
+        $amount = number_format($result['amount'], 0, ',', '.');
+        $balanceAfter = number_format($result['balance_after'], 0, ',', '.');
+
+        return redirect()->route('cashier.bank-transactions.show', $journal->id)
+            ->with(
+                'success',
+                "Petty Cash balance recalculated. Amount IDR {$amount} credited. New cash balance: IDR {$balanceAfter}."
+            );
     }
 
     public function edit($id)

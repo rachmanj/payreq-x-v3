@@ -245,6 +245,9 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::put('/{id}', [BankTransactionController::class, 'update'])->name('update');
         Route::delete('/{id}', [BankTransactionController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/submit', [BankTransactionController::class, 'submit'])->name('submit');
+        Route::post('/{id}/recalculate-balance', [BankTransactionController::class, 'recalculateBalance'])
+            ->middleware('permission:recalculate_cashier_balance')
+            ->name('recalculate-balance');
     });
 
     Route::prefix('general-op')->name('general-op.')->middleware('permission:create_general_op')->group(function () {
