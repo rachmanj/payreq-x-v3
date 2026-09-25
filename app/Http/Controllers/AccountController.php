@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Imports\AccountImport;
 use App\Models\Account;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AccountController extends Controller
@@ -111,14 +112,36 @@ class AccountController extends Controller
         return true;
     }
 
-    public function incoming($amount)
+    public function incoming($amount, ?string $project = null)
     {
+        if ($project !== null && $project !== '') {
+            return $this->incomingForProject($project, (float) $amount);
+        }
+
         $cashier_project = auth()->user()->project;
         $account_cash = Account::where('type', 'cash')->where('project', $cashier_project)->orderBy('id')->first();
         $account_advance = Account::where('type', 'advance')->where('project', $cashier_project)->orderBy('id')->first();
 
-        // if account is not found
         if (! $account_cash || ! $account_advance) {
+            return false;
+        }
+
+        return $this->incomingTo($account_cash, $amount);
+    }
+
+    public function incomingForProject(string $project, float $amount): bool
+    {
+        $account_cash = Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first();
+        $account_advance = Account::where('type', 'advance')->where('project', $project)->orderBy('id')->first();
+
+        if (! $account_cash || ! $account_advance) {
+            Log::warning('Petty cash incoming booking failed: cash or advance account not found for document project', [
+                'project' => $project,
+                'amount' => $amount,
+                'cash_account_found' => $account_cash !== null,
+                'advance_account_found' => $account_advance !== null,
+            ]);
+
             return false;
         }
 

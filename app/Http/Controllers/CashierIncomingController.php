@@ -44,10 +44,15 @@ class CashierIncomingController extends Controller
             $incoming->cashier_id = auth()->user()->id;
             $incoming->save();
 
-            // update app_balance in accounts table
-            app(AccountController::class)->incoming($incoming->amount);
+            $booked = ($incoming->project !== null && $incoming->project !== '')
+                ? app(AccountController::class)->incomingForProject($incoming->project, (float) $incoming->amount)
+                : app(AccountController::class)->incoming((float) $incoming->amount);
 
-            // create transaksi
+            if (! $booked) {
+                $projectLabel = $incoming->project ?: auth()->user()->project;
+                throw new \RuntimeException('Cash or advance account not found for project '.$projectLabel.'.');
+            }
+
             app(TransaksiController::class)->store('incoming', $incoming);
 
             DB::commit();

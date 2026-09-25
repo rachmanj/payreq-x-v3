@@ -83,18 +83,25 @@ class CashierBankTransactionBalanceRecalculationService
                 ];
             }
 
+            $bookingProject = ($incoming->project !== null && $incoming->project !== '')
+                ? $incoming->project
+                : $user->project;
+
             $cashAccount = Account::query()
                 ->where('type', 'cash')
-                ->where('project', $user->project)
+                ->where('project', $bookingProject)
                 ->orderBy('id')
                 ->first();
 
             $balanceBefore = $cashAccount ? (int) $cashAccount->app_balance : 0;
 
-            $booked = app(AccountController::class)->incoming($incoming->amount);
+            $booked = ($incoming->project !== null && $incoming->project !== '')
+                ? app(AccountController::class)->incomingForProject($incoming->project, (float) $incoming->amount)
+                : app(AccountController::class)->incoming((float) $incoming->amount);
+
             if (! $booked) {
                 throw new \RuntimeException(
-                    'Cash or advance account not found for project '.$user->project.'.'
+                    'Cash or advance account not found for project '.$bookingProject.'.'
                 );
             }
 

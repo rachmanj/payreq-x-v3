@@ -510,8 +510,22 @@ class BankTransactionController extends Controller
 
     protected function bookIncomingPettyCashBalance(Incoming $incoming): void
     {
-        app(AccountController::class)->incoming($incoming->amount);
+        $booked = $this->bookIncomingAmountToPettyCash($incoming);
+        if (! $booked) {
+            $projectLabel = $incoming->project ?: auth()->user()->project;
+            throw new \RuntimeException('Cash or advance account not found for project '.$projectLabel.'.');
+        }
+
         app(TransaksiController::class)->store('incoming', $incoming);
+    }
+
+    protected function bookIncomingAmountToPettyCash(Incoming $incoming): bool
+    {
+        if ($incoming->project !== null && $incoming->project !== '') {
+            return app(AccountController::class)->incomingForProject($incoming->project, (float) $incoming->amount);
+        }
+
+        return app(AccountController::class)->incoming($incoming->amount);
     }
 
     /**

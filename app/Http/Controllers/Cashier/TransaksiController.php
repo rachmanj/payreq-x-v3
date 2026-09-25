@@ -35,7 +35,13 @@ class TransaksiController extends Controller
 
             return true;
         } else {
-            $account = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
+            $project = ($data->project !== null && $data->project !== '')
+                ? $data->project
+                : auth()->user()->project;
+            $account = Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first();
+            if (! $account) {
+                throw new \RuntimeException('Cash account not found for project '.$project.'.');
+            }
             $this->storeIncomingForAccount(
                 $account->id,
                 $data->id,
