@@ -10,9 +10,14 @@ class TrustProxies extends Middleware
     /**
      * The trusted proxies for this application.
      *
+     * Harus mempercayai proxy agar skema HTTPS dari Cloudflare Tunnel
+     * (header X-Forwarded-Proto) dikenali Laravel — tanpa ini, halaman yang
+     * diakses lewat domain HTTPS akan memuat aset dengan skema http://.
+     * Pola yang sama dipakai aplikasi DDS di server yang sama.
+     *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.
