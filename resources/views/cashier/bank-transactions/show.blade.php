@@ -127,6 +127,30 @@
                                     <dd class="col-sm-8">{{ $journal->project ?? '—' }}</dd>
                                     <dt class="col-sm-4">Bank Account</dt>
                                     <dd class="col-sm-8">{{ $journal->bank_account ? $journal->bank_account : 'Not specified' }}</dd>
+                                    <dt class="col-sm-4">Cheque / Bilyet</dt>
+                                    <dd class="col-sm-8">
+                                        @if ($journal->bilyet)
+                                            @php
+                                                $bilyet = $journal->bilyet;
+                                                $bilyetDate = $bilyet->bilyet_date
+                                                    ? $bilyet->bilyet_date->format('d M Y')
+                                                    : '—';
+                                                $bilyetAmount = $bilyet->amount !== null
+                                                    ? number_format((float) $bilyet->amount, 0, ',', '.')
+                                                    : '—';
+                                                $bilyetLabel = trim(
+                                                    ($bilyet->prefix ?? '').$bilyet->nomor
+                                                ).' · '.$bilyetDate.' · '.$bilyetAmount.' · '.$bilyet->status;
+                                            @endphp
+                                            @if (\Illuminate\Support\Facades\Route::has('cashier.bilyets.edit'))
+                                                <a href="{{ route('cashier.bilyets.edit', $bilyet->id) }}">{{ $bilyetLabel }}</a>
+                                            @else
+                                                {{ $bilyetLabel }}
+                                            @endif
+                                        @else
+                                            —
+                                        @endif
+                                    </dd>
                                     <dt class="col-sm-4">Description</dt>
                                     <dd class="col-sm-8 mb-0">{{ $journal->description ?? '—' }}</dd>
                                 </dl>

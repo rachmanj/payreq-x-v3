@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cashier;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\Bilyet;
 use App\Models\Incoming;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
@@ -103,6 +104,7 @@ class BankTransactionController extends Controller
             'bank_account' => 'required',
             'description' => 'required|string',
             'transaction_type' => 'required|in:transfer_to_petty_cash,bank_admin_fee,bank_interest',
+            'bilyet_id' => 'nullable|integer|exists:bilyets,id',
             'account_code.*' => 'required|string',
             'debit_credit.*' => 'required|in:debit,credit',
             'detail_description.*' => 'required|string',
@@ -110,6 +112,15 @@ class BankTransactionController extends Controller
             'cost_center.*' => 'required|string',
             'amount.*' => 'required|numeric',
         ]);
+
+        $bankAccountForValidation = is_array($request->bank_account)
+            ? strval($request->bank_account[0])
+            : strval($request->bank_account);
+        $bilyetId = $request->filled('bilyet_id') ? (int) $request->bilyet_id : null;
+        $bilyetError = $this->validateBilyetMatchesBankAccount($bilyetId, $bankAccountForValidation);
+        if ($bilyetError !== null) {
+            return redirect()->back()->withInput()->withErrors(['bilyet_id' => $bilyetError]);
+        }
 
         $accountError = $this->directSapService->validateDebitAccountsForTransactionType(
             (string) $request->transaction_type,
@@ -131,6 +142,7 @@ class BankTransactionController extends Controller
                 'type' => 'bank',
                 'project' => $project,
                 'bank_account' => $bankAccount,
+                'bilyet_id' => $bilyetId,
                 'description' => $request->description,
                 'created_by' => Auth::id(),
                 'status' => 'draft',
@@ -178,7 +190,7 @@ class BankTransactionController extends Controller
 
     public function show($id)
     {
-        $journal = VerificationJournal::with(['verificationJournalDetails', 'createdBy', 'postedBy'])
+        $journal = VerificationJournal::with(['verificationJournalDetails', 'createdBy', 'postedBy', 'bilyet'])
             ->findOrFail($id);
 
         $incoming = null;
@@ -267,6 +279,7 @@ class BankTransactionController extends Controller
             'bank_account' => 'required',
             'description' => 'required|string',
             'transaction_type' => 'required|in:transfer_to_petty_cash,bank_admin_fee,bank_interest',
+            'bilyet_id' => 'nullable|integer|exists:bilyets,id',
             'account_code.*' => 'required|string',
             'debit_credit.*' => 'required|in:debit,credit',
             'detail_description.*' => 'required|string',
@@ -274,6 +287,15 @@ class BankTransactionController extends Controller
             'cost_center.*' => 'required|string',
             'amount.*' => 'required|numeric',
         ]);
+
+        $bankAccountForValidation = is_array($request->bank_account)
+            ? strval($request->bank_account[0])
+            : strval($request->bank_account);
+        $bilyetId = $request->filled('bilyet_id') ? (int) $request->bilyet_id : null;
+        $bilyetError = $this->validateBilyetMatchesBankAccount($bilyetId, $bankAccountForValidation);
+        if ($bilyetError !== null) {
+            return redirect()->back()->withInput()->withErrors(['bilyet_id' => $bilyetError]);
+        }
 
         $accountError = $this->directSapService->validateDebitAccountsForTransactionType(
             (string) $request->transaction_type,
@@ -300,6 +322,7 @@ class BankTransactionController extends Controller
                 'type' => 'bank',
                 'project' => $project,
                 'bank_account' => $bankAccount,
+                'bilyet_id' => $bilyetId,
                 'description' => $request->description,
                 'amount' => array_sum($request->amount),
             ]);
@@ -536,6 +559,61 @@ class BankTransactionController extends Controller
         return [
             'transactionTypeAccountMap' => CashierBankTransactionDirectSapService::transactionTypeAccountMap(),
             'cashierVjSapLimit' => $this->directSapService->getSapLimit(),
+            'bilyetSelectOptions' => $this->bilyetSelectOptions(),
         ];
+    }
+
+    /**
+     * @return list<array{id: int, sap_account: string, label: string}>
+     */
+    protected function bilyetSelectOptions(): array
+    {
+        return Bilyet::query()
+            ->with(['giro:id,sap_account'])
+            ->orderByDesc('bilyet_date')
+            ->orderBy('prefix')
+            ->orderBy('nomor')
+            ->get()
+            ->map(function (Bilyet $bilyet) {
+                $date = $bilyet->bilyet_date?->format('Y-m-d') ?? '—';
+                $amount = $bilyet->amount !== null
+                    ? number_format((float) $bilyet->amount, 0, ',', '.')
+                    : '—';
+                $projectSuffix = $bilyet->project ? ' · '.$bilyet->project : '';
+
+                return [
+                    'id' => $bilyet->id,
+                    'sap_account' => (string) ($bilyet->giro?->sap_account ?? ''),
+                    'label' => trim(sprintf(
+                        '%s %s · %s · %s · %s%s',
+                        $bilyet->prefix ?? '',
+                        $bilyet->nomor,
+                        $date,
+                        $amount,
+                        $bilyet->status,
+                        $projectSuffix
+                    )),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    protected function validateBilyetMatchesBankAccount(?int $bilyetId, string $bankAccount): ?string
+    {
+        if ($bilyetId === null) {
+            return null;
+        }
+
+        $bilyet = Bilyet::query()->with('giro')->find($bilyetId);
+        if ($bilyet === null || $bilyet->giro === null) {
+            return 'The selected cheque/bilyet is not linked to a valid bank giro account.';
+        }
+
+        if ((string) $bilyet->giro->sap_account !== $bankAccount) {
+            return 'The selected cheque/bilyet does not belong to the selected bank account.';
+        }
+
+        return null;
     }
 }

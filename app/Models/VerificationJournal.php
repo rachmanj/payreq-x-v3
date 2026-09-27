@@ -71,4 +71,9 @@ class VerificationJournal extends Model
     {
         return $this->belongsTo(Delivery::class);
     }
+
+    public function bilyet()
+    {
+        return $this->belongsTo(Bilyet::class);
+    }
 }

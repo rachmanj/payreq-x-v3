@@ -114,6 +114,19 @@
                                     @enderror
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="bilyet_id">Cheque / Bilyet</label>
+                                    <select class="form-control select2 @error('bilyet_id') is-invalid @enderror"
+                                        id="bilyet_id" name="bilyet_id" style="width: 100%;"
+                                        data-selected="{{ old('bilyet_id', $journal->bilyet_id) }}">
+                                        <option value="">— none —</option>
+                                    </select>
+                                    @error('bilyet_id')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
                         </div>
                             </div>
                         <div class="vj-note mb-3">
@@ -273,6 +286,7 @@
 
     <script>
         const transactionTypeAccountMap = @json($transactionTypeAccountMap);
+        const bilyetSelectOptions = @json($bilyetSelectOptions);
         let allAccounts = [];
 
         $(document).ready(function() {
@@ -306,6 +320,7 @@
                 $('#bank_account').val(selectedValue);
                 console.log('Bank account selection changed:', selectedValue);
                 console.log('Hidden bank_account field updated:', $('#bank_account').val());
+                refreshBilyetSelectOptions();
             });
 
             // Load account codes and bank accounts
@@ -745,6 +760,8 @@
                             if (currentBankAccount) {
                                 $('#bank_account').val(currentBankAccount);
                                 bankAccountSelect.trigger('change');
+                            } else {
+                                refreshBilyetSelectOptions();
                             }
 
                             console.log('Total bank accounts added to select:', response.length);
@@ -759,6 +776,26 @@
                         toastr.error('Failed to load bank accounts: ' + error);
                     }
                 });
+            }
+
+            function refreshBilyetSelectOptions() {
+                const bankAccount = $('#bank_account').val() || $('#bank_account_select').val() || '';
+                const selectedBilyet = $('#bilyet_id').data('selected') || '';
+                const select = $('#bilyet_id');
+
+                select.empty();
+                select.append('<option value="">— none —</option>');
+
+                bilyetSelectOptions.forEach(function(option) {
+                    if (!bankAccount || option.sap_account === bankAccount) {
+                        const selected = String(option.id) === String(selectedBilyet) ? 'selected' : '';
+                        select.append(
+                            `<option value="${option.id}" data-sap-account="${option.sap_account}" ${selected}>${option.label}</option>`
+                        );
+                    }
+                });
+
+                select.trigger('change');
             }
         });
     </script>
