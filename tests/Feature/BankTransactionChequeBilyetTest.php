@@ -253,7 +253,11 @@ class BankTransactionChequeBilyetTest extends TestCase
             ->assertOk()
             ->assertSee('Cheque / Bilyet', false)
             ->assertSee('JM130552', false)
-            ->assertSee('onhand', false);
+            ->assertSee('onhand', false)
+            ->assertSee(
+                route('cashier.bilyets.history', $this->matchingBilyet->id),
+                false
+            );
 
         $this->actingAs($user)
             ->get(route('cashier.bank-transactions.show', $withoutBilyet->id))
