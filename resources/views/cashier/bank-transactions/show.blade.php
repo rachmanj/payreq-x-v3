@@ -142,11 +142,10 @@
                                                     ($bilyet->prefix ?? '').$bilyet->nomor
                                                 ).' · '.$bilyetDate.' · '.$bilyetAmount.' · '.$bilyet->status;
                                                 $bilyetUrl = null;
-                                                if (\Illuminate\Support\Facades\Route::has('cashier.bilyets.show')) {
-                                                    $bilyetUrl = route('cashier.bilyets.show', $bilyet->id);
-                                                } elseif (\Illuminate\Support\Facades\Route::has('cashier.bilyets.audit.show')
-                                                    && \Illuminate\Support\Facades\Route::has('cashier.bilyets.history')) {
+                                                if (\Illuminate\Support\Facades\Route::has('cashier.bilyets.history')) {
                                                     $bilyetUrl = route('cashier.bilyets.history', $bilyet->id);
+                                                } elseif (\Illuminate\Support\Facades\Route::has('cashier.bilyets.edit')) {
+                                                    $bilyetUrl = route('cashier.bilyets.edit', $bilyet->id);
                                                 } elseif (\Illuminate\Support\Facades\Route::has('cashier.bilyets.index')) {
                                                     $bilyetUrl = route('cashier.bilyets.index');
                                                 }
