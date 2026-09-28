@@ -18,7 +18,7 @@ Rekening **tabungan** (mis. Tab Bisnis Mandiri IDR, Mandiri IDR 0005 Berau) tida
 - Lokasi penyimpanan: pilihan standar (**Brankas Site / Lemari Besi Accounting HO / Brankas BO / Safe Deposit Box Bank / Lainnya**) + kolom catatan bebas; dipakai per baris.
 - Ringkasan: total nominal & jumlah per jenis (Bilyet Giro / Cek / LOA) + **mutasi bulan itu** (berapa cair, berapa void).
 - **Nomor otomatis** berita acara (pola `BAPSB-0001/025C/09-2026`) + tanggal.
-- **Cetak/print** berita acara dengan blok tanda tangan: **Dibuat oleh** (penyusun, otomatis dari user yang input), **Diperiksa oleh 1** dan **Diperiksa oleh 2** (nama diisi di form), **Disetujui oleh** → **dibiarkan kosong** untuk site (validasi akhir di Accounting HO).
+- **Cetak/print** berita acara dengan blok tanda tangan: **Dibuat oleh** (penyusun, otomatis dari user yang input), **Diperiksa oleh 1** dan **Diperiksa oleh 2** (nama diisi di form), **Disetujui oleh** → **kolom teks yang diketik penyusun** (opsional; site boleh dikosongkan karena validasi akhir di Accounting HO).
 - Unggah **PDF yang sudah ditandatangani** → `dokumens` type baru **`bapsb`** (status `pending`).
 - **Validasi** oleh tim Accounting HO (Iwan/Herry/Rifka/Prana/Elma) → status `validated`, memakai permission baru **`validate_bapsb_report`** (pola `validate_pcbc_report`).
 - **Kepatuhan**: periode bulanan, batas submit **tanggal 5** bulan berikutnya; lewat batas → **peringatan** di dashboard unit + **daftar tunggakan** terpusat untuk Accounting HO. **Tidak memblokir** aksi kasir.
@@ -79,5 +79,5 @@ Tidak ada API eksternal. Route internal (prefix `cashier/bapsb`, name `cashier.b
 
 ## 8. Yang masih terbuka
 
-- Nama approver di dokumen untuk HO/BO (mas Herry / mba Ria) apakah diisi otomatis dari user, atau diketik penyusun.
-- Apakah BAPSB perlu tampil di menu laporan tersendiri (rekap kepatuhan antar bulan) — bisa menyusul setelah versi pertama berjalan.
+- ~~Nama approver di dokumen untuk HO/BO~~ → **DIPUTUSKAN: kolom "Disetujui oleh" diketik penyusun** (opsional; HO/BO mengisi mas Herry / mba Ria, site boleh dikosongkan).
+- **Rekap kepatuhan antar bulan** (unit mana yang telat, berapa kali) — **menyusul** setelah versi pertama berjalan.
