@@ -268,7 +268,7 @@
 
     <script>
         const transactionTypeAccountMap = @json($transactionTypeAccountMap);
-        const bilyetSelectOptions = @json($bilyetSelectOptions);
+        const bilyetOptionsUrl = @json(route('cashier.bank-transactions.bilyet-options'));
         let allAccounts = [];
 
         $(document).ready(function() {
@@ -653,16 +653,30 @@
                 select.empty();
                 select.append('<option value="">— none —</option>');
 
-                bilyetSelectOptions.forEach(function(option) {
-                    if (!bankAccount || option.sap_account === bankAccount) {
-                        const selected = String(option.id) === String(selectedBilyet) ? 'selected' : '';
-                        select.append(
-                            `<option value="${option.id}" data-sap-account="${option.sap_account}" ${selected}>${option.label}</option>`
-                        );
+                if (!bankAccount) {
+                    select.trigger('change');
+                    return;
+                }
+
+                $.ajax({
+                    url: bilyetOptionsUrl,
+                    data: {
+                        bank_account: bankAccount
+                    },
+                    success: function(options) {
+                        (options || []).forEach(function(option) {
+                            const selected = String(option.id) === String(selectedBilyet) ? 'selected' : '';
+                            select.append(
+                                `<option value="${option.id}" ${selected}>${option.label}</option>`
+                            );
+                        });
+                        select.trigger('change');
+                    },
+                    error: function() {
+                        toastr.error('Failed to load cheque/bilyet options');
+                        select.trigger('change');
                     }
                 });
-
-                select.trigger('change');
             }
         });
     </script>

@@ -238,6 +238,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::prefix('bank-transactions')->name('bank-transactions.')->group(function () {
         Route::get('/', [BankTransactionController::class, 'index'])->name('index');
         Route::get('/data', [BankTransactionController::class, 'data'])->name('data');
+        Route::get('/bilyet-options', [BankTransactionController::class, 'bilyetOptions'])->name('bilyet-options');
         Route::get('/create', [BankTransactionController::class, 'create'])->name('create');
         Route::post('/', [BankTransactionController::class, 'store'])->name('store');
         Route::get('/{id}', [BankTransactionController::class, 'show'])->name('show');

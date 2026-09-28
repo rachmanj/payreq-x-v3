@@ -12,6 +12,7 @@ use App\Models\VerificationJournalDetail;
 use App\Services\CashierBankTransactionBalanceRecalculationService;
 use App\Services\CashierBankTransactionDirectSapService;
 use App\Services\SapJournalSubmissionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -92,6 +93,16 @@ class BankTransactionController extends Controller
     public function create()
     {
         return view('cashier.bank-transactions.create', $this->formViewData());
+    }
+
+    public function bilyetOptions(Request $request): JsonResponse
+    {
+        $bankAccount = trim((string) $request->query('bank_account', ''));
+        if ($bankAccount === '') {
+            return response()->json([]);
+        }
+
+        return response()->json($this->bilyetOptionsForBankAccount($bankAccount));
     }
 
     public function store(Request $request)
@@ -559,44 +570,54 @@ class BankTransactionController extends Controller
         return [
             'transactionTypeAccountMap' => CashierBankTransactionDirectSapService::transactionTypeAccountMap(),
             'cashierVjSapLimit' => $this->directSapService->getSapLimit(),
-            'bilyetSelectOptions' => $this->bilyetSelectOptions(),
         ];
     }
 
     /**
-     * @return list<array{id: int, sap_account: string, label: string}>
+     * @return list<array{id: int, label: string, amount: int|null, status: string|null, project: string|null}>
      */
-    protected function bilyetSelectOptions(): array
+    protected function bilyetOptionsForBankAccount(string $bankAccount): array
     {
         return Bilyet::query()
             ->with(['giro:id,sap_account'])
+            ->whereHas('giro', function ($query) use ($bankAccount) {
+                $query->where('sap_account', $bankAccount);
+            })
             ->orderByDesc('bilyet_date')
             ->orderBy('prefix')
             ->orderBy('nomor')
             ->get()
-            ->map(function (Bilyet $bilyet) {
-                $date = $bilyet->bilyet_date?->format('Y-m-d') ?? '—';
-                $amount = $bilyet->amount !== null
-                    ? number_format((float) $bilyet->amount, 0, ',', '.')
-                    : '—';
-                $projectSuffix = $bilyet->project ? ' · '.$bilyet->project : '';
-
-                return [
-                    'id' => $bilyet->id,
-                    'sap_account' => (string) ($bilyet->giro?->sap_account ?? ''),
-                    'label' => trim(sprintf(
-                        '%s %s · %s · %s · %s%s',
-                        $bilyet->prefix ?? '',
-                        $bilyet->nomor,
-                        $date,
-                        $amount,
-                        $bilyet->status,
-                        $projectSuffix
-                    )),
-                ];
-            })
+            ->map(fn (Bilyet $bilyet) => $this->formatBilyetOption($bilyet))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array{id: int, label: string, amount: int|null, status: string|null, project: string|null}
+     */
+    protected function formatBilyetOption(Bilyet $bilyet): array
+    {
+        $date = $bilyet->bilyet_date?->format('Y-m-d') ?? '—';
+        $amountFormatted = $bilyet->amount !== null
+            ? number_format((float) $bilyet->amount, 0, ',', '.')
+            : '—';
+        $projectSuffix = $bilyet->project ? ' · '.$bilyet->project : '';
+
+        return [
+            'id' => $bilyet->id,
+            'label' => trim(sprintf(
+                '%s %s · %s · %s · %s%s',
+                $bilyet->prefix ?? '',
+                $bilyet->nomor,
+                $date,
+                $amountFormatted,
+                $bilyet->status,
+                $projectSuffix
+            )),
+            'amount' => $bilyet->amount !== null ? (int) round((float) $bilyet->amount) : null,
+            'status' => $bilyet->status,
+            'project' => $bilyet->project,
+        ];
     }
 
     protected function validateBilyetMatchesBankAccount(?int $bilyetId, string $bankAccount): ?string

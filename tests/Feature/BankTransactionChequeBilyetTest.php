@@ -180,6 +180,103 @@ class BankTransactionChequeBilyetTest extends TestCase
         return $payload;
     }
 
+    public function test_create_page_html_does_not_embed_full_bilyet_list(): void
+    {
+        $user = $this->createAuthorizedCashier();
+
+        $html = $this->actingAs($user)
+            ->get(route('cashier.bank-transactions.create'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString('bilyetSelectOptions', $html);
+        $this->assertStringNotContainsString('JM 130552', $html);
+        $this->assertStringNotContainsString('XX 999', $html);
+
+        preg_match('/<select[^>]*id="bilyet_id"[^>]*>(.*?)<\/select>/s', $html, $matches);
+        $this->assertNotEmpty($matches[1]);
+        $this->assertSame(1, preg_match_all('/<option\b/', $matches[1]));
+    }
+
+    public function test_bilyet_options_endpoint_filters_by_bank_account(): void
+    {
+        $user = $this->createAuthorizedCashier();
+
+        $this->actingAs($user)
+            ->getJson(route('cashier.bank-transactions.bilyet-options', ['bank_account' => '']))
+            ->assertOk()
+            ->assertExactJson([]);
+
+        $matching = $this->actingAs($user)
+            ->getJson(route('cashier.bank-transactions.bilyet-options', ['bank_account' => '11201005']))
+            ->assertOk()
+            ->json();
+
+        $this->assertCount(1, $matching);
+        $this->assertSame($this->matchingBilyet->id, $matching[0]['id']);
+        $this->assertStringContainsString('JM 130552', $matching[0]['label']);
+        $this->assertSame(5_000_000, $matching[0]['amount']);
+        $this->assertSame('onhand', $matching[0]['status']);
+
+        $other = $this->actingAs($user)
+            ->getJson(route('cashier.bank-transactions.bilyet-options', ['bank_account' => '11209999']))
+            ->assertOk()
+            ->json();
+
+        $this->assertCount(1, $other);
+        $this->assertSame($this->otherBilyet->id, $other[0]['id']);
+    }
+
+    public function test_update_with_matching_bilyet_persists_bilyet_id(): void
+    {
+        $user = $this->createAuthorizedCashier();
+
+        $journal = VerificationJournal::query()->create([
+            'nomor' => 'BT-UPDATE-BILYET',
+            'date' => now()->toDateString(),
+            'type' => 'bank',
+            'project' => '021C',
+            'bank_account' => '11201005',
+            'description' => 'Update bilyet test',
+            'amount' => 5_000_000,
+            'created_by' => $user->id,
+            'status' => 'draft',
+        ]);
+
+        VerificationJournalDetail::query()->create([
+            'verification_journal_id' => $journal->id,
+            'realization_date' => $journal->date,
+            'account_code' => '11201005',
+            'debit_credit' => 'credit',
+            'description' => $journal->description,
+            'project' => '021C',
+            'cost_center' => '30',
+            'amount' => 5_000_000,
+        ]);
+
+        VerificationJournalDetail::query()->create([
+            'verification_journal_id' => $journal->id,
+            'realization_date' => $journal->date,
+            'account_code' => '11101005',
+            'debit_credit' => 'debit',
+            'description' => 'PC',
+            'project' => '021C',
+            'cost_center' => '30',
+            'amount' => 5_000_000,
+        ]);
+
+        $payload = $this->validStorePayload($this->matchingBilyet->id);
+        $payload['project'] = '021C';
+
+        $this->actingAs($user)
+            ->put(route('cashier.bank-transactions.update', $journal->id), $payload)
+            ->assertRedirect(route('cashier.bank-transactions.index'))
+            ->assertSessionHas('success');
+
+        $journal->refresh();
+        $this->assertSame($this->matchingBilyet->id, $journal->bilyet_id);
+    }
+
     public function test_store_with_matching_bilyet_persists_bilyet_id(): void
     {
         $user = $this->createAuthorizedCashier();
