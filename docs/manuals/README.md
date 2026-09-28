@@ -20,8 +20,10 @@ Markdown files in this directory are indexed by `php artisan help:reindex`.
 | Realization — scan fuel receipts (AI) | `realization-fuel-receipt-scan-manual-en.md` | `realization-fuel-receipt-scan-manual-id.md` |
 | Manual Journal Entry | `manual-journal-entry-manual-en.md` | `manual-journal-entry-manual-id.md` |
 | SAP Sync — VJ validation before posting | `sap-sync-vj-validation-manual-en.md` | `sap-sync-vj-validation-manual-id.md` |
+| Bilyet administration & BAPSB (Bilyet Giro / Cheque / LOA) | `bilyet-administration-manual-en.md` | `bilyet-administration-manual-id.md` |
+| In-app help (HELP panel) | `in-app-help-manual-en.md` | `in-app-help-manual-id.md` |
 
-Menu navigation hints for HELP: [`docs/help-navigation.json`](../help-navigation.json) (Bank Reconciliation, Rekening Koran, Manual Journal Entry, SAP Sync / VJ validation, validator queue, Help panel).
+Menu navigation hints for HELP: [`docs/help-navigation.json`](../help-navigation.json) (Bank Reconciliation, Rekening Koran, Manual Journal Entry, SAP Sync / VJ validation, validator queue, Bilyet administration (Administrasi Bilyet), BAPSB, Help panel).
 
 ## Technical reference
 

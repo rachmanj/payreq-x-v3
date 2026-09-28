@@ -1,232 +1,328 @@
 {
-    "items": [
-        {
-            "title": "Bank Reconciliation / Rekonsiliasi bank",
-            "menu_path": "Cashier → Bank Reconciliation",
-            "route_name": "cashier.bank-reconciliation.index",
-            "url": "/cashier/bank-reconciliation",
-            "permission": "akses_koran",
-            "keywords": [
-                "bank reconciliation",
-                "rekonsiliasi bank",
-                "rekonsiliasi",
-                "cocokkan bank SAP",
-                "match bank SAP",
-                "cara menggunakan fitur bank reconciliation",
-                "bagaimana cara menggunakan bank reconciliation",
-                "opening closing balances",
-                "adjusted bank",
-                "adjusted book",
-                "submit for validation",
-                "export excel rekonsiliasi",
-                "auto-match",
-                "deposit in transit",
-                "outstanding payment"
-            ],
-            "description": "Match bank statement lines (AI PDF or manual) to SAP GL for a Giro and month. Set opening/closing balances; reconcile when adjusted bank equals adjusted book. Workflow: Create → Save balances → Auto-match / manual match → Submit for validation → Validate → Report / Export Excel."
-        },
-        {
-            "title": "Bank Reconciliation — Create / Buat rekonsiliasi",
-            "menu_path": "Cashier → Bank Reconciliation → Create",
-            "route_name": "cashier.bank-reconciliation.create",
-            "url": "/cashier/bank-reconciliation/create",
-            "permission": "akses_koran",
-            "keywords": [
-                "create bank reconciliation",
-                "buat rekonsiliasi",
-                "mulai rekonsiliasi",
-                "manual bank reconciliation",
-                "AI bank reconciliation"
-            ],
-            "description": "Start a session in AI mode (parse Koran PDF + fetch SAP) or Manual mode (type bank lines + fetch SAP). Select Giro, period, and Koran PDF for AI."
-        },
-        {
-            "title": "Bank Reconciliation — Pending validation",
-            "menu_path": "Cashier → Bank Reconciliation → Pending validation",
-            "route_name": "cashier.bank-reconciliation.index",
-            "url": "/cashier/bank-reconciliation?view=pending_validation",
-            "permission": "validate_bank_reconciliation",
-            "keywords": [
-                "pending validation",
-                "menunggu validasi",
-                "validate reconciliation",
-                "validasi rekonsiliasi",
-                "reject reconciliation"
-            ],
-            "description": "Validator queue for sessions submitted with Submit for validation. Validators are notified on submit. Open a session and use Validate or Reject (preparer notified on reject)."
-        },
-        {
-            "title": "Bank Reconciliation — Report and Excel export",
-            "menu_path": "Cashier → Bank Reconciliation → Report",
-            "route_name": "cashier.bank-reconciliation.report",
-            "url": "/cashier/bank-reconciliation",
-            "permission": "akses_koran",
-            "keywords": [
-                "bank reconciliation report",
-                "laporan rekonsiliasi",
-                "export excel",
-                "export rekonsiliasi",
-                "print reconciliation"
-            ],
-            "description": "Formal reconciliation statement (adjusted bank vs book, reconciling items). Print from Report, or use Export Excel for a downloadable workbook."
-        },
-        {
-            "title": "Rekening Koran / Bank statement dashboard",
-            "menu_path": "Cashier → Rekening Koran",
-            "route_name": "cashier.koran.index",
-            "url": "/cashier/koran?page=dashboard",
-            "permission": "akses_koran",
-            "keywords": [
-                "rekening koran",
-                "koran",
-                "bank statement",
-                "upload koran",
-                "dashboard koran"
-            ],
-            "description": "Grid dashboard: one cell per account and month. Click empty cell to upload PDF; click filled cell for PDF, reconciliation status, and delete (with delete_koran)."
-        },
-        {
-            "title": "Help panel / Bantuan aplikasi",
-            "menu_path": "Top bar → ? (Help)",
-            "permission": "akses_help",
-            "keywords": [
-                "help",
-                "bantuan",
-                "cara pakai",
-                "how to"
-            ],
-            "description": "Click the ? icon in the top bar. Ask how-to questions in the How-to tab. Answers come from docs/manuals indexed by php artisan help:reindex."
-        },
-        {
-            "title": "Manual Journal Entry / Jurnal umum manual",
-            "menu_path": "Accounting → Journal Entries",
-            "route_name": "accounting.journal-entries.index",
-            "url": "/accounting/journal-entries",
-            "permission": "create_manual_journal_entry",
-            "keywords": [
-                "manual journal entry",
-                "journal entry",
-                "jurnal umum",
-                "jurnal manual",
-                "JE",
-                "create journal entry",
-                "buat jurnal",
-                "submit to SAP B1",
-                "submit journal SAP",
-                "posting jurnal SAP"
-            ],
-            "description": "List and create manual journal entries (JE-000001 format). Balanced debit/credit lines, optional load from JE Template, Save Journal Entry, then Submit to SAP B1 from show page. Print voucher available."
-        },
-        {
-            "title": "Manual Journal Entry — Create",
-            "menu_path": "Accounting → Journal Entries → New Journal Entry",
-            "route_name": "accounting.journal-entries.create",
-            "url": "/accounting/journal-entries/create",
-            "permission": "create_manual_journal_entry",
-            "keywords": [
-                "new journal entry",
-                "buat jurnal baru",
-                "load from template",
-                "journal lines",
-                "balance debit credit",
-                "add line"
-            ],
-            "description": "Form: Date, Reference, Memo, Load from Template dropdown, dynamic Journal Lines grid (account autocomplete, Dr/Cr, amount, project, cost center). Totals must balance before Save Journal Entry."
-        },
-        {
-            "title": "JE Templates / Template jurnal",
-            "menu_path": "Accounting → JE Templates",
-            "route_name": "accounting.journal-entries.templates.index",
-            "url": "/accounting/journal-entries/templates",
-            "permission": "create_manual_journal_entry",
-            "keywords": [
-                "JE template",
-                "journal entry template",
-                "template jurnal",
-                "reusable journal",
-                "default amount"
-            ],
-            "description": "Shared templates for recurring journal layouts. New Template: name, description, line grid with optional default amounts. Use Load from Template when creating a JE."
-        },
-        {
-            "title": "Manual Journal Entry — Reverse in SAP B1",
-            "menu_path": "Accounting → Journal Entries → (open posted JE) → Reverse in SAP B1",
-            "route_name": "accounting.journal-entries.reverse_to_sap",
-            "permission": "cancel_sap_journal",
-            "keywords": [
-                "reverse journal",
-                "cancel SAP journal",
-                "batalkan jurnal SAP",
-                "reverse in SAP B1"
-            ],
-            "description": "On a posted manual JE show page, users with cancel_sap_journal can reverse the SAP journal with a required reason."
-        },
-        {
-            "title": "SAP Sync / Verification Journal validation",
-            "menu_path": "Accounting → SAP Sync",
-            "route_name": "accounting.sap-sync.index",
-            "url": "/accounting/sap-sync?page=dashboard",
-            "permission": "akses_sap_sync",
-            "keywords": [
-                "SAP Sync",
-                "verification journal",
-                "VJ validation",
-                "validate VJ",
-                "reject VJ",
-                "validasi VJ",
-                "tolak VJ",
-                "submit to SAP B1",
-                "pending validation",
-                "VJ pending validation",
-                "rejected verification journal",
-                "Review and Fix"
-            ],
-            "description": "Post realization and bank verification journals to SAP B1. Each VJ must be Validated before Submit to SAP B1. Validators use Validate or Reject on the SAP Sync show page (permission validate_vj). Project tabs show Pending / Validated / Rejected badges."
-        },
-        {
-            "title": "SAP Sync — Validate or reject a journal",
-            "menu_path": "Accounting → SAP Sync → (project tab) → open journal",
-            "route_name": "accounting.sap-sync.show",
-            "permission": "validate_vj",
-            "keywords": [
-                "validate verification journal",
-                "reject verification journal",
-                "Confirm Reject",
-                "reason for rejection",
-                "Validation card",
-                "validasi jurnal verifikasi"
-            ],
-            "description": "On the SAP Sync show page, users with validate_vj see Validate and Reject while status is Pending. Reject requires Reason for rejection. After Validated, Submit to SAP B1 is enabled for users with submit permission."
-        },
-        {
-            "title": "Dashboard — VJ pending validation",
-            "menu_path": "Dashboard → Action Center / KPI tiles",
-            "route_name": "dashboard.index",
-            "url": "/dashboard",
-            "permission": "validate_vj",
-            "keywords": [
-                "VJ pending validation",
-                "pending VJ",
-                "validator dashboard",
-                "menunggu validasi VJ",
-                "jumlah VJ pending"
-            ],
-            "description": "Validators with validate_vj see a VJ pending validation counter on the dashboard (Action Center when count > 0). Count includes only Pending journals; Rejected journals are excluded until the creator saves a fix. Links to Accounting → SAP Sync."
-        },
-        {
-            "title": "Rejected VJ — creator banner and fix",
-            "menu_path": "Any page (top banner) → Review & Fix",
-            "permission": null,
-            "keywords": [
-                "Verification Journal Rejected",
-                "rejected VJ",
-                "Review and Fix",
-                "resubmit validation",
-                "fix rejected journal",
-                "VJ ditolak",
-                "perbaiki VJ"
-            ],
-            "description": "Creators see a red Verification Journal(s) Rejected banner with reason and Review & Fix. Bank VJs open Bank Transaction edit; others open Edit Details. Saving corrections resets status to Pending (no separate resubmit button). Update SAP and Cancel SAP are disabled while Rejected."
-        }
-    ]
+  "items": [
+    {
+      "title": "Bank Reconciliation / Rekonsiliasi bank",
+      "menu_path": "Cashier → Bank Reconciliation",
+      "route_name": "cashier.bank-reconciliation.index",
+      "url": "/cashier/bank-reconciliation",
+      "permission": "akses_koran",
+      "keywords": [
+        "bank reconciliation",
+        "rekonsiliasi bank",
+        "rekonsiliasi",
+        "cocokkan bank SAP",
+        "match bank SAP",
+        "cara menggunakan fitur bank reconciliation",
+        "bagaimana cara menggunakan bank reconciliation",
+        "opening closing balances",
+        "adjusted bank",
+        "adjusted book",
+        "submit for validation",
+        "export excel rekonsiliasi",
+        "auto-match",
+        "deposit in transit",
+        "outstanding payment"
+      ],
+      "description": "Match bank statement lines (AI PDF or manual) to SAP GL for a Giro and month. Set opening/closing balances; reconcile when adjusted bank equals adjusted book. Workflow: Create → Save balances → Auto-match / manual match → Submit for validation → Validate → Report / Export Excel."
+    },
+    {
+      "title": "Bank Reconciliation — Create / Buat rekonsiliasi",
+      "menu_path": "Cashier → Bank Reconciliation → Create",
+      "route_name": "cashier.bank-reconciliation.create",
+      "url": "/cashier/bank-reconciliation/create",
+      "permission": "akses_koran",
+      "keywords": [
+        "create bank reconciliation",
+        "buat rekonsiliasi",
+        "mulai rekonsiliasi",
+        "manual bank reconciliation",
+        "AI bank reconciliation"
+      ],
+      "description": "Start a session in AI mode (parse Koran PDF + fetch SAP) or Manual mode (type bank lines + fetch SAP). Select Giro, period, and Koran PDF for AI."
+    },
+    {
+      "title": "Bank Reconciliation — Pending validation",
+      "menu_path": "Cashier → Bank Reconciliation → Pending validation",
+      "route_name": "cashier.bank-reconciliation.index",
+      "url": "/cashier/bank-reconciliation?view=pending_validation",
+      "permission": "validate_bank_reconciliation",
+      "keywords": [
+        "pending validation",
+        "menunggu validasi",
+        "validate reconciliation",
+        "validasi rekonsiliasi",
+        "reject reconciliation"
+      ],
+      "description": "Validator queue for sessions submitted with Submit for validation. Validators are notified on submit. Open a session and use Validate or Reject (preparer notified on reject)."
+    },
+    {
+      "title": "Bank Reconciliation — Report and Excel export",
+      "menu_path": "Cashier → Bank Reconciliation → Report",
+      "route_name": "cashier.bank-reconciliation.report",
+      "url": "/cashier/bank-reconciliation",
+      "permission": "akses_koran",
+      "keywords": [
+        "bank reconciliation report",
+        "laporan rekonsiliasi",
+        "export excel",
+        "export rekonsiliasi",
+        "print reconciliation"
+      ],
+      "description": "Formal reconciliation statement (adjusted bank vs book, reconciling items). Print from Report, or use Export Excel for a downloadable workbook."
+    },
+    {
+      "title": "Rekening Koran / Bank statement dashboard",
+      "menu_path": "Cashier → Rekening Koran",
+      "route_name": "cashier.koran.index",
+      "url": "/cashier/koran?page=dashboard",
+      "permission": "akses_koran",
+      "keywords": [
+        "rekening koran",
+        "koran",
+        "bank statement",
+        "upload koran",
+        "dashboard koran"
+      ],
+      "description": "Grid dashboard: one cell per account and month. Click empty cell to upload PDF; click filled cell for PDF, reconciliation status, and delete (with delete_koran)."
+    },
+    {
+      "title": "Help panel / Bantuan aplikasi",
+      "menu_path": "Top bar → ? (Help)",
+      "permission": "akses_help",
+      "keywords": [
+        "help",
+        "bantuan",
+        "cara pakai",
+        "how to"
+      ],
+      "description": "Click the ? icon in the top bar. Ask how-to questions in the How-to tab. Answers come from docs/manuals indexed by php artisan help:reindex."
+    },
+    {
+      "title": "Manual Journal Entry / Jurnal umum manual",
+      "menu_path": "Accounting → Journal Entries",
+      "route_name": "accounting.journal-entries.index",
+      "url": "/accounting/journal-entries",
+      "permission": "create_manual_journal_entry",
+      "keywords": [
+        "manual journal entry",
+        "journal entry",
+        "jurnal umum",
+        "jurnal manual",
+        "JE",
+        "create journal entry",
+        "buat jurnal",
+        "submit to SAP B1",
+        "submit journal SAP",
+        "posting jurnal SAP"
+      ],
+      "description": "List and create manual journal entries (JE-000001 format). Balanced debit/credit lines, optional load from JE Template, Save Journal Entry, then Submit to SAP B1 from show page. Print voucher available."
+    },
+    {
+      "title": "Manual Journal Entry — Create",
+      "menu_path": "Accounting → Journal Entries → New Journal Entry",
+      "route_name": "accounting.journal-entries.create",
+      "url": "/accounting/journal-entries/create",
+      "permission": "create_manual_journal_entry",
+      "keywords": [
+        "new journal entry",
+        "buat jurnal baru",
+        "load from template",
+        "journal lines",
+        "balance debit credit",
+        "add line"
+      ],
+      "description": "Form: Date, Reference, Memo, Load from Template dropdown, dynamic Journal Lines grid (account autocomplete, Dr/Cr, amount, project, cost center). Totals must balance before Save Journal Entry."
+    },
+    {
+      "title": "JE Templates / Template jurnal",
+      "menu_path": "Accounting → JE Templates",
+      "route_name": "accounting.journal-entries.templates.index",
+      "url": "/accounting/journal-entries/templates",
+      "permission": "create_manual_journal_entry",
+      "keywords": [
+        "JE template",
+        "journal entry template",
+        "template jurnal",
+        "reusable journal",
+        "default amount"
+      ],
+      "description": "Shared templates for recurring journal layouts. New Template: name, description, line grid with optional default amounts. Use Load from Template when creating a JE."
+    },
+    {
+      "title": "Manual Journal Entry — Reverse in SAP B1",
+      "menu_path": "Accounting → Journal Entries → (open posted JE) → Reverse in SAP B1",
+      "route_name": "accounting.journal-entries.reverse_to_sap",
+      "permission": "cancel_sap_journal",
+      "keywords": [
+        "reverse journal",
+        "cancel SAP journal",
+        "batalkan jurnal SAP",
+        "reverse in SAP B1"
+      ],
+      "description": "On a posted manual JE show page, users with cancel_sap_journal can reverse the SAP journal with a required reason."
+    },
+    {
+      "title": "SAP Sync / Verification Journal validation",
+      "menu_path": "Accounting → SAP Sync",
+      "route_name": "accounting.sap-sync.index",
+      "url": "/accounting/sap-sync?page=dashboard",
+      "permission": "akses_sap_sync",
+      "keywords": [
+        "SAP Sync",
+        "verification journal",
+        "VJ validation",
+        "validate VJ",
+        "reject VJ",
+        "validasi VJ",
+        "tolak VJ",
+        "submit to SAP B1",
+        "pending validation",
+        "VJ pending validation",
+        "rejected verification journal",
+        "Review and Fix"
+      ],
+      "description": "Post realization and bank verification journals to SAP B1. Each VJ must be Validated before Submit to SAP B1. Validators use Validate or Reject on the SAP Sync show page (permission validate_vj). Project tabs show Pending / Validated / Rejected badges."
+    },
+    {
+      "title": "SAP Sync — Validate or reject a journal",
+      "menu_path": "Accounting → SAP Sync → (project tab) → open journal",
+      "route_name": "accounting.sap-sync.show",
+      "permission": "validate_vj",
+      "keywords": [
+        "validate verification journal",
+        "reject verification journal",
+        "Confirm Reject",
+        "reason for rejection",
+        "Validation card",
+        "validasi jurnal verifikasi"
+      ],
+      "description": "On the SAP Sync show page, users with validate_vj see Validate and Reject while status is Pending. Reject requires Reason for rejection. After Validated, Submit to SAP B1 is enabled for users with submit permission."
+    },
+    {
+      "title": "Dashboard — VJ pending validation",
+      "menu_path": "Dashboard → Action Center / KPI tiles",
+      "route_name": "dashboard.index",
+      "url": "/dashboard",
+      "permission": "validate_vj",
+      "keywords": [
+        "VJ pending validation",
+        "pending VJ",
+        "validator dashboard",
+        "menunggu validasi VJ",
+        "jumlah VJ pending"
+      ],
+      "description": "Validators with validate_vj see a VJ pending validation counter on the dashboard (Action Center when count > 0). Count includes only Pending journals; Rejected journals are excluded until the creator saves a fix. Links to Accounting → SAP Sync."
+    },
+    {
+      "title": "Rejected VJ — creator banner and fix",
+      "menu_path": "Any page (top banner) → Review & Fix",
+      "permission": null,
+      "keywords": [
+        "Verification Journal Rejected",
+        "rejected VJ",
+        "Review and Fix",
+        "resubmit validation",
+        "fix rejected journal",
+        "VJ ditolak",
+        "perbaiki VJ"
+      ],
+      "description": "Creators see a red Verification Journal(s) Rejected banner with reason and Review & Fix. Bank VJs open Bank Transaction edit; others open Edit Details. Saving corrections resets status to Pending (no separate resubmit button). Update SAP and Cancel SAP are disabled while Rejected."
+    },
+    {
+      "title": "Bilyet administration (Administrasi Bilyet) / Administrasi Bilyet",
+      "menu_path": "Cashier → Administrasi Bilyet",
+      "route_name": "cashier.bilyets.index",
+      "url": "/cashier/bilyets?page=dashboard",
+      "permission": "akses_bilyet",
+      "keywords": [
+        "bilyet",
+        "administrasi bilyet",
+        "bilyet giro",
+        "bg",
+        "cek",
+        "cheque",
+        "check",
+        "letter of authority",
+        "loa",
+        "surat berharga bank",
+        "daftar bilyet",
+        "cara mendaftarkan bilyet",
+        "register bilyet",
+        "import bilyet excel",
+        "upload bilyet",
+        "update many bilyet",
+        "release bilyet",
+        "cairkan bilyet",
+        "void bilyet",
+        "status bilyet",
+        "audit trail bilyet",
+        "riwayat bilyet",
+        "bilyet list",
+        "template bilyet"
+      ],
+      "description": "Register and manage Bilyet Giro / Cheque / LOA: New Bilyet (+ Bilyet, permission add_bilyet), bulk Excel import via Upload (template, staging table, Import with Receive Date), release/cair/void actions, filters on the List tab, Audit Trail, History, and Reports. Statuses: onhand, release, cair, void."
+    },
+    {
+      "title": "BAPSB — Bank securities inspection report (Berita Acara Pemeriksaan Surat Berharga Bank)",
+      "menu_path": "Cashier → BAPSB",
+      "route_name": "cashier.bapsb.index",
+      "url": "/cashier/bapsb",
+      "permission": "akses_bapsb",
+      "keywords": [
+        "bapsb",
+        "berita acara",
+        "berita acara pemeriksaan surat berharga bank",
+        "pemeriksaan surat berharga",
+        "buat bapsb",
+        "membuat bapsb bulanan",
+        "bapsb per project",
+        "laporan pemeriksaan bilyet",
+        "upload pdf bapsb",
+        "submit bapsb",
+        "cetak bapsb",
+        "tanda tangan bapsb",
+        "lokasi penyimpanan bilyet",
+        "fisik ada tidak ada",
+        "daftar tunggakan bapsb",
+        "batas submit bapsb",
+        "cumulative"
+      ],
+      "description": "Monthly BAPSB per project for giro accounts flagged needs_bilyet: bilyet list is pulled automatically (status onhand/release, bilyet_date <= period end, cair_date empty or after period end, grouped per bank account). Per line: Present/Missing, location (Brankas Site, Lemari Besi Accounting HO, Brankas BO, Safe Deposit Box Bank, Lainnya), notes and remarks. Auto number BAPSB-0001/{project}/{MM-YYYY}. Print with signature blocks (Prepared by / Checked by 1 / Checked by 2 / Approved by), upload signed PDF (type bapsb, max 5 MB), then Submit for validation."
+    },
+    {
+      "title": "BAPSB — HO validation and outstanding list",
+      "menu_path": "Cashier → BAPSB (outstanding) / Dashboard card 'BAPSB pending validation'",
+      "route_name": "cashier.bapsb.outstanding",
+      "url": "/cashier/bapsb/outstanding",
+      "permission": "validate_bapsb_report",
+      "keywords": [
+        "validasi bapsb",
+        "validate bapsb",
+        "ho validation",
+        "accounting ho",
+        "pending validation bapsb",
+        "daftar tunggakan bapsb",
+        "late submissions by unit",
+        "bapsb overdue",
+        "batas tanggal 5"
+      ],
+      "description": "Harus ada permission validate_bapsb_report: kartu 'Late submissions by unit' (project, period, deadline; 12 bulan terakhir sampai bulan berjalan) dan kartu 'Pending HO validation' (number, project, submitted). Validasi dari halaman detail: catatan opsional lalu Validate BAPSB → status validated. Tidak ada tombol reject."
+    },
+    {
+      "title": "Bank Transaction — Cheque / Bilyet reference",
+      "menu_path": "Cashier → Bank Transactions → Create / Edit",
+      "route_name": "cashier.bank-transactions.create",
+      "url": "/cashier/bank-transactions/create",
+      "keywords": [
+        "cheque bilyet",
+        "cek bilyet",
+        "link bilyet to bank transaction",
+        "dropdown cek kosong",
+        "bilyet options",
+        "sap_account giro",
+        "referensi bilyet"
+      ],
+      "description": "Field Cheque / Bilyet (opsional) hanya memuat bilyet dari Bank Account yang dipilih (bilyets.giro_id → giros.id, giros.sap_account). Kosong bila bilyet belum terdaftar untuk rekening itu atau kolom sap_account giro belum diisi. Field ini hanya rujukan aplikasi: tidak dikirim ke SAP dan tidak mengubah status bilyet."
+    }
+  ]
 }
