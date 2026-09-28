@@ -45,6 +45,9 @@
         @can('akses_pcbc')
             <li><a href="{{ route('cashier.pcbc.index', ['page' => 'dashboard']) }}" class="dropdown-item">PCBC</a></li>
         @endcan
+        @can('akses_bapsb')
+            <li><a href="{{ route('cashier.bapsb.index') }}" class="dropdown-item">BAPSB</a></li>
+        @endcan
         @can('akses_koran')
             <li><a href="{{ route('cashier.koran.index', ['page' => 'dashboard']) }}" class="dropdown-item">Rekening
                     Koran</a></li>

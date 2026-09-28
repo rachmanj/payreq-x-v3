@@ -36,6 +36,11 @@ class DashboardUserController extends Controller
                 ->count();
         }
 
+        $bapsb_pending_validation_count = 0;
+        if (auth()->user()->can('validate_bapsb_report')) {
+            $bapsb_pending_validation_count = app(\App\Services\BapsbComplianceService::class)->pendingValidationCount();
+        }
+
         $vj_pending_validation_count = 0;
         if (auth()->user()->can('validate_vj')) {
             $vj_pending_validation_count = app(SapSyncController::class)->vjPendingValidationCount(auth()->user());
@@ -74,6 +79,7 @@ class DashboardUserController extends Controller
             'chart_activites',
             'your_team',
             'pcbc_pending_validation_count',
+            'bapsb_pending_validation_count',
             'pending_overdue_extension_count',
             'bank_reconciliation_pending_validation_count',
             'vj_pending_validation_count',

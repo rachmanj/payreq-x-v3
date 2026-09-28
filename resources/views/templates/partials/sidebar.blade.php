@@ -275,6 +275,15 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('akses_bapsb')
+                                <li class="nav-item">
+                                    <a href="{{ route('cashier.bapsb.index') }}"
+                                        class="nav-link {{ request()->routeIs('cashier.bapsb.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>BAPSB</p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('akses_koran')
                                 <li class="nav-item">
                                     <a href="{{ route('cashier.koran.index', ['page' => 'dashboard']) }}"

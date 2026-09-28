@@ -1,10 +1,11 @@
 @php
     $hasApprovals = auth()->user()->can('akses_approvals') && $wait_approve > 0;
     $hasPcbc = auth()->user()->can('validate_pcbc_report') && ($pcbc_pending_validation_count ?? 0) > 0;
+    $hasBapsb = auth()->user()->can('validate_bapsb_report') && ($bapsb_pending_validation_count ?? 0) > 0;
     $hasBankRecon = auth()->user()->can('validate_bank_reconciliation') && ($bank_reconciliation_pending_validation_count ?? 0) > 0;
     $hasOverdueExt = auth()->user()->can('approve_overdue_extension') && ($pending_overdue_extension_count ?? 0) > 0;
     $hasVjValidation = auth()->user()->can('validate_vj') && ($vj_pending_validation_count ?? 0) > 0;
-    $hasActions = $hasApprovals || $hasPcbc || $hasBankRecon || $hasOverdueExt || $hasVjValidation;
+    $hasActions = $hasApprovals || $hasPcbc || $hasBapsb || $hasBankRecon || $hasOverdueExt || $hasVjValidation;
 @endphp
 
 @if ($hasActions)
@@ -38,6 +39,18 @@
                     tone="warning"
                     :href="route('cashier.pcbc.index', ['page' => 'upload'])"
                     title="Open PCBC upload list" />
+            @endif
+
+            @if ($hasBapsb)
+                <x-dashboard.kpi-card
+                    icon="fas fa-clipboard-check"
+                    :value="$bapsb_pending_validation_count"
+                    label="BAPSB pending validation"
+                    info="Awaiting review on submitted BAPSB"
+                    info-icon="fas fa-exclamation-circle"
+                    tone="warning"
+                    :href="route('cashier.bapsb.outstanding')"
+                    title="Open BAPSB outstanding list" />
             @endif
 
             @if ($hasBankRecon)

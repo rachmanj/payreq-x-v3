@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Cashier\BankReconciliationController;
 use App\Http\Controllers\Cashier\BankTransactionController;
+use App\Http\Controllers\Cashier\BapsbController;
 use App\Http\Controllers\Cashier\BilyetAuditController;
 use App\Http\Controllers\Cashier\BilyetController;
 use App\Http\Controllers\Cashier\BilyetReportController;
@@ -99,6 +100,21 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/store', [CashierModalController::class, 'store'])->name('store');
         Route::get('/', [CashierModalController::class, 'index'])->name('index');
         Route::put('/{id}/receive', [CashierModalController::class, 'receive'])->name('receive');
+    });
+
+    Route::prefix('bapsb')->name('bapsb.')->group(function () {
+        Route::get('/outstanding', [BapsbController::class, 'outstanding'])->name('outstanding');
+        Route::get('/data', [BapsbController::class, 'data'])->name('data');
+        Route::get('/create', [BapsbController::class, 'create'])->name('create');
+        Route::post('/', [BapsbController::class, 'store'])->name('store');
+        Route::get('/{bapsb}/print', [BapsbController::class, 'print'])->name('print');
+        Route::post('/{bapsb}/upload', [BapsbController::class, 'upload'])->name('upload');
+        Route::post('/{bapsb}/submit', [BapsbController::class, 'submit'])->name('submit');
+        Route::put('/{bapsb}/validate', [BapsbController::class, 'validateReport'])->name('validate');
+        Route::get('/{bapsb}/edit', [BapsbController::class, 'edit'])->name('edit');
+        Route::put('/{bapsb}', [BapsbController::class, 'update'])->name('update');
+        Route::get('/{bapsb}', [BapsbController::class, 'show'])->name('show');
+        Route::get('/', [BapsbController::class, 'index'])->name('index');
     });
 
     // PCBC
