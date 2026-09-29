@@ -1563,22 +1563,51 @@ class SapService
     protected function executeSqlQuery(string $sqlCode, array $params): array
     {
         return $this->handleSessionExpiration(function () use ($sqlCode, $params) {
-            $query = [];
-            foreach ($params as $key => $value) {
-                $query[$key] = "'".$value."'";
+            // SAP membatasi satu panggilan List ke ~300 baris. Data PPN Masukan bisa
+            // >700 baris per bulan, jadi hasilnya WAJIB dipaginasi ($top/$skip).
+            // Diuji langsung ke SAP produksi 29 Sep 2026: $skip didukung.
+            $pageSize = 300;
+            $maxRows = 50000;
+            $all = [];
+            $skip = 0;
+
+            while (true) {
+                $query = [];
+                foreach ($params as $key => $value) {
+                    $query[$key] = "'".$value."'";
+                }
+                $query['$top'] = $pageSize;
+                $query['$skip'] = $skip;
+
+                try {
+                    $response = $this->client->get("SQLQueries('{$sqlCode}')/List", [
+                        'query' => $query,
+                    ]);
+                } catch (RequestException $exception) {
+                    throw new \Exception('SAP B1 Error: '.$this->extractErrorMessage($exception), 0, $exception);
+                }
+
+                $body = json_decode($response->getBody()->getContents(), true);
+                $rows = $body['value'] ?? (is_array($body) ? $body : []);
+
+                $all = array_merge($all, $rows);
+
+                if (count($rows) < $pageSize) {
+                    break;
+                }
+
+                $skip += $pageSize;
+
+                if ($skip >= $maxRows) {
+                    Log::warning('executeSqlQuery: batas paginasi tercapai', [
+                        'sql_code' => $sqlCode,
+                        'rows' => count($all),
+                    ]);
+                    break;
+                }
             }
 
-            try {
-                $response = $this->client->get("SQLQueries('{$sqlCode}')/List", [
-                    'query' => $query,
-                ]);
-            } catch (RequestException $exception) {
-                throw new \Exception('SAP B1 Error: '.$this->extractErrorMessage($exception), 0, $exception);
-            }
-
-            $body = json_decode($response->getBody()->getContents(), true);
-
-            return $body['value'] ?? (is_array($body) ? $body : []);
+            return $all;
         });
     }
 
