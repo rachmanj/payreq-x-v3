@@ -51,6 +51,11 @@ class Kernel extends ConsoleKernel
             ->dailyAt('01:00')
             ->withoutOverlapping()
             ->runInBackground();
+
+        $schedule->command('ppn:sync-input-vat')
+            ->dailyAt('21:00')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

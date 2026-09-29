@@ -7,6 +7,7 @@ use App\Http\Controllers\Accounting\DeliveryController;
 use App\Http\Controllers\Accounting\GiroController;
 use App\Http\Controllers\Accounting\JournalEntryController;
 use App\Http\Controllers\Accounting\JournalEntryTemplateController;
+use App\Http\Controllers\Accounting\PpnInputSyncController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Accounting\VatController;
 use App\Http\Controllers\Accounting\Wtax23Controller;
@@ -172,6 +173,11 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/fakturs/{faktur}/sap-preview', [VatController::class, 'previewSapSubmission'])->name('sap-preview');
         Route::put('/fakturs/{faktur}/update-sap-preview', [VatController::class, 'updateSapPreview'])->name('update-sap-preview');
         Route::post('/fakturs/{faktur}/submit-to-sap', [VatController::class, 'submitToSap'])->name('submit-to-sap');
+    });
+
+    Route::prefix('tax/ppn')->name('tax.ppn.')->group(function () {
+        Route::get('sync', [PpnInputSyncController::class, 'index'])->name('sync.index');
+        Route::post('sync/run', [PpnInputSyncController::class, 'runNow'])->name('sync.run');
     });
 
     // DELIVERY

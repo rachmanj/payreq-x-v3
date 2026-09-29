@@ -16,5 +16,8 @@
             class="{{ request()->get('page') == 'sales' ? 'active' : '' }}">
             Sales
         </a>
+        @can('view_tax_monitoring')
+            | <a href="{{ route('accounting.tax.ppn.sync.index') }}">PPN Sync SAP</a>
+        @endcan
     </div> <!-- /.card-header -->
 </div> <!-- /.card -->

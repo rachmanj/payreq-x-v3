@@ -238,6 +238,7 @@ class DailyTxController extends Controller
                 'user_code' => $document->user_code,
                 'batch_no' => $batch_no,
                 'uploaded_by' => $document->uploaded_by,
+                'sync_source' => 'excel_manual',
             ]);
 
             $copiedRecords++;

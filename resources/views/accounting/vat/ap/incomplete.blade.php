@@ -30,6 +30,7 @@
                                 <th>PostD</th>
                                 <th>Faktur</th>
                                 <th>IDR</th>
+                                <th>Sumber</th>
                                 <th>Days</th>
                                 <td></td>
                             </tr>
@@ -105,6 +106,11 @@
                         data: 'amount'
                     },
                     {
+                        data: 'sync_source_label',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'days'
                     },
                     {
@@ -115,7 +121,7 @@
                 ],
                 fixedHeader: true,
                 columnDefs: [{
-                    "targets": [7],
+                    "targets": [8],
                     "className": "text-right"
                 }]
             })

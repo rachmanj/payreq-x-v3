@@ -2040,6 +2040,29 @@ class SapService
         ], 100);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function fetchPpnInputVatLines(string $startDate, string $endDate): array
+    {
+        $this->ensureSession();
+        $this->ensurePpnInputVatSqlQuery();
+
+        return $this->executeSqlQuery(\App\Support\Sap\AoPpnin1Query::CODE, [
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ]);
+    }
+
+    public function ensurePpnInputVatSqlQuery(): void
+    {
+        $this->ensureSqlQuery(
+            \App\Support\Sap\AoPpnin1Query::CODE,
+            \App\Support\Sap\AoPpnin1Query::NAME,
+            \App\Support\Sap\AoPpnin1Query::sqlText()
+        );
+    }
+
     public function __destruct()
     {
         if ($this->isLoggedIn) {

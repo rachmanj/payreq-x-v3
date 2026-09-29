@@ -31,6 +31,7 @@
                                 <th>PostD</th>
                                 <th>Faktur</th>
                                 <th>IDR</th>
+                                <th>Sumber</th>
                                 <td></td>
                             </tr>
                         </thead>
@@ -103,6 +104,11 @@
                     },
                     {
                         data: 'amount'
+                    },
+                    {
+                        data: 'sync_source_label',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'action',

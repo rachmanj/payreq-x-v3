@@ -169,9 +169,18 @@ class VatController extends Controller
             ->addColumn('sap_je_num', function ($document) {
                 return $document->sap_je_num ?? '-';
             })
+            ->addColumn('sync_source_label', function ($document) {
+                $labels = [
+                    'sap_auto' => '<span class="badge badge-info">SAP otomatis</span>',
+                    'excel_manual' => '<span class="badge badge-secondary">Excel manual</span>',
+                    'manual' => '<span class="badge badge-light border">Manual</span>',
+                ];
+
+                return $labels[$document->sync_source ?? 'manual'] ?? $labels['manual'];
+            })
             ->addColumn('action', $action_button)
             ->addIndexColumn()
-            ->rawColumns(['remarks', 'action', 'updated_by', 'amount', 'invoice', 'customer', 'faktur'])
+            ->rawColumns(['remarks', 'action', 'updated_by', 'amount', 'invoice', 'customer', 'faktur', 'sync_source_label'])
             ->toJson();
     }
 
