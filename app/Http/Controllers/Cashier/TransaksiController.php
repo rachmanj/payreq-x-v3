@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
-use App\Models\Account;
 use App\Models\Transaksi;
+use App\Services\PettyCashAccountResolver;
 use Illuminate\Support\Facades\DB;
 
 class TransaksiController extends Controller
 {
     public function index()
     {
-        $account = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
+        $account = app(PettyCashAccountResolver::class)->resolveForProject(auth()->user()->project);
 
         return view('cashier.transaksis.index', compact('account'));
     }
@@ -38,7 +38,7 @@ class TransaksiController extends Controller
             $project = ($data->project !== null && $data->project !== '')
                 ? $data->project
                 : auth()->user()->project;
-            $account = Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first();
+            $account = app(PettyCashAccountResolver::class)->resolveForProject($project);
             if (! $account) {
                 throw new \RuntimeException('Cash account not found for project '.$project.'.');
             }

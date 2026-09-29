@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Migrasi;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\DocumentNumberController;
-use App\Models\Account;
 use App\Models\Outgoing;
 use App\Models\Payreq;
 use App\Models\PayreqMigrasi;
 use App\Models\User;
+use App\Services\PettyCashAccountResolver;
 use Illuminate\Http\Request;
 
 class MigrasiPayreqController extends Controller
@@ -66,7 +66,7 @@ class MigrasiPayreqController extends Controller
         ]);
 
         $cashier_project = User::findOrFail($request->cashier_id)->project;
-        $account_id = Account::where('type', 'cash')->where('project', $cashier_project)->first()->id;
+        $account_id = app(PettyCashAccountResolver::class)->resolveForProject($cashier_project)->id;
 
         $outgoing = new Outgoing;
         $outgoing->payreq_id = $payreq->id;

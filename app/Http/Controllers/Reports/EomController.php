@@ -8,6 +8,7 @@ use App\Http\Controllers\DocumentNumberController;
 use App\Models\Account;
 use App\Models\EomJournal;
 use App\Models\EomJournalDetail;
+use App\Services\PettyCashAccountResolver;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -78,7 +79,7 @@ class EomController extends Controller
                     'amount' => app(OngoingDashboardController::class)->dashboard_data($project)['total_advance_employee'],
                 ],
                 'credit' => [
-                    'account_number' => Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first()->account_number,
+                    'account_number' => app(PettyCashAccountResolver::class)->resolveForProject($project)->account_number,
                     'account_name' => Account::where('type', 'advance')->where('project', $project)->orderBy('id')->first()->account_name,
                     'description' => 'EOM '.date('dmY').' Journal',
                     'project_code' => $project,

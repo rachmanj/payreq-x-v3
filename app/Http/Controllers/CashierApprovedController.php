@@ -8,6 +8,7 @@ use App\Models\Bank;
 use App\Models\Outgoing;
 use App\Models\Payreq;
 use App\Models\TransferAccount;
+use App\Services\PettyCashAccountResolver;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -27,11 +28,12 @@ class CashierApprovedController extends Controller
         $request['payreq_id'] = $id;
         $request['amount'] = $payreq->amount;
         $request['cashier_id'] = $cashier->id;
+        $pettyCashResolver = app(PettyCashAccountResolver::class);
         if ($payreq->payment_method === 'transfer') {
             $account = Account::where('type', 'bank')->where('project', $cashier->project)->orderBy('id')->first()
-                ?? Account::where('type', 'cash')->where('project', $cashier->project)->orderBy('id')->first();
+                ?? $pettyCashResolver->resolveForProject($cashier->project);
         } else {
-            $account = Account::where('type', 'cash')->where('project', $cashier->project)->orderBy('id')->first();
+            $account = $pettyCashResolver->resolveForProject($cashier->project);
         }
 
         $request['account_id'] = $account->id;
