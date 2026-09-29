@@ -10,6 +10,7 @@ use App\Models\DailyTx;
 use App\Models\Faktur;
 use App\Models\InvoiceCreation;
 use App\Models\Wtax23;
+use App\Services\FakturPpnCalculationService;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -17,7 +18,9 @@ class DailyTxController extends Controller
 {
     public function index()
     {
-        if (!request()->query('page')) return view('accounting.daily-tx.index');
+        if (! request()->query('page')) {
+            return view('accounting.daily-tx.index');
+        }
 
         return view('accounting.daily-tx.wtax23');
     }
@@ -29,11 +32,11 @@ class DailyTxController extends Controller
         ]);
 
         $file = $request->file('file_upload');
-        $filename = 'daily_' . uniqid() . '_' . $file->getClientOriginalName();
+        $filename = 'daily_'.uniqid().'_'.$file->getClientOriginalName();
         $file->move(public_path('invoices'), $filename);
 
-        Excel::import(new DailyTxImport, public_path('invoices/' . $filename));
-        unlink(public_path('invoices/' . $filename));
+        Excel::import(new DailyTxImport, public_path('invoices/'.$filename));
+        unlink(public_path('invoices/'.$filename));
 
         return redirect()->back()->with('success', 'File uploaded successfully');
     }
@@ -92,10 +95,10 @@ class DailyTxController extends Controller
         ]);
 
         $file = $request->file('file_upload');
-        $filename = 'wtax23_' . uniqid() . '_' . $file->getClientOriginalName();
+        $filename = 'wtax23_'.uniqid().'_'.$file->getClientOriginalName();
         $file->move(public_path('invoices'), $filename);
 
-        Excel::import(new Wtax23Import, public_path('invoices/' . $filename));
+        Excel::import(new Wtax23Import, public_path('invoices/'.$filename));
 
         // Check for duplicate doc_num and delete them
         $importedRecords = Wtax23::where('batch_no', Wtax23::max('batch_no'))->get();
@@ -106,7 +109,7 @@ class DailyTxController extends Controller
             }
         }
 
-        unlink(public_path('invoices/' . $filename));
+        unlink(public_path('invoices/'.$filename));
 
         $importedCount = $importedRecords->count();
 
@@ -171,7 +174,7 @@ class DailyTxController extends Controller
             ->toJson();
     }
 
-    public function copyToFakturs()
+    public function copyToFakturs(FakturPpnCalculationService $ppnCalculation)
     {
         $documents = DailyTx::where('account', '11603001')
             ->where('debit', '>', 0)
@@ -201,6 +204,19 @@ class DailyTxController extends Controller
                 $createdVendors++;
             }
 
+            $ppnAmount = (float) $document->debit;
+            $calculation = $ppnCalculation->calculateFromPpnAmount(
+                $ppnAmount,
+                null,
+                $document->remarks
+            );
+
+            $remarks = $document->remarks;
+            if ($calculation['review_note'] !== null) {
+                $suffix = '[PPN monitoring] '.$calculation['review_note'];
+                $remarks = trim(($remarks ?? '').($remarks ? ' ' : '').$suffix);
+            }
+
             Faktur::create([
                 'customer_id' => $vendor->id,
                 'create_date' => $document->create_date,
@@ -211,9 +227,14 @@ class DailyTxController extends Controller
                 'account' => '11603001',
                 'faktur_no' => $document->faktur_no,
                 'faktur_date' => $document->faktur_date,
-                'dpp' => $document->debit / 0.11,
-                'ppn' => $document->debit,
-                'remarks' => $document->remarks,
+                'masa_pajak' => $ppnCalculation->masaPajakFromDate($document->faktur_date),
+                'dpp' => $calculation['dpp'],
+                'ppn' => $ppnAmount,
+                'ppn_rate' => $calculation['ppn_rate'],
+                'dpp_calculated' => $calculation['dpp_calculated'],
+                'dpp_source' => $calculation['dpp_source'],
+                'validation_status' => $calculation['validation_status'],
+                'remarks' => $remarks,
                 'user_code' => $document->user_code,
                 'batch_no' => $batch_no,
                 'uploaded_by' => $document->uploaded_by,

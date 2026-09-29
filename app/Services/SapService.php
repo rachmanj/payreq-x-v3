@@ -2014,6 +2014,32 @@ class SapService
         return $lines;
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function fetchPurchaseInvoicesForDocDateRange(string $dateFrom, string $dateTo): array
+    {
+        $filter = "DocDate ge '{$dateFrom}' and DocDate le '{$dateTo}'";
+
+        return $this->fetchAll('PurchaseInvoices', [
+            '$filter' => $filter,
+            '$select' => 'DocNum,DocDate,VatSum,DocTotal,CardCode,CardName,U_MIS_FPNum,U_MIS_FPDate,U_MIS_FPTransCode',
+        ], 100);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function fetchArInvoicesForDocDateRange(string $dateFrom, string $dateTo): array
+    {
+        $filter = "DocDate ge '{$dateFrom}' and DocDate le '{$dateTo}'";
+
+        return $this->fetchAll('Invoices', [
+            '$filter' => $filter,
+            '$select' => 'DocNum,DocDate,VatSum,DocTotal,CardCode,CardName',
+        ], 100);
+    }
+
     public function __destruct()
     {
         if ($this->isLoggedIn) {
