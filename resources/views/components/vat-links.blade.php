@@ -17,6 +17,7 @@
             Sales
         </a>
         @can('view_tax_monitoring')
+            | <a href="{{ route('accounting.tax.ppn.index') }}">Monitoring PPN</a>
             | <a href="{{ route('accounting.tax.ppn.sync.index') }}">PPN Sync SAP</a>
         @endcan
     </div> <!-- /.card-header -->

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CoretaxInputVat;
 use App\Models\Faktur;
 use Carbon\Carbon;
 
@@ -36,6 +37,11 @@ class PpnReconciliationService
 
         $exposure = $this->buildMissingFakturExposure($purchaseInvoices);
 
+        $coretaxPm = (float) CoretaxInputVat::query()
+            ->where('masa_pajak', $masaPajak)
+            ->sum('ppn');
+        $diffCoretaxApp = $coretaxPm > 0 ? round($coretaxPm - $appPm, 2) : null;
+
         $diffPk = round($sapPk - $appPk, 2);
         $diffPm = round($sapPm - $appPm, 2);
         $diffSapApp = round($diffPk + $diffPm, 2);
@@ -61,7 +67,7 @@ class PpnReconciliationService
                 'pm_total' => $sapPm,
                 'kb_lb' => $kbLb,
                 'diff_sap_app' => $diffSapApp,
-                'diff_coretax_app' => null,
+                'diff_coretax_app' => $diffCoretaxApp,
                 'diff_pk_pm' => $diffPkPm,
             ],
             'diff_detail' => [

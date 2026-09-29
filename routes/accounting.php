@@ -8,6 +8,7 @@ use App\Http\Controllers\Accounting\GiroController;
 use App\Http\Controllers\Accounting\JournalEntryController;
 use App\Http\Controllers\Accounting\JournalEntryTemplateController;
 use App\Http\Controllers\Accounting\PpnInputSyncController;
+use App\Http\Controllers\Accounting\PpnMonitoringController;
 use App\Http\Controllers\Accounting\SapSyncController;
 use App\Http\Controllers\Accounting\VatController;
 use App\Http\Controllers\Accounting\Wtax23Controller;
@@ -176,8 +177,33 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
     });
 
     Route::prefix('tax/ppn')->name('tax.ppn.')->group(function () {
+        Route::get('/', [PpnMonitoringController::class, 'index'])->name('index');
+        Route::get('data', [PpnMonitoringController::class, 'data'])->name('data');
+        Route::post('reconcile', [PpnMonitoringController::class, 'reconcile'])->name('reconcile');
+
+        Route::get('masukan', [PpnMonitoringController::class, 'masukan'])->name('masukan.index');
+        Route::get('masukan/data', [PpnMonitoringController::class, 'masukanData'])->name('masukan.data');
+        Route::post('masukan/{faktur}/validate', [PpnMonitoringController::class, 'validateMasukan'])->name('masukan.validate');
+
+        Route::get('keluaran', [PpnMonitoringController::class, 'keluaran'])->name('keluaran.index');
+        Route::get('keluaran/data', [PpnMonitoringController::class, 'keluaranData'])->name('keluaran.data');
+
+        Route::get('belum-diterima', [PpnMonitoringController::class, 'belumDiterima'])->name('belum-diterima.index');
+        Route::get('belum-diterima/export', [PpnMonitoringController::class, 'belumDiterimaExport'])->name('belum-diterima.export');
+
+        Route::get('periksa', [PpnMonitoringController::class, 'periksa'])->name('periksa.index');
+        Route::get('periksa/data', [PpnMonitoringController::class, 'periksaData'])->name('periksa.data');
+
         Route::get('sync', [PpnInputSyncController::class, 'index'])->name('sync.index');
         Route::post('sync/run', [PpnInputSyncController::class, 'runNow'])->name('sync.run');
+
+        Route::post('periods/{period}/prepare', [PpnMonitoringController::class, 'preparePeriod'])->name('periods.prepare');
+        Route::post('periods/{period}/approve', [PpnMonitoringController::class, 'approvePeriod'])->name('periods.approve');
+        Route::post('periods/{period}/close', [PpnMonitoringController::class, 'closePeriod'])->name('periods.close');
+        Route::post('periods/{period}/reopen', [PpnMonitoringController::class, 'reopenPeriod'])->name('periods.reopen');
+
+        Route::get('{masa}/export', [PpnMonitoringController::class, 'exportMasa'])->name('export');
+        Route::get('{masa}/cetak', [PpnMonitoringController::class, 'cetak'])->name('cetak');
     });
 
     // DELIVERY

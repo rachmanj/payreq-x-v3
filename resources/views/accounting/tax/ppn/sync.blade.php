@@ -12,13 +12,7 @@
     <div class="row">
         <div class="col-12">
 
-            <div class="card mb-3">
-                <div class="card-header">
-                    <a href="{{ route('accounting.vat.index', ['page' => 'dashboard']) }}">VAT Dashboard</a> |
-                    <a href="{{ route('accounting.vat.index', ['page' => 'purchase', 'status' => 'incomplete']) }}">Purchase Fakturs</a> |
-                    <span class="font-weight-bold text-uppercase">Sinkronisasi PPN Masukan</span>
-                </div>
-            </div>
+            @include('accounting.tax.ppn.partials.nav')
 
             @if (session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
