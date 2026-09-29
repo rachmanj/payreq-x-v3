@@ -25,14 +25,16 @@ return new class extends Migration
         });
 
         Schema::table('fakturs', function (Blueprint $table) {
-            $table->unique(['type', 'faktur_no'], 'fakturs_type_faktur_no_unique');
+            // BUKAN unique: satu nomor faktur pajak sah dipakai banyak baris (satu faktur menutup
+            // beberapa dokumen internal). Duplikat dideteksi lewat daftar periksa, bukan dilarang DB.
+            $table->index(['type', 'faktur_no'], 'fakturs_type_faktur_no_index');
         });
     }
 
     public function down(): void
     {
         Schema::table('fakturs', function (Blueprint $table) {
-            $table->dropUnique('fakturs_type_faktur_no_unique');
+            $table->dropIndex('fakturs_type_faktur_no_index');
             $table->dropColumn([
                 'masa_pajak',
                 'ppn_rate',
