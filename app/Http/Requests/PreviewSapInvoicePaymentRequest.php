@@ -23,6 +23,11 @@ class PreviewSapInvoicePaymentRequest extends FormRequest
             'payment_date' => 'nullable|date|date_format:Y-m-d',
             'remarks' => 'nullable|string|max:1000',
             'sap_doc' => 'nullable|string|max:50',
+            'payment_means' => 'nullable|string|in:cash,transfer,credit_memo',
+            'payment_amount' => 'nullable|numeric|min:0.01',
+            'credit_memo_doc_entry' => 'nullable|integer|min:1',
+            'prepared_by' => 'nullable|string|max:100',
+            'approved_by' => 'nullable|string|max:100',
         ];
     }
 }

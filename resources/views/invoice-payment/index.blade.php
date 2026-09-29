@@ -480,19 +480,48 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="sap_payment_means">Payment Means <span class="text-danger">*</span></label>
+                                    <label for="sap_payment_means">Sumber Pembayaran <span class="text-danger">*</span></label>
                                     <select class="form-control" id="sap_payment_means" name="payment_means" required>
                                         <option value="transfer">Transfer</option>
+                                        @if ($canPayInvoiceWithCreditMemo ?? false)
+                                            <option value="credit_memo">Credit Memo</option>
+                                        @endif
                                         <option value="cash">Cash</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4" id="sap_account_id_group">
                                 <div class="form-group">
                                     <label for="sap_account_id">Cash / Bank Account <span class="text-danger">*</span></label>
                                     <select class="form-control" id="sap_account_id" name="account_id" required>
                                         <option value="">Select account</option>
                                     </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-none" id="sap_credit_memo_group">
+                                <div class="form-group">
+                                    <label for="sap_credit_memo_doc_entry">AP Credit Memo <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="sap_credit_memo_doc_entry" name="credit_memo_doc_entry">
+                                        <option value="">Pilih credit note...</option>
+                                    </select>
+                                    <small class="text-muted d-none" id="sap_credit_memo_empty_hint"></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="sap_credit_memo_allocation_panel" class="d-none mb-3">
+                            <div class="vj-form-panel">
+                                <h6 class="mb-2">Preview alokasi credit memo</h6>
+                                <p class="small text-muted mb-2" id="sap_credit_memo_allocation_summary">-</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>AP Invoice</th>
+                                                <th class="text-right">Alokasi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sap_credit_memo_allocation_body"></tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -652,8 +681,11 @@
             let waitingTable = null;
             let paidTable = null;
             let sapPaymentContext = 'paid';
+            let sapPaymentRow = null;
             const canSubmitSapPayment = @json($canSubmitSapPayment ?? false);
+            const canPayInvoiceWithCreditMemo = @json($canPayInvoiceWithCreditMemo ?? false);
             const canMarkPaidWithoutSap = @json($canMarkPaidWithoutSap ?? false);
+            const creditMemosUrl = @json(route('cashier.invoice-payment.credit-memos'));
             const defaultPreparedBy = @json($defaultPreparedBy ?? '');
             const sapPreviewUrlTemplate =
                 '{{ route('cashier.invoice-payment.sap-payment.preview', ['invoiceId' => ':invoiceId']) }}';
@@ -1477,8 +1509,126 @@
                 $('#paymentModal').modal('show');
             }
 
+            function toggleSapPaymentMeansUi() {
+                const isCreditMemo = $('#sap_payment_means').val() === 'credit_memo';
+                $('#sap_account_id_group').toggleClass('d-none', isCreditMemo);
+                $('#sap_credit_memo_group').toggleClass('d-none', !isCreditMemo);
+                $('#sap_account_id').prop('required', !isCreditMemo);
+                $('#sap_credit_memo_doc_entry').prop('required', isCreditMemo);
+                if (!isCreditMemo) {
+                    $('#sap_credit_memo_allocation_panel').addClass('d-none');
+                }
+            }
+
+            function renderCreditMemoAllocation(allocationData) {
+                if (!allocationData || !allocationData.allocations) {
+                    $('#sap_credit_memo_allocation_panel').addClass('d-none');
+                    return;
+                }
+
+                const allocations = allocationData.allocations || [];
+                if (allocations.length === 0) {
+                    $('#sap_credit_memo_allocation_panel').addClass('d-none');
+                    return;
+                }
+
+                let rows = '';
+                allocations.forEach(function(item) {
+                    const label = (item.num_at_card ? item.num_at_card + ' · ' : '') +
+                        (item.doc_num ? '#' + item.doc_num : 'Entry ' + item.doc_entry);
+                    rows += '<tr><td>' + escapeAttr(label) + '</td><td class="text-right">' +
+                        formatCurrency(item.amount) + '</td></tr>';
+                });
+                $('#sap_credit_memo_allocation_body').html(rows);
+                $('#sap_credit_memo_allocation_summary').text(
+                    'Sisa credit memo: ' + formatCurrency(allocationData.credit_memo_remaining || 0) +
+                    ' — invoice terbuka diurutkan tanggal terlama.'
+                );
+                $('#sap_credit_memo_allocation_panel').removeClass('d-none');
+            }
+
+            function loadOpenCreditMemos(row) {
+                if (!canPayInvoiceWithCreditMemo || !row) {
+                    return;
+                }
+
+                $('#sap_credit_memo_doc_entry').html('<option value="">Memuat credit note...</option>');
+                $.get(creditMemosUrl, {
+                    invoice_id: row.id,
+                    supplier_sap_code: row.supplier_sap_code
+                }).done(function(response) {
+                    const items = response.credit_memos || [];
+                    let options = '<option value="">Pilih credit note...</option>';
+                    items.forEach(function(cm) {
+                        const label = (cm.num_at_card ? cm.num_at_card + ' · ' : '') +
+                            '#' + cm.doc_num + ' · sisa ' + formatCurrency(cm.remaining_balance);
+                        options += '<option value="' + escapeAttr(cm.doc_entry) + '">' + escapeAttr(label) +
+                            '</option>';
+                    });
+                    $('#sap_credit_memo_doc_entry').html(options);
+                    if (items.length === 0 && response.message) {
+                        $('#sap_credit_memo_empty_hint').removeClass('d-none').text(response.message);
+                    } else {
+                        $('#sap_credit_memo_empty_hint').addClass('d-none').text('');
+                    }
+                    $('#sapPaymentSubmitBtn').prop('disabled', items.length === 0);
+                }).fail(function(xhr) {
+                    const response = xhr.responseJSON || {};
+                    $('#sap_credit_memo_doc_entry').html('<option value="">Gagal memuat</option>');
+                    showSapPreviewError(response.error || 'Error', response.message ||
+                        'Tidak dapat memuat daftar credit note dari SAP.');
+                });
+            }
+
+            function sapPreviewRequestData(row) {
+                return {
+                    invoice_number: row.invoice_number,
+                    supplier_sap_code: row.supplier_sap_code,
+                    amount: row.amount,
+                    payment_date: $('#sap_payment_date').val() || row.payment_date || '',
+                    remarks: $('#sap_payment_remarks').val() || row.remarks || '',
+                    sap_doc: row.sap_doc || '',
+                    payment_means: $('#sap_payment_means').val(),
+                    payment_amount: $('#sap_payment_amount').val(),
+                    credit_memo_doc_entry: $('#sap_credit_memo_doc_entry').val(),
+                    prepared_by: $('#sap_prepared_by').val(),
+                    approved_by: $('#sap_approved_by').val()
+                };
+            }
+
+            function reloadSapPaymentPreview() {
+                if (!sapPaymentRow) {
+                    return;
+                }
+
+                $.ajax({
+                    url: sapPreviewUrlTemplate.replace(':invoiceId', encodeURIComponent(sapPaymentRow.id)),
+                    method: 'GET',
+                    data: sapPreviewRequestData(sapPaymentRow),
+                    success: function(response) {
+                        if (!response || !response.preview) {
+                            return;
+                        }
+                        const preview = response.preview;
+                        const apInvoice = preview.ap_invoice || {};
+                        const defaultNetAmount = renderSapWithholdingUi(preview);
+                        const sapRemainingBalance = Math.round(parseFloat(apInvoice.remaining_balance || 0));
+                        const paymentDefault = preview.credit_memo && preview.credit_memo.applied_amount ?
+                            preview.credit_memo.applied_amount :
+                            (defaultNetAmount !== null ? defaultNetAmount : sapRemainingBalance);
+                        $('#sap_payment_amount').val(paymentDefault);
+                        renderCreditMemoAllocation(response.credit_memo_allocation);
+                        const isCreditMemo = $('#sap_payment_means').val() === 'credit_memo';
+                        $('#sapPaymentSubmitBtn').prop('disabled', isCreditMemo ?
+                            ($('#sap_credit_memo_doc_entry').val() === '') :
+                            ($('#sap_account_id option').length <= 1));
+                    }
+                });
+            }
+
             function openSapPaymentModal(row, context) {
                 sapPaymentContext = context || 'paid';
+                sapPaymentRow = row;
                 const isBpjs = (row.source || 'dds') === 'bpjs';
                 const closeInDds = sapPaymentContext === 'waiting' && !isBpjs;
                 let sapRemainingBalance = 0;
@@ -1507,7 +1657,11 @@
                 $('#sap_invoice_sap_doc').val(row.sap_doc || '');
                 $('#sap_payment_date').val(row.payment_date || new Date().toISOString().split('T')[0]);
                 $('#sap_payment_means').val('transfer');
+                $('#sap_credit_memo_doc_entry').html('<option value="">Pilih credit note...</option>');
+                $('#sap_credit_memo_empty_hint').addClass('d-none').text('');
+                $('#sap_credit_memo_allocation_panel').addClass('d-none');
                 $('#sap_account_id').html('<option value="">Loading accounts...</option>');
+                toggleSapPaymentMeansUi();
                 $('#sap_ap_doc_display').val('Resolving...');
                 $('#sap_ap_total_display').val('-');
                 renderPaymentHistory([]);
@@ -1523,14 +1677,7 @@
                 $.ajax({
                     url: sapPreviewUrlTemplate.replace(':invoiceId', encodeURIComponent(row.id)),
                     method: 'GET',
-                    data: {
-                        invoice_number: row.invoice_number,
-                        supplier_sap_code: row.supplier_sap_code,
-                        amount: row.amount,
-                        payment_date: row.payment_date || '',
-                        remarks: row.remarks || '',
-                        sap_doc: row.sap_doc || ''
-                    },
+                    data: sapPreviewRequestData(row),
                     success: function(response) {
                         if (response === null || response === undefined || typeof response !== 'object') {
                             showSapPreviewError(
@@ -1637,12 +1784,19 @@
                             $('#sapPaymentMismatchAlert').removeClass('d-none');
                         }
 
-                        $('#sapPaymentSubmitBtn').prop('disabled', accounts.length === 0);
-                        if (accounts.length === 0) {
-                            showSapPreviewError(
-                                'Tidak ada akun',
-                                'Tidak ada akun sumber pembayaran yang tersedia (whitelist parameter invoice_payment_accounts kosong atau akun tidak aktif). Hubungi admin.'
-                            );
+                        renderCreditMemoAllocation(response.credit_memo_allocation);
+
+                        const isCreditMemoMeans = $('#sap_payment_means').val() === 'credit_memo';
+                        if (isCreditMemoMeans) {
+                            $('#sapPaymentSubmitBtn').prop('disabled', $('#sap_credit_memo_doc_entry').val() === '');
+                        } else {
+                            $('#sapPaymentSubmitBtn').prop('disabled', accounts.length === 0);
+                            if (accounts.length === 0) {
+                                showSapPreviewError(
+                                    'Tidak ada akun',
+                                    'Tidak ada akun sumber pembayaran yang tersedia (whitelist parameter invoice_payment_accounts kosong atau akun tidak aktif). Hubungi admin.'
+                                );
+                            }
                         }
                     },
                     error: function(xhr) {
@@ -1669,6 +1823,18 @@
                 });
             }
 
+            $('#sap_payment_means').on('change', function() {
+                toggleSapPaymentMeansUi();
+                if ($(this).val() === 'credit_memo' && sapPaymentRow) {
+                    loadOpenCreditMemos(sapPaymentRow);
+                }
+                reloadSapPaymentPreview();
+            });
+
+            $('#sap_credit_memo_doc_entry').on('change', function() {
+                reloadSapPaymentPreview();
+            });
+
             function confirmSapPayment() {
                 const invoiceId = $('#sap_invoice_id').val();
                 const closeDdsOnly = $('#sap_close_dds_only').val() === '1';
@@ -1693,9 +1859,13 @@
 
                 if (!closeDdsOnly) {
                     payload.payment_means = $('#sap_payment_means').val();
-                    payload.account_id = $('#sap_account_id').val();
                     payload.prepared_by = $('#sap_prepared_by').val();
                     payload.approved_by = $('#sap_approved_by').val();
+                    if (payload.payment_means === 'credit_memo') {
+                        payload.credit_memo_doc_entry = $('#sap_credit_memo_doc_entry').val();
+                    } else {
+                        payload.account_id = $('#sap_account_id').val();
+                    }
                 }
 
                 $.ajax({

@@ -11,6 +11,7 @@ use App\Models\SapBusinessPartner;
 use App\Models\SapSubmissionLog;
 use App\Services\SapService;
 use App\Services\SapVendorPaymentBuilder;
+use App\Services\VendorCreditMemoAllocationService;
 use Carbon\Carbon;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
@@ -56,6 +57,7 @@ class InvoicePaymentController extends Controller
         return view('invoice-payment.index', [
             'departmentValidation' => $this->getDepartmentValidationState(),
             'canSubmitSapPayment' => auth()->user()?->can('submit_sap_invoice_payment') ?? false,
+            'canPayInvoiceWithCreditMemo' => auth()->user()?->can('pay_invoice_with_credit_memo') ?? false,
             'canMarkPaidWithoutSap' => auth()->user()?->can('mark_invoice_paid_without_sap') ?? false,
             'defaultPreparedBy' => auth()->user()?->name ?? '',
         ]);
@@ -371,20 +373,39 @@ class InvoicePaymentController extends Controller
 
             $withholding = SapVendorPaymentBuilder::openWithholdingTax($apInvoice);
 
+            $paymentMeans = $this->resolvePaymentMeansForRequest($request);
+            if ($paymentMeans === SapVendorPaymentBuilder::MEANS_CREDIT_MEMO
+                && ! $request->user()?->can('pay_invoice_with_credit_memo')) {
+                return response()->json([
+                    'error' => 'forbidden',
+                    'message' => 'You do not have permission to pay invoices with AP Credit Memo.',
+                ], 403);
+            }
+
             $paymentAmount = $request->filled('payment_amount')
                 ? (float) $request->input('payment_amount')
                 : ($withholding['total'] > 0 ? $remaining - $withholding['total'] : $remaining);
 
-            $builder = new SapVendorPaymentBuilder(
+            $creditMemoDocument = null;
+            if ($paymentMeans === SapVendorPaymentBuilder::MEANS_CREDIT_MEMO) {
+                $creditMemoDocument = $this->resolveCreditMemoDocument($sapService, $request, $partner);
+                if ($creditMemoDocument === null) {
+                    return response()->json([
+                        'error' => 'Credit note not found',
+                        'message' => 'SAP Purchase Credit Note could not be found or is not open for this vendor.',
+                    ], 422);
+                }
+            }
+
+            $builder = $this->makeVendorPaymentBuilder(
                 $invoice,
                 $apInvoice,
                 $partner,
+                $request,
                 null,
-                SapVendorPaymentBuilder::MEANS_TRANSFER,
-                $request->input('payment_date'),
+                $paymentMeans,
                 $paymentAmount,
-                $request->input('prepared_by'),
-                $request->input('approved_by'),
+                $creditMemoDocument,
             );
             $errors = $builder->validate();
             if ($errors !== []) {
@@ -394,12 +415,19 @@ class InvoicePaymentController extends Controller
                 ], 422);
             }
 
-            $accounts = $this->eligiblePaymentAccounts();
+            $accounts = $paymentMeans === SapVendorPaymentBuilder::MEANS_CREDIT_MEMO
+                ? []
+                : $this->eligiblePaymentAccounts();
+
+            $allocationPreview = $paymentMeans === SapVendorPaymentBuilder::MEANS_CREDIT_MEMO && $creditMemoDocument
+                ? $this->buildCreditMemoAllocationPreview($sapService, $partner, $creditMemoDocument)
+                : null;
 
             return response()->json([
                 'success' => true,
                 'fully_paid' => false,
                 'preview' => $builder->getPreviewData(),
+                'credit_memo_allocation' => $allocationPreview,
                 'payment_history' => $paymentHistory,
                 'accounts' => $accounts,
             ]);
@@ -452,50 +480,73 @@ class InvoicePaymentController extends Controller
                 ], 422);
             }
 
-            $accountId = $request->integer('account_id');
-            $eligibleAccountIds = collect($this->eligiblePaymentAccounts())
-                ->pluck('id')
-                ->filter(fn ($id) => $id !== null)
-                ->map(fn ($id) => (int) $id)
-                ->all();
+            $paymentMeans = $this->resolvePaymentMeansForRequest($request);
 
-            if (! in_array($accountId, $eligibleAccountIds, true)) {
-                $whitelist = $this->paymentAccountWhitelist();
-                $message = 'Akun yang dipilih tidak termasuk akun pembayaran yang diizinkan.';
-                if ($whitelist !== []) {
-                    $message .= ' Akun yang diizinkan: '.implode(', ', $whitelist).'.';
-                }
-
+            if ($paymentMeans === SapVendorPaymentBuilder::MEANS_CREDIT_MEMO
+                && ! $request->user()?->can('pay_invoice_with_credit_memo')) {
                 return response()->json([
-                    'error' => 'Invalid account',
-                    'message' => $message,
-                ], 422);
+                    'error' => 'forbidden',
+                    'message' => 'You do not have permission to pay invoices with AP Credit Memo.',
+                ], 403);
             }
 
-            $account = Account::query()
-                ->selectable()
-                ->whereKey($accountId)
-                ->first();
+            $account = null;
+            if ($paymentMeans !== SapVendorPaymentBuilder::MEANS_CREDIT_MEMO) {
+                $accountId = $request->integer('account_id');
+                $eligibleAccountIds = collect($this->eligiblePaymentAccounts())
+                    ->pluck('id')
+                    ->filter(fn ($id) => $id !== null)
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
 
-            if (! $account) {
-                return response()->json([
-                    'error' => 'Invalid account',
-                    'message' => 'Akun yang dipilih tidak termasuk akun pembayaran yang diizinkan.',
-                ], 422);
+                if (! in_array($accountId, $eligibleAccountIds, true)) {
+                    $whitelist = $this->paymentAccountWhitelist();
+                    $message = 'Akun yang dipilih tidak termasuk akun pembayaran yang diizinkan.';
+                    if ($whitelist !== []) {
+                        $message .= ' Akun yang diizinkan: '.implode(', ', $whitelist).'.';
+                    }
+
+                    return response()->json([
+                        'error' => 'Invalid account',
+                        'message' => $message,
+                    ], 422);
+                }
+
+                $account = Account::query()
+                    ->selectable()
+                    ->whereKey($accountId)
+                    ->first();
+
+                if (! $account) {
+                    return response()->json([
+                        'error' => 'Invalid account',
+                        'message' => 'Akun yang dipilih tidak termasuk akun pembayaran yang diizinkan.',
+                    ], 422);
+                }
             }
 
             $paymentAmount = (float) $request->input('payment_amount');
 
-            $builder = new SapVendorPaymentBuilder(
+            $creditMemoDocument = null;
+            if ($paymentMeans === SapVendorPaymentBuilder::MEANS_CREDIT_MEMO) {
+                $creditMemoDocument = $this->resolveCreditMemoDocument($sapService, $request, $partner);
+                if ($creditMemoDocument === null) {
+                    return response()->json([
+                        'error' => 'Credit note not found',
+                        'message' => 'SAP Purchase Credit Note could not be found or is not open for this vendor.',
+                    ], 422);
+                }
+            }
+
+            $builder = $this->makeVendorPaymentBuilder(
                 $invoice,
                 $apInvoice,
                 $partner,
+                $request,
                 $account,
-                (string) $request->input('payment_means'),
-                (string) $request->input('payment_date'),
+                $paymentMeans,
                 $paymentAmount,
-                (string) $request->input('prepared_by'),
-                (string) $request->input('approved_by'),
+                $creditMemoDocument,
             );
 
             $errors = $builder->validate(requirePaymentAccount: true);
@@ -504,6 +555,10 @@ class InvoicePaymentController extends Controller
                     'error' => 'Validation failed',
                     'message' => implode(' ', $errors),
                 ], 422);
+            }
+
+            if ($paymentMeans === SapVendorPaymentBuilder::MEANS_CREDIT_MEMO) {
+                $paymentAmount = $builder->creditMemoAppliedAmount();
             }
 
             $payload = $builder->build();
@@ -529,7 +584,13 @@ class InvoicePaymentController extends Controller
                 ], 422);
             }
 
-            $this->logInvoicePaymentSubmission($invoice, 'success', null, $sapResult, $paymentAmount);
+            $this->logInvoicePaymentSubmission(
+                $invoice,
+                'success',
+                null,
+                $this->enrichSapPaymentLogResult($sapResult, $paymentMeans, $creditMemoDocument, $builder),
+                $paymentAmount,
+            );
 
             $remainingAfter = $remaining - $paymentAmount;
 
@@ -1136,6 +1197,192 @@ class InvoicePaymentController extends Controller
             'is_fully_paid' => $invoiceAmount > 0 && $totalPaid >= $invoiceAmount - $tolerance,
             'is_partial' => $paymentCount > 0 && ($invoiceAmount <= 0 || $totalPaid < $invoiceAmount - $tolerance),
         ];
+    }
+
+    public function openCreditMemos(Request $request, SapService $sapService): JsonResponse
+    {
+        if (! $request->user()?->can('pay_invoice_with_credit_memo')) {
+            return response()->json([
+                'error' => 'forbidden',
+                'message' => 'You do not have permission to pay invoices with AP Credit Memo.',
+            ], 403);
+        }
+
+        $request->validate([
+            'invoice_id' => 'required|string|max:100',
+            'supplier_sap_code' => 'required|string|max:50',
+        ]);
+
+        $partner = $this->resolveSupplierPartner((string) $request->input('supplier_sap_code'));
+        if (! $partner) {
+            return response()->json([
+                'error' => 'Supplier not mapped',
+                'message' => 'Supplier is not mapped to an active SAP vendor.',
+            ], 422);
+        }
+
+        try {
+            $rows = $sapService->listOpenPurchaseCreditNotesForVendor($partner->code);
+        } catch (\Exception $e) {
+            return $this->exceptionResponse($e, 'Invoice Payment Credit Memos Error');
+        }
+
+        $creditMemos = collect($rows)->map(function (array $row): array {
+            $docTotal = (float) ($row['DocTotal'] ?? 0);
+            $paidToDate = (float) ($row['PaidToDate'] ?? 0);
+            $remaining = max(0.0, $docTotal - $paidToDate);
+
+            return [
+                'doc_entry' => $row['DocEntry'] ?? null,
+                'doc_num' => $row['DocNum'] ?? null,
+                'doc_date' => isset($row['DocDate']) ? substr((string) $row['DocDate'], 0, 10) : null,
+                'doc_total' => $docTotal,
+                'paid_to_date' => $paidToDate,
+                'remaining_balance' => $remaining,
+                'num_at_card' => $row['NumAtCard'] ?? null,
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'success' => true,
+            'credit_memos' => $creditMemos,
+            'message' => $creditMemos === []
+                ? 'Belum ada credit note terbuka untuk vendor ini. Pastikan credit note sudah dibuat di SAP.'
+                : null,
+        ]);
+    }
+
+    private function resolvePaymentMeansForRequest(Request $request): string
+    {
+        $means = (string) $request->input('payment_means', SapVendorPaymentBuilder::MEANS_TRANSFER);
+
+        return $means === SapVendorPaymentBuilder::MEANS_CREDIT_MEMO
+            ? SapVendorPaymentBuilder::MEANS_CREDIT_MEMO
+            : $means;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveCreditMemoDocument(SapService $sapService, Request $request, SapBusinessPartner $partner): ?array
+    {
+        $docEntry = trim((string) $request->input('credit_memo_doc_entry', ''));
+        if ($docEntry === '') {
+            return null;
+        }
+
+        $document = $sapService->getPurchaseCreditNoteByDocEntry($docEntry);
+        if (! $document) {
+            return null;
+        }
+
+        $cardCode = (string) ($document['CardCode'] ?? '');
+        if ($cardCode !== '' && $cardCode !== $partner->code) {
+            return null;
+        }
+
+        $remaining = max(0.0, (float) ($document['DocTotal'] ?? 0) - (float) ($document['PaidToDate'] ?? 0));
+        if ($remaining <= SapVendorPaymentBuilder::AMOUNT_TOLERANCE) {
+            return null;
+        }
+
+        if (($document['DocumentStatus'] ?? '') !== 'bost_Open') {
+            return null;
+        }
+
+        return $document;
+    }
+
+    /**
+     * @param  array<string, mixed>  $invoice
+     * @param  array<string, mixed>  $apInvoice
+     * @param  array<string, mixed>|null  $creditMemoDocument
+     */
+    private function makeVendorPaymentBuilder(
+        array $invoice,
+        array $apInvoice,
+        SapBusinessPartner $partner,
+        Request $request,
+        ?Account $account,
+        string $paymentMeans,
+        float $paymentAmount,
+        ?array $creditMemoDocument = null,
+    ): SapVendorPaymentBuilder {
+        return new SapVendorPaymentBuilder(
+            $invoice,
+            $apInvoice,
+            $partner,
+            $account,
+            $paymentMeans,
+            (string) $request->input('payment_date'),
+            $paymentAmount,
+            (string) $request->input('prepared_by'),
+            (string) $request->input('approved_by'),
+            $creditMemoDocument,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $creditMemoDocument
+     * @return array{allocations: list<array<string, mixed>>, credit_memo_remaining: float}
+     */
+    private function buildCreditMemoAllocationPreview(
+        SapService $sapService,
+        SapBusinessPartner $partner,
+        array $creditMemoDocument,
+    ): array {
+        $allocator = new VendorCreditMemoAllocationService;
+        $creditRemaining = $allocator->creditMemoRemaining($creditMemoDocument);
+
+        $openInvoices = collect($sapService->listOpenPurchaseInvoicesForVendor($partner->code))
+            ->map(function (array $row): array {
+                $docTotal = (float) ($row['DocTotal'] ?? 0);
+                $paidToDate = (float) ($row['PaidToDate'] ?? 0);
+
+                return [
+                    'doc_entry' => (int) ($row['DocEntry'] ?? 0),
+                    'doc_num' => $row['DocNum'] ?? null,
+                    'doc_date' => isset($row['DocDate']) ? substr((string) $row['DocDate'], 0, 10) : null,
+                    'num_at_card' => $row['NumAtCard'] ?? null,
+                    'remaining_balance' => max(0.0, $docTotal - $paidToDate),
+                ];
+            })
+            ->all();
+
+        return [
+            'credit_memo_remaining' => $creditRemaining,
+            'allocations' => $allocator->allocateOldestFirst($openInvoices, $creditRemaining),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $sapResult
+     * @param  array<string, mixed>|null  $creditMemoDocument
+     * @return array<string, mixed>|null
+     */
+    private function enrichSapPaymentLogResult(
+        ?array $sapResult,
+        string $paymentMeans,
+        ?array $creditMemoDocument,
+        SapVendorPaymentBuilder $builder,
+    ): ?array {
+        if ($sapResult === null) {
+            return null;
+        }
+
+        if ($paymentMeans !== SapVendorPaymentBuilder::MEANS_CREDIT_MEMO) {
+            return $sapResult;
+        }
+
+        $payload = $builder->build();
+        $sapResult['credit_memo_doc_num'] = $creditMemoDocument['DocNum'] ?? null;
+        $sapResult['credit_memo_doc_entry'] = $creditMemoDocument['DocEntry'] ?? null;
+        $sapResult['allocated_invoices'] = collect($payload['PaymentInvoices'] ?? [])
+            ->where('InvoiceType', 'it_PurchaseInvoice')
+            ->values()
+            ->all();
+
+        return $sapResult;
     }
 
     /**

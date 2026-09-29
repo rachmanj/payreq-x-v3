@@ -45,8 +45,13 @@ class SubmitSapInvoicePaymentRequest extends FormRequest
             'payment_amount' => 'required_without:close_dds_only|numeric|min:0.01',
             'prepared_by' => 'required|string|max:100',
             'approved_by' => 'required|string|max:100',
-            'payment_means' => ['required', Rule::in([SapVendorPaymentBuilder::MEANS_CASH, SapVendorPaymentBuilder::MEANS_TRANSFER])],
-            'account_id' => 'required|integer|exists:accounts,id',
+            'payment_means' => ['required', Rule::in([
+                SapVendorPaymentBuilder::MEANS_CASH,
+                SapVendorPaymentBuilder::MEANS_TRANSFER,
+                SapVendorPaymentBuilder::MEANS_CREDIT_MEMO,
+            ])],
+            'account_id' => 'required_unless:payment_means,credit_memo|nullable|integer|exists:accounts,id',
+            'credit_memo_doc_entry' => 'required_if:payment_means,credit_memo|nullable|integer|min:1',
         ];
     }
 }

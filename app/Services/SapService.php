@@ -645,7 +645,118 @@ class SapService
 
     protected function purchaseInvoiceSelectFields(): string
     {
-        return 'DocEntry,DocNum,CardCode,DocumentStatus,Cancelled,NumAtCard,DocTotal,PaidToDate';
+        return 'DocEntry,DocNum,CardCode,DocumentStatus,Cancelled,NumAtCard,DocTotal,PaidToDate,DocDate';
+    }
+
+    protected function purchaseCreditNoteSelectFields(): string
+    {
+        return 'DocEntry,DocNum,CardCode,DocumentStatus,Cancelled,NumAtCard,DocTotal,PaidToDate,DocDate';
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getPurchaseCreditNoteByDocEntry(string|int $docEntry): ?array
+    {
+        $this->ensureSession();
+
+        $docEntry = trim((string) $docEntry);
+        if ($docEntry === '') {
+            return null;
+        }
+
+        return $this->handleSessionExpiration(function () use ($docEntry) {
+            try {
+                $response = $this->client->get("PurchaseCreditNotes({$docEntry})", [
+                    'query' => [
+                        '$select' => $this->purchaseCreditNoteSelectFields(),
+                    ],
+                ]);
+
+                $body = json_decode($response->getBody()->getContents(), true);
+
+                return is_array($body) && isset($body['DocEntry']) ? $body : null;
+            } catch (RequestException $e) {
+                if ($e->getResponse()?->getStatusCode() === 404) {
+                    return null;
+                }
+
+                throw $e;
+            }
+        });
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function listOpenPurchaseCreditNotesForVendor(string $cardCode): array
+    {
+        $this->ensureSession();
+
+        $cardCode = trim($cardCode);
+        if ($cardCode === '') {
+            return [];
+        }
+
+        $filterValue = str_replace("'", "''", $cardCode);
+
+        return $this->handleSessionExpiration(function () use ($filterValue) {
+            $response = $this->client->get('PurchaseCreditNotes', [
+                'query' => [
+                    '$filter' => "CardCode eq '{$filterValue}' and Cancelled eq 'N' and DocumentStatus eq 'bost_Open'",
+                    '$select' => $this->purchaseCreditNoteSelectFields(),
+                    '$orderby' => 'DocDate asc',
+                    '$top' => 100,
+                ],
+            ]);
+
+            $body = json_decode($response->getBody()->getContents(), true);
+            $rows = $body['value'] ?? [];
+
+            return array_values(array_filter($rows, function (array $row): bool {
+                $docTotal = (float) ($row['DocTotal'] ?? 0);
+                $paidToDate = (float) ($row['PaidToDate'] ?? 0);
+
+                return $docTotal - $paidToDate > SapVendorPaymentBuilder::AMOUNT_TOLERANCE;
+            }));
+        });
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function listOpenPurchaseInvoicesForVendor(string $cardCode, int $top = 100): array
+    {
+        $this->ensureSession();
+
+        $cardCode = trim($cardCode);
+        if ($cardCode === '') {
+            return [];
+        }
+
+        $filterValue = str_replace("'", "''", $cardCode);
+        $top = max(1, min($top, 200));
+
+        return $this->handleSessionExpiration(function () use ($filterValue, $top) {
+            $response = $this->client->get('PurchaseInvoices', [
+                'query' => [
+                    '$filter' => "CardCode eq '{$filterValue}' and Cancelled eq 'N' and DocumentStatus eq 'bost_Open'",
+                    '$select' => $this->purchaseInvoiceSelectFields(),
+                    '$orderby' => 'DocDate asc',
+                    '$top' => $top,
+                ],
+            ]);
+
+            $body = json_decode($response->getBody()->getContents(), true);
+            $rows = $body['value'] ?? [];
+
+            return array_values(array_filter($rows, function (array $row): bool {
+                $docTotal = (float) ($row['DocTotal'] ?? 0);
+                $paidToDate = (float) ($row['PaidToDate'] ?? 0);
+
+                return $docTotal - $paidToDate > SapVendorPaymentBuilder::AMOUNT_TOLERANCE;
+            }));
+        });
     }
 
     public function outgoingPaymentEntity(): string

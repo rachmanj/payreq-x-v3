@@ -12,6 +12,8 @@ class SapVendorPaymentBuilder
 
     public const MEANS_TRANSFER = 'transfer';
 
+    public const MEANS_CREDIT_MEMO = 'credit_memo';
+
     public const AMOUNT_TOLERANCE = 0.5;
 
     /**
@@ -35,6 +37,10 @@ class SapVendorPaymentBuilder
         protected ?float $paymentAmount = null,
         protected ?string $preparedBy = null,
         protected ?string $approvedBy = null,
+        /**
+         * @var array{DocEntry?: int, DocNum?: int|string, CardCode?: string, DocumentStatus?: string, Cancelled?: string, DocTotal?: float|int|string, PaidToDate?: float|int|string}|null
+         */
+        protected ?array $creditMemoDocument = null,
     ) {
         $this->withholding = self::openWithholdingTax($apInvoice);
     }
@@ -102,34 +108,58 @@ class SapVendorPaymentBuilder
         // tidak mengenal WithholdingTaxDataCollection (hanya WithholdingTaxDataWTXCollection) -> jangan kirim koleksi WTax.
         $sumApplied = $withholdingTotal > 0 ? $amount + $withholdingTotal : $amount;
 
-        $paymentInvoice = [
-            'DocEntry' => (int) ($this->apInvoice['DocEntry'] ?? 0),
-            'InvoiceType' => 'it_PurchaseInvoice',
-            'SumApplied' => $sumApplied,
-        ];
+        if ($this->paymentMeans === self::MEANS_CREDIT_MEMO) {
+            $creditApplied = $this->creditMemoAppliedAmount();
+            $payment = [
+                'CardCode' => $this->partner->code,
+                'DocDate' => $paymentDate,
+                'DocType' => 'rSupplier',
+                'PaymentInvoices' => [
+                    [
+                        'DocEntry' => (int) ($this->creditMemoDocument['DocEntry'] ?? 0),
+                        'InvoiceType' => 'it_PurchaseCreditNote',
+                        'SumApplied' => $creditApplied,
+                    ],
+                    [
+                        'DocEntry' => (int) ($this->apInvoice['DocEntry'] ?? 0),
+                        'InvoiceType' => 'it_PurchaseInvoice',
+                        'SumApplied' => $creditApplied,
+                    ],
+                ],
+                'JournalRemarks' => $journalRemarks,
+                'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
+                'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
+            ];
+        } else {
+            $paymentInvoice = [
+                'DocEntry' => (int) ($this->apInvoice['DocEntry'] ?? 0),
+                'InvoiceType' => 'it_PurchaseInvoice',
+                'SumApplied' => $sumApplied,
+            ];
 
-        $payment = [
-            'CardCode' => $this->partner->code,
-            'DocDate' => $paymentDate,
-            'DocType' => 'rSupplier',
-            'PaymentInvoices' => [$paymentInvoice],
-            'JournalRemarks' => $journalRemarks,
-            'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
-            'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
-        ];
+            $payment = [
+                'CardCode' => $this->partner->code,
+                'DocDate' => $paymentDate,
+                'DocType' => 'rSupplier',
+                'PaymentInvoices' => [$paymentInvoice],
+                'JournalRemarks' => $journalRemarks,
+                'U_MIS_Signature1' => $this->trimmedSignature($this->preparedBy),
+                'U_MIS_Signature2' => $this->trimmedSignature($this->approvedBy),
+            ];
+
+            if ($this->paymentMeans === self::MEANS_CASH) {
+                $payment['CashAccount'] = $cashAccount;
+                $payment['CashSum'] = $amount;
+            } else {
+                $payment['TransferAccount'] = $cashAccount;
+                $payment['TransferSum'] = $amount;
+                $payment['TransferDate'] = $paymentDate;
+            }
+        }
 
         // SAP B1: OVPM.Comments dipetakan ke properti SL "Remarks" pada entity VendorPayments; "Comments" tidak ada di entity ini (pernah ditolak SAP, lihat commit 27b451d).
         if ($this->remarksFromJournalRemarks) {
             $payment['Remarks'] = $journalRemarks;
-        }
-
-        if ($this->paymentMeans === self::MEANS_CASH) {
-            $payment['CashAccount'] = $cashAccount;
-            $payment['CashSum'] = $amount;
-        } else {
-            $payment['TransferAccount'] = $cashAccount;
-            $payment['TransferSum'] = $amount;
-            $payment['TransferDate'] = $paymentDate;
         }
 
         return $payment;
@@ -182,9 +212,13 @@ class SapVendorPaymentBuilder
             $errors[] = 'Payment amount exceeds the remaining SAP balance of Rp '.number_format($remaining, 0, ',', '.').'.';
         }
 
+        if ($this->paymentMeans === self::MEANS_CREDIT_MEMO) {
+            $errors = array_merge($errors, $this->validateCreditMemoPayment());
+        }
+
         if ($requirePaymentAccount) {
-            if (! in_array($this->paymentMeans, [self::MEANS_CASH, self::MEANS_TRANSFER], true)) {
-                $errors[] = 'Payment means must be cash or transfer.';
+            if (! in_array($this->paymentMeans, [self::MEANS_CASH, self::MEANS_TRANSFER, self::MEANS_CREDIT_MEMO], true)) {
+                $errors[] = 'Payment means must be cash, transfer, or credit memo.';
             }
 
             if ($this->trimmedSignature($this->preparedBy) === '') {
@@ -195,10 +229,12 @@ class SapVendorPaymentBuilder
                 $errors[] = 'Approved by is required.';
             }
 
-            if (! $this->account) {
-                $errors[] = 'A cash/bank account must be selected.';
-            } elseif (empty($this->account->sap_account)) {
-                $errors[] = "Account '{$this->account->account_name}' does not have a SAP account mapping (sap_account).";
+            if ($this->paymentMeans !== self::MEANS_CREDIT_MEMO) {
+                if (! $this->account) {
+                    $errors[] = 'A cash/bank account must be selected.';
+                } elseif (empty($this->account->sap_account)) {
+                    $errors[] = "Account '{$this->account->account_name}' does not have a SAP account mapping (sap_account).";
+                }
             }
         }
 
@@ -265,7 +301,34 @@ class SapVendorPaymentBuilder
             ] : null,
             'journal_remarks' => $journalRemarks,
             'remarks' => $this->remarksFromJournalRemarks ? $journalRemarks : null,
+            'credit_memo' => $this->paymentMeans === self::MEANS_CREDIT_MEMO ? [
+                'doc_entry' => $this->creditMemoDocument['DocEntry'] ?? null,
+                'doc_num' => $this->creditMemoDocument['DocNum'] ?? null,
+                'remaining_balance' => $this->creditMemoRemainingBalance(),
+                'applied_amount' => $this->creditMemoAppliedAmount(),
+            ] : null,
         ];
+    }
+
+    public function creditMemoAppliedAmount(): float
+    {
+        if ($this->paymentMeans !== self::MEANS_CREDIT_MEMO) {
+            return 0.0;
+        }
+
+        $invoiceNet = $this->paymentAmountValue();
+        $cmRemaining = $this->creditMemoRemainingBalance();
+
+        return min($invoiceNet, $cmRemaining);
+    }
+
+    public function creditMemoRemainingBalance(): ?float
+    {
+        if ($this->creditMemoDocument === null || ! isset($this->creditMemoDocument['DocTotal'])) {
+            return null;
+        }
+
+        return max(0.0, (float) $this->creditMemoDocument['DocTotal'] - (float) ($this->creditMemoDocument['PaidToDate'] ?? 0));
     }
 
     public function withholdingTotal(): float
@@ -318,6 +381,53 @@ class SapVendorPaymentBuilder
         $remaining = $this->remainingBalance();
         if ($remaining !== null && $remaining <= self::AMOUNT_TOLERANCE) {
             $errors[] = 'Linked SAP AP Invoice is already fully paid in SAP B1.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function validateCreditMemoPayment(): array
+    {
+        $errors = [];
+
+        if ($this->withholdingTotal() > 0) {
+            $errors[] = 'PPh23 withholding cannot be settled with AP Credit Memo in this flow. Use transfer or cash payment.';
+        }
+
+        if (empty($this->creditMemoDocument['DocEntry'])) {
+            $errors[] = 'SAP Purchase Credit Note must be selected.';
+        }
+
+        $expectedCardCode = (string) $this->partner->code;
+        $cmCardCode = (string) ($this->creditMemoDocument['CardCode'] ?? '');
+        if ($cmCardCode !== '' && $expectedCardCode !== '' && $cmCardCode !== $expectedCardCode) {
+            $errors[] = "Credit note belongs to vendor {$cmCardCode}, expected {$expectedCardCode}.";
+        }
+
+        if (strtoupper((string) ($this->creditMemoDocument['Cancelled'] ?? 'N')) === 'Y') {
+            $errors[] = 'Selected SAP Purchase Credit Note is cancelled.';
+        }
+
+        $cmStatus = $this->creditMemoDocument['DocumentStatus'] ?? null;
+        if ($cmStatus && $cmStatus !== 'bost_Open') {
+            $errors[] = "Selected SAP Purchase Credit Note is not open (status: {$cmStatus}).";
+        }
+
+        $cmRemaining = $this->creditMemoRemainingBalance();
+        if ($cmRemaining !== null && $cmRemaining <= self::AMOUNT_TOLERANCE) {
+            $errors[] = 'Selected SAP Purchase Credit Note has no remaining balance.';
+        }
+
+        $applied = $this->creditMemoAppliedAmount();
+        if ($applied <= self::AMOUNT_TOLERANCE) {
+            $errors[] = 'Credit note applied amount must be greater than zero.';
+        }
+
+        if ($cmRemaining !== null && $applied > $cmRemaining + self::AMOUNT_TOLERANCE) {
+            $errors[] = 'Applied amount exceeds the remaining credit note balance of Rp '.number_format($cmRemaining, 0, ',', '.').'.';
         }
 
         return $errors;

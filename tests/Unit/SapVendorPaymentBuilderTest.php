@@ -352,6 +352,75 @@ class SapVendorPaymentBuilderTest extends TestCase
         $this->assertFalse($preview['is_partial']);
     }
 
+    public function test_build_credit_memo_payload_includes_cm_and_invoice_lines_with_positive_sum_applied(): void
+    {
+        $creditMemo = [
+            'DocEntry' => 322,
+            'DocNum' => 257100050,
+            'CardCode' => 'VSUP01',
+            'DocumentStatus' => 'bost_Open',
+            'Cancelled' => 'N',
+            'DocTotal' => 1000000,
+            'PaidToDate' => 0,
+        ];
+
+        $builder = new SapVendorPaymentBuilder(
+            $this->invoice,
+            $this->apInvoice,
+            $this->partner->fresh(),
+            null,
+            SapVendorPaymentBuilder::MEANS_CREDIT_MEMO,
+            $this->invoice['payment_date'],
+            500000,
+            'John Preparer',
+            'Jane Approver',
+            $creditMemo,
+        );
+
+        $payload = $builder->build();
+
+        $this->assertCount(2, $payload['PaymentInvoices']);
+        $this->assertSame('it_PurchaseCreditNote', $payload['PaymentInvoices'][0]['InvoiceType']);
+        $this->assertSame(322, $payload['PaymentInvoices'][0]['DocEntry']);
+        $this->assertSame(500000.0, $payload['PaymentInvoices'][0]['SumApplied']);
+        $this->assertSame('it_PurchaseInvoice', $payload['PaymentInvoices'][1]['InvoiceType']);
+        $this->assertSame(500000.0, $payload['PaymentInvoices'][1]['SumApplied']);
+        $this->assertArrayNotHasKey('TransferSum', $payload);
+        $this->assertArrayNotHasKey('CashSum', $payload);
+    }
+
+    public function test_validate_rejects_credit_memo_for_different_vendor(): void
+    {
+        $creditMemo = [
+            'DocEntry' => 322,
+            'DocNum' => 257100050,
+            'CardCode' => 'VOTHER',
+            'DocumentStatus' => 'bost_Open',
+            'Cancelled' => 'N',
+            'DocTotal' => 1000000,
+            'PaidToDate' => 0,
+        ];
+
+        $builder = new SapVendorPaymentBuilder(
+            $this->invoice,
+            $this->apInvoice,
+            $this->partner->fresh(),
+            null,
+            SapVendorPaymentBuilder::MEANS_CREDIT_MEMO,
+            $this->invoice['payment_date'],
+            500000,
+            'John Preparer',
+            'Jane Approver',
+            $creditMemo,
+        );
+
+        $errors = $builder->validate(requirePaymentAccount: true);
+
+        $this->assertTrue(
+            collect($errors)->contains(fn (string $error) => str_contains($error, 'Credit note belongs'))
+        );
+    }
+
     protected function makeBuilder(string $paymentMeans = SapVendorPaymentBuilder::MEANS_TRANSFER): SapVendorPaymentBuilder
     {
         return new SapVendorPaymentBuilder(

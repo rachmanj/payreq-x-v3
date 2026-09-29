@@ -283,6 +283,9 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/waiting-payment', [InvoicePaymentController::class, 'waitingPayment'])->name('waiting');
         Route::get('/paid-invoices', [InvoicePaymentController::class, 'paidInvoices'])->name('paid');
         Route::put('/invoices/{invoiceId}/payment', [InvoicePaymentController::class, 'updatePayment'])->name('update-payment');
+        Route::get('/credit-memos', [InvoicePaymentController::class, 'openCreditMemos'])
+            ->middleware('permission:pay_invoice_with_credit_memo')
+            ->name('credit-memos');
         Route::get('/invoices/{invoiceId}/sap-payment/preview', [InvoicePaymentController::class, 'previewSapPayment'])
             ->middleware('permission:submit_sap_invoice_payment')
             ->name('sap-payment.preview');
