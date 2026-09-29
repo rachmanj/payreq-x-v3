@@ -129,7 +129,7 @@ class PpnInputVatSyncService
             'trans_id' => $transId,
             'line_id' => $lineId,
             'document_no' => $this->stringOrNull($raw['document_no'] ?? $raw['DocumentNo'] ?? null),
-            'doc_type' => $this->stringOrNull($raw['doc_type'] ?? $raw['DocType'] ?? null),
+            'doc_type' => $this->resolveDocType($raw),
             'creation_date' => $this->normalizeDate($raw['creation_date'] ?? $raw['CreationDate'] ?? null),
             'posting_date' => $this->normalizeDate($raw['posting_date'] ?? $raw['PostingDate'] ?? null),
             'faktur_date' => $this->normalizeDate($raw['faktur_date'] ?? $raw['FakturDate'] ?? null),
@@ -146,6 +146,54 @@ class PpnInputVatSyncService
             'synced_at' => now(),
             'source' => 'sap_auto',
         ];
+    }
+
+    /**
+     * Kode TransType SAP → nama jenis dokumen.
+     * Dipetakan di aplikasi (bukan di SQL) karena parser SQLQueries SAP menolak ekspresi CASE.
+     */
+    private const TRANS_TYPES = [
+        '-2' => 'Opening Balance',
+        '13' => 'AR Invoice',
+        '14' => 'AR Credit Memo',
+        '203' => 'AR DP',
+        '15' => 'Material Issue',
+        '16' => 'Material Return',
+        '18' => 'AP Invoice',
+        '19' => 'AP Credit Memo',
+        '204' => 'AP DP',
+        '20' => 'Goods Receipt PO',
+        '202' => 'Production Order',
+        '21' => 'Goods Return',
+        '24' => 'Incoming Payments',
+        '30' => 'Journal Entry',
+        '46' => 'Outgoing Payments',
+        '59' => 'Goods Receipt',
+        '60' => 'Goods Issue',
+        '67' => 'InventoryTransfer',
+        '69' => 'Landed Costs',
+        '321' => 'Intenal Reconciliation',
+        '162' => 'Inventory Revaluation',
+    ];
+
+    /**
+     * @param  array<string, mixed>  $raw
+     */
+    private function resolveDocType(array $raw): ?string
+    {
+        $explicit = $this->stringOrNull($raw['doc_type'] ?? $raw['DocType'] ?? null);
+
+        if ($explicit !== null && $explicit !== '') {
+            return $explicit;
+        }
+
+        $code = $raw['trans_type'] ?? $raw['TransType'] ?? null;
+
+        if ($code === null || $code === '') {
+            return null;
+        }
+
+        return self::TRANS_TYPES[(string) $code] ?? null;
     }
 
     /**

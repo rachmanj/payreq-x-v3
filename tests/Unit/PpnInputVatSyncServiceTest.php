@@ -37,9 +37,10 @@ class PpnInputVatSyncServiceTest extends TestCase
         $this->assertStringContainsString('T0.RefDate >= :startDate', $sql);
         $this->assertStringContainsString('T0.RefDate <= :endDate', $sql);
 
-        // Kunci identitas baris untuk upsert idempoten.
+        // Kunci identitas baris untuk upsert idempoten + kode jenis dokumen mentah.
         $this->assertStringContainsString('T0.TransId AS trans_id', $sql);
         $this->assertStringContainsString('T1.Line_ID AS line_id', $sql);
+        $this->assertStringContainsString('T1.TransType AS trans_type', $sql);
         $this->assertStringContainsString("T1.Account = '11603001'", $sql);
 
         // WAJIB: gaya polos `alias.kolom`, sama seperti query produksi AO_OPGL1 yang berjalan.
@@ -48,12 +49,14 @@ class PpnInputVatSyncServiceTest extends TestCase
         $this->assertStringContainsString('LEFT JOIN OPCH T2', $sql);
         $this->assertStringContainsString('LEFT JOIN PCH1 T3', $sql);
 
-        // DILARANG: konstruksi yang ditolak parser SAP ("Invalid SQL syntax", 29 Sep 2026)
-        // — subquery di dalam JOIN dan COALESCE. Project diambil lewat JOIN biasa; baris
-        // ganda dari PCH1 diratakan oleh kunci upsert (trans_id, line_id).
+        // DILARANG: semua ini sudah terbukti ditolak parser SAP ("Invalid SQL syntax", 29 Sep 2026).
+        // Penerjemahan TransType→nama jenis dokumen dilakukan di aplikasi (PpnInputVatSyncService).
+        $this->assertStringNotContainsString('CASE', $sql);
         $this->assertStringNotContainsString('MIN(', $sql);
         $this->assertStringNotContainsString('COALESCE', $sql);
         $this->assertStringNotContainsString('(SELECT', $sql);
+        $this->assertStringNotContainsString('OUSR', $sql);
+        $this->assertStringNotContainsString('ORDER BY', $sql);
         $this->assertStringNotContainsString('[', $sql);
     }
 
