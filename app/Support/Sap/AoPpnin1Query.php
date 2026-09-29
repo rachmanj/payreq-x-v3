@@ -5,17 +5,20 @@ namespace App\Support\Sap;
 /**
  * Query PPN Masukan (baris debit akun 11603001) untuk didaftarkan ke SAP lewat SQLQueries.
  *
- * PELAJARAN 29 Sep 2026 — ditemukan lewat uji langsung ke SAP produksi (dua kali ditolak):
- * - Konstruksi yang DITOLAK parser `SQLQueries`: **ekspresi CASE**, **subquery di JOIN**,
- *   **COALESCE**, dan join ke OUSR + ORDER BY pada query multi-join ini.
- * - Bentuk yang DITERIMA: mengikuti gaya query produksi `AO_OPGL1` — `alias.kolom` polos,
- *   join sederhana, dan pemetaan nilai dilakukan di aplikasi (bukan di SQL).
- * - Karena itu `TransType` diambil MENTAH (`trans_type`) dan diterjemahkan ke nama jenis
- *   dokumen di `PpnInputVatSyncService` (self::TRANS_TYPES).
- * - Penggandaan baris dari LEFT JOIN PCH1 tidak berbahaya: upsert berkunci (trans_id, line_id).
- *
- * JANGAN menambah CASE/COALESCE/subquery/OUSR/ORDER BY ke query ini — sudah terbukti bikin
- * SAP menolak dengan "Invalid SQL syntax". Ada test yang menegakkan aturan ini.
+ * PELAJARAN 29 Sep 2026 (semua ditemukan lewat uji langsung ke SAP produksi):
+ * - Yang DITOLAK parser `SQLQueries`: ekspresi **CASE**, **subquery di JOIN**, **COALESCE**,
+ *   dan join ke **OUSR**.
+ * - Yang DITERIMA: `alias.kolom` polos (gaya query produksi `AO_OPGL1`), `SELECT DISTINCT`,
+ *   dan `ORDER BY`.
+ * - **ORDER BY itu WAJIB ADA di sini.** SAP memotong hasil List per ~300 baris dan aplikasi
+ *   memaginasi dengan `$skip`; tanpa urutan tetap, halaman bisa bergeser sehingga ada baris
+ *   terlewat dan tersampel ulang — terbukti nyata (tiga sinkronisasi berturut-turut menyisakan
+ *   543, lalu 120 baris yang tidak pernah lengkap).
+ * - Join `PCH1` (project per baris invoice) SENGAJA TIDAK dipakai: ia menggandakan baris
+ *   (satu invoice banyak baris) tanpa menambah informasi pajak. Project bisa dilengkapi
+ *   belakangan lewat OData `PurchaseInvoices`, sama seperti pola `unit_no` di aplikasi.
+ * - Penerjemahan `TransType` → nama jenis dokumen dilakukan di `PpnInputVatSyncService`,
+ *   bukan di SQL (expressi CASE ditolak).
  */
 class AoPpnin1Query
 {
@@ -25,17 +28,17 @@ class AoPpnin1Query
 
     public static function sqlText(): string
     {
-        return 'SELECT T0.TransId AS trans_id, T1.Line_ID AS line_id, T0.BaseRef AS document_no,'
+        return 'SELECT DISTINCT T0.TransId AS trans_id, T1.Line_ID AS line_id, T0.BaseRef AS document_no,'
             .' T0.RefDate AS posting_date, T1.TransType AS trans_type, T1.Debit AS amount,'
             .' T2.CardCode AS vendor_code, T2.CardName AS vendor_name, T2.U_MIS_FPNum AS faktur_no,'
-            .' T2.U_MIS_FPDate AS faktur_date, T2.NumAtCard AS invoice_no, T3.Project AS project_code'
+            .' T2.U_MIS_FPDate AS faktur_date, T2.NumAtCard AS invoice_no'
             .' FROM OJDT T0'
             .' INNER JOIN JDT1 T1 ON T0.TransId = T1.TransId'
             .' LEFT JOIN OPCH T2 ON T0.BaseRef = T2.DocNum'
-            .' LEFT JOIN PCH1 T3 ON T2.DocEntry = T3.DocEntry'
             .' WHERE T1.Account = \'11603001\''
             .' AND T1.Debit <> 0'
             .' AND T0.RefDate >= :startDate'
-            .' AND T0.RefDate <= :endDate';
+            .' AND T0.RefDate <= :endDate'
+            .' ORDER BY T0.TransId, T1.Line_ID';
     }
 }

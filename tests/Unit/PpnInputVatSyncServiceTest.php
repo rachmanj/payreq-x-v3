@@ -43,20 +43,23 @@ class PpnInputVatSyncServiceTest extends TestCase
         $this->assertStringContainsString('T1.TransType AS trans_type', $sql);
         $this->assertStringContainsString("T1.Account = '11603001'", $sql);
 
-        // WAJIB: gaya polos `alias.kolom`, sama seperti query produksi AO_OPGL1 yang berjalan.
+        // WAJIB: gaya polos `alias.kolom`, DISTINCT, dan urutan tetap. Tanpa ORDER BY,
+        // paginasi $skip bisa bergeser sehingga baris terlewat (kejadian nyata 29 Sep 2026).
+        $this->assertStringContainsString('SELECT DISTINCT', $sql);
         $this->assertStringContainsString('FROM OJDT T0', $sql);
         $this->assertStringContainsString('INNER JOIN JDT1 T1', $sql);
         $this->assertStringContainsString('LEFT JOIN OPCH T2', $sql);
-        $this->assertStringContainsString('LEFT JOIN PCH1 T3', $sql);
+        $this->assertStringContainsString('ORDER BY T0.TransId, T1.Line_ID', $sql);
 
-        // DILARANG: semua ini sudah terbukti ditolak parser SAP ("Invalid SQL syntax", 29 Sep 2026).
+        // DILARANG: sudah terbukti ditolak parser SAP ("Invalid SQL syntax", 29 Sep 2026).
         // Penerjemahan TransType→nama jenis dokumen dilakukan di aplikasi (PpnInputVatSyncService).
+        // Join PCH1 tidak dipakai karena menggandakan baris (fan-out invoice).
         $this->assertStringNotContainsString('CASE', $sql);
         $this->assertStringNotContainsString('MIN(', $sql);
         $this->assertStringNotContainsString('COALESCE', $sql);
         $this->assertStringNotContainsString('(SELECT', $sql);
         $this->assertStringNotContainsString('OUSR', $sql);
-        $this->assertStringNotContainsString('ORDER BY', $sql);
+        $this->assertStringNotContainsString('PCH1', $sql);
         $this->assertStringNotContainsString('[', $sql);
     }
 
