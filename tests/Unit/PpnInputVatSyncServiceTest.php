@@ -32,12 +32,29 @@ class PpnInputVatSyncServiceTest extends TestCase
         $this->assertSame('AO_PPNIN1', AoPpnin1Query::CODE);
         $this->assertStringContainsString(':startDate', $sql);
         $this->assertStringContainsString(':endDate', $sql);
-        $this->assertStringContainsString('COALESCE(T2.U_MIS_FPDate, T0.RefDate)', $sql);
-        $this->assertStringNotContainsString('CreateDate>=', $sql);
-        $this->assertStringContainsString('T0.TransId AS trans_id', $sql);
-        $this->assertStringContainsString('T1.Line_ID AS line_id', $sql);
-        $this->assertStringContainsString('MIN(Project)', $sql);
-        $this->assertStringContainsString("T1.Account = '11603001'", $sql);
+
+        // Periode memakai tanggal faktur pajak (fallback RefDate untuk yang kosong) — bukan CreateDate.
+        $this->assertStringContainsString('[T2].[U_MIS_FPDate] >= :startDate', $sql);
+        $this->assertStringContainsString('[T2].[U_MIS_FPDate] IS NULL AND [T0].[RefDate]', $sql);
+        $this->assertStringNotContainsString('CreateDate', preg_replace('/\[T0\]\.\[CreateDate\] AS \[creation_date\]/', '', $sql));
+
+        // Kunci identitas baris untuk upsert idempoten.
+        $this->assertStringContainsString('[T0].[TransId] AS [trans_id]', $sql);
+        $this->assertStringContainsString('[T1].[Line_ID] AS [line_id]', $sql);
+        $this->assertStringContainsString("[T1].[Account] = '11603001'", $sql);
+
+        // WAJIB: identifier dikurung siku — parser SAP B1 menolak bentuk polos
+        // ("Invalid SQL syntax", kejadian nyata 29 Sep 2026). Gaya ini meniru AO_OPEN3
+        // yang sudah berjalan di produksi.
+        $this->assertStringContainsString('FROM [OJDT] T0', $sql);
+        $this->assertStringContainsString('INNER JOIN [JDT1] T1', $sql);
+        $this->assertStringContainsString('[T1].[Debit]', $sql);
+
+        // Hindari konstruksi yang ditolak SAP: subquery di JOIN dan COALESCE.
+        $this->assertStringNotContainsString('MIN(', $sql);
+        $this->assertStringNotContainsString('COALESCE', $sql);
+        $this->assertStringNotContainsString('FROM OJDT', $sql);
+        $this->assertStringNotContainsString('FROM JDT1', $sql);
     }
 
     public function test_date_range_for_lookback_uses_inclusive_window(): void
