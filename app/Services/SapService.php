@@ -284,6 +284,42 @@ class SapService
         return $this->fetchAll('ChartOfAccounts');
     }
 
+    public function getChartOfAccountSystemBalance(string $accountCode): ?float
+    {
+        $accountCode = trim($accountCode);
+
+        if ($accountCode === '') {
+            return null;
+        }
+
+        try {
+            $this->ensureSession();
+
+            $response = $this->handleSessionExpiration(function () use ($accountCode) {
+                return $this->client->get("ChartOfAccounts('{$accountCode}')");
+            });
+
+            $body = json_decode($response->getBody()->getContents(), true);
+
+            if (! is_array($body) || ! array_key_exists('Balance_syscurr', $body)) {
+                Log::warning('SAP ChartOfAccounts response missing Balance_syscurr', [
+                    'account_code' => $accountCode,
+                ]);
+
+                return null;
+            }
+
+            return (float) $body['Balance_syscurr'];
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to fetch SAP ChartOfAccounts balance', [
+                'account_code' => $accountCode,
+                'error' => $exception->getMessage(),
+            ]);
+
+            throw $exception;
+        }
+    }
+
     public function getBusinessPartners(): array
     {
         return $this->fetchAll('BusinessPartners');

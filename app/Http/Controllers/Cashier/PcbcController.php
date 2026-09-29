@@ -13,6 +13,8 @@ use App\Models\Dokumen;
 use App\Models\Pcbc;
 use App\Models\Project;
 use App\Services\PcbcService;
+use App\Services\PettyCashAccountResolver;
+use App\Services\PettyCashSapBalanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -148,10 +150,7 @@ class PcbcController extends Controller
     {
         // Get default system amount from cash account's app_balance
         $defaultSystemAmount = 0;
-        $cashAccount = Account::where('project', auth()->user()->project)
-            ->where('type', 'cash')
-            ->orderBy('id')
-            ->first();
+        $cashAccount = app(PettyCashAccountResolver::class)->resolveForProject(auth()->user()->project);
 
         if ($cashAccount && isset($cashAccount->app_balance)) {
             $defaultSystemAmount = $cashAccount->app_balance;
@@ -386,9 +385,26 @@ class PcbcController extends Controller
             ->editColumn('pcbc_date', function ($pcbc) {
                 return Carbon::parse($pcbc->pcbc_date)->format('d M Y');
             })
+            ->editColumn('system_amount', function ($pcbc) {
+                return number_format((float) $pcbc->system_amount, 2, ',', '.');
+            })
+            ->editColumn('sap_amount', function ($pcbc) {
+                return $pcbc->sap_amount !== null
+                    ? number_format((float) $pcbc->sap_amount, 2, ',', '.')
+                    : '<span class="text-muted">tidak tersedia</span>';
+            })
+            ->addColumn('selisih_system_sap', function ($pcbc) {
+                if ($pcbc->sap_amount === null) {
+                    return '<span class="text-muted">-</span>';
+                }
+
+                $selisih = (float) $pcbc->system_amount - (float) $pcbc->sap_amount;
+
+                return number_format($selisih, 2, ',', '.');
+            })
             ->addIndexColumn()
             ->addColumn('action', 'cashier.pcbc.pcbc_action')
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'sap_amount', 'selisih_system_sap'])
             ->toJson();
     }
 
@@ -404,6 +420,7 @@ class PcbcController extends Controller
             $this->fillBasicInfo($pcbc, $request, $nomor);
             $this->fillDenominations($pcbc, $request);
             $this->fillAmounts($pcbc, $request, $fisik_amount);
+            $pcbc->sap_amount = $this->resolveSapAmountForProject($request->project);
             $this->fillApprovalInfo($pcbc, $request);
 
             $pcbc->save();
@@ -458,7 +475,42 @@ class PcbcController extends Controller
     {
         $pcbc->system_amount = floatval(str_replace(',', '.', str_replace('.', '', $request->system_amount)));
         $pcbc->fisik_amount = $fisik_amount;
-        $pcbc->sap_amount = floatval(str_replace(',', '.', str_replace('.', '', $request->sap_amount)));
+    }
+
+    private function resolveSapAmountForProject(string $project): ?float
+    {
+        $sapBalance = app(PettyCashSapBalanceService::class)->getBalanceForProject($project, true);
+
+        return $sapBalance['available'] ? $sapBalance['balance'] : null;
+    }
+
+    public function fetchSapBalance(int $id)
+    {
+        $pcbc = Pcbc::findOrFail($id);
+
+        $userRoles = app(UserController::class)->getUserRoles();
+        $isAuthorized = array_intersect($this->allowedRoles, $userRoles)
+            || $pcbc->created_by === auth()->id();
+
+        if (! $isAuthorized) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $sapAmount = $this->resolveSapAmountForProject($pcbc->project);
+        $pcbc->sap_amount = $sapAmount;
+        $pcbc->updated_by = auth()->id();
+        $pcbc->modified_at = now();
+        $pcbc->save();
+
+        if ($sapAmount === null) {
+            return redirect()
+                ->back()
+                ->with('warning', 'Saldo SAP tidak tersedia. Periksa koneksi SAP atau mapping akun kas.');
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Saldo SAP berhasil diperbarui.');
     }
 
     private function fillApprovalInfo(Pcbc $pcbc, Request $request): void
@@ -541,10 +593,7 @@ class PcbcController extends Controller
         // For Design 3, get system balance from cash account
         $systemBalance = 0;
         if ($design == '3') {
-            $cashAccount = Account::where('project', $pcbc->project)
-                ->where('type', 'cash')
-                ->orderBy('id')
-                ->first();
+            $cashAccount = app(PettyCashAccountResolver::class)->resolveForProject($pcbc->project);
 
             if ($cashAccount && isset($cashAccount->app_balance)) {
                 $systemBalance = $cashAccount->app_balance;

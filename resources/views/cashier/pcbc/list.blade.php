@@ -25,6 +25,9 @@
                             <tr>
                                 <th>#</th>
                                 <th>Date Position</th>
+                                <th>System</th>
+                                <th>SAP</th>
+                                <th>Selisih (Sys-SAP)</th>
                                 <th>Cashier</th>
                                 <th>Pemeriksa</th>
                                 <th>Action</th>
@@ -77,6 +80,15 @@
                     },
                     {
                         data: 'pcbc_date'
+                    },
+                    {
+                        data: 'system_amount'
+                    },
+                    {
+                        data: 'sap_amount'
+                    },
+                    {
+                        data: 'selisih_system_sap'
                     },
                     {
                         data: 'created_by'

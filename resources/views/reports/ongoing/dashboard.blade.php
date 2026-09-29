@@ -62,6 +62,34 @@
                 <td class="text-right"><strong>Rp. {{ $dashboard_data['cek_balance_pc_sap'] }}</strong></td>
               <td></td>
             </tr>
+            <tr>
+              <td>I. Saldo PC SAP (real-time)
+                @if (!empty($dashboard_data['saldo_pc_sap_account']))
+                  <br><small class="text-muted">Akun SAP {{ $dashboard_data['saldo_pc_sap_account'] }}</small>
+                @endif
+              </td>
+              <td></td>
+              <td class="text-right">
+                @if ($dashboard_data['saldo_pc_sap_realtime_available'] ?? false)
+                  <strong>Rp. {{ $dashboard_data['saldo_pc_sap_realtime'] }}</strong>
+                @else
+                  <span class="text-muted">tidak tersedia</span>
+                @endif
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>J. Selisih (Cek balance - SAP)</td>
+              <td></td>
+              <td class="text-right {{ \App\Support\PettyCashBalanceVariance::bootstrapTextClass($dashboard_data['selisih_cek_balance_sap_level'] ?? null) }}">
+                @if (($dashboard_data['selisih_cek_balance_sap'] ?? null) !== null)
+                  <strong>Rp. {{ $dashboard_data['selisih_cek_balance_sap'] }}</strong>
+                @else
+                  <span class="text-muted">tidak tersedia</span>
+                @endif
+              </td>
+              <td></td>
+            </tr>
           </tbody>
         </table>
       </div>

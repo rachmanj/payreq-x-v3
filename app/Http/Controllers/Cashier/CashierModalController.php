@@ -11,6 +11,7 @@ use App\Models\Incoming;
 use App\Models\Outgoing;
 use App\Models\User;
 use App\Services\CashierModalToleranceService;
+use App\Services\PettyCashAccountResolver;
 use Illuminate\Http\Request;
 
 class CashierModalController extends Controller
@@ -216,11 +217,7 @@ class CashierModalController extends Controller
 
     public function cashier_app_balance(): float
     {
-        $account = Account::query()
-            ->where('project', auth()->user()->project)
-            ->where('type', 'cash')
-            ->orderBy('id')
-            ->first();
+        $account = app(PettyCashAccountResolver::class)->resolveForProject(auth()->user()->project);
 
         return (float) ($account?->app_balance ?? 0);
     }

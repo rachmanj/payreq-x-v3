@@ -13,12 +13,21 @@
         <div class="col-12">
 
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Edit PCBC</h3>
-                    <a href="{{ route('cashier.pcbc.index', ['page' => 'list']) }}"
-                        class="btn btn-sm btn-secondary float-right">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </a>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Edit PCBC</h3>
+                    <div>
+                        <form action="{{ route('cashier.pcbc.fetch_sap_balance', $pcbc->id) }}" method="POST"
+                            class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-primary mr-2">
+                                <i class="fas fa-sync-alt"></i> Ambil saldo SAP
+                            </button>
+                        </form>
+                        <a href="{{ route('cashier.pcbc.index', ['page' => 'list']) }}"
+                            class="btn btn-sm btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('cashier.pcbc.update_pcbc', $pcbc->id) }}" method="POST" id="pcbcForm">
@@ -87,17 +96,15 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="sap_amount">SAP Amount <i class="fas fa-info-circle"
-                                            title="use comma as 2 digit decimal separator"></i></label>
-                                    <input type="text" class="form-control text-center" id="sap_amount" name="sap_amount"
-                                        value="{{ old('sap_amount', number_format($pcbc->sap_amount, 2, ',', '.')) }}"
-                                        oninput="let value = this.value.replace(/[^0-9]/g, '');
-                                                if (value.length > 0) {
-                                                    value = parseInt(value);
-                                                    this.value = new Intl.NumberFormat('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(value/100);
-                                                } else {
-                                                    this.value = '';
-                                                }">
+                                    <label for="sap_amount">Saldo SAP</label>
+                                    <input type="text" class="form-control text-center bg-light" id="sap_amount"
+                                        readonly
+                                        value="{{ $pcbc->sap_amount !== null ? number_format($pcbc->sap_amount, 2, ',', '.') : 'tidak tersedia' }}">
+                                </div>
+                                <div class="form-group">
+                                    <label>Selisih (System - SAP)</label>
+                                    <input type="text" class="form-control text-center bg-light" readonly
+                                        value="{{ $pcbc->system_sap_variance !== null ? number_format($pcbc->system_sap_variance, 2, ',', '.') : '-' }}">
                                 </div>
                             </div>
                         </div>

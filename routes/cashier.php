@@ -75,6 +75,8 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
     Route::prefix('dashboard')->name('dashboard.')->middleware('permission:cashier_dashboard')->group(function () {
         Route::get('/', [CashierDashboardController::class, 'index'])->name('index');
+        Route::post('/pc-sap-balance/refresh', [CashierDashboardController::class, 'refreshPcSapBalance'])
+            ->name('pc_sap_balance.refresh');
         Route::get('/clearing/transactions', ClearingAccountTransactionController::class)
             ->name('clearing.transactions');
     });
@@ -125,6 +127,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/your-data', [PcbcController::class, 'your_data'])->name('your_data');
         Route::get('/export', [PcbcController::class, 'export'])->name('export');
         Route::get('/{id}/print', [PcbcController::class, 'print'])->name('print');
+        Route::post('/{id}/fetch-sap-balance', [PcbcController::class, 'fetchSapBalance'])->name('fetch_sap_balance');
         Route::put('/{id}/update-pcbc', [PcbcController::class, 'update_pcbc'])->name('update_pcbc');
         Route::delete('/{id}/destroy-pcbc', [PcbcController::class, 'destroy_pcbc'])->name('destroy_pcbc');
         Route::post('/upload', [PcbcController::class, 'upload'])->name('upload');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\AccountImport;
 use App\Models\Account;
+use App\Services\PettyCashAccountResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
@@ -81,7 +82,7 @@ class AccountController extends Controller
 
     public function outgoing($amount)
     {
-        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
+        $account_cash = app(PettyCashAccountResolver::class)->resolveForProject(auth()->user()->project);
         $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->orderBy('id')->first();
 
         // if account is not found
@@ -100,7 +101,7 @@ class AccountController extends Controller
 
     public function outgoing_manual($amount)
     {
-        $account_cash = Account::where('type', 'cash')->where('project', auth()->user()->project)->orderBy('id')->first();
+        $account_cash = app(PettyCashAccountResolver::class)->resolveForProject(auth()->user()->project);
         // $account_advance = Account::where('type', 'advance')->where('project', auth()->user()->project)->first();
 
         $account_cash->app_balance = $account_cash->app_balance - $amount;
@@ -119,7 +120,7 @@ class AccountController extends Controller
         }
 
         $cashier_project = auth()->user()->project;
-        $account_cash = Account::where('type', 'cash')->where('project', $cashier_project)->orderBy('id')->first();
+        $account_cash = app(PettyCashAccountResolver::class)->resolveForProject($cashier_project);
         $account_advance = Account::where('type', 'advance')->where('project', $cashier_project)->orderBy('id')->first();
 
         if (! $account_cash || ! $account_advance) {
@@ -131,7 +132,7 @@ class AccountController extends Controller
 
     public function incomingForProject(string $project, float $amount): bool
     {
-        $account_cash = Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first();
+        $account_cash = app(PettyCashAccountResolver::class)->resolveForProject($project);
         $account_advance = Account::where('type', 'advance')->where('project', $project)->orderBy('id')->first();
 
         if (! $account_cash || ! $account_advance) {

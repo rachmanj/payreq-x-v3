@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
-use App\Models\Account;
 use App\Models\Incoming;
 use App\Models\Outgoing;
 use App\Models\Payreq;
@@ -12,6 +11,9 @@ use App\Models\Realization;
 use App\Models\RealizationDetail;
 use App\Models\User;
 use App\Models\VerificationJournalDetail;
+use App\Services\PettyCashAccountResolver;
+use App\Services\PettyCashSapBalanceService;
+use App\Support\PettyCashBalanceVariance;
 use Illuminate\Support\Facades\DB;
 
 class OngoingDashboardController extends Controller
@@ -33,7 +35,8 @@ class OngoingDashboardController extends Controller
 
     public function dashboard_data($project)
     {
-        $saldo_pc_payreq_system = Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first()->app_balance;
+        $cashAccount = app(PettyCashAccountResolver::class)->resolveForProject($project);
+        $saldo_pc_payreq_system = $cashAccount?->app_balance ?? 0;
         $payreq_belum_realisasi_amount = $this->payreq_belum_realisasi_amount($project);
         $realisasi_belum_verifikasi_amount = $this->realisasi_belum_verifikasi_amount($project);
         $verifikasi_belum_posted_amount = $this->verifikasi_belum_posted_amount($project); // this is not used anymore, so we just set it to '0.00
@@ -41,6 +44,13 @@ class OngoingDashboardController extends Controller
         $variance_realisasi_belum_outgoing_amount = $this->variance_realisasi_belum_outgoing_amount($project);
         $total_advance_employee = $payreq_belum_realisasi_amount + $realisasi_belum_verifikasi_amount + $verifikasi_belum_posted_amount + $variance_realisasi_belum_incoming_amount - $variance_realisasi_belum_outgoing_amount;
         $cek_balance_pc_sap = $saldo_pc_payreq_system + $total_advance_employee;
+
+        $sapBalance = app(PettyCashSapBalanceService::class)->getBalanceForProject($project);
+        $saldoPcSapRealtime = $sapBalance['available'] ? $sapBalance['balance'] : null;
+        $selisihCekBalanceSap = $saldoPcSapRealtime !== null
+            ? $cek_balance_pc_sap - $saldoPcSapRealtime
+            : null;
+        $selisihLevel = PettyCashBalanceVariance::level($selisihCekBalanceSap);
 
         $dashboard_data = [
             'saldo_pc_payreq_system' => number_format($saldo_pc_payreq_system, 2),
@@ -51,6 +61,13 @@ class OngoingDashboardController extends Controller
             'variance_realisasi_belum_outgoing_amount' => number_format($variance_realisasi_belum_outgoing_amount, 2),
             'total_advance_employee' => number_format($total_advance_employee, 2),
             'cek_balance_pc_sap' => number_format($cek_balance_pc_sap, 2),
+            'cek_balance_pc_sap_raw' => $cek_balance_pc_sap,
+            'saldo_pc_sap_realtime' => $saldoPcSapRealtime !== null ? number_format($saldoPcSapRealtime, 2) : null,
+            'saldo_pc_sap_realtime_available' => $sapBalance['available'],
+            'saldo_pc_sap_account' => $sapBalance['sap_account'],
+            'selisih_cek_balance_sap' => $selisihCekBalanceSap !== null ? number_format($selisihCekBalanceSap, 2) : null,
+            'selisih_cek_balance_sap_raw' => $selisihCekBalanceSap,
+            'selisih_cek_balance_sap_level' => $selisihLevel,
             'ongoing_documents_by_user' => $this->ongoing_documents_by_user($project),
         ];
 

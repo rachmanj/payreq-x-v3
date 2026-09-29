@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Account;
 use App\Models\Incoming;
 use App\Models\Outgoing;
 use App\Models\Payreq;
 use App\Services\ClearingAccountMonitorService;
+use App\Services\PettyCashAccountResolver;
+use App\Services\PettyCashSapBalanceService;
 use Carbon\Carbon;
 
 class CashierDashboardController extends Controller
@@ -52,7 +53,7 @@ class CashierDashboardController extends Controller
             'count' => Outgoing::where('project', $project)->where('outgoing_date', $today)->count(),
         ];
 
-        $account = Account::where('type', 'cash')->where('project', $project)->orderBy('id')->first();
+        $account = app(PettyCashAccountResolver::class)->resolveForProject($project);
         if ($account) {
             $result['today_pc_balance'] = $account->app_balance;
         } else {
@@ -64,5 +65,15 @@ class CashierDashboardController extends Controller
         $result['dashboard_report'] = app(Reports\OngoingDashboardController::class)->dashboard_data($project);
 
         return $result;
+    }
+
+    public function refreshPcSapBalance()
+    {
+        $project = auth()->user()->project;
+        app(PettyCashSapBalanceService::class)->getBalanceForProject($project, true);
+
+        return redirect()
+            ->route('cashier.dashboard.index')
+            ->with('success', 'Saldo PC SAP diperbarui dari SAP.');
     }
 }

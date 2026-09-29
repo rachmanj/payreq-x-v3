@@ -36,4 +36,13 @@ class Pcbc extends Model
     {
         return ($this->sap_amount ?? 0) - ($this->fisik_amount ?? 0);
     }
+
+    public function getSystemSapVarianceAttribute(): ?float
+    {
+        if ($this->sap_amount === null) {
+            return null;
+        }
+
+        return (float) ($this->system_amount ?? 0) - (float) $this->sap_amount;
+    }
 }

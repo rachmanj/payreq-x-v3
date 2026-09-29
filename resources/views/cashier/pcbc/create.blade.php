@@ -158,20 +158,10 @@
                                                 <small class="text-muted">From SAP system</small>
                                             </div>
                                         </div>
-                                        <div class="form-group mt-2">
-                                            <label for="sap_amount">Enter SAP Amount
-                                                <i class="fas fa-info-circle" data-toggle="tooltip"
-                                                    title="Enter amount from SAP system. Use comma (,) as decimal separator."></i>
-                                            </label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">Rp</span>
-                                                </div>
-                                                <input type="text" class="form-control text-center" id="sap_amount"
-                                                    name="sap_amount" value="{{ old('sap_amount') }}" placeholder="0,00"
-                                                    oninput="formatAmountInput(this); updateAmountSummary();">
-                                            </div>
-                                        </div>
+                                        <p class="text-muted small mt-2 mb-0">
+                                            Saldo SAP diambil otomatis dari SAP saat dokumen disimpan.
+                                            Jika SAP tidak terjangkau, kolom saldo SAP dikosongkan (bukan nol).
+                                        </p>
                                     </div>
                                 </div>
 
@@ -481,31 +471,17 @@
         function updateAmountSummary() {
             const systemAmount = parseAmount($('#system_amount').val());
             const fisikAmount = parseAmount($('#fisik_amount').val());
-            const sapAmount = parseAmount($('#sap_amount').val());
 
-            // Update displays
             $('#system-amount-display').text('Rp ' + (systemAmount > 0 ? formatNumber(systemAmount) : '0,00'));
-            $('#sap-amount-display').text('Rp ' + (sapAmount > 0 ? formatNumber(sapAmount) : '0,00'));
+            $('#sap-amount-display').text('Diisi otomatis saat simpan');
 
-            // Calculate variances
             const systemVariance = systemAmount - fisikAmount;
-            const sapVariance = sapAmount - fisikAmount;
-            const hasVariance = Math.abs(systemVariance) > 0.01 || Math.abs(sapVariance) > 0.01;
+            const hasVariance = Math.abs(systemVariance) > 0.01;
 
-            // Show/hide variance alert
-            if (hasVariance && (systemAmount > 0 || sapAmount > 0)) {
-                let varianceText = '<ul class="mb-0">';
-                if (systemAmount > 0) {
-                    const varianceClass = Math.abs(systemVariance) > 1000 ? 'text-danger' : 'text-warning';
-                    varianceText += `<li class="${varianceClass}">System Variance: Rp ${formatNumber(Math.abs(systemVariance))} 
-                        (${systemVariance > 0 ? 'over' : 'under'})</li>`;
-                }
-                if (sapAmount > 0) {
-                    const varianceClass = Math.abs(sapVariance) > 1000 ? 'text-danger' : 'text-warning';
-                    varianceText += `<li class="${varianceClass}">SAP Variance: Rp ${formatNumber(Math.abs(sapVariance))} 
-                        (${sapVariance > 0 ? 'over' : 'under'})</li>`;
-                }
-                varianceText += '</ul>';
+            if (hasVariance && systemAmount > 0) {
+                const varianceClass = Math.abs(systemVariance) > 1000 ? 'text-danger' : 'text-warning';
+                const varianceText = `<ul class="mb-0"><li class="${varianceClass}">System Variance: Rp ${formatNumber(Math.abs(systemVariance))} 
+                        (${systemVariance > 0 ? 'over' : 'under'})</li></ul>`;
                 $('#variance-details').html(varianceText);
                 $('#variance-alert').show();
             } else {

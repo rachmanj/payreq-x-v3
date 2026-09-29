@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Account;
 use App\Models\CashOpname;
+use App\Services\PettyCashAccountResolver;
 use Illuminate\Http\Request;
 
 class CashOpnameController extends Controller
@@ -15,7 +15,8 @@ class CashOpnameController extends Controller
 
     public function create()
     {
-        $app_balance = Account::where('project', auth()->user()->project)->where('type', 'cash')->first()->app_balance;
+        $cashAccount = app(PettyCashAccountResolver::class)->resolveForProject(auth()->user()->project);
+        $app_balance = $cashAccount?->app_balance ?? 0;
         $pcbc = CashOpname::create([
             'nomor' => app(DocumentNumberController::class)->generate_document_number('pcbc', auth()->user()->project),
             'project' => auth()->user()->project,
@@ -43,7 +44,7 @@ class CashOpnameController extends Controller
     {
         $pcbc = CashOpname::findOrFail($id);
         $data = array_filter($request->all(), function ($value) {
-            return !is_null($value);
+            return ! is_null($value);
         });
 
         $pcbc->update($data);
