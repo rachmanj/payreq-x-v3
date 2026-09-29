@@ -488,6 +488,9 @@
                                         @endif
                                         <option value="cash">Cash</option>
                                     </select>
+                                    <small class="text-muted d-none" id="sap_credit_memo_means_hint">
+                                        Pembayaran dengan credit memo tidak bisa berdiri sendiri: SAP mensyaratkan ada baris kas/transfer dalam dokumen pembayaran yang sama. Selesaikan penerapan credit memo melalui SAP, atau gunakan pembayaran transfer.
+                                    </small>
                                 </div>
                             </div>
                             <div class="col-md-4" id="sap_account_id_group">
@@ -1513,6 +1516,7 @@
                 const isCreditMemo = $('#sap_payment_means').val() === 'credit_memo';
                 $('#sap_account_id_group').toggleClass('d-none', isCreditMemo);
                 $('#sap_credit_memo_group').toggleClass('d-none', !isCreditMemo);
+                $('#sap_credit_memo_means_hint').toggleClass('d-none', !isCreditMemo);
                 $('#sap_account_id').prop('required', !isCreditMemo);
                 $('#sap_credit_memo_doc_entry').prop('required', isCreditMemo);
                 if (!isCreditMemo) {

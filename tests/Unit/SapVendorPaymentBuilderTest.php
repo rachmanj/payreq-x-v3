@@ -389,6 +389,39 @@ class SapVendorPaymentBuilderTest extends TestCase
         $this->assertArrayNotHasKey('CashSum', $payload);
     }
 
+    public function test_validate_rejects_standalone_credit_memo_with_indonesian_message(): void
+    {
+        $creditMemo = [
+            'DocEntry' => 322,
+            'DocNum' => 257100050,
+            'CardCode' => 'VSUP01',
+            'DocumentStatus' => 'bost_Open',
+            'Cancelled' => 'N',
+            'DocTotal' => 1000000,
+            'PaidToDate' => 0,
+        ];
+
+        $builder = new SapVendorPaymentBuilder(
+            $this->invoice,
+            $this->apInvoice,
+            $this->partner->fresh(),
+            null,
+            SapVendorPaymentBuilder::MEANS_CREDIT_MEMO,
+            $this->invoice['payment_date'],
+            500000,
+            'John Preparer',
+            'Jane Approver',
+            $creditMemo,
+        );
+
+        $errors = $builder->validate(requirePaymentAccount: true);
+
+        $this->assertContains(
+            'Pembayaran dengan credit memo tidak bisa berdiri sendiri: SAP mensyaratkan ada baris kas/transfer dalam dokumen pembayaran yang sama. Silakan selesaikan penerapan credit memo melalui SAP, atau gunakan pembayaran transfer.',
+            $errors
+        );
+    }
+
     public function test_validate_rejects_credit_memo_for_different_vendor(): void
     {
         $creditMemo = [
@@ -419,6 +452,17 @@ class SapVendorPaymentBuilderTest extends TestCase
         $this->assertTrue(
             collect($errors)->contains(fn (string $error) => str_contains($error, 'Credit note belongs'))
         );
+        $this->assertTrue(
+            collect($errors)->contains(fn (string $error) => str_contains($error, 'tidak bisa berdiri sendiri'))
+        );
+    }
+
+    public function test_validate_transfer_payment_still_passes_without_credit_memo_rules(): void
+    {
+        $builder = $this->makeBuilder(SapVendorPaymentBuilder::MEANS_TRANSFER);
+
+        $this->assertSame([], $builder->validate(requirePaymentAccount: true));
+        $this->assertTrue($builder->paymentIncludesCashOrTransferComponent());
     }
 
     protected function makeBuilder(string $paymentMeans = SapVendorPaymentBuilder::MEANS_TRANSFER): SapVendorPaymentBuilder

@@ -389,9 +389,26 @@ class SapVendorPaymentBuilder
     /**
      * @return list<string>
      */
+    public function paymentIncludesCashOrTransferComponent(): bool
+    {
+        if (in_array($this->paymentMeans, [self::MEANS_CASH, self::MEANS_TRANSFER], true)) {
+            return $this->paymentAmountValue() > self::AMOUNT_TOLERANCE;
+        }
+
+        if ($this->paymentMeans === self::MEANS_CREDIT_MEMO) {
+            return false;
+        }
+
+        return false;
+    }
+
     protected function validateCreditMemoPayment(): array
     {
         $errors = [];
+
+        if (! $this->paymentIncludesCashOrTransferComponent()) {
+            $errors[] = 'Pembayaran dengan credit memo tidak bisa berdiri sendiri: SAP mensyaratkan ada baris kas/transfer dalam dokumen pembayaran yang sama. Silakan selesaikan penerapan credit memo melalui SAP, atau gunakan pembayaran transfer.';
+        }
 
         if ($this->withholdingTotal() > 0) {
             $errors[] = 'PPh23 withholding cannot be settled with AP Credit Memo in this flow. Use transfer or cash payment.';
