@@ -180,6 +180,53 @@ class SapInstallmentApInvoiceBuilderTest extends TestCase
         $this->assertSame(500000.0, $preview['adm_amount']);
         $this->assertSame(538940000.0, $preview['total']);
         $this->assertSame('71201003', $preview['adm_account']);
+        $this->assertSame('B100', $preview['vat_group']);
+        $this->assertSame('tNO', $preview['wt_liable']);
+        foreach ($preview['lines'] as $line) {
+            $this->assertSame('B100', $line['vat_group']);
+            $this->assertSame('tNO', $line['wt_liable']);
+        }
+    }
+
+    public function test_build_document_lines_use_vat_group_b100_and_wt_liable_no(): void
+    {
+        $installment = $this->createInstallment([
+            'bilyet_amount' => 539440000,
+            'principal_amount' => 538440000,
+            'interest_amount' => 500000,
+            'adm_amount' => 500000,
+        ]);
+
+        $lines = (new SapInstallmentApInvoiceBuilder($installment))->build()['DocumentLines'];
+
+        $this->assertCount(3, $lines);
+        foreach ($lines as $line) {
+            $this->assertSame('B100', $line['VatGroup']);
+            $this->assertSame('tNO', $line['WTLiable']);
+        }
+    }
+
+    public function test_build_payload_uses_only_non_taxable_vat_group_b100(): void
+    {
+        $installment = $this->createInstallment([
+            'bilyet_amount' => 539440000,
+            'principal_amount' => 538440000,
+            'interest_amount' => 500000,
+            'adm_amount' => 500000,
+        ]);
+
+        $payload = (new SapInstallmentApInvoiceBuilder($installment))->build();
+        $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        $this->assertStringNotContainsString('B111', $encoded);
+        $this->assertStringNotContainsString('VatSum', $encoded);
+
+        foreach ($payload['DocumentLines'] as $line) {
+            $this->assertSame('B100', $line['VatGroup']);
+        }
+
+        $lineTotalSum = array_sum(array_column($payload['DocumentLines'], 'LineTotal'));
+        $this->assertSame(539440000.0, $lineTotalSum);
     }
 
     /**

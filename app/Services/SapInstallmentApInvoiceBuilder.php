@@ -9,6 +9,11 @@ class SapInstallmentApInvoiceBuilder
 {
     public const DEFAULT_SAP_SERIES = 3834;
 
+    /** VAT IN 0% — must be explicit; vendor master defaults to B111 (11% PPN). */
+    private const VAT_GROUP = 'B100';
+
+    private const WT_LIABLE = 'tNO';
+
     private const DEFAULT_PRINCIPAL_ACCOUNT = '22201001';
 
     private const INTEREST_ACCOUNT = '71201004';
@@ -150,6 +155,8 @@ class SapInstallmentApInvoiceBuilder
             'adm_account' => self::ADMINISTRATION_ACCOUNT,
             'costing_code' => $loan->costing_code ?? '60',
             'project_code' => $loan->project_code,
+            'vat_group' => self::VAT_GROUP,
+            'wt_liable' => self::WT_LIABLE,
             'lines' => $this->buildPreviewLines($principal, $interest, $adm),
         ];
     }
@@ -249,6 +256,8 @@ class SapInstallmentApInvoiceBuilder
                 'type' => 'principal',
                 'description' => $this->lineDescription('Principal'),
                 'amount' => $principal,
+                'vat_group' => self::VAT_GROUP,
+                'wt_liable' => self::WT_LIABLE,
             ],
         ];
 
@@ -257,6 +266,8 @@ class SapInstallmentApInvoiceBuilder
                 'type' => 'administration',
                 'description' => self::ADMIN_LINE_DESCRIPTION,
                 'amount' => $adm,
+                'vat_group' => self::VAT_GROUP,
+                'wt_liable' => self::WT_LIABLE,
             ];
         }
 
@@ -265,6 +276,8 @@ class SapInstallmentApInvoiceBuilder
                 'type' => 'interest',
                 'description' => $this->lineDescription('Interest'),
                 'amount' => $interest,
+                'vat_group' => self::VAT_GROUP,
+                'wt_liable' => self::WT_LIABLE,
             ];
         }
 
@@ -287,6 +300,8 @@ class SapInstallmentApInvoiceBuilder
             'Quantity' => 1,
             'UnitPrice' => $amount,
             'LineTotal' => $amount,
+            'VatGroup' => self::VAT_GROUP,
+            'WTLiable' => self::WT_LIABLE,
             'CostingCode' => $costingCode,
             'UseBaseUnits' => 'N',
         ];
