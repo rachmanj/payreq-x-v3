@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\CoretaxInputVat;
 use App\Models\Customer;
 use App\Models\Faktur;
 use App\Models\User;
@@ -102,5 +103,81 @@ class PpnReconciliationServiceTest extends TestCase
         $this->assertSame(100_000.0, $result['diff_detail']['pm_sap_minus_app']);
         $this->assertSame(200_000.0, $result['totals']['diff_sap_app']);
         $this->assertCount(1, $result['missing_faktur_exposure']);
+    }
+
+    public function test_three_way_reconciliation_classifies_findings(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::query()->create([
+            'code' => 'V1',
+            'name' => 'Supplier',
+            'type' => 'vendor',
+        ]);
+
+        Faktur::query()->create([
+            'customer_id' => $customer->id,
+            'invoice_no' => 'A1',
+            'invoice_date' => '2026-09-10',
+            'type' => 'purchase',
+            'masa_pajak' => '2026-09',
+            'faktur_no' => '04002600000000001',
+            'dpp' => 1_000_000,
+            'ppn' => 100_000,
+            'created_by' => $user->id,
+        ]);
+
+        Faktur::query()->create([
+            'customer_id' => $customer->id,
+            'invoice_no' => 'A2',
+            'invoice_date' => '2026-09-11',
+            'type' => 'purchase',
+            'masa_pajak' => '2026-09',
+            'faktur_no' => '04002600000000002',
+            'dpp' => 2_000_000,
+            'ppn' => 200_000,
+            'created_by' => $user->id,
+        ]);
+
+        CoretaxInputVat::query()->create([
+            'masa_pajak' => '2026-09',
+            'import_batch' => 'T1',
+            'npwp' => '1',
+            'supplier_name' => 'S1',
+            'faktur_no' => '04002600000000001',
+            'dpp' => 1_000_000,
+            'ppn' => 100_000,
+            'status_faktur' => 'APPROVED',
+            'imported_by' => $user->id,
+        ]);
+
+        CoretaxInputVat::query()->create([
+            'masa_pajak' => '2026-09',
+            'import_batch' => 'T1',
+            'npwp' => '2',
+            'supplier_name' => 'S3',
+            'faktur_no' => '04002600000000003',
+            'dpp' => 500_000,
+            'ppn' => 50_000,
+            'status_faktur' => 'CREDITED',
+            'imported_by' => $user->id,
+        ]);
+
+        $sap = Mockery::mock(SapService::class);
+        $sap->shouldReceive('fetchPurchaseInvoicesForDocDateRange')
+            ->andReturn([
+                ['DocNum' => 1, 'VatSum' => 100_000, 'U_MIS_FPNum' => '04002600000000001', 'CardName' => 'S1'],
+                ['DocNum' => 2, 'VatSum' => 200_000, 'U_MIS_FPNum' => '04002600000000002', 'CardName' => 'S2'],
+            ]);
+        $sap->shouldReceive('fetchArInvoicesForDocDateRange')->andReturn([]);
+
+        $service = new PpnReconciliationService($sap);
+        $result = $service->reconcile('2026-09');
+
+        $three = $result['three_way'];
+        $this->assertSame(1, $three['counts']['matched_three_way']);
+        $this->assertSame(1, $three['counts']['sap_app_not_coretax']);
+        $this->assertSame(1, $three['counts']['coretax_only']);
+        $this->assertSame('04002600000000001', $three['matched_three_way'][0]['faktur_no']);
+        $this->assertNotNull($result['totals']['diff_coretax_app']);
     }
 }

@@ -80,10 +80,14 @@
                     <div class="card card-outline card-secondary">
                         <div class="card-header"><h3 class="card-title">Selisih Coretax ↔ Aplikasi (PM)</h3></div>
                         <div class="card-body">
-                            @if ($period->diff_coretax_app !== null)
-                                <p class="mb-0 display-6">{{ number_format((float) $period->diff_coretax_app, 0, ',', '.') }}</p>
+                            @if ($diffCoretaxAppLive !== null)
+                                <p class="mb-0 display-6">{{ number_format((float) $diffCoretaxAppLive, 0, ',', '.') }}</p>
+                                <small class="text-muted">PM Coretax: {{ number_format($coretaxPmLive, 0, ',', '.') }}</small>
                             @else
                                 <p class="mb-0 text-muted">Belum tersedia — belum ada data prepopulasi Coretax untuk masa ini.</p>
+                            @endif
+                            @if ($coretaxImported)
+                                <p class="mb-0 mt-1"><a href="{{ route('accounting.tax.ppn.import-coretax.index', ['masa_pajak' => $masaPajak]) }}">Kelola impor Coretax</a></p>
                             @endif
                         </div>
                     </div>

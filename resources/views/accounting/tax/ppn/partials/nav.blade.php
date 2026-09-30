@@ -25,6 +25,16 @@
             Periksa
         </a>
         |
+        <a href="{{ route('accounting.tax.ppn.import-coretax.index', ['masa_pajak' => $masaPajak ?? request('masa_pajak')]) }}"
+            class="{{ request()->routeIs('accounting.tax.ppn.import-coretax.*') ? 'font-weight-bold text-uppercase' : '' }}">
+            Impor Coretax
+        </a>
+        |
+        <a href="{{ route('accounting.tax.ppn.rekonsiliasi.index', ['masa_pajak' => $masaPajak ?? request('masa_pajak')]) }}"
+            class="{{ request()->routeIs('accounting.tax.ppn.rekonsiliasi.*') ? 'font-weight-bold text-uppercase' : '' }}">
+            Rekonsiliasi 3 arah
+        </a>
+        |
         <a href="{{ route('accounting.tax.ppn.sync.index') }}"
             class="{{ request()->routeIs('accounting.tax.ppn.sync.*') ? 'font-weight-bold text-uppercase' : '' }}">
             Sync SAP

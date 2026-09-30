@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Accounting;
 use App\Exports\PpnMasaPajakExport;
 use App\Exports\PpnMissingFakturExport;
 use App\Http\Controllers\Controller;
+use App\Models\CoretaxInputVat;
 use App\Models\Faktur;
 use App\Models\TaxPeriod;
 use App\Services\PpnReconciliationService;
@@ -43,6 +44,10 @@ class PpnMonitoringController extends Controller
         $appPk = (float) Faktur::query()->where('type', 'sales')->where('masa_pajak', $masaPajak)->sum('ppn');
         $appPm = (float) Faktur::query()->where('type', 'purchase')->where('masa_pajak', $masaPajak)->sum('ppn');
 
+        $coretaxPmLive = (float) CoretaxInputVat::query()->where('masa_pajak', $masaPajak)->sum('ppn');
+        $coretaxImported = CoretaxInputVat::query()->where('masa_pajak', $masaPajak)->exists();
+        $diffCoretaxAppLive = $coretaxImported ? round($coretaxPmLive - $appPm, 2) : null;
+
         return view('accounting.tax.ppn.index', compact(
             'masaPajak',
             'period',
@@ -50,6 +55,9 @@ class PpnMonitoringController extends Controller
             'masaOptions',
             'appPk',
             'appPm',
+            'coretaxPmLive',
+            'coretaxImported',
+            'diffCoretaxAppLive',
         ));
     }
 

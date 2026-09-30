@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Accounting\AccountingManagerDashboardController;
+use App\Http\Controllers\Accounting\CoretaxImportController;
 use App\Http\Controllers\Accounting\CustomerController;
 use App\Http\Controllers\Accounting\DailyTxController;
 use App\Http\Controllers\Accounting\DeliveryController;
@@ -193,6 +194,11 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
 
         Route::get('periksa', [PpnMonitoringController::class, 'periksa'])->name('periksa.index');
         Route::get('periksa/data', [PpnMonitoringController::class, 'periksaData'])->name('periksa.data');
+
+        Route::get('import-coretax', [CoretaxImportController::class, 'index'])->name('import-coretax.index');
+        Route::post('import-coretax/preview', [CoretaxImportController::class, 'preview'])->name('import-coretax.preview');
+        Route::post('import-coretax', [CoretaxImportController::class, 'store'])->name('import-coretax.store');
+        Route::get('rekonsiliasi', [CoretaxImportController::class, 'rekonsiliasi'])->name('rekonsiliasi.index');
 
         Route::get('sync', [PpnInputSyncController::class, 'index'])->name('sync.index');
         Route::post('sync/run', [PpnInputSyncController::class, 'runNow'])->name('sync.run');

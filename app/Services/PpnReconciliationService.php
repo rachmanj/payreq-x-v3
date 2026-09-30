@@ -37,10 +37,16 @@ class PpnReconciliationService
 
         $exposure = $this->buildMissingFakturExposure($purchaseInvoices);
 
-        $coretaxPm = (float) CoretaxInputVat::query()
+        $coretaxRows = CoretaxInputVat::query()
             ->where('masa_pajak', $masaPajak)
-            ->sum('ppn');
-        $diffCoretaxApp = $coretaxPm > 0 ? round($coretaxPm - $appPm, 2) : null;
+            ->get();
+
+        $coretaxPm = round((float) $coretaxRows->sum('ppn'), 2);
+        $coretaxCount = $coretaxRows->count();
+        $hasCoretaxData = $coretaxCount > 0;
+        $diffCoretaxApp = $hasCoretaxData ? round($coretaxPm - $appPm, 2) : null;
+
+        $threeWay = $this->buildThreeWayFindings($purchaseInvoices, $masaPajak, $coretaxRows);
 
         $diffPk = round($sapPk - $appPk, 2);
         $diffPm = round($sapPm - $appPm, 2);
@@ -61,7 +67,18 @@ class PpnReconciliationService
             'app' => [
                 'pk_total' => $appPk,
                 'pm_total' => $appPm,
+                'pm_faktur_count' => (int) Faktur::query()
+                    ->where('type', 'purchase')
+                    ->where('masa_pajak', $masaPajak)
+                    ->whereNotNull('faktur_no')
+                    ->where('faktur_no', '!=', '')
+                    ->count(),
             ],
+            'coretax' => [
+                'pm_total' => $coretaxPm,
+                'faktur_count' => $coretaxCount,
+            ],
+            'three_way' => $threeWay,
             'totals' => [
                 'pk_total' => $sapPk,
                 'pm_total' => $sapPm,
@@ -142,5 +159,127 @@ class PpnReconciliationService
         $end = $start->copy()->endOfMonth();
 
         return [$start->format('Y-m-d'), $end->format('Y-m-d')];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $purchaseInvoices
+     * @param  \Illuminate\Support\Collection<int, CoretaxInputVat>  $coretaxRows
+     * @return array<string, mixed>
+     */
+    public function buildThreeWayFindings(array $purchaseInvoices, string $masaPajak, $coretaxRows): array
+    {
+        $sapByFp = [];
+        foreach ($purchaseInvoices as $invoice) {
+            $vatSum = (float) ($invoice['VatSum'] ?? 0);
+            if ($vatSum <= 0) {
+                continue;
+            }
+            $fpNum = preg_replace('/\s+/', '', trim((string) ($invoice['U_MIS_FPNum'] ?? ''))) ?? '';
+            if ($fpNum === '') {
+                continue;
+            }
+            $sapByFp[$fpNum] = [
+                'faktur_no' => $fpNum,
+                'doc_num' => (string) ($invoice['DocNum'] ?? ''),
+                'vat_sum' => round($vatSum, 2),
+                'card_name' => (string) ($invoice['CardName'] ?? ''),
+            ];
+        }
+
+        $appFakturs = Faktur::query()
+            ->with('customer')
+            ->where('type', 'purchase')
+            ->where('masa_pajak', $masaPajak)
+            ->whereNotNull('faktur_no')
+            ->where('faktur_no', '!=', '')
+            ->get();
+
+        $appByFp = [];
+        foreach ($appFakturs as $faktur) {
+            $fp = preg_replace('/\s+/', '', (string) $faktur->faktur_no) ?? '';
+            if ($fp === '') {
+                continue;
+            }
+            if (! isset($appByFp[$fp])) {
+                $appByFp[$fp] = [
+                    'faktur_no' => $fp,
+                    'ppn' => 0.0,
+                    'supplier' => $faktur->customer?->name ?? '',
+                ];
+            }
+            $appByFp[$fp]['ppn'] += (float) $faktur->ppn;
+        }
+
+        foreach ($appByFp as $fp => $data) {
+            $appByFp[$fp]['ppn'] = round($data['ppn'], 2);
+        }
+
+        $coretaxByFp = [];
+        foreach ($coretaxRows as $row) {
+            $fp = preg_replace('/\s+/', '', (string) $row->faktur_no) ?? '';
+            if ($fp === '') {
+                continue;
+            }
+            $coretaxByFp[$fp] = [
+                'faktur_no' => $fp,
+                'ppn' => round((float) $row->ppn, 2),
+                'supplier_name' => $row->supplier_name,
+                'status_faktur' => $row->status_faktur,
+            ];
+        }
+
+        $sapFps = array_keys($sapByFp);
+        $appFps = array_keys($appByFp);
+        $coretaxFps = array_keys($coretaxByFp);
+
+        $matchedThreeWay = [];
+        foreach (array_intersect($sapFps, $appFps, $coretaxFps) as $fp) {
+            $matchedThreeWay[] = [
+                'faktur_no' => $fp,
+                'sap' => $sapByFp[$fp],
+                'app' => $appByFp[$fp],
+                'coretax' => $coretaxByFp[$fp],
+            ];
+        }
+
+        $sapAppNotCoretax = [];
+        foreach (array_intersect($sapFps, $appFps) as $fp) {
+            if (! in_array($fp, $coretaxFps, true)) {
+                $sapAppNotCoretax[] = [
+                    'faktur_no' => $fp,
+                    'sap' => $sapByFp[$fp],
+                    'app' => $appByFp[$fp],
+                ];
+            }
+        }
+
+        $coretaxOnly = [];
+        $appOrSapFps = array_unique(array_merge($sapFps, $appFps));
+        foreach ($coretaxFps as $fp) {
+            if (! in_array($fp, $appOrSapFps, true)) {
+                $coretaxOnly[] = [
+                    'faktur_no' => $fp,
+                    'coretax' => $coretaxByFp[$fp],
+                ];
+            }
+        }
+
+        usort($matchedThreeWay, fn (array $a, array $b): int => strcmp($a['faktur_no'], $b['faktur_no']));
+        usort($sapAppNotCoretax, fn (array $a, array $b): int => strcmp($a['faktur_no'], $b['faktur_no']));
+        usort($coretaxOnly, fn (array $a, array $b): int => strcmp($a['faktur_no'], $b['faktur_no']));
+
+        return [
+            'counts' => [
+                'sap_pm_with_fp' => count($sapByFp),
+                'app_pm_with_fp' => count($appByFp),
+                'coretax' => count($coretaxByFp),
+                'matched_three_way' => count($matchedThreeWay),
+                'sap_app_not_coretax' => count($sapAppNotCoretax),
+                'coretax_only' => count($coretaxOnly),
+            ],
+            'matched_three_way' => $matchedThreeWay,
+            'sap_app_not_coretax' => $sapAppNotCoretax,
+            'coretax_only' => $coretaxOnly,
+        ];
     }
 }

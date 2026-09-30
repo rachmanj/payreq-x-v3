@@ -16,6 +16,11 @@ class CoretaxInputVat extends Model
 
     protected $casts = [
         'faktur_date' => 'date',
+        'valid_coretax' => 'boolean',
+        'dilaporkan' => 'boolean',
+        'nilai_bruto' => 'decimal:2',
+        'dpp' => 'decimal:2',
+        'ppn' => 'decimal:2',
     ];
 
     public function matchedFaktur(): BelongsTo
