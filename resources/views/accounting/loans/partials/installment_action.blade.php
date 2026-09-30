@@ -11,6 +11,7 @@
                 data-id="{{ $model->id }}"
                 data-principal="{{ $model->principal_amount ?? '' }}"
                 data-interest="{{ $model->interest_amount ?? '' }}"
+                data-adm="{{ $model->adm_amount ?? '' }}"
                 data-angsuran="{{ $model->angsuran_ke }}"
                 title="Split Pokok/Bunga">
                 <i class="fas fa-divide"></i>

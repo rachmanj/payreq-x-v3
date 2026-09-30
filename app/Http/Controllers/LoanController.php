@@ -128,6 +128,8 @@ class LoanController extends Controller
         $loan->principal = $request->principal;
         $loan->tenor = $request->tenor;
         $loan->description = $request->description;
+        $loan->ref_vendor_label = $request->ref_vendor_label;
+        $loan->sap_series = $request->filled('sap_series') ? (int) $request->sap_series : null;
         $loan->user_id = auth()->id();
         $loan->save();
 
@@ -163,6 +165,8 @@ class LoanController extends Controller
         $loan->principal = $request->principal;
         $loan->tenor = $request->tenor;
         $loan->description = $request->description;
+        $loan->ref_vendor_label = $request->ref_vendor_label;
+        $loan->sap_series = $request->filled('sap_series') ? (int) $request->sap_series : null;
         $loan->user_id = auth()->id();
         $loan->status = $request->status;
         $loan->save();

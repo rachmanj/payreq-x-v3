@@ -68,6 +68,13 @@ class InstallmentController extends Controller
         $installment->paid_date = $request->paid_date;
         $installment->bilyet_no = $request->bilyet_no;
         $installment->bilyet_amount = $request->bilyet_amount;
+        if ($request->has('principal_amount')) {
+            $installment->principal_amount = $request->principal_amount !== '' ? $request->principal_amount : null;
+        }
+        if ($request->has('interest_amount')) {
+            $installment->interest_amount = $request->interest_amount !== '' ? $request->interest_amount : null;
+        }
+        $installment->adm_amount = $request->filled('adm_amount') ? $request->adm_amount : null;
         $installment->account_id = $request->account_id;
         $installment->status = $status;
         $installment->save();
@@ -111,6 +118,13 @@ class InstallmentController extends Controller
                 }
 
                 return number_format((float) $instalment->interest_amount, 0, ',', '.');
+            })
+            ->addColumn('adm_amount', function ($instalment) {
+                if ($instalment->adm_amount === null || (float) $instalment->adm_amount === 0.0) {
+                    return '<span class="text-muted">—</span>';
+                }
+
+                return number_format((float) $instalment->adm_amount, 0, ',', '.');
             })
             ->addColumn('paid_status', function ($instalment) {
                 if ($instalment->isPaid()) {
@@ -169,7 +183,7 @@ class InstallmentController extends Controller
                 return '<input type="checkbox" class="installment-bulk-check" value="'.$instalment->id.'">';
             })
             ->addColumn('action', 'accounting.loans.partials.installment_action')
-            ->rawColumns(['principal_amount', 'interest_amount', 'paid_status', 'sap_ap_badge', 'sap_status', 'sap_documents', 'select', 'action'])
+            ->rawColumns(['principal_amount', 'interest_amount', 'adm_amount', 'paid_status', 'sap_ap_badge', 'sap_status', 'sap_documents', 'select', 'action'])
             ->toJson();
     }
 
@@ -375,19 +389,21 @@ class InstallmentController extends Controller
         $validated = $request->validate([
             'principal_amount' => 'required|numeric|min:0',
             'interest_amount' => 'required|numeric|min:0',
+            'adm_amount' => 'nullable|numeric|min:0',
         ]);
 
         $installmentModel = Installment::findOrFail($installment);
         $principal = (float) $validated['principal_amount'];
         $interest = (float) $validated['interest_amount'];
-        $splitTotal = $principal + $interest;
+        $adm = (float) ($validated['adm_amount'] ?? 0);
+        $splitTotal = $principal + $interest + $adm;
 
         if ($installmentModel->bilyet_amount !== null) {
             $bilyetAmount = (float) $installmentModel->bilyet_amount;
             if (abs($splitTotal - $bilyetAmount) > 1) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jumlah pokok + bunga ('.number_format($splitTotal, 0, ',', '.').') harus sama dengan nominal angsuran ('.number_format($bilyetAmount, 0, ',', '.').').',
+                    'message' => 'Jumlah pokok + bunga + adm ('.number_format($splitTotal, 0, ',', '.').') harus sama dengan nominal angsuran ('.number_format($bilyetAmount, 0, ',', '.').').',
                 ], 422);
             }
         }
@@ -395,6 +411,7 @@ class InstallmentController extends Controller
         $installmentModel->update([
             'principal_amount' => $principal,
             'interest_amount' => $interest,
+            'adm_amount' => $adm > 0 ? $adm : null,
         ]);
 
         return response()->json([

@@ -51,6 +51,10 @@
                             <dd class="col-sm-9">{{ $loan->total_bunga ? 'IDR ' . number_format((float) $loan->total_bunga, 0, ',', '.') : '—' }}</dd>
                             <dt class="col-sm-3">Description</dt>
                             <dd class="col-sm-9">{{ $loan->description }}</dd>
+                            <dt class="col-sm-3">Penanda Vendor (AP)</dt>
+                            <dd class="col-sm-9">{{ $loan->ref_vendor_label ?: '—' }}</dd>
+                            <dt class="col-sm-3">Series SAP AP</dt>
+                            <dd class="col-sm-9">{{ $loan->sap_series ?? \App\Services\SapInstallmentApInvoiceBuilder::DEFAULT_SAP_SERIES }} <small class="text-muted">(default {{ \App\Services\SapInstallmentApInvoiceBuilder::DEFAULT_SAP_SERIES }})</small></dd>
                             <dt class="col-sm-3">Status</dt>
                             <dd class="col-sm-9 mb-0">{{ $loan->status ? ucfirst($loan->status) : '-' }}</dd>
                         </dl>
@@ -67,6 +71,7 @@
                                 <th>Due Date</th>
                                 <th>Pokok</th>
                                 <th>Bunga</th>
+                                <th>Adm</th>
                                 <th>Amount</th>
                                 <th>Paid</th>
                                 <th>Bilyet No</th>
@@ -101,7 +106,11 @@
                         <input type="number" id="split-interest" class="form-control" min="0" step="1">
                     </div>
                     <div class="form-group">
-                        <label>Total</label>
+                        <label>Adm (biaya administrasi)</label>
+                        <input type="number" id="split-adm" class="form-control" min="0" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Total (pokok + bunga + adm)</label>
                         <input type="text" id="split-total" class="form-control" readonly>
                     </div>
                 </div>
@@ -237,6 +246,7 @@
                 { data: 'due_date' },
                 { data: 'principal_amount', orderable: false },
                 { data: 'interest_amount', orderable: false },
+                { data: 'adm_amount', orderable: false },
                 { data: 'bilyet_amount' },
                 { data: 'paid_status', orderable: false, searchable: false },
                 { data: 'bilyet_no' },
@@ -271,14 +281,17 @@
                 $('#split-angsuran-label').text($(this).data('angsuran'));
                 $('#split-principal').val($(this).data('principal') || '');
                 $('#split-interest').val($(this).data('interest') || '');
+                $('#split-adm').val($(this).data('adm') || '');
                 updateSplitTotal();
                 $('#split-modal').modal('show');
             });
 
-            $('#split-principal, #split-interest').on('input', updateSplitTotal);
+            $('#split-principal, #split-interest, #split-adm').on('input', updateSplitTotal);
 
             function updateSplitTotal() {
-                const total = (parseFloat($('#split-principal').val()) || 0) + (parseFloat($('#split-interest').val()) || 0);
+                const total = (parseFloat($('#split-principal').val()) || 0)
+                    + (parseFloat($('#split-interest').val()) || 0)
+                    + (parseFloat($('#split-adm').val()) || 0);
                 $('#split-total').val(fmtIdr(total));
             }
 
@@ -289,6 +302,7 @@
                     body: JSON.stringify({
                         principal_amount: $('#split-principal').val(),
                         interest_amount: $('#split-interest').val(),
+                        adm_amount: $('#split-adm').val() || 0,
                     })
                 }).then(r => r.json()).then(data => {
                     if (data.success) {

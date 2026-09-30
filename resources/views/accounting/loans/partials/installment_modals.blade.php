@@ -45,7 +45,7 @@
 
                         <div class="col-6">
                             <div class="form-group">
-                                <label for="bilyet_amount">Bilyet Amount</label>
+                                <label for="bilyet_amount">Nominal Angsuran</label>
                                 <input type="text" name="bilyet_amount" id="bilyet_amount"
                                     value="{{ $model->bilyet_amount }}" class="form-control">
                             </div>
@@ -53,9 +53,33 @@
                     </div>
 
                     <div class="row">
+                        <div class="col-4">
+                            <div class="form-group">
+                                <label for="principal_amount_{{ $model->id }}">Pokok</label>
+                                <input type="number" name="principal_amount" id="principal_amount_{{ $model->id }}"
+                                    value="{{ $model->principal_amount }}" class="form-control" min="0" step="1">
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="form-group">
+                                <label for="interest_amount_{{ $model->id }}">Bunga</label>
+                                <input type="number" name="interest_amount" id="interest_amount_{{ $model->id }}"
+                                    value="{{ $model->interest_amount }}" class="form-control" min="0" step="1">
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="form-group">
+                                <label for="adm_amount_{{ $model->id }}">Adm (biaya administrasi)</label>
+                                <input type="number" name="adm_amount" id="adm_amount_{{ $model->id }}"
+                                    value="{{ $model->adm_amount }}" class="form-control" min="0" step="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-6">
                             <div class="form-group">
-                                <label for="account_id">Account No</label>
+                                <label for="account_id">Rekening Bank</label>
                                 <select name="account_id" id="account_id" class="form-control select2bs4">
                                     <option value="">-- select account --</option>
                                     @foreach (\App\Models\Account::where('type', 'bank')->get() as $account)
@@ -378,6 +402,10 @@
                             <dd class="col-sm-7">{{ date('d-M-Y', strtotime($model->due_date)) }}</dd>
                             <dt class="col-sm-5">Amount:</dt>
                             <dd class="col-sm-7">IDR {{ number_format($model->bilyet_amount, 2) }}</dd>
+                            @if ($model->adm_amount)
+                                <dt class="col-sm-5">Adm:</dt>
+                                <dd class="col-sm-7">IDR {{ number_format((float) $model->adm_amount, 2) }}</dd>
+                            @endif
                             <dt class="col-sm-5">Payment Method:</dt>
                             <dd class="col-sm-7">{{ $model->payment_method_label }}</dd>
                             <dt class="col-sm-5">Creditor:</dt>

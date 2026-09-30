@@ -7,9 +7,15 @@ use Carbon\Carbon;
 
 class SapInstallmentApInvoiceBuilder
 {
+    public const DEFAULT_SAP_SERIES = 3834;
+
     private const DEFAULT_PRINCIPAL_ACCOUNT = '22201001';
 
     private const INTEREST_ACCOUNT = '71201004';
+
+    private const ADMINISTRATION_ACCOUNT = '71201003';
+
+    private const ADMIN_LINE_DESCRIPTION = 'Adm Expense';
 
     private const AMOUNT_TOLERANCE = 1.00;
 
@@ -20,14 +26,13 @@ class SapInstallmentApInvoiceBuilder
      */
     public function build(): array
     {
-        $loan = $this->installment->loan;
-        $creditor = $loan->creditor;
         $dueDate = Carbon::parse($this->installment->due_date);
         $reference = $this->buildReference();
 
         return [
             'CardCode' => $this->cardCode(),
             'DocType' => 'dDocument_Service',
+            'Series' => $this->sapSeries(),
             'DocDate' => $dueDate->format('Y-m-d'),
             'DocDueDate' => $dueDate->format('Y-m-d'),
             'TaxDate' => $dueDate->format('Y-m-d'),
@@ -76,14 +81,18 @@ class SapInstallmentApInvoiceBuilder
         }
 
         if ($this->installment->principal_amount !== null && $this->installment->interest_amount !== null) {
-            $splitTotal = (float) $this->installment->principal_amount + (float) $this->installment->interest_amount;
+            $principal = (float) $this->installment->principal_amount;
+            $interest = (float) $this->installment->interest_amount;
+            $adm = (float) ($this->installment->adm_amount ?? 0);
+            $splitTotal = $principal + $interest + $adm;
             $bilyetAmount = (float) ($this->installment->bilyet_amount ?? 0);
 
             if (abs($splitTotal - $bilyetAmount) > self::AMOUNT_TOLERANCE) {
                 $errors[] = sprintf(
-                    'Total pokok (Rp %s) + bunga (Rp %s) = Rp %s tidak sama dengan nominal angsuran (Rp %s). Selisih melebihi Rp 1.',
-                    number_format((float) $this->installment->principal_amount, 2, ',', '.'),
-                    number_format((float) $this->installment->interest_amount, 2, ',', '.'),
+                    'Total pokok (Rp %s) + bunga (Rp %s) + adm (Rp %s) = Rp %s tidak sama dengan nominal angsuran (Rp %s). Selisih melebihi Rp 1.',
+                    number_format($principal, 2, ',', '.'),
+                    number_format($interest, 2, ',', '.'),
+                    number_format($adm, 2, ',', '.'),
                     number_format($splitTotal, 2, ',', '.'),
                     number_format($bilyetAmount, 2, ',', '.'),
                 );
@@ -111,12 +120,15 @@ class SapInstallmentApInvoiceBuilder
         $dueDate = Carbon::parse($this->installment->due_date);
         $principal = (float) ($this->installment->principal_amount ?? 0);
         $interest = (float) ($this->installment->interest_amount ?? 0);
+        $adm = (float) ($this->installment->adm_amount ?? 0);
+        $componentTotal = $principal + $interest + $adm;
 
         return [
             'installment_id' => $this->installment->id,
             'angsuran_ke' => $this->installment->angsuran_ke,
             'loan_code' => $loan->loan_code,
             'tenor' => $loan->tenor,
+            'series' => $this->sapSeries(),
             'vendor' => [
                 'code' => $this->cardCode(),
                 'name' => $creditor->name,
@@ -129,25 +141,16 @@ class SapInstallmentApInvoiceBuilder
             ],
             'principal' => $principal,
             'interest' => $interest,
-            'total' => $principal + $interest,
+            'adm_amount' => $adm,
+            'total' => $componentTotal,
             'bilyet_amount' => (float) ($this->installment->bilyet_amount ?? 0),
             'reference' => $this->buildReference(),
             'principal_account' => $this->principalAccountCode(),
             'interest_account' => self::INTEREST_ACCOUNT,
+            'adm_account' => self::ADMINISTRATION_ACCOUNT,
             'costing_code' => $loan->costing_code ?? '60',
             'project_code' => $loan->project_code,
-            'lines' => [
-                [
-                    'type' => 'principal',
-                    'description' => $this->lineDescription('Principal'),
-                    'amount' => $principal,
-                ],
-                [
-                    'type' => 'interest',
-                    'description' => $this->lineDescription('Interest'),
-                    'amount' => $interest,
-                ],
-            ],
+            'lines' => $this->buildPreviewLines($principal, $interest, $adm),
         ];
     }
 
@@ -158,11 +161,23 @@ class SapInstallmentApInvoiceBuilder
         $parts = array_filter([
             $this->installment->angsuran_ke.' of '.$loan->tenor,
             $this->shortName(),
+            $loan->ref_vendor_label,
             $loan->kode_unit,
             '('.$loan->loan_code.')',
         ], fn ($part) => $part !== null && trim((string) $part) !== '');
 
         return implode(' ', $parts);
+    }
+
+    public function sapSeries(): int
+    {
+        $loan = $this->installment->loan;
+
+        if ($loan !== null && $loan->sap_series !== null && (string) $loan->sap_series !== '') {
+            return (int) $loan->sap_series;
+        }
+
+        return self::DEFAULT_SAP_SERIES;
     }
 
     public static function ordinal(int $number): string
@@ -189,7 +204,9 @@ class SapInstallmentApInvoiceBuilder
         $costingCode = $loan->costing_code ?? '60';
         $projectCode = $loan->project_code;
 
-        $principalLine = $this->buildGlLine(
+        $lines = [];
+
+        $lines[] = $this->buildGlLine(
             $this->principalAccountCode(),
             $this->lineDescription('Principal'),
             (float) $this->installment->principal_amount,
@@ -197,15 +214,61 @@ class SapInstallmentApInvoiceBuilder
             $projectCode,
         );
 
-        $interestLine = $this->buildGlLine(
-            self::INTEREST_ACCOUNT,
-            $this->lineDescription('Interest'),
-            (float) $this->installment->interest_amount,
-            $costingCode,
-            $projectCode,
-        );
+        $admAmount = (float) ($this->installment->adm_amount ?? 0);
+        if ($admAmount > 0) {
+            $lines[] = $this->buildGlLine(
+                self::ADMINISTRATION_ACCOUNT,
+                self::ADMIN_LINE_DESCRIPTION,
+                $admAmount,
+                $costingCode,
+                $projectCode,
+            );
+        }
 
-        return [$principalLine, $interestLine];
+        $interestAmount = (float) $this->installment->interest_amount;
+        if ($interestAmount > 0) {
+            $lines[] = $this->buildGlLine(
+                self::INTEREST_ACCOUNT,
+                $this->lineDescription('Interest'),
+                $interestAmount,
+                $costingCode,
+                $projectCode,
+            );
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected function buildPreviewLines(float $principal, float $interest, float $adm): array
+    {
+        $lines = [
+            [
+                'type' => 'principal',
+                'description' => $this->lineDescription('Principal'),
+                'amount' => $principal,
+            ],
+        ];
+
+        if ($adm > 0) {
+            $lines[] = [
+                'type' => 'administration',
+                'description' => self::ADMIN_LINE_DESCRIPTION,
+                'amount' => $adm,
+            ];
+        }
+
+        if ($interest > 0) {
+            $lines[] = [
+                'type' => 'interest',
+                'description' => $this->lineDescription('Interest'),
+                'amount' => $interest,
+            ];
+        }
+
+        return $lines;
     }
 
     /**

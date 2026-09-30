@@ -124,6 +124,27 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-0">
+                                            <label for="ref_vendor_label">Penanda vendor (referensi AP)</label>
+                                            <input type="text" name="ref_vendor_label" id="ref_vendor_label" maxlength="50"
+                                                class="form-control" value="{{ old('ref_vendor_label', $loan->ref_vendor_label) }}"
+                                                placeholder="Contoh: UT">
+                                            <small class="text-muted">Singkat, muncul di referensi AP (mis. 1 of 3 CSUL UT (...)).</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-0">
+                                            <label for="sap_series">Series SAP AP Invoice</label>
+                                            <input type="number" name="sap_series" id="sap_series" min="1" step="1"
+                                                class="form-control"
+                                                value="{{ old('sap_series', $loan->sap_series) }}"
+                                                placeholder="{{ \App\Services\SapInstallmentApInvoiceBuilder::DEFAULT_SAP_SERIES }}">
+                                            <small class="text-muted">Kosongkan untuk memakai default {{ \App\Services\SapInstallmentApInvoiceBuilder::DEFAULT_SAP_SERIES }}.</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="card-footer">

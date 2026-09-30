@@ -17,6 +17,7 @@ class Installment extends Model
         'bilyet_amount' => 'decimal:2',
         'principal_amount' => 'decimal:2',
         'interest_amount' => 'decimal:2',
+        'adm_amount' => 'decimal:2',
     ];
 
     const PAYMENT_METHODS = [
@@ -76,7 +77,9 @@ class Installment extends Model
     public function getTotalAmountAttribute(): float
     {
         if ($this->principal_amount !== null && $this->interest_amount !== null) {
-            return (float) $this->principal_amount + (float) $this->interest_amount;
+            return (float) $this->principal_amount
+                + (float) $this->interest_amount
+                + (float) ($this->adm_amount ?? 0);
         }
 
         return (float) ($this->bilyet_amount ?? 0);
