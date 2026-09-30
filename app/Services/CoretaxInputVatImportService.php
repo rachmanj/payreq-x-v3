@@ -228,6 +228,7 @@ class CoretaxInputVatImportService
             $headerRow[] = trim((string) $sheet->getCellByColumnAndRow($col, 1)->getValue());
         }
 
+        $headerRow = $this->normalizeHeaderRow($headerRow);
         $this->assertHeaders($headerRow);
 
         $headerMap = $this->headerIndexMap($headerRow);
@@ -235,15 +236,17 @@ class CoretaxInputVatImportService
         $highestRow = (int) $sheet->getHighestDataRow();
 
         for ($rowNum = 2; $rowNum <= $highestRow; $rowNum++) {
-            $line = [];
-            foreach ($headerMap as $name => $index) {
-                $cell = $sheet->getCellByColumnAndRow($index + 1, $rowNum);
+            $rawRow = [];
+            for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $cell = $sheet->getCellByColumnAndRow($col, $rowNum);
                 $value = $cell->getValue();
                 if (Date::isDateTime($cell) && is_numeric($value)) {
                     $value = Date::excelToDateTimeObject((float) $value)->format('Y-m-d\TH:i:s');
                 }
-                $line[$name] = trim((string) $value);
+                $rawRow[] = trim((string) $value);
             }
+
+            $line = $this->lineFromRawRow($headerRow, $headerMap, $rawRow);
             if ($this->rowIsEmpty($line)) {
                 continue;
             }
@@ -269,16 +272,13 @@ class CoretaxInputVatImportService
             throw new \InvalidArgumentException('Berkas CSV kosong.');
         }
 
-        $headerRow = array_map(fn ($h) => trim((string) $h), $headerRow);
+        $headerRow = $this->normalizeHeaderRow($headerRow);
         $this->assertHeaders($headerRow);
         $headerMap = $this->headerIndexMap($headerRow);
 
         $rows = [];
         while (($data = fgetcsv($handle)) !== false) {
-            $line = [];
-            foreach ($headerMap as $name => $index) {
-                $line[$name] = trim((string) ($data[$index] ?? ''));
-            }
+            $line = $this->lineFromRawRow($headerRow, $headerMap, $data);
             if ($this->rowIsEmpty($line)) {
                 continue;
             }
@@ -535,7 +535,7 @@ class CoretaxInputVatImportService
      * @param  list<string>  $headerRow
      * @return array<string, int>
      */
-    private function headerIndexMap(array $headerRow): array
+    public function headerIndexMap(array $headerRow): array
     {
         $map = [];
         foreach ($headerRow as $index => $label) {
@@ -550,6 +550,87 @@ class CoretaxInputVatImportService
         }
 
         return $map;
+    }
+
+    /**
+     * @param  list<string|null>  $headerRow
+     * @return list<string>
+     */
+    public function normalizeHeaderRow(array $headerRow): array
+    {
+        $normalized = array_map(fn ($h) => trim((string) $h), $headerRow);
+        if ($normalized !== [] && str_starts_with($normalized[0], "\xEF\xBB\xBF")) {
+            $normalized[0] = substr($normalized[0], 3);
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param  list<string>  $headerRow
+     * @param  array<string, int>  $headerMap
+     * @param  list<string|null>  $rawRow
+     * @return array<string, string>
+     */
+    public function lineFromRawRow(array $headerRow, array $headerMap, array $rawRow): array
+    {
+        $data = array_map(fn ($v) => trim((string) $v), $rawRow);
+        $data = $this->alignDataRowToHeader($headerRow, $data);
+
+        $line = [];
+        foreach ($headerMap as $name => $index) {
+            $line[$name] = $data[$index] ?? '';
+        }
+
+        return $line;
+    }
+
+    /**
+     * Beberapa ekspor CSV Coretax (EN) punya dua kolom kosong di header tetapi baris data hanya punya satu di depan.
+     *
+     * @param  list<string>  $headerRow
+     * @param  list<string>  $data
+     * @return list<string>
+     */
+    public function alignDataRowToHeader(array $headerRow, array $data): array
+    {
+        $headerCount = count($headerRow);
+        $dataCount = count($data);
+
+        if ($dataCount === $headerCount) {
+            return $data;
+        }
+
+        if ($dataCount > $headerCount) {
+            return array_slice($data, 0, $headerCount);
+        }
+
+        $missing = $headerCount - $dataCount;
+        $headerLeadingEmpty = $this->countLeadingEmptyCells($headerRow);
+        $dataLeadingEmpty = $this->countLeadingEmptyCells($data);
+
+        if ($headerLeadingEmpty > $dataLeadingEmpty
+            && ($headerLeadingEmpty - $dataLeadingEmpty) === $missing) {
+            return array_merge(array_fill(0, $missing, ''), $data);
+        }
+
+        return array_pad($data, $headerCount, '');
+    }
+
+    /**
+     * @param  list<string>  $cells
+     */
+    private function countLeadingEmptyCells(array $cells): int
+    {
+        $count = 0;
+        foreach ($cells as $cell) {
+            if (trim((string) $cell) !== '') {
+                break;
+            }
+            $count++;
+        }
+
+        return $count;
     }
 
     /**

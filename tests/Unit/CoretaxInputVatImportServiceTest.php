@@ -88,7 +88,53 @@ class CoretaxInputVatImportServiceTest extends TestCase
         $preview = $this->service->preview($file, '2026-09');
         $this->assertTrue($preview['success']);
         $this->assertSame(1, $preview['summary']['row_count']);
+        $this->assertGreaterThan(0, $preview['summary']['total_ppn']);
         $this->assertSame(2_750_000.0, $preview['summary']['total_ppn']);
+        $firstRow = $preview['rows'][0];
+        $this->assertSame('04002600397729426', $firstRow['faktur_no']);
+        $this->assertMatchesRegularExpression('/^\d{17}$/', $firstRow['faktur_no']);
+        $this->assertSame(22_916_667.0, $firstRow['dpp']);
+        $this->assertSame(2_750_000.0, $firstRow['ppn']);
+        $this->assertSame('0013315965046000', $firstRow['npwp']);
+        $this->assertSame('INDOTRUCK UTAMA', $firstRow['supplier_name']);
+    }
+
+    public function test_english_csv_with_one_leading_empty_in_data_row_still_maps_by_header_name(): void
+    {
+        $path = $this->writeEnglishCoretaxCsvMisalignedDataRow();
+        $parsed = $this->service->parseCsv($path);
+        $this->assertCount(1, $parsed['rows']);
+        $line = $parsed['rows'][0];
+
+        $this->assertSame('0013315965046000', $line['NPWP Penjual']);
+        $this->assertSame('PT INDO PERKASA MANDIRI', $line['Nama Penjual']);
+        $this->assertSame('04002600319206612', $line['Nomor Faktur Pajak']);
+        $this->assertSame('1888333', $line['DPP Nilai Lain/DPP']);
+        $this->assertSame('226600', $line['PPN']);
+        $this->assertSame('2060000', $line['Harga Jual/Penggantian/DPP']);
+        $this->assertSame('APPROVED', $line['Status Faktur']);
+
+        $mapped = $this->service->mapRow($line, '2026-08');
+        $this->assertNotNull($mapped);
+        $this->assertSame('04002600319206612', $mapped['faktur_no']);
+        $this->assertSame(2_060_000.0, $mapped['nilai_bruto']);
+        $this->assertSame(1_888_333.0, $mapped['dpp']);
+        $this->assertSame(226_600.0, $mapped['ppn']);
+    }
+
+    public function test_preview_english_csv_skips_other_masa(): void
+    {
+        $path = $this->writeEnglishCoretaxCsvMixedMasa();
+        $file = new UploadedFile($path, 'coretax-en-mixed.csv', 'text/csv', null, true);
+
+        $preview = $this->service->preview($file, '2026-09');
+        $this->assertTrue($preview['success']);
+        $this->assertSame(2, $preview['summary']['row_count']);
+        $this->assertGreaterThan(0, $preview['summary']['total_ppn']);
+        $skipped = $preview['summary']['skipped_messages'] ?? [];
+        $this->assertCount(1, $skipped);
+        $this->assertStringContainsString('1 baris dilewati', $skipped[0]);
+        $this->assertStringContainsString('Agustus 2026', $skipped[0]);
     }
 
     public function test_preview_skips_rows_from_other_masa_and_reports_summary(): void
@@ -114,6 +160,7 @@ class CoretaxInputVatImportServiceTest extends TestCase
         $preview = $this->service->preview($file, '2026-09');
         $this->assertTrue($preview['success']);
         $this->assertSame(3, $preview['summary']['row_count']);
+        $this->assertGreaterThan(0, $preview['summary']['total_ppn']);
         $this->assertSame(2_750_000.0 + 88_000.0 + 1_693_670.0, $preview['summary']['total_ppn']);
 
         $first = $this->service->commit($preview['preview_token'], $user);
@@ -195,7 +242,62 @@ class CoretaxInputVatImportServiceTest extends TestCase
 
     private function writeEnglishCoretaxCsv(): string
     {
-        $headers = [
+        $headers = $this->englishCoretaxHeaderRow();
+        $row = $this->englishCoretaxSampleRow();
+
+        $path = sys_get_temp_dir().'/coretax-en-'.uniqid('', true).'.csv';
+        $handle = fopen($path, 'w');
+        fputcsv($handle, $headers);
+        fputcsv($handle, $row);
+        fclose($handle);
+
+        return $path;
+    }
+
+    private function writeEnglishCoretaxCsvMisalignedDataRow(): string
+    {
+        $headers = $this->englishCoretaxHeaderRow();
+        $row = $this->englishCoretaxOwnerSampleRow();
+        array_shift($row);
+
+        $path = sys_get_temp_dir().'/coretax-en-mis-'.uniqid('', true).'.csv';
+        $handle = fopen($path, 'w');
+        fputcsv($handle, $headers);
+        fputcsv($handle, $row);
+        fclose($handle);
+
+        return $path;
+    }
+
+    private function writeEnglishCoretaxCsvMixedMasa(): string
+    {
+        $headers = $this->englishCoretaxHeaderRow();
+        $sept = $this->englishCoretaxSampleRow();
+        $aug = $this->englishCoretaxOwnerSampleRow();
+        $aug[6] = 'Agustus';
+        $aug[4] = '04002600375240001';
+
+        $path = sys_get_temp_dir().'/coretax-en-mixed-'.uniqid('', true).'.csv';
+        $handle = fopen($path, 'w');
+        fputcsv($handle, $headers);
+        fputcsv($handle, $sept);
+        fputcsv($handle, $sept);
+        fputcsv($handle, $aug);
+        fclose($handle);
+
+        return $path;
+    }
+
+    /**
+     * Header ekspor CSV Coretax (EN): dua kolom kosong di depan, 21 kolom total.
+     *
+     * @return list<string>
+     */
+    private function englishCoretaxHeaderRow(): array
+    {
+        return [
+            '',
+            '',
             'SellerTIN',
             'SellerTaxpayerName',
             'TaxInvoiceNumber',
@@ -216,8 +318,16 @@ class CoretaxInputVatImportServiceTest extends TestCase
             'ReportedByBuyer',
             'ReportedBySeller',
         ];
+    }
 
-        $row = [
+    /**
+     * @return list<string>
+     */
+    private function englishCoretaxSampleRow(): array
+    {
+        return [
+            '',
+            '',
             '0013315965046000',
             'INDOTRUCK UTAMA',
             '04002600397729426',
@@ -238,14 +348,38 @@ class CoretaxInputVatImportServiceTest extends TestCase
             'FALSE',
             'FALSE',
         ];
+    }
 
-        $path = sys_get_temp_dir().'/coretax-en-'.uniqid('', true).'.csv';
-        $handle = fopen($path, 'w');
-        fputcsv($handle, $headers);
-        fputcsv($handle, $row);
-        fclose($handle);
-
-        return $path;
+    /**
+     * Nilai contoh dari berkas pemilik (Agustus 2026).
+     *
+     * @return list<string>
+     */
+    private function englishCoretaxOwnerSampleRow(): array
+    {
+        return [
+            '',
+            '',
+            '0013315965046000',
+            'PT INDO PERKASA MANDIRI',
+            '04002600319206612',
+            '2026-08-12T00:00:00',
+            'Agustus',
+            '2026',
+            '',
+            '',
+            'APPROVED',
+            '2060000',
+            '1888333',
+            '226600',
+            '0',
+            'X',
+            'REF',
+            '',
+            'TRUE',
+            'FALSE',
+            'FALSE',
+        ];
     }
 
     private function writeMixedMasaSpreadsheet(): string
