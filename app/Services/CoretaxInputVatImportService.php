@@ -41,6 +41,48 @@ class CoretaxInputVatImportService
     ];
 
     /**
+     * Header ekspor Coretax berbahasa Inggris → label kanonik (Indonesia).
+     *
+     * @var array<string, string>
+     */
+    public const HEADER_ALIASES_EN = [
+        'SellerTIN' => 'NPWP Penjual',
+        'SellerTaxpayerName' => 'Nama Penjual',
+        'TaxInvoiceNumber' => 'Nomor Faktur Pajak',
+        'TaxInvoiceDate' => 'Tanggal Faktur Pajak',
+        'TaxInvoicePeriod' => 'Masa Pajak',
+        'TaxInvoiceYear' => 'Tahun',
+        'PeriodCredit' => 'Masa Pajak Pengkreditkan',
+        'YearCredit' => 'Tahun Pajak Pengkreditan',
+        'TaxInvoiceStatus' => 'Status Faktur',
+        'SellingPrice' => 'Harga Jual/Penggantian/DPP',
+        'OtherTaxBase' => 'DPP Nilai Lain/DPP',
+        'VAT' => 'PPN',
+        'STLG' => 'PPnBM',
+        'Signer' => 'Perekam',
+        'Reference' => 'Referensi',
+        'SP2DNumber' => 'Nomor SP2D',
+        'Valid' => 'Valid',
+        'ReportedByBuyer' => 'Dilaporkan',
+        'ReportedBySeller' => 'Dilaporkan oleh Penjual',
+    ];
+
+    /**
+     * Kolom wajib (salah satu bahasa) untuk mengenali ekspor Coretax.
+     *
+     * @var list<string>
+     */
+    public const REQUIRED_CANONICAL_HEADERS = [
+        'Nomor Faktur Pajak',
+        'Tanggal Faktur Pajak',
+        'Masa Pajak',
+        'Tahun',
+        'Harga Jual/Penggantian/DPP',
+        'PPN',
+        'Status Faktur',
+    ];
+
+    /**
      * @return array{success: bool, message?: string, preview_token?: string, summary?: array<string, mixed>, rows?: list<array<string, mixed>>}
      */
     public function preview(UploadedFile $file, string $masaPajak): array
@@ -56,7 +98,24 @@ class CoretaxInputVatImportService
         }
 
         $rows = [];
+        $skippedByMasa = [];
         foreach ($parsed['rows'] as $line) {
+            $fakturNo = preg_replace('/\s+/', '', $line['Nomor Faktur Pajak'] ?? '') ?? '';
+            if ($fakturNo === '') {
+                continue;
+            }
+
+            $rowMasa = $this->masaPajakFromMonthYear(
+                $line['Masa Pajak'] ?? '',
+                $line['Tahun'] ?? '',
+            );
+
+            if ($rowMasa !== null && $rowMasa !== $masaPajak) {
+                $skippedByMasa[$rowMasa] = ($skippedByMasa[$rowMasa] ?? 0) + 1;
+
+                continue;
+            }
+
             $mapped = $this->mapRow($line, $masaPajak);
             if ($mapped === null) {
                 continue;
@@ -65,11 +124,18 @@ class CoretaxInputVatImportService
         }
 
         if ($rows === []) {
-            return ['success' => false, 'message' => 'Tidak ada baris data yang valid setelah header.'];
+            $skipHint = $this->formatSkippedSummary($skippedByMasa);
+            $message = 'Tidak ada baris data yang valid untuk masa impor '.$masaPajak.'.';
+            if ($skipHint !== []) {
+                $message .= ' '.implode(' ', $skipHint);
+            }
+
+            return ['success' => false, 'message' => $message];
         }
 
         $totalPpn = array_sum(array_column($rows, 'ppn'));
         $previewToken = Str::uuid()->toString();
+        $skippedMessages = $this->formatSkippedSummary($skippedByMasa);
 
         Cache::put($this->cacheKey($previewToken), [
             'masa_pajak' => $masaPajak,
@@ -84,6 +150,7 @@ class CoretaxInputVatImportService
                 'row_count' => count($rows),
                 'total_ppn' => round($totalPpn, 2),
                 'masa_pajak' => $masaPajak,
+                'skipped_messages' => $skippedMessages,
             ],
             'rows' => array_slice($rows, 0, 50),
         ];
@@ -283,12 +350,6 @@ class CoretaxInputVatImportService
             $line['Tahun'] ?? '',
         );
 
-        if ($rowMasa !== null && $rowMasa !== $targetMasaPajak) {
-            throw new \InvalidArgumentException(
-                "Baris faktur {$fakturNo} masa {$rowMasa} tidak sesuai masa impor {$targetMasaPajak}."
-            );
-        }
-
         $masaPengkreditan = $this->masaPajakFromMonthYear(
             $line['Masa Pajak Pengkreditkan'] ?? '',
             $line['Tahun Pajak Pengkreditan'] ?? '',
@@ -390,20 +451,84 @@ class CoretaxInputVatImportService
      */
     public function assertHeaders(array $headerRow): void
     {
-        $normalized = array_map(fn ($h) => trim((string) $h), $headerRow);
-        $missing = [];
-        foreach (self::EXPECTED_HEADERS as $expected) {
-            if (! in_array($expected, $normalized, true)) {
-                $missing[] = $expected;
+        $normalized = array_values(array_filter(
+            array_map(fn ($h) => trim((string) $h), $headerRow),
+            fn ($h) => $h !== '',
+        ));
+
+        $presentCanonical = [];
+        foreach ($normalized as $label) {
+            $canonical = $this->canonicalHeaderLabel($label);
+            if ($canonical !== null) {
+                $presentCanonical[$canonical] = true;
             }
         }
 
-        if ($missing !== []) {
+        $missingCore = [];
+        foreach (self::REQUIRED_CANONICAL_HEADERS as $required) {
+            if (! isset($presentCanonical[$required])) {
+                $missingCore[] = $required;
+            }
+        }
+
+        if ($missingCore !== []) {
+            $read = $normalized === [] ? '(kosong)' : implode(', ', $normalized);
             throw new \InvalidArgumentException(
-                'Header berkas Coretax tidak sesuai. Kolom tidak ditemukan: '.implode(', ', $missing)
-                .'. Pastikan menggunakan ekspor prepopulasi PPN Masukan dari Coretax (sheet "data").'
+                'Header berkas Coretax tidak dikenali. Header terbaca: '.$read
+                .'. Kolom inti belum ada: '.implode(', ', $missingCore)
+                .'. Didukung ekspor Coretax berheader Indonesia maupun Inggris (SellerTIN, TaxInvoiceNumber, dll.).'
             );
         }
+    }
+
+    public function canonicalHeaderLabel(string $label): ?string
+    {
+        $label = trim($label);
+        if ($label === '') {
+            return null;
+        }
+
+        if (in_array($label, self::EXPECTED_HEADERS, true)) {
+            return $label;
+        }
+
+        return self::HEADER_ALIASES_EN[$label] ?? null;
+    }
+
+    /**
+     * @param  array<string, int>  $skippedByMasa
+     * @return list<string>
+     */
+    public function formatSkippedSummary(array $skippedByMasa): array
+    {
+        $messages = [];
+        ksort($skippedByMasa);
+        foreach ($skippedByMasa as $masa => $count) {
+            $label = $this->masaPajakDisplayLabel((string) $masa);
+            $messages[] = sprintf(
+                '%d baris dilewati karena masa pajaknya %s — unggah terpisah untuk masa itu.',
+                $count,
+                $label,
+            );
+        }
+
+        return $messages;
+    }
+
+    public function masaPajakDisplayLabel(string $masaPajak): string
+    {
+        if (preg_match('/^(\d{4})-(\d{2})$/', $masaPajak, $m) !== 1) {
+            return $masaPajak;
+        }
+
+        $month = (int) $m[2];
+        $names = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
+        return ($names[$month] ?? $m[2]).' '.$m[1];
     }
 
     /**
@@ -415,8 +540,12 @@ class CoretaxInputVatImportService
         $map = [];
         foreach ($headerRow as $index => $label) {
             $label = trim((string) $label);
-            if ($label !== '') {
-                $map[$label] = $index;
+            if ($label === '') {
+                continue;
+            }
+            $canonical = $this->canonicalHeaderLabel($label);
+            if ($canonical !== null) {
+                $map[$canonical] = $index;
             }
         }
 

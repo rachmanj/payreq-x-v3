@@ -27,7 +27,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted">
-                        Gunakan berkas Excel hasil ekspor prepopulasi PPN Masukan dari portal Coretax (sheet <strong>data</strong>, 20 kolom).
+                        Gunakan berkas hasil ekspor prepopulasi PPN Masukan dari portal Coretax (Excel sheet <strong>data</strong> atau CSV; header Indonesia atau Inggris).
                         Impor ulang untuk masa yang sama akan <strong>memperbarui</strong> baris yang sudah ada (idempoten).
                     </p>
 
@@ -65,7 +65,9 @@
                     <h3 class="card-title mb-0">Pratinjau impor</h3>
                     <span id="preview-summary" class="text-muted small"></span>
                 </div>
-                <div class="card-body table-responsive">
+                <div class="card-body">
+                    <div id="preview-skipped" class="alert alert-warning py-2 d-none small mb-2"></div>
+                    <div class="table-responsive">
                     <table class="table table-sm table-striped" id="preview-table">
                         <thead>
                             <tr>
@@ -79,6 +81,7 @@
                         </thead>
                         <tbody></tbody>
                     </table>
+                    </div>
                 </div>
                 @can('manage_tax_monitoring')
                     <div class="card-footer">
@@ -140,6 +143,16 @@
                         const s = data.summary;
                         document.getElementById('preview-summary').textContent =
                             s.row_count + ' baris · Total PPN ' + Number(s.total_ppn).toLocaleString('id-ID');
+
+                        const skippedEl = document.getElementById('preview-skipped');
+                        const skipped = (s.skipped_messages || []);
+                        if (skipped.length) {
+                            skippedEl.textContent = skipped.join(' ');
+                            skippedEl.classList.remove('d-none');
+                        } else {
+                            skippedEl.classList.add('d-none');
+                            skippedEl.textContent = '';
+                        }
 
                         const tbody = document.querySelector('#preview-table tbody');
                         tbody.innerHTML = '';

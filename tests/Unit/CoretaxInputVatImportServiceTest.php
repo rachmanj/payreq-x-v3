@@ -69,8 +69,40 @@ class CoretaxInputVatImportServiceTest extends TestCase
     {
         $path = $this->writeFixtureSpreadsheet(['Kolom Salah'], []);
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->service->parseSpreadsheet($path);
+        try {
+            $this->service->parseSpreadsheet($path);
+            $this->fail('Expected InvalidArgumentException');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Header berkas Coretax tidak dikenali', $e->getMessage());
+            $this->assertStringContainsString('Header terbaca:', $e->getMessage());
+            $this->assertStringContainsString('Kolom inti belum ada:', $e->getMessage());
+            $this->assertStringContainsString('Indonesia maupun Inggris', $e->getMessage());
+        }
+    }
+
+    public function test_preview_accepts_english_csv_headers(): void
+    {
+        $path = $this->writeEnglishCoretaxCsv();
+        $file = new UploadedFile($path, 'coretax-en.csv', 'text/csv', null, true);
+
+        $preview = $this->service->preview($file, '2026-09');
+        $this->assertTrue($preview['success']);
+        $this->assertSame(1, $preview['summary']['row_count']);
+        $this->assertSame(2_750_000.0, $preview['summary']['total_ppn']);
+    }
+
+    public function test_preview_skips_rows_from_other_masa_and_reports_summary(): void
+    {
+        $path = $this->writeMixedMasaSpreadsheet();
+        $file = new UploadedFile($path, 'coretax-mixed.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $preview = $this->service->preview($file, '2026-09');
+        $this->assertTrue($preview['success']);
+        $this->assertSame(2, $preview['summary']['row_count']);
+        $skipped = $preview['summary']['skipped_messages'] ?? [];
+        $this->assertCount(1, $skipped);
+        $this->assertStringContainsString('12 baris dilewati', $skipped[0]);
+        $this->assertStringContainsString('Agustus 2026', $skipped[0]);
     }
 
     public function test_preview_and_idempotent_commit(): void
@@ -159,6 +191,76 @@ class CoretaxInputVatImportServiceTest extends TestCase
         (new Xlsx($spreadsheet))->save($path);
 
         return $path;
+    }
+
+    private function writeEnglishCoretaxCsv(): string
+    {
+        $headers = [
+            'SellerTIN',
+            'SellerTaxpayerName',
+            'TaxInvoiceNumber',
+            'TaxInvoiceDate',
+            'TaxInvoicePeriod',
+            'TaxInvoiceYear',
+            'PeriodCredit',
+            'YearCredit',
+            'TaxInvoiceStatus',
+            'SellingPrice',
+            'OtherTaxBase',
+            'VAT',
+            'STLG',
+            'Signer',
+            'Reference',
+            'SP2DNumber',
+            'Valid',
+            'ReportedByBuyer',
+            'ReportedBySeller',
+        ];
+
+        $row = [
+            '0013315965046000',
+            'INDOTRUCK UTAMA',
+            '04002600397729426',
+            '2026-09-28T00:00:00',
+            'September',
+            '2026',
+            '',
+            '',
+            'APPROVED',
+            '25000000',
+            '22916667',
+            '2750000',
+            '0',
+            'HERBERT',
+            'PSI-2600002178',
+            '',
+            'TRUE',
+            'FALSE',
+            'FALSE',
+        ];
+
+        $path = sys_get_temp_dir().'/coretax-en-'.uniqid('', true).'.csv';
+        $handle = fopen($path, 'w');
+        fputcsv($handle, $headers);
+        fputcsv($handle, $row);
+        fclose($handle);
+
+        return $path;
+    }
+
+    private function writeMixedMasaSpreadsheet(): string
+    {
+        $headers = array_merge([''], CoretaxInputVatImportService::EXPECTED_HEADERS);
+        $septRow = ['', '0013315965046000', 'INDOTRUCK UTAMA', '04002600397729426', '2026-09-28T00:00:00', 'September', '2026', '', '', 'APPROVED', '25000000', '22916667', '2750000', '0', 'HERBERT', 'PSI-1', '', 'TRUE', 'FALSE', 'FALSE', ''];
+        $augRow = ['', '0209038454025000', 'PT AUG', '04002600375240001', '2026-08-15T00:00:00', 'Agustus', '2026', '', '', 'APPROVED', '1000', '917', '110', '0', 'X', 'REF', '', 'TRUE', 'FALSE', 'FALSE', ''];
+        $dataRows = [$septRow, $septRow, $augRow];
+        for ($i = 0; $i < 11; $i++) {
+            $clone = $augRow;
+            $clone[3] = '0400260037524000'.str_pad((string) (2 + $i), 2, '0', STR_PAD_LEFT);
+            $dataRows[] = $clone;
+        }
+
+        return $this->writeFixtureSpreadsheet($headers, $dataRows);
     }
 
     private function writeSampleCoretaxSpreadsheet(): string
