@@ -84,7 +84,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted mb-2">{{ $payreqExtensionHistory->count() }} request(s) recorded.</p>
+                    <p class="text-muted mb-2">{{ $payreqExtensionHistory->count() }} permintaan tercatat.</p>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered">
                             <thead>
@@ -111,7 +111,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7">No extension requests.</td>
+                                        <td colspan="7">Tidak ada permintaan perpanjangan.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

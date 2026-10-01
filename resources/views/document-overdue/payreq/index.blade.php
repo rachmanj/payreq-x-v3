@@ -190,7 +190,7 @@
             $('#bulk-update-form').on('submit', function(e) {
                 if ($('.payreq-checkbox:checked').length === 0) {
                     e.preventDefault();
-                    toastr.error('Please select at least one payment request.');
+                    toastr.error('Silakan pilih minimal satu payment request.');
                     return false;
                 }
             });

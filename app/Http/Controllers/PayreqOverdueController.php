@@ -20,13 +20,14 @@ class PayreqOverdueController extends Controller
 
         if (! AdvancePayreqOverdueRules::isAdvanceStillOverdue($payreq)) {
             return redirect()->route('document-overdue.payreq.index')
-                ->with('error', 'Payment request is not eligible for extension (not overdue or realization already finished).');
+                ->with('error', $this->extendIneligibleMessage($payreq));
         }
 
         $payreq->due_date = $request->new_due_date;
         $payreq->save();
 
-        return redirect()->route('document-overdue.payreq.index')->with('success', 'Payreq extended successfully.');
+        return redirect()->route('document-overdue.payreq.index')
+            ->with('success', 'Perpanjangan jatuh tempo PR '.$payreq->nomor.' berhasil disimpan.');
     }
 
     public function bulkExtend(Request $request)
@@ -47,7 +48,22 @@ class PayreqOverdueController extends Controller
             ->update(['due_date' => $request->new_due_date]);
 
         return redirect()->route('document-overdue.payreq.index')
-            ->with('success', $count.' payment requests have been updated successfully.');
+            ->with('success', $count.' payment request berhasil diperbarui jatuh temponya.');
+    }
+
+    private function extendIneligibleMessage(Payreq $payreq): string
+    {
+        $nomor = $payreq->nomor;
+
+        if (AdvancePayreqOverdueRules::isAdvanceRealizationFinished($payreq)) {
+            return 'PR '.$nomor.' tidak lagi berstatus overdue karena realisasinya sudah selesai; perpanjangan tidak diperlukan.';
+        }
+
+        if ($payreq->due_date && ! Carbon::parse($payreq->due_date)->lt(now())) {
+            return 'PR '.$nomor.' belum jatuh tempo; perpanjangan tidak dapat dilakukan.';
+        }
+
+        return 'PR '.$nomor.' tidak memenuhi syarat perpanjangan jatuh tempo.';
     }
 
     public function data()

@@ -8,11 +8,22 @@ use App\Models\Payreq;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class PayreqOverdueUnifiedRulesTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Permission::firstOrCreate(
+            ['name' => 'approve_overdue_extension'],
+            ['guard_name' => 'web'],
+        );
+    }
 
     public function test_admin_overdue_payreq_data_excludes_advance_with_finished_realization(): void
     {
@@ -146,5 +157,77 @@ class PayreqOverdueUnifiedRulesTest extends TestCase
             'user_id' => $user->id,
             'status' => OverdueExtension::STATUS_PENDING,
         ]);
+    }
+
+    public function test_admin_direct_extend_rejects_finished_realization_with_indonesian_message(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-01 12:00:00'));
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('approve_overdue_extension');
+
+        $payreq = Payreq::query()->create([
+            'user_id' => $user->id,
+            'nomor' => '26010101009',
+            'type' => 'advance',
+            'status' => 'paid',
+            'amount' => 400000,
+            'due_date' => '2026-09-20',
+            'project' => '000H',
+            'remarks' => 'Sudah lunas',
+        ]);
+        $payreq->realization()->create([
+            'nomor' => 'REAL-DIRECT-DONE',
+            'user_id' => $user->id,
+            'project' => '000H',
+            'status' => 'close',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('document-overdue.payreq.extend'), [
+                'payreq_id' => $payreq->id,
+                'new_due_date' => '2026-10-15',
+            ])
+            ->assertRedirect(route('document-overdue.payreq.index'))
+            ->assertSessionHas('error');
+
+        $error = session('error');
+        $this->assertStringContainsString('26010101009', $error);
+        $this->assertStringContainsString('realisasinya sudah selesai', $error);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_admin_direct_extend_rejects_not_yet_due_with_indonesian_message(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-01 12:00:00'));
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('approve_overdue_extension');
+
+        $payreq = Payreq::query()->create([
+            'user_id' => $user->id,
+            'nomor' => 'ADV-NOT-DUE',
+            'type' => 'advance',
+            'status' => 'paid',
+            'amount' => 200000,
+            'due_date' => '2026-10-15',
+            'project' => '000H',
+            'remarks' => 'Masih dalam tempo',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('document-overdue.payreq.extend'), [
+                'payreq_id' => $payreq->id,
+                'new_due_date' => '2026-10-20',
+            ])
+            ->assertRedirect(route('document-overdue.payreq.index'))
+            ->assertSessionHas('error');
+
+        $error = session('error');
+        $this->assertStringContainsString('ADV-NOT-DUE', $error);
+        $this->assertStringContainsString('belum jatuh tempo', $error);
+
+        Carbon::setTestNow();
     }
 }
