@@ -8,6 +8,7 @@ use App\Http\Requests\StoreOverdueExtensionRequest;
 use App\Models\OverdueExtension;
 use App\Models\Payreq;
 use App\Models\Realization;
+use App\Support\AdvancePayreqOverdueRules;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -93,14 +94,17 @@ class OverdueExtensionController extends Controller
 
             abort_if(! in_array($document->project, OverdueExtension::eligibleProjects(), true), 403);
 
-            if (! (
-                $document->type === 'advance'
-                    && $document->status === 'paid'
-                    && $document->due_date
-                    && Carbon::parse($document->due_date)->lt(now())
-            )) {
+            if (AdvancePayreqOverdueRules::isAdvanceRealizationFinished($document)) {
                 throw ValidationException::withMessages([
-                    'document_id' => ['This payment request is not eligible for an overdue extension request.'],
+                    'document_id' => [
+                        "PR {$document->nomor} tidak lagi berstatus overdue karena realisasinya sudah selesai; perpanjangan tidak diperlukan.",
+                    ],
+                ]);
+            }
+
+            if (! AdvancePayreqOverdueRules::isAdvanceStillOverdue($document)) {
+                throw ValidationException::withMessages([
+                    'document_id' => ['Payment request ini tidak memenuhi syarat permintaan perpanjangan overdue.'],
                 ]);
             }
 

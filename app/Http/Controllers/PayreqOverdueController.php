@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payreq;
+use App\Support\AdvancePayreqOverdueRules;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,13 @@ class PayreqOverdueController extends Controller
 
     public function extend(Request $request)
     {
-        $payreq = Payreq::find($request->payreq_id);
+        $payreq = Payreq::query()->findOrFail($request->payreq_id);
+
+        if (! AdvancePayreqOverdueRules::isAdvanceStillOverdue($payreq)) {
+            return redirect()->route('document-overdue.payreq.index')
+                ->with('error', 'Payment request is not eligible for extension (not overdue or realization already finished).');
+        }
+
         $payreq->due_date = $request->new_due_date;
         $payreq->save();
 
@@ -30,7 +37,13 @@ class PayreqOverdueController extends Controller
             'new_due_date' => 'required|date',
         ]);
 
-        $count = Payreq::whereIn('id', $request->payreq_ids)
+        $eligibleIds = Payreq::query()
+            ->whereIn('id', $request->payreq_ids)
+            ->advanceStillOverdue()
+            ->pluck('id');
+
+        $count = Payreq::query()
+            ->whereIn('id', $eligibleIds)
             ->update(['due_date' => $request->new_due_date]);
 
         return redirect()->route('document-overdue.payreq.index')
@@ -39,10 +52,8 @@ class PayreqOverdueController extends Controller
 
     public function data()
     {
-        $status_include = ['paid'];
-        $payreqs = Payreq::whereDate('due_date', '<=', now())
-            ->where('type', 'advance')
-            ->whereIn('status', $status_include)
+        $payreqs = Payreq::query()
+            ->advanceStillOverdue()
             ->get();
 
         return datatables()->of($payreqs)
