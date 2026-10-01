@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\LoginThrottle;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
@@ -43,6 +44,14 @@ class RouteServiceProvider extends ServiceProvider
     {
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for(LoginThrottle::limiterName(), function (Request $request) {
+            $maxAttempts = config('security.login.max_attempts_per_minute', 5);
+            $decayMinutes = config('security.login.decay_minutes', 1);
+
+            return Limit::perMinutes($decayMinutes, $maxAttempts)
+                ->by(LoginThrottle::signatureKey($request));
         });
     }
 }

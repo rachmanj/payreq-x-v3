@@ -1,11 +1,16 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\LoginAuditController;
 use App\Http\Controllers\Admin\PrintableDocumentController;
 use App\Http\Controllers\Admin\ProjectController;
-use App\Http\Controllers\Admin\DepartmentController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'can:akses_admin'])->group(function () {
+
+    Route::middleware('permission:view_login_audit')->group(function () {
+        Route::get('login-audits', [LoginAuditController::class, 'index'])->name('login-audits.index');
+    });
 
     // Printable Documents Management
     Route::prefix('printable-documents')->name('printable-documents.')->group(function () {

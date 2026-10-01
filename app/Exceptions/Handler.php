@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Throwable;
@@ -72,6 +73,19 @@ class Handler extends ExceptionHandler
         $this->renderable(function (AccessDeniedHttpException $e, $request) use ($permissionDeniedJson) {
             if ($request->expectsJson()) {
                 return $permissionDeniedJson();
+            }
+        });
+
+        $this->renderable(function (ThrottleRequestsException $e, $request) {
+            if ($request->routeIs('authenticate') && ! $request->expectsJson()) {
+                $retryAfter = (int) ($e->getHeaders()['Retry-After'] ?? 60);
+
+                return redirect()
+                    ->route('login')
+                    ->withInput($request->only('username'))
+                    ->withErrors([
+                        'username' => "Terlalu banyak percobaan login. Silakan coba lagi dalam {$retryAfter} detik.",
+                    ]);
             }
         });
     }

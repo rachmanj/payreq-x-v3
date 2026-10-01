@@ -40,6 +40,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\ShareBapsbComplianceForViews::class,
             \App\Http\Middleware\ShareVjRejectionAlertForViews::class,
             \App\Http\Middleware\PreventHtmlResponseCaching::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ],
 
         'api' => [
