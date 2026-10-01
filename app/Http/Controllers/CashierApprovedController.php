@@ -9,8 +9,10 @@ use App\Models\Outgoing;
 use App\Models\Payreq;
 use App\Models\TransferAccount;
 use App\Services\PettyCashAccountResolver;
+use App\Support\AdvancePayreqOverdueRules;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CashierApprovedController extends Controller
 {
@@ -44,7 +46,7 @@ class CashierApprovedController extends Controller
 
         $outgoing = app(OutgoingController::class)->store($request);
 
-        $this->payreqStatusUpdate($payreq, $outgoing);
+        $statusInfoMessage = $this->payreqStatusUpdate($payreq, $outgoing);
 
         // create transaksi
         app(TransaksiController::class)->store('outgoing', $outgoing);
@@ -52,7 +54,14 @@ class CashierApprovedController extends Controller
         // update app_balance in account table
         app(AccountController::class)->outgoing($payreq->amount);
 
-        return redirect()->route('cashier.approveds.index')->with('success', 'Payreq successfully paid with FULL Payment');
+        $redirect = redirect()->route('cashier.approveds.index')
+            ->with('success', 'Payreq successfully paid with FULL Payment');
+
+        if ($statusInfoMessage !== null) {
+            $redirect = $redirect->with('info', $statusInfoMessage);
+        }
+
+        return $redirect;
     }
 
     public function pay($id)
@@ -208,9 +217,16 @@ class CashierApprovedController extends Controller
         // update payreq status
         if ($payreq->amount == $outgoings->sum('amount')) {
 
-            $this->payreqStatusUpdate($payreq, $outgoing);
+            $statusInfoMessage = $this->payreqStatusUpdate($payreq, $outgoing);
 
-            return redirect()->route('cashier.approveds.pay', $id)->with('success', 'Payreq successfully paid in full');
+            $redirect = redirect()->route('cashier.approveds.pay', $id)
+                ->with('success', 'Payreq successfully paid in full');
+
+            if ($statusInfoMessage !== null) {
+                $redirect = $redirect->with('info', $statusInfoMessage);
+            }
+
+            return $redirect;
         } else {
 
             $payreq->status = 'split';
@@ -294,14 +310,33 @@ class CashierApprovedController extends Controller
             ->toJson();
     }
 
-    public function payreqStatusUpdate($payreq, $outgoing)
+    public function payreqStatusUpdate($payreq, $outgoing): ?string
     {
         if ($payreq->type === 'advance') { // if payreq type is 'advance'
-            // update payreq status
+            if (
+                $payreq->status === 'close'
+                || AdvancePayreqOverdueRules::isAdvanceRealizationFinished($payreq)
+            ) {
+                $reason = $payreq->status === 'close'
+                    ? 'payreq sudah close'
+                    : 'realisasi sudah selesai';
+
+                Log::warning('Skip mengubah status PR advance menjadi paid setelah pembayaran kasir', [
+                    'payreq_id' => $payreq->id,
+                    'payreq_nomor' => $payreq->nomor,
+                    'current_status' => $payreq->status,
+                    'reason' => $reason,
+                ]);
+
+                return 'PR '.$payreq->nomor.' sudah selesai realisasinya; status tidak diubah menjadi Paid.';
+            }
+
             $payreq->status = 'paid';
             $payreq->due_date = Carbon::parse($outgoing->outgoing_date)->addDays(7);
             $payreq->printable = 0;
             $payreq->save();
+
+            return null;
         } elseif ($payreq->type === 'reimburse') { // if payreq type is 'reimburse'
             $payreq->status = 'close';
             $payreq->printable = 0;
@@ -311,12 +346,16 @@ class CashierApprovedController extends Controller
             $realization = $payreq->realization;
             $realization->status = 'reimburse-paid';
             $realization->save();
+
+            return null;
         } else { // if payreq type is 'other'
             // update payreq status
             $payreq->status = 'close';
             $payreq->printable = 0;
             $payreq->deletable = 0;
             $payreq->save();
+
+            return null;
         }
     }
 }

@@ -8,6 +8,7 @@ use App\Models\OverdueExtension;
 use App\Models\Payreq;
 use App\Models\Realization;
 use App\Models\TransferAccount;
+use App\Support\AdvancePayreqOverdueRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,10 +16,9 @@ class UserPayreqController extends Controller
 {
     public function index()
     {
-        $overdue_payreqs = Payreq::where('user_id', auth()->user()->id)
-            ->where('type', 'advance')
-            ->where('status', 'paid')
-            ->where('due_date', '<', now())
+        $overdue_payreqs = Payreq::query()
+            ->where('user_id', auth()->user()->id)
+            ->advanceStillOverdue()
             ->count();
 
         $overdue_realizations = Realization::where('user_id', auth()->user()->id)
@@ -58,10 +58,7 @@ class UserPayreqController extends Controller
 
         $overduePayreqs = Payreq::query()
             ->where('user_id', $userId)
-            ->where('type', 'advance')
-            ->where('status', 'paid')
-            ->whereNotNull('due_date')
-            ->where('due_date', '<', now())
+            ->advanceStillOverdue()
             ->withCount($extensionCountRelations)
             ->orderBy('due_date')
             ->get();
@@ -245,14 +242,14 @@ class UserPayreqController extends Controller
         $status_include = ['draft', 'submitted', 'approved', 'revise', 'split', 'paid', 'rejected', 'realization'];
 
         if (in_array('superadmin', $userRoles)) {
-            $payreqs = Payreq::with(['realization', 'transferAccount.bank'])
+            $payreqs = Payreq::with(['realization.verificationJournal', 'transferAccount.bank'])
                 ->whereIn('status', $status_include)
                 ->orderBy('status', 'asc')
                 ->orderBy('approved_at', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
-            $payreqs = Payreq::with(['realization', 'transferAccount.bank'])
+            $payreqs = Payreq::with(['realization.verificationJournal', 'transferAccount.bank'])
                 ->where('user_id', auth()->user()->id)
                 ->whereIn('status', $status_include)
                 ->orderBy('status', 'asc')
@@ -307,16 +304,23 @@ class UserPayreqController extends Controller
                     $chips[] = '<span class="vj-chip vj-chip-warning">Payment SPLITTED</span>';
                     $chips[] = '<span class="vj-chip vj-chip-neutral">Remain: '.number_format($amount_remain, 2).'</span>';
                 } elseif ($payreq->status === 'paid') {
-                    $due_date = \Carbon\Carbon::parse($payreq->due_date);
-                    $today = \Carbon\Carbon::now();
-                    $dif_days = $due_date->diffInDays($today);
-
-                    $chips[] = '<span class="vj-chip vj-chip-info"><strong>PAID</strong></span>';
-
-                    if ($today->greaterThan($due_date)) {
-                        $chips[] = '<span class="vj-chip vj-chip-danger">OVERDUE <strong>'.$dif_days.'</strong> days</span>';
+                    if (
+                        $payreq->type === 'advance'
+                        && AdvancePayreqOverdueRules::isAdvanceRealizationFinished($payreq)
+                    ) {
+                        $chips[] = '<span class="vj-chip vj-chip-success">Closed / Realized</span>';
                     } else {
-                        $chips[] = '<span class="vj-chip vj-chip-neutral">Due in <strong>'.$dif_days.'</strong> days</span>';
+                        $due_date = \Carbon\Carbon::parse($payreq->due_date);
+                        $today = \Carbon\Carbon::now();
+                        $dif_days = $due_date->diffInDays($today);
+
+                        $chips[] = '<span class="vj-chip vj-chip-info"><strong>PAID</strong></span>';
+
+                        if ($today->greaterThan($due_date)) {
+                            $chips[] = '<span class="vj-chip vj-chip-danger">OVERDUE <strong>'.$dif_days.'</strong> days</span>';
+                        } else {
+                            $chips[] = '<span class="vj-chip vj-chip-neutral">Due in <strong>'.$dif_days.'</strong> days</span>';
+                        }
                     }
                 } elseif ($payreq->status === 'draft') {
                     $chips[] = '<span class="vj-chip vj-chip-neutral">Draft</span>';
@@ -394,9 +398,9 @@ class UserPayreqController extends Controller
             ];
         }
 
-        $od_payreq = Payreq::where('user_id', auth()->user()->id)
-            ->where('status', 'paid')
-            ->where('due_date', '<', now());
+        $od_payreq = Payreq::query()
+            ->where('user_id', auth()->user()->id)
+            ->advanceStillOverdue();
 
         $over_due_payreq = [
             'count' => $od_payreq->count(),
