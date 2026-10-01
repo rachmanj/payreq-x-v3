@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Cashier\TransaksiController;
 use App\Models\Incoming;
+use App\Models\VerificationJournal;
+use App\Services\CashierBankTransactionPettyCashTransferService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -38,6 +40,13 @@ class CashierIncomingController extends Controller
                 DB::rollBack();
 
                 return redirect()->back()->with('error', 'Incoming ini sudah pernah di-receive. Tidak diproses ulang untuk mencegah saldo dobel.');
+            }
+
+            $bankTransactionBlockMessage = $this->bankTransactionNonTransferReceiveBlockMessage($incoming);
+            if ($bankTransactionBlockMessage !== null) {
+                DB::rollBack();
+
+                return redirect()->back()->with('error', $bankTransactionBlockMessage);
             }
 
             $incoming->receive_date = $request->receive_date;
@@ -301,5 +310,34 @@ class CashierIncomingController extends Controller
         }
 
         return null;
+    }
+
+    private function bankTransactionNonTransferReceiveBlockMessage(Incoming $incoming): ?string
+    {
+        $description = (string) $incoming->description;
+        if (! str_starts_with($description, 'Bank Transaction: ')) {
+            return null;
+        }
+
+        if ($incoming->nomor === null || $incoming->nomor === '') {
+            return null;
+        }
+
+        $journal = VerificationJournal::query()
+            ->with('verificationJournalDetails')
+            ->where('type', 'bank')
+            ->where('nomor', $incoming->nomor)
+            ->first();
+
+        if ($journal === null) {
+            return null;
+        }
+
+        $transferService = app(CashierBankTransactionPettyCashTransferService::class);
+        if ($transferService->isTransferToPettyCash($journal)) {
+            return null;
+        }
+
+        return 'Incoming ini berasal dari transaksi bank (bunga/biaya administrasi), bukan pindah buku ke Petty Cash. Pembukuan saldo kas ditolak.';
     }
 }

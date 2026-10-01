@@ -101,7 +101,7 @@ class IncomingPettyCashProjectBookingTest extends TestCase
         VerificationJournalDetail::query()->create([
             'verification_journal_id' => $journal->id,
             'realization_date' => now()->toDateString(),
-            'account_code' => '11101008',
+            'account_code' => '11101001-025C',
             'debit_credit' => 'debit',
             'description' => 'Petty cash',
             'project' => '025C',

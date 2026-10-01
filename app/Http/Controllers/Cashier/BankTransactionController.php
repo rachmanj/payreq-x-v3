@@ -11,11 +11,13 @@ use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
 use App\Services\CashierBankTransactionBalanceRecalculationService;
 use App\Services\CashierBankTransactionDirectSapService;
+use App\Services\CashierBankTransactionPettyCashTransferService;
 use App\Services\SapJournalSubmissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\Facades\DataTables;
 
 class BankTransactionController extends Controller
@@ -23,7 +25,8 @@ class BankTransactionController extends Controller
     public function __construct(
         protected CashierBankTransactionDirectSapService $directSapService,
         protected SapJournalSubmissionService $journalSubmissionService,
-        protected CashierBankTransactionBalanceRecalculationService $balanceRecalculationService
+        protected CashierBankTransactionBalanceRecalculationService $balanceRecalculationService,
+        protected CashierBankTransactionPettyCashTransferService $pettyCashTransferService
     ) {}
 
     public function index()
@@ -251,6 +254,11 @@ class BankTransactionController extends Controller
                 ->with('info', $result['message'] ?? 'Saldo transaksi ini sudah dibukukan, tidak dihitung ulang.');
         }
 
+        if (($result['status'] ?? '') === 'not_transfer') {
+            return redirect()->route('cashier.bank-transactions.show', $journal->id)
+                ->with('info', $result['message'] ?? 'Transaksi ini bukan pindah buku ke Petty Cash.');
+        }
+
         if (($result['status'] ?? '') !== 'success') {
             return redirect()->route('cashier.bank-transactions.show', $journal->id)
                 ->with('error', $result['message'] ?? 'Balance recalculation could not be completed.');
@@ -474,35 +482,46 @@ class BankTransactionController extends Controller
                 ->with('error', $result['message'] ?? 'Failed to submit to SAP B1.');
         }
 
-        DB::beginTransaction();
-        try {
-            $journal->refresh();
+        $isTransferToPettyCash = $this->pettyCashTransferService->isTransferToPettyCash($journal);
 
-            $incoming = new Incoming;
-            $incoming->nomor = $journal->nomor;
-            $incoming->cashier_id = $user->id;
-            $incoming->description = 'Bank Transaction: '.$journal->nomor.' - '.$journal->description;
-            $incoming->amount = $journal->amount;
-            $incoming->project = $journal->project;
-            $incoming->receive_date = now();
-            $incoming->will_post = true;
-            $incoming->sap_journal_no = $journal->sap_journal_no;
-            $incoming->save();
+        if ($isTransferToPettyCash) {
+            DB::beginTransaction();
+            try {
+                $journal->refresh();
 
-            $this->bookIncomingPettyCashBalance($incoming);
+                $incoming = new Incoming;
+                $incoming->nomor = $journal->nomor;
+                $incoming->cashier_id = $user->id;
+                $incoming->description = 'Bank Transaction: '.$journal->nomor.' - '.$journal->description;
+                $incoming->amount = $journal->amount;
+                $incoming->project = $journal->project;
+                $incoming->receive_date = now();
+                $incoming->will_post = true;
+                $incoming->sap_journal_no = $journal->sap_journal_no;
+                $incoming->save();
 
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
+                $this->bookIncomingPettyCashBalance($incoming);
 
-            return redirect()->route('cashier.bank-transactions.show', $journal->id)
-                ->with('error', 'SAP posting succeeded but incoming record could not be created: '.$e->getMessage());
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                return redirect()->route('cashier.bank-transactions.show', $journal->id)
+                    ->with('error', 'SAP posting succeeded but incoming record could not be created: '.$e->getMessage());
+            }
+        } else {
+            $this->logSkippedPettyCashBooking($journal);
         }
 
         $sapJournalNo = $journal->sap_journal_no ?? ($result['sap_journal_no'] ?? null);
 
+        $successMessage = 'Transaksi bank berhasil diposting ke SAP B1. Nomor jurnal SAP: '.$sapJournalNo;
+        if (! $isTransferToPettyCash) {
+            $successMessage .= '. Tidak ada perubahan saldo Petty Cash (bukan pindah buku ke kas).';
+        }
+
         return redirect()->route('cashier.bank-transactions.show', $journal->id)
-            ->with('success', 'Bank transaction posted to SAP B1. SAP Journal Number: '.$sapJournalNo);
+            ->with('success', $successMessage);
     }
 
     protected function submitLegacyPendingValidation(VerificationJournal $journal)
@@ -518,28 +537,47 @@ class BankTransactionController extends Controller
                 'rejection_reason' => null,
             ]);
 
-            $incoming = new Incoming;
-            $incoming->nomor = $journal->nomor;
-            $incoming->cashier_id = Auth::id();
-            $incoming->description = 'Bank Transaction: '.$journal->nomor.' - '.$journal->description;
-            $incoming->amount = $journal->amount;
-            $incoming->project = $journal->project;
-            $incoming->receive_date = now();
-            $incoming->will_post = true;
-            $incoming->save();
+            $isTransferToPettyCash = $this->pettyCashTransferService->isTransferToPettyCash($journal);
 
-            $this->bookIncomingPettyCashBalance($incoming);
+            if ($isTransferToPettyCash) {
+                $incoming = new Incoming;
+                $incoming->nomor = $journal->nomor;
+                $incoming->cashier_id = Auth::id();
+                $incoming->description = 'Bank Transaction: '.$journal->nomor.' - '.$journal->description;
+                $incoming->amount = $journal->amount;
+                $incoming->project = $journal->project;
+                $incoming->receive_date = now();
+                $incoming->will_post = true;
+                $incoming->save();
+
+                $this->bookIncomingPettyCashBalance($incoming);
+            } else {
+                $this->logSkippedPettyCashBooking($journal);
+            }
 
             DB::commit();
 
+            $successMessage = $isTransferToPettyCash
+                ? 'Transaksi bank berhasil disubmit dan saldo Petty Cash telah dibukukan.'
+                : 'Transaksi bank berhasil disubmit untuk validasi Accounting. Bukan pindah buku ke Petty Cash — saldo kas tidak diubah.';
+
             return redirect()->route('cashier.bank-transactions.index')
-                ->with('success', 'Bank transaction submitted successfully and incoming record created');
+                ->with('success', $successMessage);
         } catch (\Exception $e) {
             DB::rollback();
 
             return redirect()->back()
                 ->with('error', 'Error occurred: '.$e->getMessage());
         }
+    }
+
+    protected function logSkippedPettyCashBooking(VerificationJournal $journal): void
+    {
+        Log::info('Pembukuan saldo Petty Cash dilewati — transaksi bank bukan pindah buku ke kas', [
+            'vj_nomor' => $journal->nomor,
+            'project' => $journal->project,
+            'detail_account_types' => $this->pettyCashTransferService->detailAccountTypesForProject($journal),
+        ]);
     }
 
     protected function bookIncomingPettyCashBalance(Incoming $incoming): void

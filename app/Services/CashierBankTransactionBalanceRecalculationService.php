@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Log;
 
 class CashierBankTransactionBalanceRecalculationService
 {
+    public function __construct(
+        protected CashierBankTransactionPettyCashTransferService $pettyCashTransferService
+    ) {}
+
     public function findIncomingByJournalNumber(VerificationJournal $journal): ?Incoming
     {
         if ($journal->nomor === null || $journal->nomor === '') {
@@ -43,6 +47,10 @@ class CashierBankTransactionBalanceRecalculationService
             return false;
         }
 
+        if (! $this->pettyCashTransferService->isTransferToPettyCash($journal)) {
+            return false;
+        }
+
         $incoming = $this->findIncomingByJournalNumber($journal);
         if ($incoming === null) {
             return false;
@@ -60,6 +68,20 @@ class CashierBankTransactionBalanceRecalculationService
             return [
                 'status' => 'ineligible',
                 'message' => 'This bank transaction is not eligible for balance recalculation.',
+            ];
+        }
+
+        if (! $this->pettyCashTransferService->isTransferToPettyCash($journal)) {
+            Log::info('Pembukuan saldo Petty Cash dilewati — transaksi bank bukan pindah buku ke kas', [
+                'vj_nomor' => $journal->nomor,
+                'project' => $journal->project,
+                'detail_account_types' => $this->pettyCashTransferService->detailAccountTypesForProject($journal),
+                'context' => 'recalculate_balance',
+            ]);
+
+            return [
+                'status' => 'not_transfer',
+                'message' => 'Transaksi ini bukan pindah buku ke Petty Cash sehingga tidak ada saldo yang perlu dihitung ulang.',
             ];
         }
 
