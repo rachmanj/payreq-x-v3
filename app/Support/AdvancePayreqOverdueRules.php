@@ -5,6 +5,9 @@ namespace App\Support;
 use App\Models\Payreq;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Single source of truth for advance payreq overdue guards and outstanding (ongoing) lists.
+ */
 class AdvancePayreqOverdueRules
 {
     /** @var list<string> */
@@ -45,13 +48,30 @@ class AdvancePayreqOverdueRules
         return false;
     }
 
+    public static function isAdvanceOutstanding(Payreq $payreq): bool
+    {
+        return $payreq->type === 'advance'
+            && $payreq->status === 'paid'
+            && ! self::isAdvanceRealizationFinished($payreq);
+    }
+
+    public static function restrictToOutstandingAdvance(Builder $query): Builder
+    {
+        return self::wherePaidAdvanceRealizationNotFinished($query);
+    }
+
     public static function restrictToAdvanceStillOverdue(Builder $query): Builder
+    {
+        return self::wherePaidAdvanceRealizationNotFinished($query)
+            ->whereNotNull('due_date')
+            ->where('due_date', '<', now());
+    }
+
+    private static function wherePaidAdvanceRealizationNotFinished(Builder $query): Builder
     {
         return $query
             ->where('type', 'advance')
             ->where('status', 'paid')
-            ->whereNotNull('due_date')
-            ->where('due_date', '<', now())
             ->where(function (Builder $outer) {
                 $outer->whereDoesntHave('realization')
                     ->orWhereHas('realization', function (Builder $realizationQuery) {
