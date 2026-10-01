@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\VerificationJournalDetail;
 use App\Services\PettyCashAccountResolver;
 use App\Services\PettyCashSapBalanceService;
+use App\Support\AdvancePayreqOverdueRules;
 use App\Support\PettyCashBalanceVariance;
 use Illuminate\Support\Facades\DB;
 
@@ -197,7 +198,9 @@ class OngoingDashboardController extends Controller
 
     public function get_payreqs_belum_realisasi_by_user($user_id)
     {
-        $payreqs = Payreq::whereIn('status', ['paid', 'split'])->where('user_id', $user_id)->get();
+        $payreqs = AdvancePayreqOverdueRules::restrictToOutstandingAdvanceIncludingSplit(
+            Payreq::query()->where('user_id', $user_id)
+        )->get();
         $payreqIds = $payreqs->pluck('id')->toArray();
 
         return Outgoing::whereIn('outgoings.payreq_id', $payreqIds)
@@ -260,10 +263,9 @@ class OngoingDashboardController extends Controller
 
     public function get_payreq_belum_realisasi($project)
     {
-        $payreqs = Payreq::whereIn('status', ['paid', 'split'])->whereIn('project', $project)
-            ->get();
-
-        return $payreqs;
+        return AdvancePayreqOverdueRules::restrictToOutstandingAdvanceIncludingSplit(
+            Payreq::query()->whereIn('project', $project)
+        )->get();
     }
 
     public function get_realisasi_belum_verifikasi($project)

@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
-use App\Models\Payreq;
-use Illuminate\Http\Request;
-use App\Http\Controllers\ToolController; // Import the missing class
+use App\Http\Controllers\ToolController;
 use App\Http\Controllers\UserController;
+use App\Models\Payreq;
+use App\Support\AdvancePayreqOverdueRules;
 
 class OngoingController extends Controller
 {
     public function index()
     {
-        $status_include = ['paid', 'realization'];
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (array_intersect(['superadmin', 'admin', 'cashier'], $userRoles)) {
@@ -21,7 +20,7 @@ class OngoingController extends Controller
             $project_include = explode(',', auth()->user()->project);
         }
 
-        $total_amount = Payreq::whereIn('status', $status_include)
+        $total_amount = AdvancePayreqOverdueRules::restrictToOutstandingAdvance(Payreq::query())
             ->whereIn('project', $project_include)
             ->sum('amount');
 
@@ -35,7 +34,6 @@ class OngoingController extends Controller
 
     public function data()
     {
-        $status_include = ['paid', 'realization'];
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (array_intersect(['superadmin', 'admin', 'cashier'], $userRoles)) {
@@ -44,9 +42,8 @@ class OngoingController extends Controller
             $project_include = explode(',', auth()->user()->project);
         }
 
-        $payreqs = Payreq::whereIn('status', $status_include)
+        $payreqs = AdvancePayreqOverdueRules::restrictToOutstandingAdvance(Payreq::query())
             ->whereIn('project', $project_include)
-            // ->orderBy('outgoing_date', 'asc') // Order by outgoing_date in ascending order
             ->get();
 
         return datatables()->of($payreqs)
@@ -57,14 +54,16 @@ class OngoingController extends Controller
                 return app(ToolController::class)->getLastOutgoing($payreq->id)->created_at->format('d-M-Y');
             })
             ->editColumn('nomor', function ($payreq) {
-                if ($payreq->rab_id != null)
-                    return '<a href="#" style="color: black" title="' . $payreq->remarks . ' | RAB No.' . $payreq->rab->rab_no . '">' . $payreq->nomor . '</a>';
-                else
-                    return '<a href="#" style="color: black" title="' . $payreq->remarks . '">' . $payreq->nomor . '</a>';
+                if ($payreq->rab_id != null) {
+                    return '<a href="#" style="color: black" title="'.$payreq->remarks.' | RAB No.'.$payreq->rab->rab_no.'">'.$payreq->nomor.'</a>';
+                } else {
+                    return '<a href="#" style="color: black" title="'.$payreq->remarks.'">'.$payreq->nomor.'</a>';
+                }
             })
             ->addColumn('days', function ($payreq) {
                 $paid_date = app(ToolController::class)->getLastOutgoing($payreq->id)->created_at;
                 $now = now();
+
                 return $paid_date->diffInDays($now);
             })
             ->editColumn('amount', function ($payreq) {
@@ -77,8 +76,6 @@ class OngoingController extends Controller
 
     public function payreq_list($int)
     {
-        $status_include = ['paid', 'realization'];
-
         switch ($int) {
             case 1:
                 $project_include = ['000H', 'APS'];
@@ -97,10 +94,8 @@ class OngoingController extends Controller
                 break;
         }
 
-        $payreqs = Payreq::whereIn('status', $status_include)
+        return AdvancePayreqOverdueRules::restrictToOutstandingAdvance(Payreq::query())
             ->whereIn('project', $project_include)
             ->get();
-
-        return $payreqs;
     }
 }

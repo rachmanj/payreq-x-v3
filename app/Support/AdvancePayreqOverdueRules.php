@@ -57,21 +57,29 @@ class AdvancePayreqOverdueRules
 
     public static function restrictToOutstandingAdvance(Builder $query): Builder
     {
-        return self::wherePaidAdvanceRealizationNotFinished($query);
+        return self::whereAdvanceRealizationNotFinished($query, ['paid']);
+    }
+
+    public static function restrictToOutstandingAdvanceIncludingSplit(Builder $query): Builder
+    {
+        return self::whereAdvanceRealizationNotFinished($query, ['paid', 'split']);
     }
 
     public static function restrictToAdvanceStillOverdue(Builder $query): Builder
     {
-        return self::wherePaidAdvanceRealizationNotFinished($query)
+        return self::whereAdvanceRealizationNotFinished($query, ['paid'])
             ->whereNotNull('due_date')
             ->where('due_date', '<', now());
     }
 
-    private static function wherePaidAdvanceRealizationNotFinished(Builder $query): Builder
+    /**
+     * @param  list<string>  $statuses
+     */
+    private static function whereAdvanceRealizationNotFinished(Builder $query, array $statuses): Builder
     {
         return $query
             ->where('type', 'advance')
-            ->where('status', 'paid')
+            ->whereIn('status', $statuses)
             ->where(function (Builder $outer) {
                 $outer->whereDoesntHave('realization')
                     ->orWhereHas('realization', function (Builder $realizationQuery) {
