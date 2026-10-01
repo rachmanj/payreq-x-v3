@@ -54,6 +54,20 @@
         };
     }
 
+    function computeDetailFooterTotal() {
+        const transactionType = $('#transaction_type').val();
+        if (transactionType === 'bank_interest') {
+            const {
+                income,
+                expense
+            } = computeBankInterestTotals();
+
+            return Math.max(income, expense);
+        }
+
+        return sumDetailAmounts();
+    }
+
     function computeBankPreview(transactionType, bankAccount) {
         if (!bankAccount) {
             return null;

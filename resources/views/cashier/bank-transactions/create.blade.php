@@ -519,7 +519,7 @@
 
             // Function to update the total amount
             function updateTotal() {
-                const total = sumDetailAmounts();
+                const total = computeDetailFooterTotal();
                 $('#total-amount').text(total.toLocaleString('id-ID', {
                     minimumFractionDigits: 2
                 }));
@@ -572,7 +572,7 @@
                 populateAccountSelectForTransactionType();
                 updateBankInterestHelp();
                 refreshAllDetailRowDebitCreditDisplays();
-                updateBankPreviewRow();
+                updateTotal();
             });
 
             updateBankInterestHelp();

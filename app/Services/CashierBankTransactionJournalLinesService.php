@@ -177,8 +177,9 @@ class CashierBankTransactionJournalLinesService
         array $costCenters,
         array $amounts,
     ): array {
-        $totalIncomeCredit = 0.0;
-        $totalExpenseDebit = 0.0;
+        $interestTotals = $this->sumBankInterestCashierTotals($accountCodes, $amounts);
+        $totalIncomeCredit = $interestTotals['income'];
+        $totalExpenseDebit = $interestTotals['expense'];
         $cashierRows = [];
 
         foreach ($accountCodes as $key => $accountCode) {
@@ -187,10 +188,8 @@ class CashierBankTransactionJournalLinesService
 
             if (str_starts_with($accountCode, self::BANK_INTEREST_INCOME_PREFIX)) {
                 $debitCredit = 'credit';
-                $totalIncomeCredit += $amount;
             } else {
                 $debitCredit = 'debit';
-                $totalExpenseDebit += $amount;
             }
 
             $cashierRows[] = [
@@ -219,6 +218,62 @@ class CashierBankTransactionJournalLinesService
         }
 
         return array_merge($rows, $cashierRows);
+    }
+
+    /**
+     * @param  list<string>  $accountCodes
+     * @param  list<float|int|string>  $amounts
+     * @return array{income: float, expense: float}
+     */
+    protected function sumBankInterestCashierTotals(array $accountCodes, array $amounts): array
+    {
+        $income = 0.0;
+        $expense = 0.0;
+
+        foreach ($accountCodes as $key => $accountCode) {
+            $amount = (float) ($amounts[$key] ?? 0);
+            $accountCode = (string) $accountCode;
+
+            if (str_starts_with($accountCode, self::BANK_INTEREST_INCOME_PREFIX)) {
+                $income += $amount;
+            } else {
+                $expense += $amount;
+            }
+        }
+
+        return [
+            'income' => $income,
+            'expense' => $expense,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $accountCodes
+     * @param  list<float|int|string>  $amounts
+     */
+    public function bankInterestJournalTotalFromCashierLines(array $accountCodes, array $amounts): float
+    {
+        $totals = $this->sumBankInterestCashierTotals($accountCodes, $amounts);
+
+        return max($totals['income'], $totals['expense']);
+    }
+
+    /**
+     * @param  list<string>  $accountCodes
+     * @param  list<float|int|string>  $amounts
+     */
+    public function detailFooterTotalForTransactionType(string $transactionType, array $accountCodes, array $amounts): float
+    {
+        if ($transactionType === CashierBankTransactionDirectSapService::TRANSACTION_TYPE_INTEREST) {
+            return $this->bankInterestJournalTotalFromCashierLines($accountCodes, $amounts);
+        }
+
+        $total = 0.0;
+        foreach ($amounts as $amount) {
+            $total += (float) $amount;
+        }
+
+        return $total;
     }
 
     /**

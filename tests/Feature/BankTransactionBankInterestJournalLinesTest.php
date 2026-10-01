@@ -333,6 +333,57 @@ class BankTransactionBankInterestJournalLinesTest extends TestCase
         );
     }
 
+    public function test_create_form_includes_journal_total_footer_helper_for_bank_interest(): void
+    {
+        $user = $this->createCashier();
+
+        $this->actingAs($user)
+            ->get(route('cashier.bank-transactions.create'))
+            ->assertOk()
+            ->assertSee('function computeDetailFooterTotal()', false);
+    }
+
+    public function test_edit_form_footer_shows_journal_total_for_mixed_bank_interest(): void
+    {
+        $user = $this->createCashier();
+
+        $journal = VerificationJournal::query()->create([
+            'nomor' => 'BT-INTEREST-MIXED-FOOTER',
+            'date' => '2026-04-02',
+            'type' => 'bank',
+            'project' => '022C',
+            'bank_account' => '11201006',
+            'description' => 'Bunga Bank',
+            'amount' => 26274.86,
+            'created_by' => $user->id,
+            'status' => 'draft',
+        ]);
+
+        foreach (
+            [
+                ['71201001', 25000],
+                ['71101001', 6374.31],
+                ['71201007', 1274.86],
+            ] as [$account, $amount]
+        ) {
+            VerificationJournalDetail::query()->create([
+                'verification_journal_id' => $journal->id,
+                'realization_date' => $journal->date,
+                'account_code' => $account,
+                'debit_credit' => str_starts_with($account, '71101') ? 'credit' : 'debit',
+                'description' => 'line',
+                'project' => '022C',
+                'cost_center' => '30',
+                'amount' => $amount,
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get(route('cashier.bank-transactions.edit', $journal->id))
+            ->assertOk()
+            ->assertSee('id="total-amount">26.274,86</th>', false);
+    }
+
     public function test_journal_lines_service_builds_balanced_mixed_interest_rows(): void
     {
         $service = app(CashierBankTransactionJournalLinesService::class);

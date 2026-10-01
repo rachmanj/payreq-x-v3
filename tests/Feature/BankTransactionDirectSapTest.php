@@ -547,6 +547,17 @@ class BankTransactionDirectSapTest extends TestCase
         $this->assertTrue($service->isEligibleForDirectSapSubmission($journal, $user));
     }
 
+    public function test_edit_form_footer_shows_sum_of_cashier_lines_for_petty_cash_transfer(): void
+    {
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankJournal($user);
+
+        $this->actingAs($user)
+            ->get(route('cashier.bank-transactions.edit', $journal->id))
+            ->assertOk()
+            ->assertSee('id="total-amount">5.000.000,00</th>', false);
+    }
+
     public function test_create_and_edit_forms_show_bank_interest_sides_and_bank_preview_markup(): void
     {
         $user = $this->createAuthorizedCashier();

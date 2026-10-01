@@ -102,6 +102,20 @@
                                                 }
                                             }
                                         }
+                                        $cashierDetailsForFooter = $journal->verificationJournalDetails
+                                            ->where('account_code', '!=', $journal->bank_account);
+                                        $footerTransactionType = old('transaction_type', $inferredType);
+                                        $detailFooterTotalFormatted = number_format(
+                                            app(\App\Services\CashierBankTransactionJournalLinesService::class)
+                                                ->detailFooterTotalForTransactionType(
+                                                    (string) $footerTransactionType,
+                                                    $cashierDetailsForFooter->pluck('account_code')->values()->all(),
+                                                    $cashierDetailsForFooter->pluck('amount')->values()->all(),
+                                                ),
+                                            2,
+                                            ',',
+                                            '.'
+                                        );
                                     @endphp
                                     <select class="form-control @error('transaction_type') is-invalid @enderror"
                                         id="transaction_type" name="transaction_type" required>
@@ -190,7 +204,7 @@
                                 <tfoot>
                                     <tr>
                                         <th colspan="6" class="text-right">Total:</th>
-                                        <th id="total-amount">0.00</th>
+                                        <th id="total-amount">{{ $detailFooterTotalFormatted ?? '0,00' }}</th>
                                         <th></th>
                                     </tr>
                                 </tfoot>
@@ -618,7 +632,7 @@
 
             // Function to update the total amount
             function updateTotal() {
-                const total = sumDetailAmounts();
+                const total = computeDetailFooterTotal();
                 $('#total-amount').text(total.toLocaleString('id-ID', {
                     minimumFractionDigits: 2
                 }));
@@ -717,7 +731,7 @@
                 populateAccountSelectForTransactionType();
                 updateBankInterestHelp();
                 refreshAllDetailRowDebitCreditDisplays();
-                updateBankPreviewRow();
+                updateTotal();
             });
 
             updateBankInterestHelp();
