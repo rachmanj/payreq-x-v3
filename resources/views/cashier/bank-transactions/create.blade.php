@@ -121,6 +121,14 @@
                                 when you submit.
                             </div>
                         </div>
+                        <div class="vj-note mb-3 d-none" id="bank-interest-help">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                Untuk <strong>Bank Interest</strong>: isi nominal pendapatan bank (akun 71101...) dan biaya
+                                bank (71201...) pada baris detail. Sistem menentukan debit/kredit per akun; baris rekening bank
+                                dihitung otomatis sebagai selisih bersih sehingga saldo bank bertambah saat bunga masuk.
+                            </div>
+                        </div>
                         @error('account_code')
                             <div class="alert alert-danger">{{ $message }}</div>
                         @enderror
@@ -546,9 +554,17 @@
                 });
             }
 
+            function updateBankInterestHelp() {
+                const isInterest = $('#transaction_type').val() === 'bank_interest';
+                $('#bank-interest-help').toggleClass('d-none', !isInterest);
+            }
+
             $('#transaction_type').on('change', function() {
                 populateAccountSelectForTransactionType();
+                updateBankInterestHelp();
             });
+
+            updateBankInterestHelp();
 
             // Function to load account codes
             function loadAccountCodes() {

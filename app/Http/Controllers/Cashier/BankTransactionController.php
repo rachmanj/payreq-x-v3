@@ -11,6 +11,7 @@ use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
 use App\Services\CashierBankTransactionBalanceRecalculationService;
 use App\Services\CashierBankTransactionDirectSapService;
+use App\Services\CashierBankTransactionJournalLinesService;
 use App\Services\CashierBankTransactionPettyCashTransferService;
 use App\Services\SapJournalSubmissionService;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +27,8 @@ class BankTransactionController extends Controller
         protected CashierBankTransactionDirectSapService $directSapService,
         protected SapJournalSubmissionService $journalSubmissionService,
         protected CashierBankTransactionBalanceRecalculationService $balanceRecalculationService,
-        protected CashierBankTransactionPettyCashTransferService $pettyCashTransferService
+        protected CashierBankTransactionPettyCashTransferService $pettyCashTransferService,
+        protected CashierBankTransactionJournalLinesService $journalLinesService
     ) {}
 
     public function index()
@@ -136,7 +138,7 @@ class BankTransactionController extends Controller
             return redirect()->back()->withInput()->withErrors(['bilyet_id' => $bilyetError]);
         }
 
-        $accountError = $this->directSapService->validateDebitAccountsForTransactionType(
+        $accountError = $this->journalLinesService->validateCashierAccountCodes(
             (string) $request->transaction_type,
             $request->account_code ?? []
         );
@@ -163,31 +165,7 @@ class BankTransactionController extends Controller
                 'amount' => array_sum($request->amount),
             ]);
 
-            $journal->verificationJournalDetails()->create([
-                'verification_journal_id' => $journal->id,
-                'account_code' => $journal->bank_account,
-                'debit_credit' => 'credit',
-                'description' => $journal->description,
-                'project' => $journal->project,
-                'cost_center' => Auth::user()->department->sap_code,
-                'amount' => $journal->amount,
-                'realization_no' => $journal->nomor,
-                'realization_date' => $journal->date,
-            ]);
-
-            foreach ($request->account_code as $key => $account_code) {
-                VerificationJournalDetail::create([
-                    'verification_journal_id' => $journal->id,
-                    'account_code' => $account_code,
-                    'debit_credit' => 'debit',
-                    'description' => $request->detail_description[$key],
-                    'project' => $request->project[$key],
-                    'cost_center' => $request->cost_center[$key],
-                    'amount' => $request->amount[$key],
-                    'realization_no' => $journal->nomor,
-                    'realization_date' => $journal->date,
-                ]);
-            }
+            $this->persistVerificationJournalDetailsFromRequest($journal, $request, $bankAccount, $project);
 
             DB::commit();
 
@@ -316,7 +294,7 @@ class BankTransactionController extends Controller
             return redirect()->back()->withInput()->withErrors(['bilyet_id' => $bilyetError]);
         }
 
-        $accountError = $this->directSapService->validateDebitAccountsForTransactionType(
+        $accountError = $this->journalLinesService->validateCashierAccountCodes(
             (string) $request->transaction_type,
             $request->account_code ?? []
         );
@@ -348,31 +326,7 @@ class BankTransactionController extends Controller
 
             $journal->verificationJournalDetails()->delete();
 
-            $journal->verificationJournalDetails()->create([
-                'verification_journal_id' => $journal->id,
-                'account_code' => $journal->bank_account,
-                'debit_credit' => 'credit',
-                'description' => $journal->description,
-                'project' => $journal->project,
-                'cost_center' => Auth::user()->department->sap_code,
-                'amount' => $journal->amount,
-                'realization_no' => $journal->nomor,
-                'realization_date' => $journal->date,
-            ]);
-
-            foreach ($request->account_code as $key => $account_code) {
-                VerificationJournalDetail::create([
-                    'verification_journal_id' => $journal->id,
-                    'account_code' => $account_code,
-                    'debit_credit' => 'debit',
-                    'description' => $request->detail_description[$key],
-                    'project' => $request->project[$key],
-                    'cost_center' => $request->cost_center[$key],
-                    'amount' => $request->amount[$key],
-                    'realization_no' => $journal->nomor,
-                    'realization_date' => $journal->date,
-                ]);
-            }
+            $this->persistVerificationJournalDetailsFromRequest($journal, $request, $bankAccount, $project);
 
             DB::commit();
 
@@ -656,6 +610,47 @@ class BankTransactionController extends Controller
             'status' => $bilyet->status,
             'project' => $bilyet->project,
         ];
+    }
+
+    protected function persistVerificationJournalDetailsFromRequest(
+        VerificationJournal $journal,
+        Request $request,
+        string $bankAccount,
+        string $project
+    ): void {
+        $accountCodes = $request->account_code ?? [];
+        $lineCount = count($accountCodes);
+        $projectLines = $request->input('project');
+        if (! is_array($projectLines)) {
+            $projectLines = array_fill(0, $lineCount, (string) $project);
+        }
+
+        $detailRows = $this->journalLinesService->buildVerificationJournalDetailRows(
+            (string) $request->transaction_type,
+            $bankAccount,
+            (string) $request->description,
+            $project,
+            (string) Auth::user()->department->sap_code,
+            $accountCodes,
+            $request->detail_description ?? [],
+            $projectLines,
+            $request->cost_center ?? [],
+            $request->amount ?? [],
+        );
+
+        foreach ($detailRows as $row) {
+            VerificationJournalDetail::create([
+                'verification_journal_id' => $journal->id,
+                'account_code' => $row['account_code'],
+                'debit_credit' => $row['debit_credit'],
+                'description' => $row['description'],
+                'project' => $row['project'],
+                'cost_center' => $row['cost_center'],
+                'amount' => $row['amount'],
+                'realization_no' => $journal->nomor,
+                'realization_date' => $journal->date,
+            ]);
+        }
     }
 
     protected function validateBilyetMatchesBankAccount(?int $bilyetId, string $bankAccount): ?string

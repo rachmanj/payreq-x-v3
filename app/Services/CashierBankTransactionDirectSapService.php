@@ -25,7 +25,7 @@ class CashierBankTransactionDirectSapService
         return [
             self::TRANSACTION_TYPE_PETTY_CASH => ['11101005', '11101008', '11101010', '11101004', '11101006'],
             self::TRANSACTION_TYPE_ADMIN_FEE => ['71201001', '71201006', '71201007', '71201002'],
-            self::TRANSACTION_TYPE_INTEREST => ['71101001'],
+            self::TRANSACTION_TYPE_INTEREST => ['71101001', '71201001', '71201006', '71201007', '71201002'],
         ];
     }
 
