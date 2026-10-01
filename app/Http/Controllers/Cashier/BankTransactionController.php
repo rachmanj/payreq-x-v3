@@ -151,6 +151,8 @@ class BankTransactionController extends Controller
         DB::beginTransaction();
         try {
             $bankAccount = is_array($request->bank_account) ? strval($request->bank_account[0]) : strval($request->bank_account);
+            $detailRows = $this->buildDetailRowsFromRequest($request, $bankAccount, $project);
+            $headerAmount = $this->journalLinesService->totalDebitAmountFromDetailRows($detailRows);
 
             $journal = VerificationJournal::create([
                 'nomor' => $document_number,
@@ -162,10 +164,10 @@ class BankTransactionController extends Controller
                 'description' => $request->description,
                 'created_by' => Auth::id(),
                 'status' => 'draft',
-                'amount' => array_sum($request->amount),
+                'amount' => $headerAmount,
             ]);
 
-            $this->persistVerificationJournalDetailsFromRequest($journal, $request, $bankAccount, $project);
+            $this->persistVerificationJournalDetailRows($journal, $detailRows);
 
             DB::commit();
 
@@ -314,6 +316,9 @@ class BankTransactionController extends Controller
             $bankAccount = is_array($request->bank_account) ? strval($request->bank_account[0]) : strval($request->bank_account);
             $project = is_array($request->project) ? strval($request->project[0]) : strval($request->project);
 
+            $detailRows = $this->buildDetailRowsFromRequest($request, $bankAccount, $project);
+            $headerAmount = $this->journalLinesService->totalDebitAmountFromDetailRows($detailRows);
+
             $journal->update([
                 'date' => $request->date,
                 'type' => 'bank',
@@ -321,12 +326,12 @@ class BankTransactionController extends Controller
                 'bank_account' => $bankAccount,
                 'bilyet_id' => $bilyetId,
                 'description' => $request->description,
-                'amount' => array_sum($request->amount),
+                'amount' => $headerAmount,
             ]);
 
             $journal->verificationJournalDetails()->delete();
 
-            $this->persistVerificationJournalDetailsFromRequest($journal, $request, $bankAccount, $project);
+            $this->persistVerificationJournalDetailRows($journal, $detailRows);
 
             DB::commit();
 
@@ -612,12 +617,11 @@ class BankTransactionController extends Controller
         ];
     }
 
-    protected function persistVerificationJournalDetailsFromRequest(
-        VerificationJournal $journal,
-        Request $request,
-        string $bankAccount,
-        string $project
-    ): void {
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected function buildDetailRowsFromRequest(Request $request, string $bankAccount, string $project): array
+    {
         $accountCodes = $request->account_code ?? [];
         $lineCount = count($accountCodes);
         $projectLines = $request->input('project');
@@ -625,7 +629,7 @@ class BankTransactionController extends Controller
             $projectLines = array_fill(0, $lineCount, (string) $project);
         }
 
-        $detailRows = $this->journalLinesService->buildVerificationJournalDetailRows(
+        return $this->journalLinesService->buildVerificationJournalDetailRows(
             (string) $request->transaction_type,
             $bankAccount,
             (string) $request->description,
@@ -637,7 +641,13 @@ class BankTransactionController extends Controller
             $request->cost_center ?? [],
             $request->amount ?? [],
         );
+    }
 
+    /**
+     * @param  list<array<string, mixed>>  $detailRows
+     */
+    protected function persistVerificationJournalDetailRows(VerificationJournal $journal, array $detailRows): void
+    {
         foreach ($detailRows as $row) {
             VerificationJournalDetail::create([
                 'verification_journal_id' => $journal->id,
@@ -651,6 +661,18 @@ class BankTransactionController extends Controller
                 'realization_date' => $journal->date,
             ]);
         }
+    }
+
+    protected function persistVerificationJournalDetailsFromRequest(
+        VerificationJournal $journal,
+        Request $request,
+        string $bankAccount,
+        string $project
+    ): void {
+        $this->persistVerificationJournalDetailRows(
+            $journal,
+            $this->buildDetailRowsFromRequest($request, $bankAccount, $project)
+        );
     }
 
     protected function validateBilyetMatchesBankAccount(?int $bilyetId, string $bankAccount): ?string

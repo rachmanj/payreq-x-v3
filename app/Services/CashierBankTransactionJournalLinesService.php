@@ -220,4 +220,20 @@ class CashierBankTransactionJournalLinesService
 
         return array_merge($rows, $cashierRows);
     }
+
+    /**
+     * @param  list<array<string, mixed>>  $detailRows
+     */
+    public function totalDebitAmountFromDetailRows(array $detailRows): float
+    {
+        $total = 0.0;
+
+        foreach ($detailRows as $row) {
+            if (($row['debit_credit'] ?? '') === 'debit') {
+                $total += (float) $row['amount'];
+            }
+        }
+
+        return $total;
+    }
 }

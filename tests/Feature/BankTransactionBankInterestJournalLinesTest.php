@@ -133,7 +133,7 @@ class BankTransactionBankInterestJournalLinesTest extends TestCase
             ->assertRedirect(route('cashier.bank-transactions.index'));
 
         $journal = VerificationJournal::query()->latest('id')->first();
-        $this->assertEqualsWithDelta(32649.17, (float) $journal->amount, 0.001);
+        $this->assertEqualsWithDelta(26274.86, (float) $journal->amount, 0.001);
 
         $byAccount = VerificationJournalDetail::query()
             ->where('verification_journal_id', $journal->id)
@@ -204,6 +204,7 @@ class BankTransactionBankInterestJournalLinesTest extends TestCase
         $journal = VerificationJournal::query()->latest('id')->first();
         $details = VerificationJournalDetail::query()->where('verification_journal_id', $journal->id)->get();
 
+        $this->assertEqualsWithDelta(5_000_000, (float) $journal->amount, 0.001);
         $this->assertSame('credit', $details->firstWhere('account_code', '11201005')->debit_credit);
         $this->assertSame('debit', $details->firstWhere('account_code', '11101005')->debit_credit);
     }
@@ -233,6 +234,7 @@ class BankTransactionBankInterestJournalLinesTest extends TestCase
         $journal = VerificationJournal::query()->latest('id')->first();
         $details = VerificationJournalDetail::query()->where('verification_journal_id', $journal->id)->get();
 
+        $this->assertEqualsWithDelta(50_000, (float) $journal->amount, 0.001);
         $this->assertSame('credit', $details->firstWhere('account_code', '11201006')->debit_credit);
         $this->assertSame('debit', $details->firstWhere('account_code', '71201001')->debit_credit);
     }
@@ -272,6 +274,9 @@ class BankTransactionBankInterestJournalLinesTest extends TestCase
             ->put(route('cashier.bank-transactions.update', $journal->id), $payload)
             ->assertRedirect(route('cashier.bank-transactions.index'));
 
+        $journal->refresh();
+        $this->assertEqualsWithDelta(3926.95, (float) $journal->amount, 0.001);
+
         $details = VerificationJournalDetail::query()
             ->where('verification_journal_id', $journal->id)
             ->get();
@@ -279,6 +284,53 @@ class BankTransactionBankInterestJournalLinesTest extends TestCase
         $this->assertSame('debit', $details->firstWhere('account_code', '11201006')->debit_credit);
         $this->assertSame('credit', $details->firstWhere('account_code', '71101001')->debit_credit);
         $this->assertJournalBalanced($details);
+    }
+
+    public function test_update_mixed_bank_interest_header_matches_store(): void
+    {
+        $user = $this->createCashier();
+
+        $journal = VerificationJournal::query()->create([
+            'nomor' => 'BT-INTEREST-MIXED-EDIT',
+            'date' => '2026-04-02',
+            'type' => 'bank',
+            'project' => '022C',
+            'bank_account' => '11201006',
+            'description' => 'Bunga Bank',
+            'amount' => 32_649.17,
+            'created_by' => $user->id,
+            'status' => 'draft',
+        ]);
+
+        VerificationJournalDetail::query()->create([
+            'verification_journal_id' => $journal->id,
+            'realization_date' => $journal->date,
+            'account_code' => '11201006',
+            'debit_credit' => 'credit',
+            'description' => 'old',
+            'project' => '022C',
+            'cost_center' => '30',
+            'amount' => 1000,
+        ]);
+
+        $payload = $this->basePayload([
+            'account_code' => ['71201001', '71101001', '71201007'],
+            'debit_credit' => ['debit', 'debit', 'debit'],
+            'detail_description' => ['Admin', 'Giro', 'Pajak bunga'],
+            'project' => ['022C', '022C', '022C'],
+            'cost_center' => ['30', '30', '30'],
+            'amount' => [25000, 6374.31, 1274.86],
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('cashier.bank-transactions.update', $journal->id), $payload)
+            ->assertRedirect(route('cashier.bank-transactions.index'));
+
+        $journal->refresh();
+        $this->assertEqualsWithDelta(26274.86, (float) $journal->amount, 0.001);
+        $this->assertJournalBalanced(
+            VerificationJournalDetail::query()->where('verification_journal_id', $journal->id)->get()
+        );
     }
 
     public function test_journal_lines_service_builds_balanced_mixed_interest_rows(): void
