@@ -10,6 +10,7 @@ use App\Models\Transaksi;
 use App\Models\User;
 use App\Models\VerificationJournal;
 use App\Models\VerificationJournalDetail;
+use App\Services\CashierBankTransactionDirectSapService;
 use App\Services\SapJournalSubmissionService;
 use Database\Seeders\CashierSubmitVjToSapPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -142,6 +143,41 @@ class BankTransactionDirectSapTest extends TestCase
         ]);
 
         return $journal;
+    }
+
+    /**
+     * @param  list<array{account_code: string, debit_credit: string, amount: float|int}>  $lines
+     */
+    protected function createBankInterestJournal(User $creator, array $lines, string $bankAccount = '11201006', array $overrides = []): VerificationJournal
+    {
+        $journal = VerificationJournal::query()->create(array_merge([
+            'nomor' => 'BT-INT-'.uniqid(),
+            'date' => now()->toDateString(),
+            'type' => 'bank',
+            'project' => '021C',
+            'bank_account' => $bankAccount,
+            'description' => 'Bank interest test',
+            'amount' => array_sum(array_column($lines, 'amount')),
+            'created_by' => $creator->id,
+            'status' => 'draft',
+            'validation_status' => VerificationJournal::VALIDATION_PENDING,
+            'sap_submission_attempts' => 0,
+        ], $overrides));
+
+        foreach ($lines as $line) {
+            VerificationJournalDetail::query()->create([
+                'verification_journal_id' => $journal->id,
+                'realization_date' => $journal->date,
+                'account_code' => $line['account_code'],
+                'debit_credit' => $line['debit_credit'],
+                'description' => $journal->description,
+                'project' => '021C',
+                'cost_center' => '30',
+                'amount' => $line['amount'],
+            ]);
+        }
+
+        return $journal->fresh(['verificationJournalDetails']);
     }
 
     public function test_authorized_cashier_direct_submit_posts_to_sap_and_creates_incoming(): void
@@ -416,6 +452,123 @@ class BankTransactionDirectSapTest extends TestCase
             ->assertRedirect(route('cashier.bank-transactions.index'));
 
         $this->assertSame(VerificationJournal::VALIDATION_PENDING, $journal->fresh()->validation_status);
+    }
+
+    public function test_simple_bank_interest_with_bank_debit_is_eligible_for_direct_sap(): void
+    {
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankInterestJournal($user, [
+            ['account_code' => '11201006', 'debit_credit' => 'debit', 'amount' => 3926.95],
+            ['account_code' => '71101001', 'debit_credit' => 'credit', 'amount' => 3926.95],
+        ]);
+
+        $service = app(CashierBankTransactionDirectSapService::class);
+        $this->assertTrue($service->isEligibleForDirectSapSubmission($journal, $user));
+
+        $this->mock(SapJournalSubmissionService::class, function ($mock) {
+            $mock->shouldReceive('submit')
+                ->once()
+                ->andReturn([
+                    'success' => true,
+                    'sap_journal_no' => 'SAP-INT-001',
+                    'message' => 'OK',
+                ]);
+        });
+
+        $this->actingAs($user)
+            ->post(route('cashier.bank-transactions.submit', $journal->id))
+            ->assertRedirect(route('cashier.bank-transactions.show', $journal->id))
+            ->assertSessionHas('success');
+
+        $this->assertSame(VerificationJournal::VALIDATION_VALIDATED, $journal->fresh()->validation_status);
+    }
+
+    public function test_mixed_bank_interest_journal_is_eligible_for_direct_sap(): void
+    {
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankInterestJournal($user, [
+            ['account_code' => '71101001', 'debit_credit' => 'credit', 'amount' => 6374.31],
+            ['account_code' => '71201001', 'debit_credit' => 'debit', 'amount' => 25000],
+            ['account_code' => '71201007', 'debit_credit' => 'debit', 'amount' => 1274.86],
+            ['account_code' => '11201006', 'debit_credit' => 'credit', 'amount' => 19900.55],
+        ]);
+
+        $service = app(CashierBankTransactionDirectSapService::class);
+        $this->assertEqualsWithDelta(26274.86, $service->journalTotalAmount($journal->verificationJournalDetails), 0.001);
+        $this->assertTrue($service->isEligibleForDirectSapSubmission($journal, $user));
+    }
+
+    public function test_bank_interest_with_non_parameter_account_is_not_eligible_for_direct_sap(): void
+    {
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankInterestJournal($user, [
+            ['account_code' => '11201006', 'debit_credit' => 'debit', 'amount' => 2000],
+            ['account_code' => '71101001', 'debit_credit' => 'credit', 'amount' => 1500],
+            ['account_code' => '61202001', 'debit_credit' => 'debit', 'amount' => 500],
+        ]);
+
+        $service = app(CashierBankTransactionDirectSapService::class);
+        $this->assertFalse($service->isEligibleForDirectSapSubmission($journal, $user));
+    }
+
+    public function test_mixed_bank_interest_above_journal_total_limit_is_not_eligible_for_direct_sap(): void
+    {
+        Parameter::query()->where('name1', 'cashier_vj_sap_limit')->update(['param_value' => '25000']);
+
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankInterestJournal($user, [
+            ['account_code' => '71101001', 'debit_credit' => 'credit', 'amount' => 6374.31],
+            ['account_code' => '71201001', 'debit_credit' => 'debit', 'amount' => 25000],
+            ['account_code' => '71201007', 'debit_credit' => 'debit', 'amount' => 1274.86],
+            ['account_code' => '11201006', 'debit_credit' => 'credit', 'amount' => 19900.55],
+        ]);
+
+        $service = app(CashierBankTransactionDirectSapService::class);
+        $this->assertFalse($service->isEligibleForDirectSapSubmission($journal, $user));
+
+        $this->mock(SapJournalSubmissionService::class, function ($mock) {
+            $mock->shouldNotReceive('submit');
+        });
+
+        $this->actingAs($user)
+            ->post(route('cashier.bank-transactions.submit', $journal->id))
+            ->assertRedirect(route('cashier.bank-transactions.index'));
+
+        $this->assertSame(VerificationJournal::VALIDATION_PENDING, $journal->fresh()->validation_status);
+    }
+
+    public function test_petty_cash_transfer_pattern_remains_eligible_for_direct_sap(): void
+    {
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankJournal($user);
+
+        $service = app(CashierBankTransactionDirectSapService::class);
+        $this->assertTrue($service->linePatternMatchesDirectSapRules($journal, $journal->verificationJournalDetails));
+        $this->assertTrue($service->isEligibleForDirectSapSubmission($journal, $user));
+    }
+
+    public function test_create_and_edit_forms_show_bank_interest_sides_and_bank_preview_markup(): void
+    {
+        $user = $this->createAuthorizedCashier();
+        $journal = $this->createBankInterestJournal($user, [
+            ['account_code' => '11201006', 'debit_credit' => 'debit', 'amount' => 3926.95],
+            ['account_code' => '71101001', 'debit_credit' => 'credit', 'amount' => 3926.95],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('cashier.bank-transactions.create'))
+            ->assertOk()
+            ->assertSee('id="bank-preview-row"', false)
+            ->assertSee('resolveLineDebitCredit', false)
+            ->assertSee('Tidak ada pergerakan bank yang perlu dijurnal', false);
+
+        $this->actingAs($user)
+            ->get(route('cashier.bank-transactions.edit', $journal->id))
+            ->assertOk()
+            ->assertSee('id="bank-preview-row"', false)
+            ->assertSee('bank_interest', false)
+            ->assertSee('Credit', false)
+            ->assertSee('Pratinjau baris rekening bank', false);
     }
 
     public function test_show_displays_auto_validated_badge(): void

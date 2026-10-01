@@ -89,10 +89,17 @@
                                             ->pluck('account_code')
                                             ->all();
                                         $inferredType = 'transfer_to_petty_cash';
-                                        foreach ($transactionTypeAccountMap as $typeKey => $accounts) {
-                                            if (count(array_intersect($debitAccounts, $accounts)) > 0) {
-                                                $inferredType = $typeKey;
-                                                break;
+                                        $hasInterestIncomeLine = $journal->verificationJournalDetails->contains(
+                                            fn ($detail) => str_starts_with((string) $detail->account_code, '71101')
+                                        );
+                                        if ($hasInterestIncomeLine) {
+                                            $inferredType = 'bank_interest';
+                                        } else {
+                                            foreach ($transactionTypeAccountMap as $typeKey => $accounts) {
+                                                if (count(array_intersect($debitAccounts, $accounts)) > 0) {
+                                                    $inferredType = $typeKey;
+                                                    break;
+                                                }
                                             }
                                         }
                                     @endphp
@@ -171,7 +178,14 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Details will be added dynamically via JavaScript -->
+                                    <tr id="bank-preview-row" class="table-secondary d-none">
+                                        <td>—</td>
+                                        <td class="bank-preview-account text-muted"></td>
+                                        <td class="bank-preview-side text-muted"></td>
+                                        <td colspan="3"><em>Pratinjau baris rekening bank (otomatis, tidak disimpan sebagai baris detail)</em></td>
+                                        <td class="text-right bank-preview-amount text-muted"></td>
+                                        <td></td>
+                                    </tr>
                                 </tbody>
                                 <tfoot>
                                     <tr>
@@ -181,6 +195,10 @@
                                     </tr>
                                 </tfoot>
                             </table>
+                        </div>
+                        <div class="vj-note mb-3 d-none" id="bank-interest-zero-net-message">
+                            <i class="fas fa-info-circle"></i>
+                            <div>Tidak ada pergerakan bank yang perlu dijurnal karena total pendapatan dan total biaya sama.</div>
                         </div>
 
                         <!-- Hidden inputs to store details data -->
@@ -292,6 +310,8 @@
     <!-- Toastr -->
     <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 
+    @include('cashier.bank-transactions.partials.detail-table-bank-preview')
+
     <script>
         const transactionTypeAccountMap = @json($transactionTypeAccountMap);
         const bilyetOptionsUrl = @json(route('cashier.bank-transactions.bilyet-options'));
@@ -329,6 +349,7 @@
                 console.log('Bank account selection changed:', selectedValue);
                 console.log('Hidden bank_account field updated:', $('#bank_account').val());
                 refreshBilyetSelectOptions();
+                updateBankPreviewRow();
             });
 
             // Load account codes and bank accounts
@@ -379,7 +400,7 @@
                 const realizationDate = $('#date').val(); // Use the main transaction date
                 const accountCode = $('#modal-account-code').val();
                 const accountName = $('#modal-account-code option:selected').text();
-                const debitCredit = 'debit'; // Always debit for this transaction type
+                const debitCredit = resolveLineDebitCredit($('#transaction_type').val(), accountCode);
                 const description = $('#modal-description').val();
                 const project = $('#modal-project').val();
                 const costCenter = $('#modal-cost-center').val();
@@ -404,7 +425,7 @@
             // Submit form
             $('#transaction-form').on('submit', function(e) {
                 // Check if there are details
-                if ($('#details-table tbody tr').length === 0) {
+                if ($('#details-table tbody tr.detail-data-row').length === 0) {
                     e.preventDefault();
                     toastr.error('Please add at least one transaction detail');
                     return false;
@@ -461,18 +482,20 @@
 
             // Function to load existing details
             function loadExistingDetails() {
-                @foreach ($journal->verificationJournalDetails as $index => $detail)
+                @foreach ($journal->verificationJournalDetails->where('account_code', '!=', $journal->bank_account) as $index => $detail)
                     addDetailRow(
                         '{{ $detail->realization_date }}',
                         '{{ $detail->account_code }}',
-                        '{{ $detail->account_code }}', // This will be replaced by account name from API
+                        '{{ $detail->account_code }}',
                         '{{ $detail->debit_credit }}',
-                        '{{ $detail->description }}',
+                        '{{ addslashes($detail->description) }}',
                         '{{ $detail->project }}',
                         '{{ $detail->cost_center }}',
                         '{{ $detail->amount }}'
                     );
                 @endforeach
+                refreshAllDetailRowDebitCreditDisplays();
+                updateBankPreviewRow();
             }
 
             // Function to add a detail row
@@ -489,10 +512,10 @@
 
                 // Create the row
                 const row = `
-                    <tr id="detail-row-${detailCounter}">
+                    <tr id="detail-row-${detailCounter}" class="detail-data-row" data-detail-id="${detailCounter}">
                         <td>${displayDate}</td>
                         <td>${accountCode} - ${accountName.split(' - ')[1] || ''}</td>
-                        <td>${debitCredit.charAt(0).toUpperCase() + debitCredit.slice(1)}</td>
+                        <td class="detail-side-cell">${formatDebitCreditLabel(debitCredit)}</td>
                         <td>${description}</td>
                         <td>${project}</td>
                         <td>${costCenter}</td>
@@ -545,7 +568,7 @@
                 const row = $(`#detail-row-${id}`);
                 row.find('td:eq(0)').text(displayDate);
                 row.find('td:eq(1)').text(`${accountCode} - ${accountName.split(' - ')[1] || ''}`);
-                row.find('td:eq(2)').text(debitCredit.charAt(0).toUpperCase() + debitCredit.slice(1));
+                row.find('td.detail-side-cell').text(formatDebitCreditLabel(debitCredit));
                 row.find('td:eq(3)').text(description);
                 row.find('td:eq(4)').text(project);
                 row.find('td:eq(5)').text(costCenter);
@@ -595,13 +618,11 @@
 
             // Function to update the total amount
             function updateTotal() {
-                let total = 0;
-                $('input[name="amount[]"]').each(function() {
-                    total += parseFloat($(this).val() || 0);
-                });
+                const total = sumDetailAmounts();
                 $('#total-amount').text(total.toLocaleString('id-ID', {
                     minimumFractionDigits: 2
                 }));
+                updateBankPreviewRow();
             }
 
             // Function to bind action buttons
@@ -695,6 +716,8 @@
             $('#transaction_type').on('change', function() {
                 populateAccountSelectForTransactionType();
                 updateBankInterestHelp();
+                refreshAllDetailRowDebitCreditDisplays();
+                updateBankPreviewRow();
             });
 
             updateBankInterestHelp();

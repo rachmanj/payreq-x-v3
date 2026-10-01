@@ -76,13 +76,13 @@ class CashierBankTransactionDirectSapService
             return false;
         }
 
-        if ((int) $journal->amount > $this->getSapLimit()) {
-            return false;
-        }
-
         $details = $journal->relationLoaded('verificationJournalDetails')
             ? $journal->verificationJournalDetails
             : $journal->verificationJournalDetails()->get();
+
+        if ($this->journalTotalAmount($details) > $this->getSapLimit()) {
+            return false;
+        }
 
         return $this->linePatternMatchesDirectSapRules($journal, $details);
     }
@@ -90,27 +90,39 @@ class CashierBankTransactionDirectSapService
     /**
      * @param  Collection<int, \App\Models\VerificationJournalDetail>|iterable  $details
      */
+    public function journalTotalAmount(iterable $details): float
+    {
+        return (float) collect($details)
+            ->where('debit_credit', 'debit')
+            ->sum(fn ($line) => (float) $line->amount);
+    }
+
+    /**
+     * @param  Collection<int, \App\Models\VerificationJournalDetail>|iterable  $details
+     */
     public function linePatternMatchesDirectSapRules(VerificationJournal $journal, iterable $details): bool
     {
-        $creditLines = collect($details)->where('debit_credit', 'credit');
-        $debitLines = collect($details)->where('debit_credit', 'debit');
-
-        if ($creditLines->count() !== 1) {
-            return false;
-        }
-
-        $creditAccount = (string) $creditLines->first()->account_code;
+        $details = collect($details);
         $bankAccount = (string) $journal->bank_account;
 
-        if ($creditAccount !== $bankAccount) {
+        $bankLines = $details->filter(
+            fn ($line) => (string) $line->account_code === $bankAccount
+        );
+
+        if ($bankLines->count() !== 1) {
             return false;
         }
 
-        if (! str_starts_with($creditAccount, '11201')) {
+        $bankLine = $bankLines->first();
+        if (! str_starts_with((string) $bankLine->account_code, '11201')) {
             return false;
         }
 
-        if ($debitLines->isEmpty()) {
+        $nonBankLines = $details->reject(
+            fn ($line) => (string) $line->account_code === $bankAccount
+        );
+
+        if ($nonBankLines->isEmpty()) {
             return false;
         }
 
@@ -119,8 +131,8 @@ class CashierBankTransactionDirectSapService
             return false;
         }
 
-        foreach ($debitLines as $debitLine) {
-            if (! in_array((string) $debitLine->account_code, $allowedAccounts, true)) {
+        foreach ($nonBankLines as $line) {
+            if (! in_array((string) $line->account_code, $allowedAccounts, true)) {
                 return false;
             }
         }
