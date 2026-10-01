@@ -35,11 +35,13 @@ class LoginSecurityHardeningTest extends TestCase
     }
 
     #[Test]
-    public function sixth_failed_login_is_throttled_with_indonesian_message(): void
+    public function failed_login_beyond_max_attempts_is_throttled_with_indonesian_message(): void
     {
+        $maxAttempts = (int) config('security.login.max_attempts_per_minute');
+
         $this->createActiveUser('throttle-test');
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < $maxAttempts; $i++) {
             $this->postLogin('throttle-test')->assertRedirect();
         }
 
@@ -56,10 +58,11 @@ class LoginSecurityHardeningTest extends TestCase
     #[Test]
     public function successful_login_clears_rate_limiter_for_username_and_ip(): void
     {
+        $maxAttempts = (int) config('security.login.max_attempts_per_minute');
         $password = 'correct-horse';
         $this->createActiveUser('reset-throttle', $password);
 
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < $maxAttempts - 1; $i++) {
             $this->postLogin('reset-throttle')->assertRedirect();
         }
 
@@ -68,7 +71,7 @@ class LoginSecurityHardeningTest extends TestCase
             'password' => $password,
         ])->assertRedirect(route('dashboard.index'));
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < $maxAttempts; $i++) {
             $this->postLogin('reset-throttle')->assertRedirect();
         }
 
@@ -78,9 +81,11 @@ class LoginSecurityHardeningTest extends TestCase
     #[Test]
     public function get_login_is_not_throttled_by_login_limiter(): void
     {
+        $maxAttempts = (int) config('security.login.max_attempts_per_minute');
+
         $this->createActiveUser('get-login');
 
-        for ($i = 0; $i < 6; $i++) {
+        for ($i = 0; $i < $maxAttempts + 1; $i++) {
             $this->postLogin('get-login');
         }
 

@@ -47,7 +47,7 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for(LoginThrottle::limiterName(), function (Request $request) {
-            $maxAttempts = config('security.login.max_attempts_per_minute', 5);
+            $maxAttempts = config('security.login.max_attempts_per_minute', 10);
             $decayMinutes = config('security.login.decay_minutes', 1);
 
             return Limit::perMinutes($decayMinutes, $maxAttempts)
