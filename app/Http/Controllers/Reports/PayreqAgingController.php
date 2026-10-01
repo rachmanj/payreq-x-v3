@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Reports;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
 use App\Models\Payreq;
-use Illuminate\Http\Request;
+use App\Support\AdvancePayreqOverdueRules;
 
 class PayreqAgingController extends Controller
 {
@@ -25,11 +25,13 @@ class PayreqAgingController extends Controller
             $project_include = [auth()->user()->project];
         }
 
-        $payreqs = Payreq::join('outgoings', 'payreqs.id', '=', 'outgoings.payreq_id')
-            ->select('payreqs.*', 'outgoings.outgoing_date as outgoing_date')
-            ->whereIn('payreqs.status', $status_include)
-            ->whereIn('payreqs.project', $project_include)
-            ->orderBy('outgoings.outgoing_date', 'asc') // Add this line
+        $payreqs = AdvancePayreqOverdueRules::restrictWhereRealizationNotFinished(
+            Payreq::join('outgoings', 'payreqs.id', '=', 'outgoings.payreq_id')
+                ->select('payreqs.*', 'outgoings.outgoing_date as outgoing_date')
+                ->whereIn('payreqs.status', $status_include)
+                ->whereIn('payreqs.project', $project_include)
+        )
+            ->orderBy('outgoings.outgoing_date', 'asc')
             ->get();
 
         return datatables()->of($payreqs)
@@ -40,10 +42,11 @@ class PayreqAgingController extends Controller
                 return (new \DateTime($payreq->outgoing_date))->format('d-M-Y');
             })
             ->editColumn('nomor', function ($payreq) {
-                if ($payreq->rab_id != null)
-                    return '<a href="#" style="color: black" title="' . $payreq->remarks . ' | RAB No.' . $payreq->rab->rab_no . '">' . $payreq->nomor . '</a>';
-                else
-                    return '<a href="#" style="color: black" title="' . $payreq->remarks . '">' . $payreq->nomor . '</a>';
+                if ($payreq->rab_id != null) {
+                    return '<a href="#" style="color: black" title="'.$payreq->remarks.' | RAB No.'.$payreq->rab->rab_no.'">'.$payreq->nomor.'</a>';
+                } else {
+                    return '<a href="#" style="color: black" title="'.$payreq->remarks.'">'.$payreq->nomor.'</a>';
+                }
             })
             ->editColumn('amount', function ($payreq) {
                 return number_format($payreq->amount, 0, ',', '.');
@@ -56,9 +59,10 @@ class PayreqAgingController extends Controller
                 }
             })
             ->editColumn('aging', function ($payreq) {
-                $now = new \DateTime();
+                $now = new \DateTime;
                 $outgoing_date = new \DateTime($payreq->outgoing_date);
                 $interval = $now->diff($outgoing_date);
+
                 return $interval->days;
             })
             ->addIndexColumn()

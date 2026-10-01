@@ -60,9 +60,23 @@ class AdvancePayreqOverdueRules
         return self::whereAdvanceRealizationNotFinished($query, ['paid']);
     }
 
+    public static function restrictToOngoingAdvance(Builder $query): Builder
+    {
+        return self::whereAdvanceRealizationNotFinished($query, ['paid', 'realization']);
+    }
+
     public static function restrictToOutstandingAdvanceIncludingSplit(Builder $query): Builder
     {
         return self::whereAdvanceRealizationNotFinished($query, ['paid', 'split']);
+    }
+
+    /**
+     * Excludes payreqs whose realization is finished per {@see isAdvanceRealizationFinished}.
+     * Does not filter by payreq type or status — use with existing query constraints.
+     */
+    public static function restrictWhereRealizationNotFinished(Builder $query): Builder
+    {
+        return self::applyRealizationNotFinishedConstraint($query);
     }
 
     public static function restrictToAdvanceStillOverdue(Builder $query): Builder
@@ -77,25 +91,29 @@ class AdvancePayreqOverdueRules
      */
     private static function whereAdvanceRealizationNotFinished(Builder $query, array $statuses): Builder
     {
-        return $query
-            ->where('type', 'advance')
-            ->whereIn('status', $statuses)
-            ->where(function (Builder $outer) {
-                $outer->whereDoesntHave('realization')
-                    ->orWhereHas('realization', function (Builder $realizationQuery) {
-                        $realizationQuery
-                            ->whereNotIn('status', self::REALIZATION_COMPLETE_STATUSES)
-                            ->where(function (Builder $inner) {
-                                $inner->whereNull('verification_journal_id')
-                                    ->orWhereHas('verificationJournal', function (Builder $vjQuery) {
-                                        $vjQuery->where(function (Builder $sapQuery) {
-                                            $sapQuery->whereNull('sap_journal_no')
-                                                ->orWhere('sap_journal_no', '');
-                                        });
+        return self::applyRealizationNotFinishedConstraint(
+            $query->where('type', 'advance')->whereIn('status', $statuses)
+        );
+    }
+
+    private static function applyRealizationNotFinishedConstraint(Builder $query): Builder
+    {
+        return $query->where(function (Builder $outer) {
+            $outer->whereDoesntHave('realization')
+                ->orWhereHas('realization', function (Builder $realizationQuery) {
+                    $realizationQuery
+                        ->whereNotIn('status', self::REALIZATION_COMPLETE_STATUSES)
+                        ->where(function (Builder $inner) {
+                            $inner->whereNull('verification_journal_id')
+                                ->orWhereHas('verificationJournal', function (Builder $vjQuery) {
+                                    $vjQuery->where(function (Builder $sapQuery) {
+                                        $sapQuery->whereNull('sap_journal_no')
+                                            ->orWhere('sap_journal_no', '');
                                     });
-                            });
-                    });
-            });
+                                });
+                        });
+                });
+        });
     }
 
     public static function isAdvanceStillOverdue(Payreq $payreq): bool

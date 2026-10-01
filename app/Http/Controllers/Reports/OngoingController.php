@@ -20,7 +20,7 @@ class OngoingController extends Controller
             $project_include = explode(',', auth()->user()->project);
         }
 
-        $total_amount = AdvancePayreqOverdueRules::restrictToOutstandingAdvance(Payreq::query())
+        $total_amount = AdvancePayreqOverdueRules::restrictToOngoingAdvance(Payreq::query())
             ->whereIn('project', $project_include)
             ->sum('amount');
 
@@ -42,7 +42,7 @@ class OngoingController extends Controller
             $project_include = explode(',', auth()->user()->project);
         }
 
-        $payreqs = AdvancePayreqOverdueRules::restrictToOutstandingAdvance(Payreq::query())
+        $payreqs = AdvancePayreqOverdueRules::restrictToOngoingAdvance(Payreq::query())
             ->whereIn('project', $project_include)
             ->get();
 
@@ -94,7 +94,7 @@ class OngoingController extends Controller
                 break;
         }
 
-        return AdvancePayreqOverdueRules::restrictToOutstandingAdvance(Payreq::query())
+        return AdvancePayreqOverdueRules::restrictToOngoingAdvance(Payreq::query())
             ->whereIn('project', $project_include)
             ->get();
     }
