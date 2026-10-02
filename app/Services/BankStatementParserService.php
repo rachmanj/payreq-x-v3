@@ -24,11 +24,7 @@ class BankStatementParserService
         }
 
         $path = $this->resolveStatementPdfPath($dokumen);
-
-        $pdfBinary = file_get_contents($path);
-        if ($pdfBinary === false || $pdfBinary === '') {
-            throw new \RuntimeException('Statement PDF could not be read (empty or unreadable file).');
-        }
+        $pdfBinary = $this->readStatementPdfFromLocalPath($path);
 
         $base64 = base64_encode($pdfBinary);
         $payload = $this->openRouter->extractBankStatementFromPdfBase64($base64);
@@ -109,44 +105,21 @@ class BankStatementParserService
             throw new \RuntimeException('Dokumen has no statement file.');
         }
 
-        if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
-            $pathFromUrl = parse_url($raw, PHP_URL_PATH);
-            $raw = ($pathFromUrl !== false && $pathFromUrl !== null && $pathFromUrl !== '')
-                ? basename($pathFromUrl)
-                : basename($raw);
-        }
-
-        $normalized = str_replace('\\', '/', $raw);
-        $normalized = ltrim($normalized, '/');
-        $normalized = preg_replace('#^dokumens/#i', '', $normalized) ?? $normalized;
-
-        $basename = basename($normalized);
+        $pathOrName = parse_url($raw, PHP_URL_PATH);
+        $basename = basename(is_string($pathOrName) && $pathOrName !== '' ? $pathOrName : $raw);
         if ($basename === '' || $basename === '.' || $basename === '..') {
             throw new \RuntimeException('Invalid statement filename stored on dokumen.');
         }
 
-        $maybeAbsolute = str_replace('/', DIRECTORY_SEPARATOR, $normalized);
-        if ($maybeAbsolute !== $basename && (str_contains($normalized, ':') || str_starts_with($normalized, '/'))) {
-            if (is_file($maybeAbsolute)) {
-                return $maybeAbsolute;
-            }
-        }
-
-        $candidates = array_values(array_unique(array_filter([
+        $candidates = [
             public_path('dokumens/'.$basename),
-            base_path('public/dokumens/'.$basename),
-        ])));
+            storage_path('app/private/dokumens/'.$basename),
+            storage_path('app/public/dokumens/'.$basename),
+            storage_path('app/dokumens/'.$basename),
+        ];
 
         foreach ($candidates as $path) {
-            if (! is_file($path)) {
-                continue;
-            }
-
-            if (is_readable($path)) {
-                return $path;
-            }
-
-            if (@file_get_contents($path, false, null, 0, 1) !== false) {
+            if (is_file($path) && is_readable($path)) {
                 return $path;
             }
         }
@@ -159,9 +132,59 @@ class BankStatementParserService
         ]);
 
         throw new \RuntimeException(sprintf(
-            'Statement PDF not found under public/dokumens/ (expected file name: %s). Upload the koran again or fix the path.',
-            $basename
+            'Koran file not found locally: %s (searched: %s)',
+            $basename,
+            implode(', ', $candidates)
         ));
+    }
+
+    protected function readStatementPdfFromLocalPath(string $absolutePath): string
+    {
+        if (preg_match('#^https?://#i', $absolutePath)) {
+            throw new \RuntimeException('Koran file must be read from local disk; HTTP download is not allowed.');
+        }
+
+        $pdfBinary = file_get_contents($absolutePath);
+        if ($pdfBinary === false || $pdfBinary === '') {
+            throw new \RuntimeException('Statement PDF could not be read (empty or unreadable file).');
+        }
+
+        $detectedMime = $this->detectStatementPdfMime($pdfBinary);
+        if (! $this->isAllowedStatementPdfMime($detectedMime)) {
+            throw new \RuntimeException(sprintf(
+                'Unsupported MIME type: %s (accepted: application/pdf, application/x-pdf, application/octet-stream, application/pdf; charset=binary)',
+                $detectedMime
+            ));
+        }
+
+        return $pdfBinary;
+    }
+
+    protected function detectStatementPdfMime(string $binary): string
+    {
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->buffer($binary);
+
+        return is_string($mime) && $mime !== '' ? $mime : 'application/octet-stream';
+    }
+
+    protected function isAllowedStatementPdfMime(string $detectedMime): bool
+    {
+        $normalized = strtolower($detectedMime);
+
+        $allowedFragments = [
+            'application/pdf',
+            'application/x-pdf',
+            'application/octet-stream',
+        ];
+
+        foreach ($allowedFragments as $fragment) {
+            if (str_contains($normalized, $fragment)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function parseDate(mixed $value): ?string
