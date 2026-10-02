@@ -69,6 +69,11 @@ class BankReconciliationController extends Controller
             $query->pendingValidation()->excludingPreparer((int) Auth::id());
         }
 
+        $id = $request->query('id');
+        if (filled($id) && is_numeric($id)) {
+            $query->where('id', (int) $id);
+        }
+
         $reconciliations = $query->paginate(20)->withQueryString();
 
         return view('cashier.bank-reconciliation.index', compact(
@@ -76,6 +81,7 @@ class BankReconciliationController extends Controller
             'view',
             'canValidate',
             'pendingValidationCount',
+            'id',
         ));
     }
 

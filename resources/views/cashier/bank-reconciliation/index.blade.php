@@ -50,10 +50,19 @@
                 @endif
 
                 <div class="card-body table-responsive p-0">
+                    <form method="GET" action="{{ route('cashier.bank-reconciliation.index') }}" class="form-inline px-3 pt-3 pb-2">
+                        <input type="hidden" name="view" value="{{ $view }}">
+                        <label for="filter-id" class="mr-2 mb-2">ID</label>
+                        <input type="text" name="id" id="filter-id" class="form-control form-control-sm mr-2 mb-2"
+                            value="{{ $id ?? '' }}" placeholder="Reconciliation ID">
+                        <button type="submit" class="btn btn-sm btn-primary mb-2 mr-2">Filter</button>
+                        <a href="{{ route('cashier.bank-reconciliation.index', array_filter(['view' => $view !== 'all' ? $view : null])) }}"
+                            class="btn btn-sm btn-secondary mb-2">Reset</a>
+                    </form>
                     <table class="table table-striped table-sm mb-0">
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th>ID</th>
                                 <th>Giro</th>
                                 <th>Period</th>
                                 <th>Status</th>
