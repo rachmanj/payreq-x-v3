@@ -61,8 +61,19 @@
                             <strong>Rekening Koran Dashboard - {{ $year }}</strong>
                         </h3>
                         <div class="year-selector">
+                            @php
+                                $yearLinkParams = array_filter([
+                                    'page' => 'dashboard',
+                                    'year' => null,
+                                    'project' => $activeProject,
+                                    'bank' => $activeBankId,
+                                ], fn ($value) => $value !== null && $value !== '');
+                            @endphp
                             @foreach ([2026, 2025, 2024] as $yearOption)
-                                <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => $yearOption]) }}"
+                                @php
+                                    $yearLinkParams['year'] = $yearOption;
+                                @endphp
+                                <a href="{{ route('cashier.koran.index', $yearLinkParams) }}"
                                     class="year-btn {{ (int) $year === $yearOption ? 'active' : '' }}">
                                     {{ $yearOption }}
                                 </a>
@@ -81,6 +92,64 @@
                 </div>
 
                 <div class="card-body p-0">
+                    <form method="GET" action="{{ route('cashier.koran.index') }}" class="form-inline px-3 pt-3 pb-2 border-bottom bg-light">
+                        <input type="hidden" name="page" value="dashboard">
+                        <input type="hidden" name="year" value="{{ $year }}">
+                        <label for="filter-project" class="mr-2 mb-2 font-weight-bold">Project</label>
+                        <select name="project" id="filter-project" class="form-control form-control-sm mr-3 mb-2">
+                            <option value="">All</option>
+                            @foreach ($visibleProjects as $projectOption)
+                                <option value="{{ $projectOption }}" @selected($activeProject === $projectOption)>{{ $projectOption }}</option>
+                            @endforeach
+                        </select>
+                        <label for="filter-bank" class="mr-2 mb-2 font-weight-bold">Bank</label>
+                        <select name="bank" id="filter-bank" class="form-control form-control-sm mr-3 mb-2">
+                            <option value="">All</option>
+                            @foreach ($filterBanks as $bankGiro)
+                                <option value="{{ $bankGiro->bank_id }}" @selected($activeBankId === $bankGiro->bank_id)>
+                                    {{ $bankGiro->bank?->name ?? 'N/A' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary mb-2 mr-2">Filter</button>
+                        <a href="{{ route('cashier.koran.index', ['page' => 'dashboard', 'year' => $year]) }}"
+                            class="btn btn-sm btn-secondary mb-2">Reset</a>
+                    </form>
+
+                    @php
+                        $dashboardGiroCount = 0;
+                        foreach ($korans as $koranYearBlock) {
+                            $dashboardGiroCount += count($koranYearBlock['giros']);
+                        }
+                        $hasActiveDashboardFilter = $activeProject !== null || $activeBankId !== null;
+                    @endphp
+
+                    @if ($hasActiveDashboardFilter)
+                        <div class="px-3 py-2 border-bottom small text-muted">
+                            <strong>Showing:</strong>
+                            @if ($activeProject !== null)
+                                Project {{ $activeProject }}
+                            @else
+                                All projects
+                            @endif
+                            ,
+                            @if ($activeBankId !== null && $activeBankName)
+                                Bank {{ $activeBankName }}
+                            @else
+                                All banks
+                            @endif
+                        </div>
+                    @endif
+
+                    @if ($dashboardGiroCount === 0)
+                        <div class="alert alert-warning m-3 mb-0">
+                            No bank accounts match the current filters for {{ $year }}.
+                            @if ($hasActiveDashboardFilter)
+                                Try changing Project or Bank, or click <strong>Reset</strong>.
+                            @endif
+                        </div>
+                    @endif
+
                     <div class="table-responsive koran-table-wrapper">
                         <table class="table table-sm koran-table">
                             <thead class="koran-table-header">

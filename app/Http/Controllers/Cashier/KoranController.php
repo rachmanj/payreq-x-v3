@@ -31,11 +31,37 @@ class KoranController extends Controller
 
         if ($page === 'dashboard') {
             $year = request()->query('year', date('Y'));
-            $korans = $this->check_koran_files($year);
+
+            $visibleProjects = $giros->pluck('project')->unique()->sort()->values();
+            $visibleBankIds = $giros->pluck('bank_id')->unique()->filter()->values();
+
+            $activeProject = request()->query('project');
+            if (! filled($activeProject) || ! $visibleProjects->contains($activeProject)) {
+                $activeProject = null;
+            }
+
+            $activeBankId = request()->query('bank');
+            if ($activeBankId === null || $activeBankId === '' || ! $visibleBankIds->contains((int) $activeBankId)) {
+                $activeBankId = null;
+            } else {
+                $activeBankId = (int) $activeBankId;
+            }
+
+            $giros->load('bank');
+            $filterBanks = $giros->unique('bank_id')
+                ->sortBy(fn (Giro $giro) => $giro->bank?->name ?? '')
+                ->values();
+
+            $korans = $this->check_koran_files($year, $activeProject, $activeBankId);
             $statistics = $this->calculateStatistics($korans);
             $canUploadKoran = auth()->user()->can('upload_koran');
             $canDeleteKoran = auth()->user()->can('delete_koran');
             $hasElevatedKoranAccess = (bool) array_intersect($this->allowedRoles, $userRoles);
+
+            $activeBankName = null;
+            if ($activeBankId !== null) {
+                $activeBankName = $filterBanks->firstWhere('bank_id', $activeBankId)?->bank?->name;
+            }
 
             return view($views['dashboard'], compact(
                 'giros',
@@ -45,6 +71,11 @@ class KoranController extends Controller
                 'canUploadKoran',
                 'canDeleteKoran',
                 'hasElevatedKoranAccess',
+                'visibleProjects',
+                'filterBanks',
+                'activeProject',
+                'activeBankId',
+                'activeBankName',
             ));
         }
 
@@ -146,15 +177,25 @@ class KoranController extends Controller
         return $filename;
     }
 
-    public function check_koran_files($year): array
+    public function check_koran_files($year, ?string $project = null, ?int $bankId = null): array
     {
         $userRoles = app(UserController::class)->getUserRoles();
 
         if (array_intersect($this->allowedRoles, $userRoles)) {
-            $giros = Giro::with('bank')->orderBy('bank_id', 'asc')->get();
+            $giroQuery = Giro::with('bank')->orderBy('bank_id', 'asc');
         } else {
-            $giros = Giro::with('bank')->where('project', auth()->user()->project)->orderBy('bank_id', 'asc')->get();
+            $giroQuery = Giro::with('bank')->where('project', auth()->user()->project)->orderBy('bank_id', 'asc');
         }
+
+        if ($project !== null) {
+            $giroQuery->where('project', $project);
+        }
+
+        if ($bankId !== null) {
+            $giroQuery->where('bank_id', $bankId);
+        }
+
+        $giros = $giroQuery->get();
 
         $months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
         $result = [];
@@ -210,6 +251,7 @@ class KoranController extends Controller
                 'acc_no' => $giro->acc_no,
                 'acc_name' => $giro->acc_name,
                 'project' => $giro->project,
+                'bank_id' => $giro->bank_id,
                 'bank_name' => $giro->bank ? $giro->bank->name : 'N/A',
                 'completed_count' => $completed_count,
                 'total_months' => 12,
