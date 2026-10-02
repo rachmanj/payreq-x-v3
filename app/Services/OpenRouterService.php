@@ -119,6 +119,42 @@ PROMPT;
     }
 
     /**
+     * @return array{opening_balance: float|null, closing_balance: float|null, lines: array<int, array<string, mixed>>}
+     */
+    public function extractBankStatementFromImageBase64(string $base64Image, string $mimeType = 'image/jpeg'): array
+    {
+        $prompt = <<<'PROMPT'
+You are parsing an Indonesian bank account statement PDF.
+Return ONLY valid JSON (no markdown fences) with this shape:
+{"opening_balance":number|null,"closing_balance":number|null,"lines":[{"transaction_date":"Y-m-d","value_date":"Y-m-d"|null,"description":string,"reference":string|null,"debit":number,"credit":number,"balance":number|null,"confidence":number}]}
+Rules: Use 0 for debit or credit when empty. Dates must be Y-m-d or null. confidence is 0-1 per line estimate.
+PROMPT;
+
+        $messages = [
+            [
+                'role' => 'user',
+                'content' => [
+                    ['type' => 'text', 'text' => $prompt],
+                    [
+                        'type' => 'image_url',
+                        'image_url' => [
+                            'url' => 'data:'.$mimeType.';base64,'.$base64Image,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $json = $this->chat($messages, $this->bankStatementModel);
+        $content = data_get($json, 'choices.0.message.content');
+        if (! is_string($content)) {
+            throw new OpenRouterException('Invalid OpenRouter response: missing message content.', 500, is_array($json) ? $json : null);
+        }
+
+        return $this->decodeJsonPayload($content);
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function extractReceiptFromImageBase64(string $base64Image, string $mimeType = 'image/jpeg'): array

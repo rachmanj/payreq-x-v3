@@ -201,7 +201,7 @@ class BankStatementParserLargePdfTest extends TestCase
     }
 }
 
-final class BankStatementParserServiceForcePageSplit extends BankStatementParserService
+class BankStatementParserServiceForcePageSplit extends BankStatementParserService
 {
     protected function shouldSplitPdfByPages(int $byteLength): bool
     {
