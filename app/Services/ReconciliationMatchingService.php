@@ -11,6 +11,7 @@ use App\Models\SapGlLine;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ReconciliationMatchingService
@@ -24,6 +25,8 @@ class ReconciliationMatchingService
     private const SPLIT_MAX_CANDIDATES = 20;
 
     private const FUZZY_AI_TOP_N = 3;
+
+    private bool $mirrorBankFlowForMatching = false;
 
     public function __construct(protected OpenRouterService $openRouter) {}
 
@@ -43,6 +46,10 @@ class ReconciliationMatchingService
                 ->orderBy('posting_date')
                 ->orderBy('id')
                 ->get();
+
+            $orientation = $this->resolveBankFlowOrientation($bankLines, $sapLines);
+            $this->mirrorBankFlowForMatching = $orientation['mirror'];
+            $this->recordAutoMatchOrientation($reconciliation, $orientation);
 
             $matched = 0;
 
@@ -100,7 +107,7 @@ class ReconciliationMatchingService
                 continue;
             }
 
-            $target = -$this->netBank($bankLine);
+            $target = $this->bankFlowForMatching($bankLine);
 
             $candidates = $sapLines
                 ->filter(fn (SapGlLine $s) => $s->matched_status === SapGlLine::MATCH_UNMATCHED
@@ -114,7 +121,7 @@ class ReconciliationMatchingService
                 ->values()
                 ->all();
 
-            $combo = $this->findSubsetMatchingNet($target, $candidates, self::SPLIT_MAX_SIZE);
+            $combo = $this->findSubsetMatchingSapFlows($target, $candidates, self::SPLIT_MAX_SIZE);
             if ($combo !== null && count($combo) >= 2) {
                 $this->persistMatchGroup(
                     $reconciliation,
@@ -144,7 +151,7 @@ class ReconciliationMatchingService
                 continue;
             }
 
-            $target = -$this->netSap($sapLine);
+            $target = $this->sapGlFlow($sapLine);
 
             $candidates = $bankLines
                 ->filter(fn (BankStatementLine $b) => $b->matched_status === BankStatementLine::MATCH_UNMATCHED
@@ -158,7 +165,7 @@ class ReconciliationMatchingService
                 ->values()
                 ->all();
 
-            $combo = $this->findSubsetMatchingNetBankLines($target, $candidates, self::SPLIT_MAX_SIZE);
+            $combo = $this->findSubsetMatchingBankFlows($target, $candidates, self::SPLIT_MAX_SIZE);
             if ($combo !== null && count($combo) >= 2) {
                 $this->persistMatchGroup(
                     $reconciliation,
@@ -183,10 +190,10 @@ class ReconciliationMatchingService
      * @param  array<int, SapGlLine>  $candidates
      * @return array<int, SapGlLine>|null
      */
-    protected function findSubsetMatchingNet(float $target, array $candidates, int $maxSize): ?array
+    protected function findSubsetMatchingSapFlows(float $target, array $candidates, int $maxSize): ?array
     {
-        $nets = array_map(fn (SapGlLine $s) => $this->netSap($s), $candidates);
-        $indices = $this->findSubsetIndices($target, $nets, $maxSize);
+        $flows = array_map(fn (SapGlLine $s) => $this->sapGlFlow($s), $candidates);
+        $indices = $this->findSubsetIndices($target, $flows, $maxSize);
 
         if ($indices === null) {
             return null;
@@ -199,10 +206,10 @@ class ReconciliationMatchingService
      * @param  array<int, BankStatementLine>  $candidates
      * @return array<int, BankStatementLine>|null
      */
-    protected function findSubsetMatchingNetBankLines(float $target, array $candidates, int $maxSize): ?array
+    protected function findSubsetMatchingBankFlows(float $target, array $candidates, int $maxSize): ?array
     {
-        $nets = array_map(fn (BankStatementLine $b) => $this->netBank($b), $candidates);
-        $indices = $this->findSubsetIndices($target, $nets, $maxSize);
+        $flows = array_map(fn (BankStatementLine $b) => $this->bankFlowForMatching($b), $candidates);
+        $indices = $this->findSubsetIndices($target, $flows, $maxSize);
 
         if ($indices === null) {
             return null;
@@ -425,6 +432,134 @@ class ReconciliationMatchingService
         return round((float) $line->debit - (float) $line->credit, 2);
     }
 
+    protected function bankCustomerFlow(BankStatementLine $line): float
+    {
+        return round((float) $line->credit - (float) $line->debit, 2);
+    }
+
+    protected function sapGlFlow(SapGlLine $line): float
+    {
+        return round((float) $line->debit - (float) $line->credit, 2);
+    }
+
+    protected function bankFlowForMatching(BankStatementLine $line): float
+    {
+        $flow = $this->bankCustomerFlow($line);
+
+        return $this->mirrorBankFlowForMatching ? -$flow : $flow;
+    }
+
+    protected function flowsAlignForPairing(BankStatementLine $bankLine, SapGlLine $sapLine, bool $mirrorBankFlow): bool
+    {
+        $bankFlow = $this->bankCustomerFlow($bankLine);
+        $adjustedBankFlow = $mirrorBankFlow ? -$bankFlow : $bankFlow;
+
+        if (abs($adjustedBankFlow - $this->sapGlFlow($sapLine)) >= self::AMOUNT_TOLERANCE) {
+            return false;
+        }
+
+        return abs($this->netBank($bankLine) + $this->netSap($sapLine)) < self::AMOUNT_TOLERANCE;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, BankStatementLine>  $bankLines
+     * @param  \Illuminate\Support\Collection<int, SapGlLine>  $sapLines
+     * @return array{mirror: bool, direct_pairs: int, mirrored_pairs: int}
+     */
+    protected function resolveBankFlowOrientation($bankLines, $sapLines): array
+    {
+        $directPairs = $this->countGreedyExactPairs($bankLines, $sapLines, false);
+        $mirroredPairs = $this->countGreedyExactPairs($bankLines, $sapLines, true);
+
+        $mirror = $mirroredPairs > $directPairs;
+
+        return [
+            'mirror' => $mirror,
+            'direct_pairs' => $directPairs,
+            'mirrored_pairs' => $mirroredPairs,
+        ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, BankStatementLine>  $bankLines
+     * @param  \Illuminate\Support\Collection<int, SapGlLine>  $sapLines
+     */
+    protected function countGreedyExactPairs($bankLines, $sapLines, bool $mirrorBankFlow): int
+    {
+        $usedSapIds = [];
+        $count = 0;
+
+        foreach ($bankLines as $bankLine) {
+            foreach ($sapLines as $sapLine) {
+                if (in_array($sapLine->id, $usedSapIds, true)) {
+                    continue;
+                }
+
+                if (! $this->flowsAlignForPairing($bankLine, $sapLine, $mirrorBankFlow)) {
+                    continue;
+                }
+
+                if (! $this->datesWithinDays(
+                    $bankLine->transaction_date?->format('Y-m-d'),
+                    $sapLine->posting_date?->format('Y-m-d'),
+                    1
+                )) {
+                    continue;
+                }
+
+                $usedSapIds[] = $sapLine->id;
+                $count++;
+
+                break;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * @param  array{mirror: bool, direct_pairs: int, mirrored_pairs: int}  $orientation
+     */
+    protected function recordAutoMatchOrientation(BankReconciliation $reconciliation, array $orientation): void
+    {
+        $label = $orientation['mirror'] ? 'mirrored' : 'direct';
+        $chosenPairs = $orientation['mirror'] ? $orientation['mirrored_pairs'] : $orientation['direct_pairs'];
+
+        Log::info('Bank reconciliation auto-match flow orientation', [
+            'bank_reconciliation_id' => $reconciliation->id,
+            'orientation' => $label,
+            'exact_pairs_preview' => $chosenPairs,
+            'direct_pairs_preview' => $orientation['direct_pairs'],
+            'mirrored_pairs_preview' => $orientation['mirrored_pairs'],
+        ]);
+
+        $note = sprintf(
+            '[auto-match] orientation=%s pairs=%d (direct=%d mirrored=%d)',
+            $label,
+            $chosenPairs,
+            $orientation['direct_pairs'],
+            $orientation['mirrored_pairs']
+        );
+
+        $firstLine = $reconciliation->bankStatementLines()
+            ->orderBy('line_order')
+            ->orderBy('id')
+            ->first();
+
+        if ($firstLine === null) {
+            return;
+        }
+
+        $existing = trim((string) ($firstLine->line_notes ?? ''));
+        if ($existing !== '' && str_contains($existing, '[auto-match] orientation=')) {
+            $existing = trim((string) preg_replace('/\[auto-match\] orientation=[^\|]+(\s*\|\s*)?/', '', $existing));
+        }
+
+        $firstLine->update([
+            'line_notes' => $existing === '' ? $note : $note.' | '.$existing,
+        ]);
+    }
+
     /**
      * @param  \Illuminate\Support\Collection<int, SapGlLine>  $sapLines
      */
@@ -435,7 +570,7 @@ class ReconciliationMatchingService
                 continue;
             }
 
-            if (! $this->amountsEqual($bankLine->debit, $bankLine->credit, $sapLine->debit, $sapLine->credit)) {
+            if (! $this->flowsAlignForPairing($bankLine, $sapLine, $this->mirrorBankFlowForMatching)) {
                 continue;
             }
 
@@ -461,7 +596,7 @@ class ReconciliationMatchingService
                 continue;
             }
 
-            if (! $this->amountsEqual($bankLine->debit, $bankLine->credit, $sapLine->debit, $sapLine->credit)) {
+            if (! $this->flowsAlignForPairing($bankLine, $sapLine, $this->mirrorBankFlowForMatching)) {
                 continue;
             }
 
@@ -538,12 +673,6 @@ class ReconciliationMatchingService
         } catch (\Throwable) {
             return 0.0;
         }
-    }
-
-    protected function amountsEqual(string|float $bankDebit, string|float $bankCredit, string|float $sapDebit, string|float $sapCredit): bool
-    {
-        return abs((float) $bankDebit - (float) $sapCredit) < self::AMOUNT_TOLERANCE
-            && abs((float) $bankCredit - (float) $sapDebit) < self::AMOUNT_TOLERANCE;
     }
 
     protected function datesWithinDays(?string $bankDate, ?string $sapDate, int $days): bool
